@@ -70,9 +70,6 @@
 .step-chip{position:relative;aspect-ratio:1/1;min-height:150px;background:#ffbd00;border:3px solid #fff36b;box-shadow:inset 0 0 0 2px rgba(255,255,255,.55),0 8px 20px rgba(12,62,112,.12);border-radius:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease}
 .step-letter{display:block;font-size:clamp(5rem,13vw,8.5rem);font-weight:950;line-height:.78;letter-spacing:-.07em;text-shadow:0 2px 0 rgba(0,0,0,.03)}
 .step-caption{display:block;margin-top:15px;padding:0 8px;font-size:clamp(.72rem,1.6vw,1rem);font-weight:900;line-height:1.15;letter-spacing:.04em;text-transform:uppercase;color:#fff}
-.step-chip.active{transform:translateY(-3px);outline:6px solid var(--navy);outline-offset:3px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.7),0 12px 28px rgba(0,69,128,.28)}
-.step-chip.active::after{content:'CURRENT STEP';position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;border-radius:999px;padding:4px 9px;font-size:.58rem;font-weight:950;letter-spacing:.08em;white-space:nowrap}
-.step-chip.done::before{content:'✓';position:absolute;right:8px;bottom:7px;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;background:#14875c;color:#fff;font-size:1rem;font-weight:950;box-shadow:0 2px 7px rgba(0,0,0,.2)}
 .step-chip.irrelevant{
   background:#4b5563;
   border-color:#374151;
@@ -81,23 +78,7 @@
   transform:none;
   outline:none
 }
-.step-chip.irrelevant .step-letter,
-.step-chip.irrelevant .step-caption{color:#d1d5db;opacity:.62}
-.step-chip.irrelevant::after{
-  content:'NO FURTHER VALUE';
-  position:absolute;
-  top:8px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#252b34;
-  color:#e5e7eb;
-  border-radius:999px;
-  padding:4px 8px;
-  font-size:.52rem;
-  font-weight:950;
-  letter-spacing:.06em;
-  white-space:nowrap
-}
+.step-chip.irrelevant .step-letter{color:#d1d5db;opacity:.62}
 .ecg-strip-menu{margin-top:22px}
 .ecg-strip-option{display:flex;flex-direction:column;justify-content:space-between;min-height:210px}
 .ecg-strip-number{
@@ -142,7 +123,7 @@
 .ecg-feedback.success{background:#eaf8f1;border-left-color:var(--green)}
 .ecg-feedback.retry{background:#fff8e7;border-left-color:var(--orange)}
 .ecg-complete{font-size:1.05rem;font-weight:800;color:#12613e}
-@media(max-width:640px){.step-legend{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.step-chip{min-height:104px;border-width:2px}.step-letter{font-size:clamp(3.4rem,20vw,5.4rem)}.step-caption{margin-top:10px;font-size:.58rem;padding:0 3px}.step-chip.active{outline-width:4px;outline-offset:2px}.step-chip.active::after{top:5px;font-size:.44rem;padding:3px 6px}.ecg-strip-card{padding:8px}}@media(max-width:640px){.hero{padding:28px 23px}.league-hero-title{font-size:clamp(1.65rem,8vw,2.2rem)}.expert-hero-title{font-size:clamp(2rem,10vw,2.8rem)}.wrap{margin-top:22px}.quiz-head{align-items:flex-start;flex-direction:column}.actions .btn{flex:1}}
+@media(max-width:640px){.step-legend{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.step-chip{min-height:104px;border-width:2px}.step-letter{font-size:clamp(3.4rem,20vw,5.4rem)}.step-caption{margin-top:10px;font-size:.58rem;padding:0 3px}.ecg-strip-card{padding:8px}}@media(max-width:640px){.hero{padding:28px 23px}.league-hero-title{font-size:clamp(1.65rem,8vw,2.2rem)}.expert-hero-title{font-size:clamp(2rem,10vw,2.8rem)}.wrap{margin-top:22px}.quiz-head{align-items:flex-start;flex-direction:column}.actions .btn{flex:1}}
 </style></head><body>
 <header class="topbar"><div><div class="brand">ALEXANDRIA <b>CARDIOLOGY</b> LEAGUE</div><div class="season">THE EXPERT EDITION • Trial Literacy • Technical Reasoning</div></div><div>ACL</div></header>
 <main class="wrap">
@@ -160,7 +141,7 @@
       <div class="eyebrow">60+ question expert bank</div>
       <h2>Mitral Valve Interventions</h2>
       <p class="muted">Guidelines, landmark trials, TEER, TMVR, PMC, procedural technique, complications, and evidence traps.</p>
-      <span class="pill">Passcode protected</span>
+      <span class="pill">Passcode Requested</span>
     </article>
 
     <article class="card clickable" onclick="selectQuiz('lm')">
@@ -168,16 +149,16 @@
       <div class="eyebrow">60+ question expert bank</div>
       <h2>Left Main Interventions</h2>
       <p class="muted">PCI versus CABG, physiology, imaging, bifurcation strategy, landmark trials, technical execution, and bailout.</p>
-      <span class="pill">Passcode protected</span>
+      <span class="pill">Passcode Requested</span>
     </article>
 
 
-    <article class="card clickable" onclick="openEcgModule()">
+    <article class="card clickable" onclick="selectQuiz('ecg')">
       <div class="icon">📈</div>
       <div class="eyebrow">Interactive rhythm pathway</div>
       <h2>ECG Rhythms Step by Step</h2>
       <p class="muted">Identify the earliest diagnostic checkpoint using the R–C–P method, then name the rhythm and choose the emergency response.</p>
-      <span class="pill">2 strips available</span>
+      <span class="pill">Passcode Requested</span>
     </article>
   </div>
 </section>
@@ -189,7 +170,7 @@
   <div class="hero">
     <div class="eyebrow" style="color:#ffb01f">ECG RHYTHMS STEP BY STEP</div>
     <h1 style="font-size:clamp(2rem,5vw,3.2rem)">R → C → P Method</h1>
-    <p>Start with <b>rhythm and rate</b>, then assess the <b>QRS complex</b>, and finally use the <b>P wave</b> when it still adds diagnostic value.</p>
+    <p>Start with <b>rhythm and rate</b>, then assess the <b>QRS complex</b>, and finally use the <b>P wave</b> when it still adds diagnostic value.</p><div id="ecgCandidateName" class="pill" style="margin-top:14px;display:inline-block"></div>
   </div>
 
   <div id="ecgStripMenu" class="ecg-strip-menu">
@@ -235,18 +216,9 @@
     </div>
 
     <div class="step-legend" aria-label="R C P ECG assessment sequence">
-      <div id="ecgChipR" class="step-chip">
-        <span class="step-letter">R</span>
-        <span class="step-caption">Rhythm &amp; Rate</span>
-      </div>
-      <div id="ecgChipC" class="step-chip">
-        <span class="step-letter">C</span>
-        <span class="step-caption">QRS Complex</span>
-      </div>
-      <div id="ecgChipP" class="step-chip">
-        <span class="step-letter">P</span>
-        <span class="step-caption">P Wave</span>
-      </div>
+      <div id="ecgChipR" class="step-chip"><span class="step-letter">R</span></div>
+      <div id="ecgChipC" class="step-chip"><span class="step-letter">C</span></div>
+      <div id="ecgChipP" class="step-chip"><span class="step-letter">P</span></div>
     </div>
 
     <article class="card ecg-stage-card">
@@ -288,7 +260,7 @@
     <div id="resumeNote" class="resume-note"></div>
 
     <div class="actions">
-      <button class="btn orange" onclick="startQuiz()">Start 20-question quiz</button>
+      <button id="startAccessBtn" class="btn orange" onclick="startQuiz()">Start 20-question quiz</button>
       <button id="resumeBtn" class="btn secondary" style="display:none" onclick="resumeQuiz()">Resume saved attempt</button>
     </div>
 
@@ -353,14 +325,14 @@ const ECG_STRIPS={
     stages:[
       {
         label:'Strip 1 · Stage 1 of 3',
-        prompt:'At which step of the R–C–P sequence is this rhythm already diagnosed?',
+        prompt:'At which step of the RCP pathway should you suspect the diagnosis?',
         options:[
-          {value:'C',text:'C — QRS complex'},
-          {value:'R',text:'R — Rhythm and rate'},
-          {value:'P',text:'P — P wave'}
+          {value:'R',text:'R'},
+          {value:'C',text:'C'},
+          {value:'P',text:'P'}
         ],
         correct:'R',
-        success:'The diagnosis is reached at R. There is no organized rhythm and no synchronized ventricular depolarization. QRS morphology and P-wave analysis add no further diagnostic value.',
+        success:'The diagnosis should be suspected at R. There is no organized rhythm and no synchronized ventricular depolarization. C and P add no further value for raising the initial suspicion.',
         retry:'Start before morphology. Decide first whether an organized ventricular rhythm exists.'
       },
       {
@@ -402,14 +374,14 @@ const ECG_STRIPS={
     stages:[
       {
         label:'Strip 2 · Stage 1 of 7',
-        prompt:'At which R–C–P level is the rhythm diagnosis first established from this strip?',
+        prompt:'At which step of the RCP pathway should you suspect the diagnosis?',
         options:[
-          {value:'R',text:'R — Rhythm and rate alone'},
-          {value:'P',text:'P — P-wave analysis is required before examining QRS morphology'},
-          {value:'C',text:'C — QRS-complex morphology and width'}
+          {value:'R',text:'R'},
+          {value:'C',text:'C'},
+          {value:'P',text:'P'}
         ],
         correct:'C',
-        success:'The rhythm is organized and regular, so R alone is insufficient. The broad, uniform ventricular complexes establish a regular monomorphic wide-complex tachycardia at the C step. P waves may still add supportive diagnostic information.',
+        success:'The rhythm is organized and regular, so R alone is insufficient. The broad, uniform ventricular complexes should raise suspicion of a regular monomorphic wide-complex tachycardia at the C step. P-wave analysis may still provide supportive information.',
         retry:'An organized rhythm is present. The decisive next feature is the morphology and width of the recurring ventricular complexes.'
       },
       {
@@ -442,7 +414,7 @@ const ECG_STRIPS={
       },
       {
         label:'Strip 2 · Stage 4 of 7',
-        prompt:'Does the presence of this rhythm on the monitor necessarily mean that the patient is in cardiac arrest?',
+        prompt:'You suspected ventricular tachycardia at the C stage. Does the presence of this rhythm on the monitor necessarily mean that the patient is in cardiac arrest?',
         options:[
           {value:'ALWAYS',text:'Yes. Any sustained ventricular tachycardia is, by definition, cardiac arrest'},
           {value:'QRS',text:'No. Identifiable QRS complexes guarantee an effective pulse'},
@@ -516,6 +488,12 @@ function readEcgProgress(stripId){
 }
 
 function openEcgModule(){
+  const nameBox=document.getElementById('ecgCandidateName');
+  if(nameBox){
+    const savedName=competitorName||localStorage.getItem('acl_ecg_candidate_name')||'';
+    nameBox.textContent=savedName?'Candidate: '+savedName:'';
+    nameBox.style.display=savedName?'inline-block':'none';
+  }
   showScreen('ecgStep');
   showEcgStripMenu();
 }
@@ -555,42 +533,31 @@ function startEcgStrip(stripId){
 function setChipState(letter,state){
   const chip=document.getElementById('ecgChip'+letter);
   chip.className='step-chip';
-  if(state&&state!=='pending') chip.classList.add(state);
+  if(state==='irrelevant') chip.classList.add('irrelevant');
+}
+
+function getRcpStepIndex(value){
+  return {R:0,C:1,P:2}[value];
 }
 
 function updateEcgChips(afterCorrect=false){
   if(!activeEcgStripId) return;
-  if(activeEcgStripId==='vf'){
-    if(ecgStage===0&&!afterCorrect){
-      setChipState('R','active');
-      setChipState('C','pending');
-      setChipState('P','pending');
-    }else{
-      setChipState('R','done');
-      setChipState('C','irrelevant');
-      setChipState('P','irrelevant');
-    }
+
+  const letters=['R','C','P'];
+  const firstStage=ECG_STRIPS[activeEcgStripId].stages[0];
+  const suspicionIndex=getRcpStepIndex(firstStage.correct);
+
+  // Before the first question is answered, all three boxes remain yellow.
+  if(ecgStage===0&&!afterCorrect){
+    letters.forEach(letter=>setChipState(letter,'yellow'));
     return;
   }
 
-  // Strip 2: diagnosis is reached at C, but P remains useful for supporting evidence.
-  if(ecgStage===0&&!afterCorrect){
-    setChipState('R','pending');
-    setChipState('C','active');
-    setChipState('P','pending');
-  }else if(ecgStage<=1){
-    setChipState('R','done');
-    setChipState('C',afterCorrect||ecgStage>0?'done':'active');
-    setChipState('P','pending');
-  }else if(ecgStage===2&&!afterCorrect){
-    setChipState('R','done');
-    setChipState('C','done');
-    setChipState('P','active');
-  }else{
-    setChipState('R','done');
-    setChipState('C','done');
-    setChipState('P','done');
-  }
+  // After the first answer, the suspected step and everything before it stay yellow.
+  // Any later step turns dark grey for the remainder of that strip.
+  letters.forEach((letter,index)=>{
+    setChipState(letter,index<=suspicionIndex?'yellow':'irrelevant');
+  });
 }
 
 function renderEcgStage(){
@@ -667,7 +634,7 @@ function resetCurrentEcgStrip(){
   renderEcgStage();
   window.scrollTo({top:0,behavior:'smooth'});
 }
-const QUIZZES={mitral:{title:'Mitral Valve Interventions',passcode:'mitral2026',bank:MITRAL_BANK},lm:{title:'Left Main Interventions',passcode:'lm2026',bank:LM_BANK}};
+const QUIZZES={mitral:{title:'Mitral Valve Interventions',passcode:'mitral2026',bank:MITRAL_BANK,mode:'quiz'},lm:{title:'Left Main Interventions',passcode:'lm2026',bank:LM_BANK,mode:'quiz'},ecg:{title:'ECG Rhythms Step by Step',passcode:'ecg2026',mode:'ecg'}};
 let activeQuiz='mitral',attempt=[],answers=[],current=0,selected=null,competitorName='',submitted=false,hintShown=false;
 const difficultyRank={Easy:1,Intermediate:2,Advanced:3};
 function cfg(){return QUIZZES[activeQuiz]} function saveKey(){return 'acl_'+activeQuiz+'_quiz_progress_expert_v1'}
@@ -749,11 +716,55 @@ function prepareAccessEmail(){
   },180);
 }
 function showScreen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo({top:0,behavior:'smooth'});if(id==='login')updateResumeUI()}
-function selectQuiz(id){activeQuiz=id;document.getElementById('loginTopic').textContent=cfg().title;document.getElementById('pass').value='';document.getElementById('loginError').textContent='';resetAccessRequest();document.getElementById('requestCourse').value=cfg().title;showScreen('login')}
+function selectQuiz(id){
+  activeQuiz=id;
+  document.getElementById('loginTopic').textContent=cfg().title;
+  document.getElementById('pass').value='';
+  document.getElementById('loginError').textContent='';
+  resetAccessRequest();
+  document.getElementById('requestCourse').value=cfg().title;
+  const startBtn=document.getElementById('startAccessBtn');
+  if(startBtn) startBtn.textContent=cfg().mode==='ecg'?'Open ECG course':'Start 20-question quiz';
+  showScreen('login');
+}
 function shuffled(a){const x=[...a];for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x}
 function prepareQuestion(q,targetIndex){const correct=q.correct;const distractors=shuffled(q.options.filter(x=>x!==correct));const opts=[...distractors];opts.splice(targetIndex,0,correct);return {...q,options:opts,answer:String.fromCharCode(65+targetIndex),answerText:correct}}
 function makeAttempt(){const b=cfg().bank;const chosen=[...shuffled(b.filter(q=>q.difficulty==='Easy')).slice(0,7),...shuffled(b.filter(q=>q.difficulty==='Intermediate')).slice(0,8),...shuffled(b.filter(q=>q.difficulty==='Advanced')).slice(0,5)].sort((x,y)=>difficultyRank[x.difficulty]-difficultyRank[y.difficulty]);const targets=shuffled([0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4]);return chosen.map((q,i)=>prepareQuestion(q,targets[i]))}
-function startQuiz(){const n=document.getElementById('name').value.trim(),p=document.getElementById('pass').value.trim(),e=document.getElementById('loginError');e.textContent='';if(!n){e.textContent='Please enter your name.';return}if(p!==cfg().passcode){e.textContent='Incorrect passcode.';return}competitorName=n;attempt=makeAttempt();answers=[];current=0;selected=null;submitted=false;hintShown=false;document.getElementById('competitor').textContent=n;document.getElementById('quizTopic').textContent=cfg().title;saveProgress();showScreen('quiz');renderQuestion()}
+function startQuiz(){
+  const n=document.getElementById('name').value.trim();
+  const p=document.getElementById('pass').value.trim();
+  const e=document.getElementById('loginError');
+  e.textContent='';
+
+  if(!n){
+    e.textContent='Please enter your name.';
+    return;
+  }
+  if(p!==cfg().passcode){
+    e.textContent='Incorrect passcode.';
+    return;
+  }
+
+  competitorName=n;
+
+  if(cfg().mode==='ecg'){
+    localStorage.setItem('acl_ecg_candidate_name',competitorName);
+    openEcgModule();
+    return;
+  }
+
+  attempt=makeAttempt();
+  answers=[];
+  current=0;
+  selected=null;
+  submitted=false;
+  hintShown=false;
+  document.getElementById('competitor').textContent=n;
+  document.getElementById('quizTopic').textContent=cfg().title;
+  saveProgress();
+  showScreen('quiz');
+  renderQuestion();
+}
 function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function renderQuestion(){const q=attempt[current];submitted=false;selected=answers[current]?.selected??null;hintShown=answers[current]?.hintShown||false;document.getElementById('counter').textContent=`Question ${current+1} of ${attempt.length}`;document.getElementById('bar').style.width=`${(current/attempt.length)*100}%`;document.getElementById('difficulty').textContent=q.difficulty;document.getElementById('qid').textContent=`Bank Q${q.id}`;document.getElementById('stem').textContent=q.stem;const box=document.getElementById('options');box.innerHTML='';q.options.forEach((t,i)=>{const b=document.createElement('button');b.className='option'+(selected===i?' selected':'');b.innerHTML=`<b>${String.fromCharCode(65+i)}.</b> ${escapeHtml(t)}`;b.onclick=()=>selectOption(i,b);box.appendChild(b)});const hb=document.getElementById('hintBox');hb.className='hint-box';hb.innerHTML='';document.getElementById('hintBtn').disabled=false;if(hintShown)showHint(false);document.getElementById('feedback').className='feedback';document.getElementById('feedback').innerHTML='';document.getElementById('submitBtn').style.display='inline-block';document.getElementById('submitBtn').disabled=selected===null;document.getElementById('nextBtn').style.display='none'}
 function selectOption(i,b){if(submitted)return;selected=i;document.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');document.getElementById('submitBtn').disabled=false;saveProgress()}
@@ -764,7 +775,26 @@ function finishQuiz(){const score=answers.filter(a=>a&&a.correct).length;documen
 function saveProgress(){if(!attempt.length)return;localStorage.setItem(saveKey(),JSON.stringify({activeQuiz,competitorName,attempt,answers,current,selected,submitted,hintShown,updatedAt:new Date().toISOString()}))}
 function loadSaved(){try{return JSON.parse(localStorage.getItem(saveKey())||'null')}catch{return null}}
 function clearProgress(){localStorage.removeItem(saveKey());updateResumeUI()}
-function updateResumeUI(){const s=loadSaved(),btn=document.getElementById('resumeBtn'),note=document.getElementById('resumeNote');if(s&&s.attempt?.length===20){btn.style.display='inline-block';note.style.display='block';note.textContent=`Saved ${cfg().title} attempt found for ${s.competitorName}. Progress: question ${Math.min((s.current||0)+1,20)} of 20.`}else{btn.style.display='none';note.style.display='none'}}
+function updateResumeUI(){
+  const btn=document.getElementById('resumeBtn');
+  const note=document.getElementById('resumeNote');
+
+  if(cfg().mode==='ecg'){
+    btn.style.display='none';
+    note.style.display='none';
+    return;
+  }
+
+  const s=loadSaved();
+  if(s&&s.attempt?.length===20){
+    btn.style.display='inline-block';
+    note.style.display='block';
+    note.textContent=`Saved ${cfg().title} attempt found for ${s.competitorName}. Progress: question ${Math.min((s.current||0)+1,20)} of 20.`;
+  }else{
+    btn.style.display='none';
+    note.style.display='none';
+  }
+}
 function resumeQuiz(){const p=document.getElementById('pass').value.trim(),e=document.getElementById('loginError');e.textContent='';if(p!==cfg().passcode){e.textContent='Enter the correct passcode to resume.';return}const s=loadSaved();if(!s){e.textContent='No saved attempt was found.';return}competitorName=s.competitorName;attempt=s.attempt;answers=s.answers||[];current=s.current||0;selected=s.selected??answers[current]?.selected??null;submitted=!!s.submitted;hintShown=!!s.hintShown;document.getElementById('name').value=competitorName;document.getElementById('competitor').textContent=competitorName;document.getElementById('quizTopic').textContent=cfg().title;showScreen('quiz');renderQuestion();if(s.submitted&&answers[current]){selected=answers[current].selected;submitted=false;submitAnswer()}}
 function restartFresh(){clearProgress();document.getElementById('pass').value='';document.getElementById('name').value='';selectQuiz(activeQuiz)}
 document.getElementById('pass').addEventListener('keydown',e=>{if(e.key==='Enter')startQuiz()});window.addEventListener('beforeunload',saveProgress);
