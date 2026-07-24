@@ -396,7 +396,7 @@ body.flashcard-open{overflow:hidden}
 <section id="siteSignin" class="screen active">
   <div class="card login">
     <div class="eyebrow">ALEXANDRIA CARDIOLOGY LEAGUE</div>
-    <h1 style="font-size:clamp(2rem,5vw,3rem);margin-bottom:8px">Expert Edition Sign In</h1>
+    <h1 style="font-size:clamp(2rem,5vw,3rem);margin-bottom:8px">Expert Edition</h1>
     <p class="muted">Register once on this device. Your details will be saved and used automatically whenever you open a course.</p>
 
     <div class="profile-signin-grid">
@@ -429,7 +429,7 @@ body.flashcard-open{overflow:hidden}
     <div id="siteSigninError" class="error"></div>
 
     <div class="actions">
-      <button class="btn orange" type="button" onclick="submitSiteSignIn()">Enter the Expert Edition</button>
+      <button class="btn orange" type="button" onclick="submitSiteSignIn()">Enter ACL; The EXPERT Edition</button>
     </div>
   </div>
 </section>
@@ -1164,8 +1164,7 @@ function prepareAccessEmail(){
     'Kindly provide the course access details when appropriate.',
     '',
     'Thank you.'
-  ].join('
-');
+  ].join('\n');
 
   const mailto='mailto:drmohamedalaa90@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
 
