@@ -148,6 +148,133 @@
 .ecg-feedback.retry{background:#fff8e7;border-left-color:var(--orange)}
 .ecg-complete{font-size:1.05rem;font-weight:800;color:#12613e}
 @media(max-width:640px){.step-legend{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.step-chip{min-height:104px;border-width:2px}.step-letter{font-size:clamp(3.4rem,20vw,5.4rem)}.step-caption{margin-top:10px;font-size:.58rem;padding:0 3px}.ecg-strip-card{padding:8px}}@media(max-width:640px){.hero{padding:28px 23px}.league-hero-title{font-size:clamp(1.65rem,8vw,2.2rem)}.expert-hero-title{font-size:clamp(2rem,10vw,2.8rem)}.wrap{margin-top:22px}.quiz-head{align-items:flex-start;flex-direction:column}.actions .btn{flex:1}}
+.flashcard-control{
+  display:none;
+  margin:4px 0 18px;
+  text-align:center
+}
+.flashcard-control.show{display:block}
+.flashcard-review-btn{
+  width:min(100%,430px);
+  border:2px solid #f1b818;
+  background:linear-gradient(135deg,#fff8d8,#ffed9d);
+  color:#123d65;
+  box-shadow:0 8px 20px rgba(12,62,112,.12);
+  font-weight:950;
+  letter-spacing:.015em
+}
+.flashcard-review-btn:hover{
+  transform:translateY(-1px);
+  background:linear-gradient(135deg,#fff2ba,#ffe178)
+}
+.flashcard-modal{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  background:rgba(2,23,43,.72);
+  backdrop-filter:blur(4px)
+}
+.flashcard-modal.show{display:flex}
+.flashcard-dialog{
+  position:relative;
+  width:min(720px,96vw);
+  max-height:88vh;
+  overflow:auto;
+  border:2px solid #ffd34d;
+  border-radius:24px;
+  background:#fff;
+  box-shadow:0 28px 80px rgba(0,0,0,.38);
+  animation:flashcardPop .2s ease-out
+}
+@keyframes flashcardPop{
+  from{opacity:0;transform:translateY(14px) scale(.97)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.flashcard-top{
+  position:relative;
+  padding:28px 62px 22px 28px;
+  background:linear-gradient(135deg,var(--navy),var(--blue));
+  color:#fff
+}
+.flashcard-kind{
+  display:inline-block;
+  margin-bottom:9px;
+  padding:5px 10px;
+  border-radius:999px;
+  background:#ffbd00;
+  color:#082f55;
+  font-size:.7rem;
+  font-weight:950;
+  letter-spacing:.09em;
+  text-transform:uppercase
+}
+.flashcard-title{
+  margin:0;
+  color:#fff;
+  font-size:clamp(1.65rem,4vw,2.45rem);
+  line-height:1.08
+}
+.flashcard-close{
+  position:absolute;
+  top:16px;
+  right:16px;
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:50%;
+  background:rgba(255,255,255,.16);
+  color:#fff;
+  font-size:1.35rem;
+  font-weight:950;
+  cursor:pointer
+}
+.flashcard-close:hover{background:rgba(255,255,255,.28)}
+.flashcard-body{padding:24px 28px 28px}
+.flashcard-row{
+  display:grid;
+  grid-template-columns:minmax(115px,155px) 1fr;
+  gap:16px;
+  padding:14px 0;
+  border-bottom:1px solid #e4edf4;
+  line-height:1.55
+}
+.flashcard-row:last-of-type{border-bottom:0}
+.flashcard-label{
+  color:var(--navy);
+  font-weight:950
+}
+.flashcard-value{color:#243b50}
+.flashcard-takeaway{
+  margin-top:18px;
+  padding:16px 18px;
+  border-left:6px solid #ffbd00;
+  border-radius:12px;
+  background:#fff7d6;
+  color:#173b5b;
+  line-height:1.55;
+  font-weight:800
+}
+.flashcard-question-pearl{
+  margin-top:14px;
+  padding:14px 16px;
+  border-radius:12px;
+  background:#eef7ff;
+  border:1px solid #c9dfef;
+  color:#173f62;
+  line-height:1.55
+}
+body.flashcard-open{overflow:hidden}
+@media(max-width:640px){
+  .flashcard-modal{padding:10px}
+  .flashcard-dialog{max-height:94vh;border-radius:18px}
+  .flashcard-top{padding:23px 52px 18px 20px}
+  .flashcard-body{padding:18px 20px 22px}
+  .flashcard-row{grid-template-columns:1fr;gap:5px;padding:12px 0}
+}
 </style></head><body>
 <header class="topbar"><div><div class="brand">ALEXANDRIA <b>CARDIOLOGY</b> LEAGUE</div><div class="season">THE EXPERT EDITION • Trial Literacy • Technical Reasoning</div></div><div>ACL</div></header>
 <main class="wrap">
@@ -248,6 +375,9 @@
 
     <article class="card ecg-stage-card">
       <div class="eyebrow" id="ecgStageLabel"></div>
+      <div id="ecgFlashcardControl" class="flashcard-control">
+        <button class="btn flashcard-review-btn" type="button" onclick="openEcgFlashcard()">📚 Review the flashcard</button>
+      </div>
       <h2 class="ecg-stage-title" id="ecgPrompt"></h2>
       <div id="ecgChoices"></div>
       <div id="ecgFeedback" class="ecg-feedback"></div>
@@ -335,9 +465,22 @@
     </div>
   </div>
 </section>
-<section id="quiz" class="screen"><div class="quiz-head"><div><div class="eyebrow" id="quizTopic"></div><h2 id="competitor"></h2></div><div class="pill" id="counter"></div></div><div class="progress"><span id="bar"></span></div><article class="card question-card"><div class="meta"><span id="difficulty"></span><span id="qid"></span></div><div class="hint-control"><button id="hintBtn" class="btn secondary" onclick="showHint()">💡 Show hint</button></div><div id="hintBox" class="hint-box"></div><div class="stem" id="stem"></div><div id="options"></div><div id="feedback" class="feedback"></div><div class="actions"><button id="submitBtn" class="btn" disabled onclick="submitAnswer()">Submit answer</button><button id="nextBtn" class="btn orange" style="display:none" onclick="nextQuestion()">Next question</button></div></article></section>
+<section id="quiz" class="screen"><div class="quiz-head"><div><div class="eyebrow" id="quizTopic"></div><h2 id="competitor"></h2></div><div class="pill" id="counter"></div></div><div class="progress"><span id="bar"></span></div><article class="card question-card"><div class="meta"><span id="difficulty"></span><span id="qid"></span></div><div class="hint-control"><button id="hintBtn" class="btn secondary" onclick="showHint()">💡 Show hint</button></div><div id="hintBox" class="hint-box"></div><div id="flashcardControl" class="flashcard-control"><button id="flashcardReviewBtn" class="btn flashcard-review-btn" type="button" onclick="openFlashcard()">📚 Review the flashcard</button></div><div class="stem" id="stem"></div><div id="options"></div><div id="feedback" class="feedback"></div><div class="actions"><button id="submitBtn" class="btn" disabled onclick="submitAnswer()">Submit answer</button><button id="nextBtn" class="btn orange" style="display:none" onclick="nextQuestion()">Next question</button></div></article></section>
 <section id="results" class="screen"><div class="card"><div class="eyebrow">Attempt completed</div><h1 id="resultTopic"></h1><p id="resultName" class="muted"></p><div class="result-score" id="score"></div><p id="resultText"></p><div class="actions"><button class="btn orange" onclick="restartFresh()">Enter a new randomized attempt</button><button class="btn secondary" onclick="showScreen('home')">Choose another quiz</button></div></div><h2 class="section-title">Answer review</h2><div id="review"></div></section>
-</main><script>
+</main><div id="flashcardModal" class="flashcard-modal" aria-hidden="true" onclick="flashcardBackdropClose(event)">
+  <div class="flashcard-dialog" role="dialog" aria-modal="true" aria-labelledby="flashcardTitle">
+    <div class="flashcard-top">
+      <button class="flashcard-close" type="button" aria-label="Close flashcard" onclick="closeFlashcard()">×</button>
+      <div id="flashcardKind" class="flashcard-kind">Topic flashcard</div>
+      <h2 id="flashcardTitle" class="flashcard-title">Flashcard</h2>
+    </div>
+    <div class="flashcard-body">
+      <div id="flashcardRows"></div>
+      <div id="flashcardTakeaway" class="flashcard-takeaway"></div>
+      <div id="flashcardQuestionPearl" class="flashcard-question-pearl"></div>
+    </div>
+  </div>
+</div><script>
 const MITRAL_BANK=[{"difficulty":"Easy","stem":"A 61-year-old asymptomatic patient has severe degenerative MR, LVEF 61%, LVESD 41 mm, low operative risk, and a >95% expected repair rate at a specialist centre. Which Heart Team conclusion best matches the 2025 ESC/EACTS framework?","options":["Recommend surgical mitral repair now because an LV trigger is already present.","Continue surveillance until LVEF falls below 50%.","Offer TEER because the patient is asymptomatic.","Replace the valve because LVESD exceeds 40 mm.","Delay intervention until pulmonary hypertension develops."],"correct":"Recommend surgical mitral repair now because an LV trigger is already present.","rationale":"In severe primary MR, LVEF ≤60% or LVESD ≥40 mm is an intervention trigger; durable surgical repair is preferred when feasible.","hint":"Remember that a seemingly preserved EF in chronic primary MR can already represent LV dysfunction.","id":1},{"difficulty":"Easy","stem":"A frail 84-year-old has symptomatic severe degenerative MR, favourable grasping anatomy, and prohibitive surgical risk. The valve area and gradient are acceptable. Which recommendation is most defensible?","options":["Proceed with M-TEER after Heart Team assessment.","Perform surgical repair because repair always supersedes risk.","Use balloon commissurotomy because the lesion is mitral.","Proceed directly to native-valve TMVR without considering TEER.","Continue medical therapy because primary MR has no transcatheter option."],"correct":"Proceed with M-TEER after Heart Team assessment.","rationale":"For symptomatic severe primary MR with suitable anatomy and high surgical risk, M-TEER is a guideline-supported alternative.","hint":"The mechanism is degenerative, but the decisive modifier is surgical risk plus anatomy.","id":2},{"difficulty":"Easy","stem":"A patient with ventricular secondary MR meets most COAPT-like criteria but has severe RV dysfunction and advanced right-sided failure. Which statement is least misleading?","options":["The expected benefit from TEER is uncertain because a major response-profile exclusion is present.","Severe RV dysfunction strengthens the Class I indication for TEER.","The patient automatically matches COAPT because LVEF is below 50%.","Residual MR reduction alone guarantees mortality benefit.","The patient should undergo TEER before advanced-HF assessment."],"correct":"The expected benefit from TEER is uncertain because a major response-profile exclusion is present.","rationale":"Severe RV dysfunction, advanced HF, severe PH, and major competing disease reduce the likelihood of COAPT-like benefit.","hint":"Look for a feature that changes prognosis even if the mitral jet is severe.","id":3},{"difficulty":"Easy","stem":"A patient with severe atrial secondary MR remains symptomatic despite decongestion and rhythm-control attempts. LV geometry is preserved and surgical risk is acceptable. Which strategy most closely matches current guidance?","options":["Mitral surgery with AF ablation when indicated and surgical LAA closure.","TEER is Class I regardless of operability.","Chordal-sparing replacement without addressing AF.","CRT followed by repeat imaging despite no ventricular dyssynchrony.","Balloon commissurotomy to reduce annular size."],"correct":"Mitral surgery with AF ablation when indicated and surgical LAA closure.","rationale":"For severe symptomatic atrial SMR in an operable patient, surgery combined with AF ablation and LAA closure is a guideline-supported strategy.","hint":"This phenotype is driven by atrial and annular disease rather than LV tethering.","id":4},{"difficulty":"Easy","stem":"TEE before planned commissurotomy shows severe rheumatic MS, mild MR, favourable fusion, and a left atrial appendage thrombus. Which finding is decisive?","options":["The thrombus is a major contraindication to immediate PMC.","Mild MR is the decisive contraindication.","Commissural fusion makes PMC mandatory despite thrombus.","A valve area below 1.5 cm² excludes PMC.","Sinus rhythm would override the thrombus finding."],"correct":"The thrombus is a major contraindication to immediate PMC.","rationale":"LA/LAA thrombus is a major exclusion for PMC until appropriately managed.","hint":"One finding creates an embolic hazard unrelated to how favourable the valve morphology appears.","id":5},{"difficulty":"Easy","stem":"An elderly patient has severe calcific mitral stenosis from extensive MAC, no commissural fusion, and prohibitive surgical risk. Why is Inoue commissurotomy a poor mechanistic choice?","options":["The procedure splits fused commissures; it does not remodel a non-fused calcific annulus.","The Inoue balloon cannot be used in patients older than 75 years.","PMC is contraindicated whenever the gradient exceeds 10 mmHg.","Calcific MS responds only to chordal repair.","Absence of atrial fibrillation makes PMC ineffective."],"correct":"The procedure splits fused commissures; it does not remodel a non-fused calcific annulus.","rationale":"PMC is effective in rheumatic commissural fusion, not degenerative MAC without fusion.","hint":"Ask what structure the balloon is actually designed to split.","id":6},{"difficulty":"Easy","stem":"For a central A2/P2 TEER target, which transseptal error most predictably compromises trajectory?","options":["A low puncture that leaves insufficient height above the annulus.","A posterior-superior puncture around 4–4.5 cm above the annulus.","Tailoring the puncture to left-atrial size.","Using 3D TEE to confirm fossa position.","Maintaining a safe wire position away from the LAA roof."],"correct":"A low puncture that leaves insufficient height above the annulus.","rationale":"Central TEER usually needs a posterior-superior puncture with adequate height; too low limits alignment and steering.","hint":"The ideal septal site is procedure-specific and is not the usual AF-ablation default.","id":7},{"difficulty":"Easy","stem":"After the first clip, MR is 1–2+ but the mean gradient is 4.8 mmHg at a heart rate of 55 bpm. A small residual lateral jet remains. What is the most prudent next step?","options":["Normalize haemodynamics and reassess gradient and residual MR before adding another device.","Implant the widest available second device immediately.","Ignore the gradient because it is below 5 mmHg.","Release the device only after pharmacologically increasing heart rate to 120 bpm.","Convert automatically to TMVR."],"correct":"Normalize haemodynamics and reassess gradient and residual MR before adding another device.","rationale":"Residual MR and transmitral gradient must be interpreted together at representative heart rate, blood pressure, and flow.","hint":"A single number obtained under anaesthesia can be falsely reassuring or falsely alarming.","id":8},{"difficulty":"Easy","stem":"Which anatomy creates the greatest concern for single-leaflet device attachment after TEER?","options":["Short, restricted posterior leaflet with calcification in the grasping zone.","Long mobile posterior leaflet with central jet.","Large valve area with low baseline gradient.","Isolated annular dilatation with broad leaflet tissue.","Normal chordal architecture and a narrow coaptation gap."],"correct":"Short, restricted posterior leaflet with calcification in the grasping zone.","rationale":"Inadequate mobile leaflet insertion, grasping-zone calcification, and excessive tension increase SLDA risk.","hint":"Focus on whether enough healthy tissue can remain securely inside the device.","id":9},{"difficulty":"Easy","stem":"A persistent iatrogenic ASD is seen after successful TEER. The patient is normoxic with no RV compromise and only a small left-to-right shunt. What is the best response?","options":["Observe; routine closure is not indicated.","Close every iASD before leaving the laboratory.","Close only because the defect was created with a large sheath.","Begin thrombolysis to promote spontaneous closure.","Implant a second mitral device to reduce shunt flow."],"correct":"Observe; routine closure is not indicated.","rationale":"Post-TEER iASD closure is selective, mainly for hypoxaemia, RV compromise, or a haemodynamically important shunt.","hint":"The presence of a defect is not itself the indication to close it.","id":10},{"difficulty":"Easy","stem":"CT predicts an acceptable conventional neo-LVOT after TMVR, but the simulated skirt neo-LVOT is critically small. Which inference is correct?","options":["LVOT obstruction can still occur despite an apparently generous open-frame neo-LVOT.","LAMPOON guarantees safety because the conventional neo-LVOT is acceptable.","Skirt geometry matters only in valve-in-valve procedures.","A small skirt neo-LVOT predicts paravalvular leak rather than obstruction.","The finding is irrelevant if the anterior leaflet is short."],"correct":"LVOT obstruction can still occur despite an apparently generous open-frame neo-LVOT.","rationale":"The covered valve skirt can obstruct the outflow tract even when open frame cells appear adequate.","hint":"Different simulated outflow areas answer different obstruction mechanisms.","id":11},{"difficulty":"Easy","stem":"A failed surgical mitral bioprosthesis, a failed semirigid ring, and severe native MAC are all technically accessible to balloon-expandable transcatheter therapy. Which order best reflects procedural predictability?","options":["Valve-in-valve, then valve-in-ring, then valve-in-MAC.","Valve-in-MAC, then valve-in-ring, then valve-in-valve.","Valve-in-ring, then valve-in-MAC, then valve-in-valve.","All three have equivalent anchoring and LVOT risk.","Valve-in-MAC, then valve-in-valve, then valve-in-ring."],"correct":"Valve-in-valve, then valve-in-ring, then valve-in-MAC.","rationale":"The surgical bioprosthetic frame gives the most predictable circular landing zone; ViMAC carries the greatest obstruction, embolization, and PVL risk.","hint":"Think about how controlled the landing zone is before considering the valve itself.","id":12},{"difficulty":"Easy","stem":"A patient is excluded from TMVR because of anterior-leaflet-mediated LVOT obstruction. What does LAMPOON specifically address?","options":["It lacerates the anterior leaflet so it splays around the transcatheter frame.","It fractures annular calcium to enlarge the mitral orifice.","It removes the transcatheter valve skirt.","It creates a permanent atrial septal fenestration.","It shortens the interventricular septum immediately."],"correct":"It lacerates the anterior leaflet so it splays around the transcatheter frame.","rationale":"LAMPOON prevents leaflet-mediated obstruction but does not eliminate skirt-mediated obstruction.","hint":"The target is tissue that would otherwise be displaced toward the LVOT.","id":13},{"difficulty":"Easy","stem":"A narrow commissural jet requires TEER, and baseline valve area is modest. Which device characteristic may be particularly useful?","options":["A narrower implant that minimizes tissue bridge width and gradient burden.","The widest possible device regardless of gradient.","A replacement valve because commissural jets cannot be clipped.","A rigid annuloplasty ring delivered transseptally.","A balloon sized to body height for commissural splitting."],"correct":"A narrower implant that minimizes tissue bridge width and gradient burden.","rationale":"Narrower systems such as PASCAL Ace or narrow clip variants can be useful near commissures or when gradient is borderline.","hint":"The best device is not always the one that captures the largest amount of tissue.","id":14},{"difficulty":"Easy","stem":"In the CTSN severe ischaemic MR trial, which trade-off most accurately informs surgery for advanced tethering?","options":["Repair and chordal-sparing replacement produced similar remodelling/survival, but replacement markedly reduced recurrent MR.","Repair improved survival and eliminated recurrent MR.","Replacement worsened LV remodelling but improved exercise capacity only.","Repair was superior because prosthetic complications dominated at two years.","The trial studied degenerative prolapse rather than ischaemic tethering."],"correct":"Repair and chordal-sparing replacement produced similar remodelling/survival, but replacement markedly reduced recurrent MR.","rationale":"The trial favoured replacement for durable competence, not because it improved survival or reverse remodelling.","hint":"Separate durability of MR correction from the primary remodelling endpoint.","id":15},{"difficulty":"Easy","stem":"During CABG for moderate ischaemic MR, which statement best reflects the CTSN moderate MR trial?","options":["Adding repair reduced residual MR but did not improve LV remodelling or survival and increased perioperative burden.","Adding repair produced a clear mortality benefit.","CABG alone increased MR but improved survival.","Repair was harmful because it increased recurrent MR.","The study compared TEER with CABG alone."],"correct":"Adding repair reduced residual MR but did not improve LV remodelling or survival and increased perioperative burden.","rationale":"Routine repair of moderate ischaemic MR during CABG is not automatically beneficial despite better valve competence.","hint":"A better echocardiographic result does not always translate into a better clinical endpoint.","id":16},{"difficulty":"Easy","stem":"Which summary of EVEREST II is most accurate for an operable MR population?","options":["TEER had fewer early major adverse events but less complete MR elimination and more reintervention than surgery.","TEER was superior to surgery for durability and mortality.","Surgery was safer early but less effective at reducing MR.","The trial enrolled only cardiogenic-shock patients.","The trial established PASCAL noninferiority to MitraClip."],"correct":"TEER had fewer early major adverse events but less complete MR elimination and more reintervention than surgery.","rationale":"EVEREST II established the safety–efficacy trade-off between early transcatheter repair and surgery.","hint":"The headline changes depending on whether the examiner asks about early safety or durable efficacy.","id":17},{"difficulty":"Easy","stem":"Which explanation best reconciles COAPT and MITRA-FR without reducing the difference to one EROA/LVEDV ratio?","options":["Patient selection, GDMT process, LV disease stage, procedural MR reduction, and competing HF risk all differed.","COAPT included only primary MR whereas MITRA-FR included only rheumatic MR.","The trials used identical populations but opposite statistical methods.","MITRA-FR proved that residual MR has no prognostic importance.","The difference is explained solely by clip generation."],"correct":"Patient selection, GDMT process, LV disease stage, procedural MR reduction, and competing HF risk all differed.","rationale":"The guide emphasizes a multidimensional explanation rather than a single proportionality metric.","hint":"Look beyond the valve and ask how advanced the ventricle and HF syndrome were.","id":18},{"difficulty":"Easy","stem":"RESHAPE-HF2 most directly expanded the TEER evidence base toward which population?","options":["Selected HF patients with moderate-to-severe functional MR, with benefit driven mainly by recurrent HF-hospitalization outcomes and health status.","Asymptomatic degenerative MR with normal LV size.","Rheumatic MS suitable for commissurotomy.","Severe MAC undergoing valve-in-MAC.","Acute papillary muscle rupture requiring rescue surgery."],"correct":"Selected HF patients with moderate-to-severe functional MR, with benefit driven mainly by recurrent HF-hospitalization outcomes and health status.","rationale":"RESHAPE-HF2 differed from COAPT in MR severity spectrum and endpoint composition; mortality was not definitive.","hint":"The trial broadened the functional-MR spectrum rather than replacing the COAPT selection model.","id":19},{"difficulty":"Easy","stem":"What is the most defensible one-year interpretation of MATTERHORN?","options":["In selected operable secondary MR, TEER was noninferior to surgery for the composite endpoint and caused fewer major early procedural adverse events.","TEER proved superior to surgery for long-term mortality.","Surgery was noninferior to GDMT alone.","The study enrolled only degenerative MR with prohibitive risk.","The trial established TMVR as the preferred therapy for secondary MR."],"correct":"In selected operable secondary MR, TEER was noninferior to surgery for the composite endpoint and caused fewer major early procedural adverse events.","rationale":"MATTERHORN supports TEER as an alternative in selected surgery-eligible SMR, but the sample and primary horizon were limited.","hint":"Pay attention to both the comparator and the duration of the primary analysis.","id":20},{"difficulty":"Intermediate","stem":"A trial enrolled 614 symptomatic HF patients with severe secondary MR despite maximally tolerated GDMT and showed durable reductions in HF hospitalization and all-cause mortality through five years. Which trial feature is essential when translating the result?","options":["Centralized selection, intensive GDMT oversight, and expert procedural MR reduction were integral to the result.","The trial accepted untreated CAD and severe RV failure without restriction.","The study was a surgery-versus-TEER trial.","The enrolled population had predominantly rheumatic MS.","The primary result depended on valve-in-MAC feasibility."],"correct":"Centralized selection, intensive GDMT oversight, and expert procedural MR reduction were integral to the result.","rationale":"COAPT was not simply a device trial; strict selection and optimized HF care were part of the treatment strategy.","hint":"The name of the trial is less important than the system in which the device was tested.","id":21},{"difficulty":"Intermediate","stem":"A 304-patient trial used European MR thresholds, enrolled patients with more advanced LV dilatation, and found no significant reduction in death or HF hospitalization with TEER. Which conclusion is most appropriate?","options":["The result cautions against assuming that correcting MR benefits every advanced ventricular-SMR phenotype.","The result proves TEER is ineffective in all secondary MR.","The study establishes surgery as superior in degenerative MR.","The trial invalidates GDMT optimization before intervention.","The negative result was caused by excluding patients with residual MR."],"correct":"The result cautions against assuming that correcting MR benefits every advanced ventricular-SMR phenotype.","rationale":"MITRA-FR showed that patient and disease-stage selection matter; it did not negate all TEER benefit.","hint":"Avoid turning a neutral population-level result into a universal prohibition.","id":22},{"difficulty":"Intermediate","stem":"A 505-patient functional-MR trial reported benefit on a recurrent HF-hospitalization/CV-death composite and better health status, without a definitive mortality signal. Which mistaken extrapolation should be avoided?","options":["Claiming that the study reproduced COAPT's mortality result in an identical population.","Recognizing that the MR spectrum was less extreme than in COAPT.","Using the trial to support benefit on recurrent HF events.","Noting that endpoint composition affects interpretation.","Considering the result complementary rather than interchangeable with COAPT."],"correct":"Claiming that the study reproduced COAPT's mortality result in an identical population.","rationale":"RESHAPE-HF2 supports event and health-status benefit but should not be quoted as an identical mortality replication of COAPT.","hint":"Ask whether the same endpoint and the same severity spectrum were tested.","id":23},{"difficulty":"Intermediate","stem":"A 208-patient trial randomized surgery-eligible patients with secondary MR to TEER or surgery and used a one-year composite efficacy endpoint. Which statement overstates the evidence?","options":["TEER is now proven superior to surgery for ten-year survival in all secondary MR.","TEER met noninferiority for the one-year composite endpoint.","TEER had fewer major early procedural adverse events.","The modest sample and expert-centre setting limit broad extrapolation.","The trial supports TEER as an alternative in selected operable patients."],"correct":"TEER is now proven superior to surgery for ten-year survival in all secondary MR.","rationale":"MATTERHORN does not establish long-term universal superiority; it supports selected one-year noninferiority.","hint":"Beware of changing both the time horizon and the population when restating a trial.","id":24},{"difficulty":"Intermediate","stem":"A prohibitive-risk degenerative-MR trial compared two TEER platforms and met noninferiority for safety and effectiveness. Which interpretation is justified?","options":["PASCAL is a validated alternative to MitraClip in selected anatomy; the trial was not a comparison with surgery.","PASCAL is superior to surgery for all degenerative MR.","The trial established TMVR as first-line therapy.","MitraClip failed the safety endpoint.","The study enrolled only ventricular secondary MR."],"correct":"PASCAL is a validated alternative to MitraClip in selected anatomy; the trial was not a comparison with surgery.","rationale":"CLASP IID supports platform choice and tailoring, not replacement of surgery in low-risk repairable disease.","hint":"Identify what the comparator was—and what it was not.","id":25},{"difficulty":"Intermediate","stem":"In EVEREST II, many late efficacy failures clustered early and led to surgery. Which clinical lesson follows?","options":["A technically acceptable initial TEER result does not equal the durable completeness of expert surgical repair in operable degenerative MR.","Early TEER safety proves long-term equivalence.","Residual MR after TEER has no prognostic meaning.","Surgery should be avoided after failed TEER.","The trial supports routine TEER in asymptomatic low-risk patients."],"correct":"A technically acceptable initial TEER result does not equal the durable completeness of expert surgical repair in operable degenerative MR.","rationale":"EVEREST II highlights the need to separate procedural safety from durable MR elimination.","hint":"Think about which endpoint favoured which strategy.","id":26},{"difficulty":"Intermediate","stem":"A surgeon plans restrictive annuloplasty for severe ischaemic MR with marked tethering. Which randomized evidence should make recurrent MR a central concern?","options":["CTSN Severe Ischemic MR, because repair had much more recurrent MR despite similar remodelling and survival.","CTSN Moderate Ischemic MR, because replacement increased recurrent MR.","CLASP IID, because PASCAL failed noninferiority.","MITRAL, because valve-in-ring was superior to surgery.","REDUCE-FMR, because Carillon increased LV volumes."],"correct":"CTSN Severe Ischemic MR, because repair had much more recurrent MR despite similar remodelling and survival.","rationale":"Advanced tethering can outlast a restrictive ring; chordal-sparing replacement was more durable in CTSN severe MR.","hint":"The relevant trial randomized repair versus replacement, not CABG strategies.","id":27},{"difficulty":"Intermediate","stem":"A CABG candidate has moderate ischaemic MR and viable myocardium. Which evidence pair appears superficially discordant but is best reconciled by endpoint and sample-size differences?","options":["RIME/POINT showed physiological and functional improvement, whereas CTSN Moderate showed no clear remodelling or survival benefit and more perioperative burden.","COAPT and MITRAL compared identical interventions in the same population.","EVEREST II and CLASP IID both proved surgery superior.","MATTERHORN and REDUCE-FMR both studied commissurotomy.","SUMMIT and APOLLO were randomized CABG trials."],"correct":"RIME/POINT showed physiological and functional improvement, whereas CTSN Moderate showed no clear remodelling or survival benefit and more perioperative burden.","rationale":"Smaller studies can show physiological signals that do not necessarily translate into hard endpoints in a larger trial.","hint":"Do not treat peak VO₂ and survival as interchangeable outcomes.","id":28},{"difficulty":"Intermediate","stem":"After one clip, the dominant central jet is abolished but a smaller commissural jet persists. Valve area is limited and gradient is rising. Which reasoning is best?","options":["The residual jet should be treated only if clinically meaningful and if another device will not create prohibitive stenosis.","Every visible jet must be eliminated regardless of gradient.","Commissural jets always mandate TMVR.","The first device should be removed because residual MR is never acceptable.","A wider second device always lowers gradient by improving flow."],"correct":"The residual jet should be treated only if clinically meaningful and if another device will not create prohibitive stenosis.","rationale":"TEER success balances residual MR against valve area and gradient; treating colour alone can cause iatrogenic MS.","hint":"The correct endpoint is not a perfectly black colour-Doppler screen.","id":29},{"difficulty":"Intermediate","stem":"Under general anaesthesia, MR appears mild and the transmitral gradient is low. After blood pressure and heart rate return toward baseline, MR increases and gradient rises. What does this illustrate?","options":["Both MR severity and gradient are flow-dependent; final acceptance should use representative haemodynamics.","Anaesthetized measurements are always more accurate.","Gradient is independent of heart rate and flow.","Pulmonary vein flow should replace all other measures.","The device must be released before haemodynamic normalization."],"correct":"Both MR severity and gradient are flow-dependent; final acceptance should use representative haemodynamics.","rationale":"Low pressure can hide MR, while tachycardia or increased flow can reveal a clinically important gradient.","hint":"The same device can look better or worse without moving at all.","id":30},{"difficulty":"Intermediate","stem":"A lateral degenerative jet and a small left atrium are planned for TEER. Which puncture principle is most accurate?","options":["Height and anterior–posterior position should be tailored to target and LA geometry rather than copied from a standard puncture recipe.","Every TEER case requires exactly 4.5 cm of height.","A low anterior puncture improves all lateral trajectories.","Fluoroscopy alone is sufficient in a small LA.","The puncture should match an AF-ablation posterior-inferior site."],"correct":"Height and anterior–posterior position should be tailored to target and LA geometry rather than copied from a standard puncture recipe.","rationale":"Central, lateral, and commissural targets may need different septal height and orientation.","hint":"The target on the valve determines the starting point on the septum.","id":31},{"difficulty":"Intermediate","stem":"Severe MR develops immediately after clip release. 3D TEE shows loss of posterior-leaflet insertion with a new eccentric jet. Which sequence is most appropriate?","options":["Define SLDA and remaining tissue first; a second device is reasonable only if intact tissue and acceptable gradient remain.","Add a second device before imaging to prevent embolization.","Close the iASD because it caused the MR.","Perform balloon commissurotomy to improve leaflet capture.","Assume chordal rupture and proceed without reassessment."],"correct":"Define SLDA and remaining tissue first; a second device is reasonable only if intact tissue and acceptable gradient remain.","rationale":"The bailout depends on mechanism, tissue quality, and residual valve area—not on the colour jet alone.","hint":"The same echocardiographic severity can arise from very different mechanical failures.","id":32},{"difficulty":"Intermediate","stem":"Which scenario most strongly favours a narrow TEER device over a wide device?","options":["A focal commissural jet with limited valve area and concern for gradient.","A very broad central jet with a large valve area and long leaflets.","A giant coaptation gap requiring maximal tissue capture.","A ruptured papillary muscle with no stable leaflet tissue.","Severe MAC with predicted LVOT obstruction."],"correct":"A focal commissural jet with limited valve area and concern for gradient.","rationale":"Narrower devices reduce tissue bridge width and can be useful near commissures or when stenosis risk is important.","hint":"Device size should solve the jet without creating a second valve disease.","id":33},{"difficulty":"Intermediate","stem":"CT planning for valve-in-ring shows an incomplete flexible band with eccentric geometry. Which concern is most justified?","options":["Deformation, paravalvular leak, and embolization are less predictable than in a complete rigid ring.","The band guarantees a circular landing zone.","LVOT obstruction is impossible in valve-in-ring.","The surgical label size alone determines transcatheter valve size.","Incomplete rings are more predictable than surgical bioprostheses."],"correct":"Deformation, paravalvular leak, and embolization are less predictable than in a complete rigid ring.","rationale":"Ring geometry and completeness determine anchoring; manufacturer label size is insufficient.","hint":"A ring is not necessarily a circular cage.","id":34},{"difficulty":"Intermediate","stem":"A patient with severe MAC is screened for ViMAC. Which risk combination most distinguishes this procedure from routine mitral valve-in-valve?","options":["LVOT obstruction, embolization, and paravalvular leak.","Coronary ostial obstruction and annular rupture only.","Leaflet thrombosis is impossible because the annulus is calcified.","No need for CT because calcium provides fixation.","Predictably lower mortality than valve-in-valve."],"correct":"LVOT obstruction, embolization, and paravalvular leak.","rationale":"ViMAC has the least controlled landing zone and the highest obstruction and procedural-risk profile.","hint":"More calcium does not automatically mean safer anchoring.","id":35},{"difficulty":"Intermediate","stem":"The LAMPOON IDE study made some prohibitive-risk TMVR candidates eligible. Which residual limitation remains?","options":["It does not prevent obstruction caused by the covered valve skirt or all non-leaflet mechanisms.","It cannot lacerate the anterior leaflet.","It is effective only for rheumatic commissural fusion.","It eliminates the need to calculate neo-LVOT.","It converts valve-in-MAC into a low-risk procedure."],"correct":"It does not prevent obstruction caused by the covered valve skirt or all non-leaflet mechanisms.","rationale":"LAMPOON addresses anterior-leaflet displacement; skirt neo-LVOT must still be assessed.","hint":"The procedure solves one obstruction pathway, not every pathway.","id":36},{"difficulty":"Intermediate","stem":"REDUCE-FMR used a sham control in functional MR. Which result is safest to quote?","options":["Carillon reduced regurgitant volume and LV volumes, but the trial was not powered to establish a mortality benefit.","Carillon reduced all-cause mortality conclusively.","The trial compared direct annuloplasty with TEER.","The device increased MR but improved symptoms.","The study proved coronary-sinus anatomy is irrelevant."],"correct":"Carillon reduced regurgitant volume and LV volumes, but the trial was not powered to establish a mortality benefit.","rationale":"The study demonstrated biological and remodelling effects, not definitive hard-outcome superiority.","hint":"Distinguish a mechanistic success from a mortality trial.","id":37},{"difficulty":"Intermediate","stem":"The Tendyne Global Feasibility Study reported high technical success and near-complete MR elimination. Why should this not be presented as proof of broad clinical superiority?","options":["The study was single-arm, transapical, and enrolled very high-risk patients with substantial early mortality.","MR reduction was poor despite low mortality.","The trial randomized Tendyne against surgery.","The study enrolled only failed bioprostheses.","The device was tested only through transseptal access."],"correct":"The study was single-arm, transapical, and enrolled very high-risk patients with substantial early mortality.","rationale":"Technical valve performance and patient-level survival can diverge in a very high-risk feasibility cohort.","hint":"A nearly absent jet does not remove competing comorbidity.","id":38},{"difficulty":"Intermediate","stem":"A multidevice TMVR registry shows near-universal MR abolition but meaningful early and midterm mortality. Which interpretation best fits CHOICE-MI?","options":["Patient selection, access route, and comorbidity may dominate outcomes despite technical success.","The registry proves all TMVR devices are equivalent.","The mortality is evidence that residual MR was common.","The study eliminates the need for randomized trials.","The result supports routine TMVR before TEER screening."],"correct":"Patient selection, access route, and comorbidity may dominate outcomes despite technical success.","rationale":"CHOICE-MI emphasizes the difference between device success and clinical benefit in selected high-risk patients.","hint":"Ask what causes death after the valve problem has been technically solved.","id":39},{"difficulty":"Intermediate","stem":"In the MITRAL prospective cohorts, which pattern should be expected when moving from valve-in-valve to valve-in-ring to valve-in-MAC?","options":["Anchoring becomes less predictable and obstruction/mortality risk generally rises.","Outcomes improve because calcium increases fixation.","Residual gradient disappears in smaller landing zones.","The need for CT decreases.","Valve-in-MAC becomes the most reproducible cohort."],"correct":"Anchoring becomes less predictable and obstruction/mortality risk generally rises.","rationale":"MITRAL established feasibility across cohorts but showed the most favourable outcomes in valve-in-valve and the greatest risk in ViMAC.","hint":"The same balloon-expandable valve behaves differently in three very different landing zones.","id":40},{"difficulty":"Intermediate","stem":"A programme cites SUMMIT as a single homogeneous trial proving Tendyne superiority in all severe MR and MAC. What is the key correction?","options":["SUMMIT contains distinct randomized and nonrandomized cohorts; results must not be extrapolated across them.","SUMMIT studied only rheumatic MS.","The programme used Intrepid rather than Tendyne.","All cohorts were sham-controlled.","The study excluded patients unsuitable for surgery."],"correct":"SUMMIT contains distinct randomized and nonrandomized cohorts; results must not be extrapolated across them.","rationale":"The guide explicitly warns that interpretation depends on the specific SUMMIT cohort.","hint":"One programme name can contain more than one evidentiary question.","id":41},{"difficulty":"Advanced","stem":"Two patients have severe ventricular SMR. Patient A has an EROA of 0.42 cm², LVESD 64 mm, optimized four-pillar therapy, no severe RV dysfunction, and low residual MR expected. Patient B has an EROA of 0.31 cm², massive LV dilatation, incomplete GDMT, severe RV dysfunction, and advanced-HF trajectory. Which statement is most defensible?","options":["Patient A is more likely to reproduce COAPT-like benefit; the difference cannot be reduced to EROA/LV volume alone.","Patient B is more likely to benefit because the ventricle is larger.","Both patients have identical expected benefit because MR is severe.","Patient A should be excluded because EROA is too large.","Patient B should undergo TEER before advanced-HF evaluation."],"correct":"Patient A is more likely to reproduce COAPT-like benefit; the difference cannot be reduced to EROA/LV volume alone.","rationale":"COAPT–MITRA-FR reconciliation is multidimensional: GDMT, LV stage, RV/PH status, procedural result, and competing risk matter.","hint":"The best candidate is not simply the patient with the largest colour jet.","id":42},{"difficulty":"Advanced","stem":"A prohibitive-risk degenerative-MR patient has a broad flail, short posterior leaflet, grasping-zone calcium, baseline MVA 3.4 cm², and mean gradient 4 mmHg. Which Heart Team conclusion is most technically honest?","options":["TEER has simultaneous attachment and stenosis hazards; dedicated TMVR or palliation should be considered if surgery is impossible.","A wide clip is ideal because it solves both hazards.","PASCAL Ace guarantees success because it is narrow.","EVEREST II proves TEER is superior to surgery in this anatomy.","Balloon commissurotomy should precede TEER."],"correct":"TEER has simultaneous attachment and stenosis hazards; dedicated TMVR or palliation should be considered if surgery is impossible.","rationale":"Favourable surgical risk is absent, but unfavourable TEER anatomy remains unfavourable; device choice cannot erase leaflet and valve-area limits.","hint":"Do not confuse 'inoperable' with 'automatically clip-suitable'.","id":43},{"difficulty":"Advanced","stem":"After one TEER device, residual MR is 2+, mean gradient 5.7 mmHg at 92 bpm, LA V-wave has fallen, and pulmonary-vein systolic flow is restored. A small eccentric commissural jet persists. What is the most defensible action?","options":["Avoid reflexive second-device implantation; normalize rate/flow and accept mild residual MR if further treatment risks clinically important stenosis.","Add a wide second device because residual MR must be zero.","Remove the first device because gradient exceeds 5 mmHg in any circumstance.","Close the iASD to lower the transmitral gradient.","Convert to PMC to enlarge the valve area."],"correct":"Avoid reflexive second-device implantation; normalize rate/flow and accept mild residual MR if further treatment risks clinically important stenosis.","rationale":"Gradient depends on heart rate and flow; the haemodynamic improvement and stenosis risk may outweigh pursuit of complete colour elimination.","hint":"The trap is treating an isolated threshold as a universal stop or go signal.","id":44},{"difficulty":"Advanced","stem":"A second device is being considered for residual MR, but 3D TEE shows the remaining jet originates through a leaflet tear adjacent to the first device. Which statement is most accurate?","options":["Another clip may worsen tension or fail because the mechanism is tissue injury rather than an untreated coaptation gap.","A second device is always the preferred bailout for any residual jet.","The tear is best treated by closing the iASD.","The mean gradient becomes irrelevant after leaflet injury.","The finding confirms device embolization."],"correct":"Another clip may worsen tension or fail because the mechanism is tissue injury rather than an untreated coaptation gap.","rationale":"Leaflet tear often requires surgery or TMVR; additional TEER is useful only if intact tissue and acceptable gradient remain.","hint":"The same residual MR grade can demand opposite treatments depending on mechanism.","id":45},{"difficulty":"Advanced","stem":"A patient with severe atrial SMR, persistent AF, preserved LV function, marked annular dilatation, and acceptable surgical risk asks for TEER to shorten recovery. Which answer best reflects evidence hierarchy?","options":["Surgery with annular correction and concomitant AF/LAA treatment remains the more guideline-aligned option; TEER is weaker when surgery is feasible.","TEER is Class I A for all atrial SMR.","COAPT directly supports TEER in this phenotype.","Restrictive annuloplasty is contraindicated when LV function is preserved.","TMVR is preferred because AF predicts clip failure."],"correct":"Surgery with annular correction and concomitant AF/LAA treatment remains the more guideline-aligned option; TEER is weaker when surgery is feasible.","rationale":"Atrial SMR is not the COAPT ventricular-SMR phenotype; surgery can address annulus, rhythm, and LAA together.","hint":"Match the trial phenotype to the patient's mechanism before invoking the trial.","id":46},{"difficulty":"Advanced","stem":"A patient with severe ventricular SMR requires CABG for complex CAD. Which approach most closely follows the 2025 ESC/EACTS recommendation?","options":["Perform mitral surgery concomitantly with CABG rather than plan staged TEER as the default.","Perform PCI first because TEER is always preferred to surgery.","Use TEER before CABG to reduce operative risk.","Defer MR treatment because revascularization never changes MR.","Perform PMC after CABG."],"correct":"Perform mitral surgery concomitantly with CABG rather than plan staged TEER as the default.","rationale":"Severe ventricular SMR undergoing CABG carries a Class I B recommendation for mitral surgery.","hint":"When the chest is already open for a prognostically indicated operation, the treatment pathway changes.","id":47},{"difficulty":"Advanced","stem":"A stable patient with chronic severe ventricular SMR and non-complex CAD remains symptomatic. The Heart Team expects PCI to restore viable myocardium. Which sequence is best aligned with the guide?","options":["Perform PCI, optimize therapy, and reassess MR before deciding on TEER.","Perform TEER first because MR grading will not change after revascularization.","Proceed directly to valve replacement.","Use CABG plus mandatory mitral surgery despite non-complex CAD.","Delay revascularization until after an iASD is created."],"correct":"Perform PCI, optimize therapy, and reassess MR before deciding on TEER.","rationale":"For non-complex CAD, PCI followed by MR reassessment is a reasonable pathway because ischaemia and loading can alter SMR.","hint":"Intervene on the ventricular driver before assuming the valve lesion is fixed.","id":48},{"difficulty":"Advanced","stem":"A patient with severe SMR has LVEF 18%, LVESD 74 mm, severe RV dysfunction, recurrent inotrope use, and no transplant/LVAD evaluation. Which interpretation of the Class I TEER recommendation is correct?","options":["The patient falls outside the response profile; advanced-HF evaluation should precede any symptom-directed IIb TEER discussion.","Class I A TEER applies because MR is severe.","COAPT included unrestricted stage-D HF.","TEER should be performed before assessing candidacy for LVAD.","The LV dimensions make surgery Class I."],"correct":"The patient falls outside the response profile; advanced-HF evaluation should precede any symptom-directed IIb TEER discussion.","rationale":"The guideline's Class I A recommendation is for selected responders, not all severe SMR.","hint":"A recommendation can be Class I yet still depend on eligibility criteria.","id":49},{"difficulty":"Advanced","stem":"An asymptomatic low-risk patient with severe primary MR has preserved LV dimensions and function, but new AF, SPAP 54 mmHg, LAVI 65 mL/m², and moderate secondary TR. How should these findings be integrated?","options":["The accumulation of at least three adverse features supports early durable surgical repair at an expert centre.","None matters until LVEF falls below 50%.","TEER is preferred because the patient is asymptomatic.","Only AF counts; the other findings are irrelevant.","Replacement is mandated because TR is present."],"correct":"The accumulation of at least three adverse features supports early durable surgical repair at an expert centre.","rationale":"The 2025 framework allows earlier repair in selected low-risk asymptomatic patients when multiple adverse markers accumulate.","hint":"Count the adverse features rather than waiting for a single LV trigger.","id":50},{"difficulty":"Advanced","stem":"A symptomatic rheumatic-MS patient has MVA 1.1 cm², mild MR, no thrombus, severe commissural calcification, and no major clinical unfavourable features. Which statement is most accurate?","options":["Severe commissural calcification is a major PMC exclusion; surgery is generally favoured if feasible.","Suboptimal anatomy alone makes PMC Class I.","Mild MR prohibits surgery.","The small MVA overrides calcification.","Absence of thrombus guarantees safe commissurotomy."],"correct":"Severe commissural calcification is a major PMC exclusion; surgery is generally favoured if feasible.","rationale":"Severe or bicommissural calcification predicts poor splitting and severe MR risk despite an otherwise suitable clinical profile.","hint":"Not all 'unfavourable' features carry the same procedural hazard.","id":51},{"difficulty":"Advanced","stem":"A symptomatic rheumatic-MS patient has suboptimal morphology but no severe calcification, no thrombus, no more-than-mild MR, and no major unfavourable clinical features. Which option best reflects current guidance?","options":["PMC can still be considered as an initial treatment at an expert centre.","PMC is prohibited by any suboptimal echo score.","Surgery is Class III in this setting.","TMVR is the default because morphology is not ideal.","Medical therapy is the only option until MVA is below 0.8 cm²."],"correct":"PMC can still be considered as an initial treatment at an expert centre.","rationale":"Selected symptomatic patients with suboptimal anatomy but no major unfavourable clinical features may undergo PMC (IIa C).","hint":"The formal score informs risk but does not replace commissural assessment and expert judgement.","id":52},{"difficulty":"Advanced","stem":"During stepwise Inoue inflation, a new eccentric high-velocity MR jet appears with hypotension and a sudden LA V-wave rise. What is the next best action?","options":["Stop further dilation immediately and define leaflet injury/severe MR.","Increase balloon diameter to complete bilateral splitting.","Repeat inflation until the waist disappears.","Close the iASD before reassessment.","Administer adenosine and continue."],"correct":"Stop further dilation immediately and define leaflet injury/severe MR.","rationale":"New eccentric MR, haemodynamic deterioration, or V-wave rise are immediate stop signals for possible leaflet tear.","hint":"The desired endpoint is not the largest possible valve area.","id":53},{"difficulty":"Advanced","stem":"An elderly rheumatic-MS patient has a calculated maximum Inoue size of 28 mm, commissural calcium, and mild baseline MR. Which technical approach best limits severe MR risk?","options":["Begin 1–2 mm below the calculated maximum and increase in 0.5–1 mm steps with echo reassessment.","Inflate immediately to 30 mm to avoid restenosis.","Use one maximal inflation because repeated inflations cause more tears.","Ignore commissural morphology and size only by annular diameter.","Predilate the interatrial septum with the Inoue balloon at full size."],"correct":"Begin 1–2 mm below the calculated maximum and increase in 0.5–1 mm steps with echo reassessment.","rationale":"Stepwise sizing is particularly important in elderly, calcified, small-annulus, or higher-MR-risk anatomy.","hint":"The safest endpoint is anatomy- and haemodynamic-driven, not formula-driven.","id":54},{"difficulty":"Advanced","stem":"TMVR planning shows conventional neo-LVOT 250 mm², skirt neo-LVOT 90 mm², long anterior leaflet, and septal hypertrophy. Which plan is least defensible?","options":["Proceed without mitigation because the conventional neo-LVOT is above a local cutoff.","Reassess valve depth/orientation and skirt geometry.","Consider whether LAMPOON addresses only the leaflet component.","Evaluate septal-reduction strategies and their timing/risks.","Reject the procedure if no safe outflow strategy can be created."],"correct":"Proceed without mitigation because the conventional neo-LVOT is above a local cutoff.","rationale":"A small skirt neo-LVOT can remain prohibitive even when conventional neo-LVOT appears acceptable.","hint":"The open cells and the covered skirt do not create the same outflow area.","id":55},{"difficulty":"Advanced","stem":"Which finding from the MITRAL programme most strongly argues against presenting valve-in-MAC as 'mitral TAVR'?","options":["ViMAC had greater LVOT obstruction and mortality than valve-in-valve despite similar valve technology.","Valve-in-valve had the highest embolization rate.","All three cohorts had identical outcomes.","CT planning was unnecessary in MAC.","The trial excluded any patients with failed rings."],"correct":"ViMAC had greater LVOT obstruction and mortality than valve-in-valve despite similar valve technology.","rationale":"The landing zone and interaction with the LVOT dominate ViMAC risk; valve technology alone does not determine outcome.","hint":"The same transcatheter valve can have a different risk profile in a different anatomy.","id":56},{"difficulty":"Advanced","stem":"A speaker quotes SUMMIT's MAC cohort to claim randomized superiority of Tendyne over MitraClip in severe degenerative MR. What is the most precise objection?","options":["The programme contains different cohorts; a nonrandomized MAC cohort cannot be used as the randomized TEER-comparator result.","SUMMIT studied only Intrepid.","MitraClip was not used anywhere in the programme.","The trial enrolled only low-risk surgical candidates.","The programme had no severe-MR patients."],"correct":"The programme contains different cohorts; a nonrandomized MAC cohort cannot be used as the randomized TEER-comparator result.","rationale":"Cohort structure is part of trial interpretation; the programme name alone does not define the comparison.","hint":"First identify which patients were randomized and which were not.","id":57},{"difficulty":"Advanced","stem":"APOLLO is cited as proof that transseptal Intrepid TMVR improves survival over TEER. Which correction is required based on the study guide?","options":["APOLLO is an ongoing/pivotal programme with cohort- and access-specific results; broad comparative survival claims are unsupported.","APOLLO randomized Carillon against surgery.","APOLLO studied only valve-in-valve.","The programme excluded TEER-unsuitable anatomy.","APOLLO established commissurotomy as superior to TMVR."],"correct":"APOLLO is an ongoing/pivotal programme with cohort- and access-specific results; broad comparative survival claims are unsupported.","rationale":"Device programmes evolve across access routes and cohorts; only published cohort-specific results should be quoted.","hint":"Do not convert an investigational programme into a completed head-to-head trial.","id":58},{"difficulty":"Advanced","stem":"A mortality benefit is claimed for Carillon because REDUCE-FMR showed reduced regurgitant volume and LV volumes. What is the flaw?","options":["The trial demonstrated mechanistic/remodelling benefit and was not powered for mortality.","The trial found no MR reduction.","The study compared surgery with TEER.","The sham arm received TMVR.","The device was tested only in primary MR."],"correct":"The trial demonstrated mechanistic/remodelling benefit and was not powered for mortality.","rationale":"A positive surrogate or remodelling endpoint cannot be promoted to a proven mortality effect.","hint":"Match the claim to the trial's statistical power and endpoint.","id":59},{"difficulty":"Advanced","stem":"A patient with isolated posterior leaflet prolapse, favourable annulus, and low surgical risk asks for transapical neochord implantation because it avoids bypass. Which response best reflects the evidence?","options":["NeoChord/HARPOON can work in selected anatomy but remain niche, transapical, and less broadly validated than expert surgical repair.","Chordal systems correct annular dilatation more reliably than rings.","TACT and TRACER were large mortality trials.","These systems are preferred for anterior or bileaflet prolapse.","Transapical access eliminates recurrent MR risk."],"correct":"NeoChord/HARPOON can work in selected anatomy but remain niche, transapical, and less broadly validated than expert surgical repair.","rationale":"Chordal systems are anatomy-dependent and do not directly treat annular disease; evidence is mainly small nonrandomized series.","hint":"A less invasive access route does not automatically create a stronger evidence base.","id":60},{"difficulty":"Advanced","stem":"A patient develops acute papillary-muscle rupture after MI with shock and torrential MR. The anatomy might be graspable, but surgery is immediately available. Which strategy is most evidence-aligned?","options":["Urgent surgery remains the reference; TEER is a bailout only when surgery is prohibitive or impossible.","TEER should always precede revascularization.","Medical therapy alone is preferred until the ventricle remodels.","TMVR is established first-line therapy in shock.","Balloon commissurotomy provides the fastest haemodynamic relief."],"correct":"Urgent surgery remains the reference; TEER is a bailout only when surgery is prohibitive or impossible.","rationale":"Papillary-muscle rupture is a surgical emergency; observational rescue TEER should not displace definitive surgery when feasible.","hint":"Do not let technical feasibility erase the hierarchy of evidence in a mechanical complication.","id":61},{"difficulty":"Advanced","stem":"A technically successful TEER leaves MR 1+, but the patient has severe fixed pulmonary vascular disease, end-stage RV failure, and recurrent multiorgan congestion. Which statement best protects against procedural futility?","options":["Successful MR reduction may not translate into meaningful benefit when competing right-heart and advanced-HF disease dominates prognosis.","MR 1+ guarantees survival benefit.","The procedure should be repeated until MR is absent.","Pulmonary vascular disease is reversed immediately by any clip.","The result proves the patient matched COAPT."],"correct":"Successful MR reduction may not translate into meaningful benefit when competing right-heart and advanced-HF disease dominates prognosis.","rationale":"Valve success and patient success are different endpoints; advanced RV/PH disease can dominate outcome.","hint":"Ask whether MR is the principal driver or only one marker of terminal disease.","id":62}];
 const LM_BANK=[{"difficulty":"Easy","stem":"An angiographically intermediate LM lesion has IVUS MLA 6.4 mm², no major downstream disease, and concordant negative physiology. Which use of the 6-mm² value is correct?","options":["It supports deferral of revascularization; it is not a post-stent expansion target.","It mandates PCI because the MLA is below 8 mm².","It is the minimum LCx-ostial stent area after DK crush.","It applies only after CABG.","It is a SYNTAX-score threshold."],"correct":"It supports deferral of revascularization; it is not a post-stent expansion target.","rationale":"LITRO used MLA ≥6 mm² as a diagnostic deferral threshold for intermediate LM disease.","hint":"The same number can have a different meaning before and after stenting.","id":1},{"difficulty":"Easy","stem":"LM FFR is 0.84 measured in the LAD, but a severe proximal LAD stenosis lies downstream. Why might the result be falsely reassuring?","options":["The downstream stenosis can limit hyperaemic flow and reduce the pressure gradient across the LM.","Downstream disease always lowers FFR below 0.80.","FFR cannot be measured in the LAD.","Microvascular dysfunction always makes FFR falsely positive.","The LM lesion is excluded whenever iFR is not measured."],"correct":"The downstream stenosis can limit hyperaemic flow and reduce the pressure gradient across the LM.","rationale":"Serial downstream disease can blunt hyperaemic flow and mask LM significance.","hint":"A pressure ratio depends on how much flow is actually generated across the proximal lesion.","id":2},{"difficulty":"Easy","stem":"A low-surgical-risk patient has significant LM disease with SYNTAX 20 and equivalent complete revascularization feasible by PCI. Which guideline statement is most accurate?","options":["PCI is a Class I A alternative, although CABG remains the overall reference strategy.","PCI is Class III because all LM disease requires CABG.","PCI is IIb C only.","CABG is contraindicated at SYNTAX ≤22.","The SYNTAX score is irrelevant when the lesion is distal."],"correct":"PCI is a Class I A alternative, although CABG remains the overall reference strategy.","rationale":"The 2024 ESC framework recommends PCI as an alternative for SYNTAX ≤22 when equivalent completeness is expected.","hint":"An alternative can be Class I without becoming the default for every patient.","id":3},{"difficulty":"Easy","stem":"Why does CABG remain the reference strategy for many low-risk LM patients despite broadly similar selected-patient mortality in trials?","options":["It more consistently reduces spontaneous MI and repeat revascularization over time.","It eliminates all perioperative stroke.","It has lower early invasiveness than PCI.","It is superior only because first-generation stents were used in every trial.","It avoids the need for Heart Team assessment."],"correct":"It more consistently reduces spontaneous MI and repeat revascularization over time.","rationale":"Durability—not a large proven mortality gap—is the most consistent CABG advantage.","hint":"Separate survival from spontaneous MI and repeat-procedure burden.","id":4},{"difficulty":"Easy","stem":"A focal mid-shaft LM stenosis has healthy distal bifurcation branches. Which default strategy minimizes unnecessary complexity?","options":["Single DES covering the shaft lesion without extending into a healthy bifurcation.","Systematic DK crush into LAD and LCx.","Two overlapping stents into the aorta.","Provisional LM-to-LAD crossover regardless of distal disease.","CABG because shaft lesions cannot be stented."],"correct":"Single DES covering the shaft lesion without extending into a healthy bifurcation.","rationale":"Ostial and shaft LM are usually single-stent problems; distal LM is the bifurcation problem.","hint":"Do not create a bifurcation procedure when the disease does not involve the bifurcation.","id":5},{"difficulty":"Easy","stem":"During aorto-ostial LM PCI, what proximal stent position best balances complete coverage and future guide interaction?","options":["Approximately 1–2 mm of controlled protrusion into the aorta.","Exactly flush with no aortic protrusion in every case.","At least 8–10 mm into the aorta.","Distal to the angiographic ostium to avoid deformation.","Across both daughter vessels."],"correct":"Approximately 1–2 mm of controlled protrusion into the aorta.","rationale":"A small controlled aortic protrusion reduces geographic miss while limiting excessive overhang.","hint":"The ostium must be covered, but the aorta should not become a long stented tube.","id":6},{"difficulty":"Easy","stem":"Why is a LM-to-LAD crossover stent sized to the distal LAD reference while POT is sized to the proximal LM?","options":["The stent must fit the distal landing zone, while POT restores proximal apposition and geometry in the larger LM.","The LAD is always larger than the LM.","POT is performed to intentionally undersize the proximal stent.","The technique avoids any need to check maximum stent expansion.","POT is only a kissing-balloon substitute."],"correct":"The stent must fit the distal landing zone, while POT restores proximal apposition and geometry in the larger LM.","rationale":"Bifurcation tapering requires distal stent sizing and proximal re-expansion.","hint":"One device spans two vessels of different calibre.","id":7},{"difficulty":"Easy","stem":"A true distal LM bifurcation has a 5-mm LCx ostial lesion, favourable angle, easy access, limited calcium, and good branch size. Which strategy is best supported?","options":["Stepwise provisional LM-to-LAD stenting with LCx protection.","Planned DK crush because the Medina class is true.","Culotte because both branches are visible.","Simultaneous kissing stents because the LCx is important.","No revascularization because the lesion is distal."],"correct":"Stepwise provisional LM-to-LAD stenting with LCx protection.","rationale":"True Medina anatomy alone does not mandate two stents; noncomplex lesions are usually provisional.","hint":"Complexity depends on lesion length, severity, calcium, access, and bailout reliability—not the Medina label alone.","id":8},{"difficulty":"Easy","stem":"A true distal LM lesion has 14 mm of severe LCx ostial disease, heavy calcium, an extreme angle, and difficult anticipated re-entry. Which default is most defensible in expert hands?","options":["Plan a two-stent strategy, with DK crush having the strongest dedicated LM randomized evidence.","Use provisional because two stents are never indicated.","Use V-stenting because it requires fewer rewires.","Treat the LAD only and accept LCx occlusion.","Choose culotte because DK crush has no LM trial data."],"correct":"Plan a two-stent strategy, with DK crush having the strongest dedicated LM randomized evidence.","rationale":"Long/severe LCx disease plus additional complexity makes bailout less reliable; DK crush is best supported for this phenotype.","hint":"A planned complex strategy is justified when an unplanned bailout is likely to fail.","id":9},{"difficulty":"Easy","stem":"EBC MAIN and DKCRUSH-V are often quoted as contradictory. Which reconciliation is correct?","options":["EBC MAIN mainly supports provisional for noncomplex LM; DKCRUSH-V supports planned DK crush for more complex true LM anatomy.","Both trials enrolled identical lesions and reached opposite results.","EBC MAIN compared PCI with CABG.","DKCRUSH-V excluded true bifurcations.","EBC MAIN proved systematic dual stenting superior."],"correct":"EBC MAIN mainly supports provisional for noncomplex LM; DKCRUSH-V supports planned DK crush for more complex true LM anatomy.","rationale":"The lesion complexity and selected strategy differed; the anatomy determines which trial applies.","hint":"A trial result belongs to its population, not to every bifurcation.","id":10},{"difficulty":"Easy","stem":"In DKCRUSH-V, which three-year pattern most supports planned DK crush in complex distal LM?","options":["Lower target-lesion failure, target-vessel MI, revascularization, and stent thrombosis than provisional stenting.","Higher TLF but lower mortality only.","No difference in any endpoint.","Benefit limited to ostial/shaft LM.","Lower stroke but more stent thrombosis."],"correct":"Lower target-lesion failure, target-vessel MI, revascularization, and stent thrombosis than provisional stenting.","rationale":"At three years, TLF was 8.3% with DK crush versus 16.9% with provisional, with fewer branch-related events.","hint":"The trial's strength is not simply angiographic success but downstream clinical events.","id":11},{"difficulty":"Easy","stem":"DEFINITION II is used to support complexity-based two-stent selection. What is the important limitation when applying it to LM?","options":["It included complex bifurcations beyond LM; it was not a dedicated LM-only comparison.","It studied only simple bifurcations.","Its two-stent arm used no DK crush.","It compared PCI with CABG.","It excluded any true bifurcation."],"correct":"It included complex bifurcations beyond LM; it was not a dedicated LM-only comparison.","rationale":"DEFINITION II supports systematic two stents in complex bifurcations, but not all enrolled lesions were LM.","hint":"A broader bifurcation trial can inform LM without becoming LM-specific evidence.","id":12},{"difficulty":"Easy","stem":"A distal LM operator favours culotte because LAD and LCx diameters are similar and the angle is narrow. Which trial should temper confidence?","options":["DKCRUSH-III, which showed worse three-year outcomes with culotte than DK crush in distal LM.","LITRO, which compared culotte with provisional.","OPTIMAL, which compared culotte with IVUS.","NOBLE, which randomized culotte against CABG.","BCIS-1, which compared culotte with IABP."],"correct":"DKCRUSH-III, which showed worse three-year outcomes with culotte than DK crush in distal LM.","rationale":"Culotte may fit the anatomy, but DKCRUSH-III gives DK crush the stronger randomized LM outcome signal.","hint":"An anatomically elegant technique can still have weaker comparative evidence.","id":13},{"difficulty":"Easy","stem":"What was the practical message of LITRO in 354 patients with visually intermediate LM stenosis?","options":["Deferral was safe when IVUS MLA was at least 6 mm² and the overall assessment was concordant.","All lesions with MLA below 8 mm² required stenting.","FFR was prohibited in every patient.","The 5–6–7–8 rule predicted survival after PCI.","The study compared PCI with CABG in shock."],"correct":"Deferral was safe when IVUS MLA was at least 6 mm² and the overall assessment was concordant.","rationale":"LITRO prospectively validated an IVUS-based deferral strategy, not a post-PCI optimization target.","hint":"The study answered whether to treat, not how to expand a stent.","id":14},{"difficulty":"Easy","stem":"iLITRO-EPIC07 added what practical insight to intermediate-LM assessment?","options":["A structured iFR/IVUS hybrid can support deferral while exposing FFR–iFR discordance that requires integration rather than averaging.","iFR always replaces IVUS when values disagree.","Every discordant lesion must undergo PCI.","The study established 8 mm² as the diagnostic MLA threshold.","It proved pressure-wire assessment is reliable despite damping."],"correct":"A structured iFR/IVUS hybrid can support deferral while exposing FFR–iFR discordance that requires integration rather than averaging.","rationale":"The study demonstrated feasibility of hybrid decision-making and the need to troubleshoot discordant physiology.","hint":"Discordance is a signal to investigate, not a request to choose the lower number automatically.","id":15},{"difficulty":"Easy","stem":"Which endpoint construction most clearly distinguishes NOBLE from EXCEL?","options":["NOBLE included repeat revascularization and excluded periprocedural MI from its primary endpoint; EXCEL included periprocedural MI and excluded revascularization.","NOBLE used mortality alone while EXCEL used stroke alone.","Both used identical primary endpoints.","EXCEL excluded MI entirely.","NOBLE compared only ostial lesions."],"correct":"NOBLE included repeat revascularization and excluded periprocedural MI from its primary endpoint; EXCEL included periprocedural MI and excluded revascularization.","rationale":"Different event definitions and weighting help explain divergent trial headlines.","hint":"Before comparing percentages, compare what counted as an event.","id":16},{"difficulty":"Easy","stem":"The 2021 individual-patient meta-analysis of four LM randomized trials is best summarized as:","options":["No significant five-year mortality difference in dual-eligible patients, but more spontaneous MI and repeat revascularization with PCI and less early stroke.","A large mortality advantage for PCI.","A large mortality advantage for CABG with no other differences.","Equivalence in high-SYNTAX anatomy.","Proof that revascularization can be deferred in severe LM."],"correct":"No significant five-year mortality difference in dual-eligible patients, but more spontaneous MI and repeat revascularization with PCI and less early stroke.","rationale":"The synthesis supports similar selected-patient survival but greater CABG durability.","hint":"The most stable message is not the mortality headline alone.","id":17},{"difficulty":"Easy","stem":"OCTOBER reduced two-year MACE in complex bifurcation PCI. Which caveat matters when citing it for LM?","options":["Only about one fifth of the cohort had LM lesions; it was not an LM-only trial.","OCT was compared with CABG.","The study excluded all bifurcations.","The trial used no imaging in the intervention arm.","The primary endpoint was neo-LVOT obstruction."],"correct":"Only about one fifth of the cohort had LM lesions; it was not an LM-only trial.","rationale":"OCTOBER supports imaging in complex bifurcations, with a meaningful but not exclusive LM subgroup.","hint":"A positive complex-PCI trial can be relevant without being lesion-specific.","id":18},{"difficulty":"Easy","stem":"OPTIMAL was neutral for routine IVUS-guided unprotected LM PCI in expert centres. Which conclusion is justified?","options":["Routine IVUS superiority was not demonstrated, but imaging remains valuable when it changes diagnosis or technical optimization.","IVUS is proven harmful in all LM PCI.","Angiography is superior for calcified bifurcations.","LITRO's diagnostic strategy is invalid.","OCTOBER and DKCRUSH VIII must be ignored."],"correct":"Routine IVUS superiority was not demonstrated, but imaging remains valuable when it changes diagnosis or technical optimization.","rationale":"A neutral superiority trial does not prove imaging is useless or equivalent in every high-value use case.","hint":"Do not turn failure to prove superiority into proof of no benefit.","id":19},{"difficulty":"Easy","stem":"DKCRUSH VIII randomized complex true bifurcation PCI, with 44% LM and predominantly DK crush. What was the headline result?","options":["IVUS guidance reduced one-year target-vessel failure from 14.7% to 6.0%.","IVUS increased target-vessel failure.","The study showed no difference in any endpoint.","Only angiographic guidance reduced stent thrombosis.","The trial randomized PCI against CABG."],"correct":"IVUS guidance reduced one-year target-vessel failure from 14.7% to 6.0%.","rationale":"The trial supports rigorous IVUS-led execution in complex bifurcations, though the isolated LM subgroup was not separately powered.","hint":"The result is strongest for the tested complex-bifurcation strategy, not every LM case.","id":20},{"difficulty":"Intermediate","stem":"EXCEL randomized 1,905 low/intermediate-complexity LM patients. At five years, death/stroke/MI was 22.0% with PCI and 19.2% with CABG without a significant difference. Which statement is most accurate?","options":["The composite did not differ significantly, but repeat revascularization was higher after PCI and mortality interpretation remained debated.","PCI proved superior for all endpoints.","CABG had more repeat revascularization.","The study supports PCI for SYNTAX ≥33.","The trial excluded periprocedural MI from the primary endpoint."],"correct":"The composite did not differ significantly, but repeat revascularization was higher after PCI and mortality interpretation remained debated.","rationale":"EXCEL supports selected-patient comparability for the composite, not interchangeability across all anatomy or endpoints.","hint":"A neutral composite can coexist with important differences in individual outcomes.","id":21},{"difficulty":"Intermediate","stem":"NOBLE enrolled 1,201 patients, with 1,184 analysed, and reported five-year MACE of 28% with PCI versus 19% with CABG. What drove the difference most?","options":["Nonprocedural MI and repeat revascularization, with similar mortality.","Periprocedural MI alone.","Stroke alone.","Early surgical graft failure.","Excess cancer death after PCI."],"correct":"Nonprocedural MI and repeat revascularization, with similar mortality.","rationale":"NOBLE's endpoint structure highlighted later spontaneous MI and repeat procedures.","hint":"The headline is a durability signal more than a mortality signal.","id":22},{"difficulty":"Intermediate","stem":"PRECOMBAT reported ten-year MACCE of 29.8% after PCI and 24.7% after CABG, with similar death but more target-vessel revascularization after PCI. Which limitation is most relevant?","options":["It used an older sirolimus-eluting platform and was underpowered for hard endpoints.","It enrolled only cardiogenic-shock patients.","It excluded LM disease.","It used no surgical comparator.","It was an OCT-guidance trial."],"correct":"It used an older sirolimus-eluting platform and was underpowered for hard endpoints.","rationale":"PRECOMBAT adds long-term durability information but cannot alone settle mortality.","hint":"Older technology and limited power should temper a decade-long comparison.","id":23},{"difficulty":"Intermediate","stem":"In the 705-patient SYNTAX LM subgroup, five-year MACCE was 36.9% after PCI and 31.0% after CABG. What interpretation is safest?","options":["PCI had less stroke but more repeat revascularization; the subgroup and first-generation DES limit broad extrapolation.","PCI reduced every endpoint and is preferred for high complexity.","CABG increased repeat revascularization.","The trial proved no anatomy interaction.","The study used current-generation ultrathin DES."],"correct":"PCI had less stroke but more repeat revascularization; the subgroup and first-generation DES limit broad extrapolation.","rationale":"SYNTAX informs anatomy-dependent trade-offs but should not be generalized to modern high-complexity PCI.","hint":"The technology and subgroup design matter as much as the percentage.","id":24},{"difficulty":"Intermediate","stem":"SYNTAXES reported ten-year all-cause death of 26% with PCI and 28% with CABG in the LM cohort. Which overstatement should be avoided?","options":["That all clinical outcomes and all anatomic subgroups are therefore equivalent.","That the survival analysis found no significant difference.","That the stents were first-generation.","That repeat revascularization was not the sole focus of the extension.","That the LM result differed from the three-vessel-disease pattern."],"correct":"That all clinical outcomes and all anatomic subgroups are therefore equivalent.","rationale":"SYNTAXES primarily extends survival follow-up; it does not erase differences in revascularization or complexity.","hint":"A survival endpoint cannot retroactively equalize every other endpoint.","id":25},{"difficulty":"Intermediate","stem":"LE MANS is cited as proof that modern PCI equals CABG. What is the strongest criticism?","options":["It was a very small early-era study, largely using bare-metal stents, and was underpowered for contemporary conclusions.","It enrolled no LM patients.","It compared OCT with IVUS.","It was larger than EXCEL and NOBLE combined.","It excluded surgery."],"correct":"It was a very small early-era study, largely using bare-metal stents, and was underpowered for contemporary conclusions.","rationale":"LE MANS established historical feasibility, not modern definitive equivalence.","hint":"A landmark can be important historically without being decisive clinically.","id":26},{"difficulty":"Intermediate","stem":"A 2026 long-term IPD update reported similar all-cause mortality after PCI and CABG. How should it be described in the current guide?","options":["As conference-presented evolving evidence pending full peer-reviewed detail.","As definitive proof that PCI is preferred in high SYNTAX disease.","As a replacement for all published trials.","As an observational registry with no randomized data.","As a shock-specific trial."],"correct":"As conference-presented evolving evidence pending full peer-reviewed detail.","rationale":"The evidence source and publication status should be stated explicitly.","hint":"The maturity of follow-up and the maturity of publication are different things.","id":27},{"difficulty":"Intermediate","stem":"The EXCEL lesion-site substudy found similar three-year death/MI/stroke for PCI and CABG in ostial/shaft and distal disease. What location-dependent difference remained?","options":["Repeat revascularization was higher after PCI in distal bifurcation disease, not in isolated ostial/shaft disease.","Mortality was higher after PCI only in shaft lesions.","CABG caused more revascularization in distal disease.","Location had no relation to procedural durability.","Ostial PCI had the highest stent thrombosis by definition."],"correct":"Repeat revascularization was higher after PCI in distal bifurcation disease, not in isolated ostial/shaft disease.","rationale":"Distal LM remains a durability problem even when hard outcomes appear similar over the studied horizon.","hint":"Location changes the repeat-procedure conversation more than the short-term survival conversation.","id":28},{"difficulty":"Intermediate","stem":"An intermediate LM lesion has FFR 0.82 in the LAD and iFR 0.87 in the LCx, with IVUS MLA 5.1 mm². What is the poorest response?","options":["Average the three values and defer because the mean is reassuring.","Check wire drift and damping.","Assess downstream disease in both branches.","Integrate the 4.5–6 mm² grey-zone IVUS finding with technically reliable physiology.","Use Heart Team adjudication if uncertainty persists."],"correct":"Average the three values and defer because the mean is reassuring.","rationale":"Discordant physiology and a grey-zone MLA require troubleshooting and integration, not arithmetic averaging.","hint":"The values are not interchangeable measurements of the same thing.","id":29},{"difficulty":"Intermediate","stem":"The guide damps the pressure waveform during diagnostic engagement of an ostial LM lesion. What is the immediate priority?","options":["Disengage the catheter and restore an aortic waveform before further injection.","Inject forcefully to define the lesion.","Advance the guide deeper for support.","Administer adenosine while engaged.","Proceed directly to kissing-balloon inflation."],"correct":"Disengage the catheter and restore an aortic waveform before further injection.","rationale":"Pressure damping may reflect catheter obstruction or severe ostial disease and can provoke ischaemia or dissection.","hint":"The first rescue is to stop causing the problem.","id":30},{"difficulty":"Intermediate","stem":"EBC MAIN randomized 467 mainly noncomplex true LM bifurcations. Which result most supports a provisional default?","options":["At one and three years, the primary endpoint was not lower with systematic dual stenting, and target-lesion revascularization favoured provisional treatment.","Systematic two stents halved mortality.","Provisional stenting increased stent thrombosis threefold.","The trial enrolled only ostial lesions.","DK crush was mandatory in the dual-stent arm."],"correct":"At one and three years, the primary endpoint was not lower with systematic dual stenting, and target-lesion revascularization favoured provisional treatment.","rationale":"EBC MAIN supports stepwise simplicity in the anatomy it actually studied.","hint":"A neutral primary endpoint plus less reintervention can be clinically persuasive.","id":31},{"difficulty":"Intermediate","stem":"DKCRUSH-V reported three-year TLF of 16.9% with provisional treatment and 8.3% with DK crush. Which feature limits applying this result to every true LM bifurcation?","options":["The enrolled lesions had longer, more severe LCx disease and were treated by expert DK operators.","The study included no true bifurcations.","The endpoint was only angiographic restenosis.","DK crush was performed without final kissing.","The study compared PCI with CABG."],"correct":"The enrolled lesions had longer, more severe LCx disease and were treated by expert DK operators.","rationale":"The benefit belongs to complex anatomy and disciplined execution, not to every Medina 1,1,1 lesion.","hint":"Population and operator expertise are part of the intervention.","id":32},{"difficulty":"Intermediate","stem":"For distal LM, the DEFINITION major criterion is present. What additional condition is needed to classify the lesion as DEFINITION-complex?","options":["At least two minor complexity features in addition to LCx lesion length ≥10 mm and stenosis ≥70%.","Any true Medina pattern alone.","One minor feature only.","A SYNTAX score below 22.","An IVUS MLA above 6 mm²."],"correct":"At least two minor complexity features in addition to LCx lesion length ≥10 mm and stenosis ≥70%.","rationale":"The major LCx criterion plus at least two minor features defines complexity.","hint":"The major criterion opens the door; the minor criteria complete the definition.","id":33},{"difficulty":"Intermediate","stem":"After LM-to-LAD provisional stenting and POT, the LCx has TIMI 3 flow but 75% ostial narrowing, no dissection, no ECG change, and negative physiology. Which action is most defensible?","options":["Defer additional stenting and avoid converting angiographic narrowing alone into a two-stent result.","Perform TAP because residual stenosis exceeds 50% by eye.","Crush a second stent without rewiring.","Use V-stenting because flow is preserved.","Deploy a covered stent in the LCx."],"correct":"Defer additional stenting and avoid converting angiographic narrowing alone into a two-stent result.","rationale":"LCx treatment should integrate flow, dissection, ischaemia, and physiology; angiographic pinching alone may not require a stent.","hint":"The carina can look worse than it behaves.","id":34},{"difficulty":"Intermediate","stem":"When is final kissing balloon inflation optional after provisional LM PCI?","options":["When the LCx was not treated and has an excellent flow, ostium, and clinical/physiological result.","After any LCx balloon dilation.","After bailout side-branch stenting.","Whenever DK crush is used.","When LCx flow is TIMI 1."],"correct":"When the LCx was not treated and has an excellent flow, ostium, and clinical/physiological result.","rationale":"Final kissing is not routine after an untouched satisfactory branch, but becomes part of the finishing sequence after side-branch intervention.","hint":"Whether the branch was manipulated is the key distinction.","id":35},{"difficulty":"Intermediate","stem":"Which two steps create the 'double-kissing' feature of DK crush?","options":["A first kiss after crushing and first LCx rewiring, then a second kiss after LM-to-LAD stenting and distal-cell rewiring.","Two simultaneous kisses before any stent is deployed.","A kiss before LCx stenting and a kiss after POT without rewiring.","Two proximal POT inflations with no side-branch balloon.","A kiss in the aorta and a kiss in the distal LAD."],"correct":"A first kiss after crushing and first LCx rewiring, then a second kiss after LM-to-LAD stenting and distal-cell rewiring.","rationale":"DK crush depends on two distinct rewiring/kissing phases separated by main-vessel stent implantation.","hint":"The sequence—not merely the number of balloons—is the technique.","id":36},{"difficulty":"Intermediate","stem":"A bailout side-branch stent is needed after provisional crossover. The LCx angle is near 90° and only minimal protrusion is desired. Which technique is most natural?","options":["T or TAP, with precise ostial coverage followed by kissing and re-POT.","Elective V-stenting with long double barrel.","Culotte without recrossing.","Aorto-ostial stenting into the aorta.","No side-branch stent because bailout techniques are unsupported."],"correct":"T or TAP, with precise ostial coverage followed by kissing and re-POT.","rationale":"T/TAP is an intuitive bailout for near-right-angle branches when a small amount of controlled protrusion is needed.","hint":"Choose the simplest rescue that reliably covers the ostium.","id":37},{"difficulty":"Intermediate","stem":"Why might IVUS be preferable to OCT in an aorto-ostial LM case with CKD?","options":["It provides deep large-vessel imaging without requiring repeated contrast blood clearance.","It has higher axial resolution for every superficial strut.","It always measures the neo-LVOT.","It eliminates the need for guide disengagement.","It can image only the LCx ostium."],"correct":"It provides deep large-vessel imaging without requiring repeated contrast blood clearance.","rationale":"IVUS is advantageous for ostial imaging, large-vessel sizing, deep calcium, and contrast limitation.","hint":"The best modality depends on both anatomy and what the patient can tolerate.","id":38},{"difficulty":"Intermediate","stem":"Which segmental sequence correctly describes the observational 5–6–7–8 minimum MSA framework?","options":["LCx ostium 5, LAD ostium 6, polygon of confluence 7, proximal LM 8 mm².","LAD 5, LCx 6, proximal LM 7, polygon 8 mm².","LCx 8, LAD 7, polygon 6, proximal LM 5 mm².","All four segments require 6 mm².","The numbers refer to diagnostic MLA before PCI."],"correct":"LCx ostium 5, LAD ostium 6, polygon of confluence 7, proximal LM 8 mm².","rationale":"The framework is an orientation tool, not a universal law; reference expansion and edge quality still matter.","hint":"Move from the smaller LCx ostium toward the larger proximal LM.","id":39},{"difficulty":"Intermediate","stem":"A speaker claims the neutral OPTIMAL trial disproves OCTOBER and DKCRUSH VIII. Which response is best?","options":["The trials tested different imaging modalities, populations, and complexity; positive complex-bifurcation results and neutral broad LM routine-IVUS results can coexist.","OPTIMAL was larger than both and therefore cancels them automatically.","OCTOBER had no LM patients.","DKCRUSH VIII used angiography in both groups.","All three trials had identical endpoints and operators."],"correct":"The trials tested different imaging modalities, populations, and complexity; positive complex-bifurcation results and neutral broad LM routine-IVUS results can coexist.","rationale":"Imaging benefit is context- and action-dependent; trial populations cannot be collapsed into one question.","hint":"Different trials can be simultaneously valid when they ask different questions.","id":40},{"difficulty":"Advanced","stem":"A 66-year-old low-risk patient has distal LM plus multivessel disease, SYNTAX 28, diabetes, and both PCI and CABG could achieve complete revascularization. Which recommendation framing is most accurate?","options":["CABG remains preferred for durability; PCI may be considered as a Class IIa A alternative after Heart Team discussion.","PCI is Class I A and automatically preferred.","PCI is Class III because SYNTAX is above 22.","CABG is Class IIb because diabetes favours PCI.","Either strategy is equivalent without discussing repeat revascularization."],"correct":"CABG remains preferred for durability; PCI may be considered as a Class IIa A alternative after Heart Team discussion.","rationale":"For SYNTAX 23–32, PCI should be considered when completeness is equivalent, but CABG remains the overall reference and diabetes/diffuse disease favour durability.","hint":"Guideline permissibility is not the same as strategic preference.","id":41},{"difficulty":"Advanced","stem":"A low-risk patient has LM disease with SYNTAX 35 and feasible CABG. Which statement is most defensible?","options":["PCI is not recommended because randomized evidence should not be extrapolated to this high-complexity anatomy.","PCI is Class I because the lesion is unprotected LM.","PCI is IIa if IVUS is available.","DK crush converts the case to low SYNTAX.","EXCEL directly proved equivalence in SYNTAX ≥33."],"correct":"PCI is not recommended because randomized evidence should not be extrapolated to this high-complexity anatomy.","rationale":"The 2024 ESC framework gives PCI Class III B for SYNTAX ≥33 when CABG is feasible.","hint":"No technical excellence erases an evidence boundary.","id":42},{"difficulty":"Advanced","stem":"A frail prohibitive-surgical-risk patient has high-complexity LM anatomy outside randomized PCI eligibility. Which Heart Team statement is most honest?","options":["PCI may still be the pragmatic option, but this is a feasibility/risk decision rather than trial-proven equivalence to CABG.","EXCEL proves PCI and CABG are interchangeable in this patient.","High complexity becomes irrelevant when surgery is unsuitable.","Medical therapy is mandatory because PCI is unsupported.","SYNTAX score cannot be used in high-risk patients."],"correct":"PCI may still be the pragmatic option, but this is a feasibility/risk decision rather than trial-proven equivalence to CABG.","rationale":"When one strategy is not available, the question shifts from randomized equivalence to individualized feasibility and goals.","hint":"The trial population consisted of patients eligible for both strategies.","id":43},{"difficulty":"Advanced","stem":"An intermediate LM lesion has FFR 0.83 in the LAD, severe proximal LAD disease, and iFR 0.88 in the LCx. IVUS MLA is 4.7 mm². Which sequence is most defensible?","options":["Address or account for downstream disease, repeat reliable physiology in both branches, and integrate the low-grey-zone MLA rather than defer on the LAD FFR alone.","Defer because one FFR value is above 0.80.","Stent LM immediately because any MLA below 6 mm² mandates PCI.","Average the FFR and iFR.","Ignore IVUS because physiology is always superior."],"correct":"Address or account for downstream disease, repeat reliable physiology in both branches, and integrate the low-grey-zone MLA rather than defer on the LAD FFR alone.","rationale":"Serial disease can mask LM FFR; the 4.5–6 mm² zone requires integrated assessment.","hint":"The least reliable measurement should not dominate the decision.","id":44},{"difficulty":"Advanced","stem":"A patient has LM iFR 0.88 but FFR 0.82, no drift, no damping, and MLA 5.4 mm². Which conclusion best reflects iLITRO reasoning?","options":["The lesion remains a structured grey-zone decision requiring clinical, branch-specific, and imaging integration—not automatic treatment or deferral.","The lower index always wins.","The FFR always overrides iFR.","MLA above 4.5 mm² proves safety of deferral.","Discordance is impossible if drift is absent."],"correct":"The lesion remains a structured grey-zone decision requiring clinical, branch-specific, and imaging integration—not automatic treatment or deferral.","rationale":"iLITRO exposed physiologic discordance and supported hybrid adjudication rather than a single-index hierarchy.","hint":"A technically valid discordance can be biologically real.","id":45},{"difficulty":"Advanced","stem":"A patient presents with culprit LM STEMI and cardiogenic shock. Which use of EXCEL, NOBLE, and the LM IPD meta-analysis is inappropriate?","options":["Claiming they establish PCI–CABG equivalence in shock.","Using them to understand elective dual-eligible LM trade-offs.","Acknowledging that emergency feasibility and time to reperfusion dominate.","Considering PCI when surgery cannot be delivered immediately.","Stating that the trials largely excluded shock."],"correct":"Claiming they establish PCI–CABG equivalence in shock.","rationale":"Elective LM trials do not answer the emergency shock question.","hint":"A different haemodynamic state can create a different evidence question.","id":46},{"difficulty":"Advanced","stem":"BCIS-1 is cited to justify prophylactic IABP for every unprotected-LM PCI. What is the key correction?","options":["It showed no early MACE benefit; the long-term mortality signal was hypothesis-generating and the trial was not LM-specific.","It proved IABP superior at 30 days in LM only.","It compared Impella with VA-ECMO.","It enrolled STEMI shock exclusively.","It demonstrated more early MACE with control because of crossover."],"correct":"It showed no early MACE benefit; the long-term mortality signal was hypothesis-generating and the trial was not LM-specific.","rationale":"BCIS-1 does not support routine IABP solely because the lesion is LM.","hint":"The device indication cannot be inferred from the lesion label alone.","id":47},{"difficulty":"Advanced","stem":"PROTECT II is used to claim a definitive benefit of Impella 2.5 over IABP in elective high-risk LM PCI. Which statement is most accurate?","options":["The 30-day primary endpoint was not significantly different; a per-protocol 90-day signal is supportive but not definitive and the trial was not LM-specific.","The trial showed a clear intention-to-treat mortality reduction at 30 days.","The trial compared Impella CP with VA-ECMO in shock.","IABP was not used as a comparator.","The study established prophylactic support as mandatory for LM."],"correct":"The 30-day primary endpoint was not significantly different; a per-protocol 90-day signal is supportive but not definitive and the trial was not LM-specific.","rationale":"PROTECT II provides nuanced high-risk PCI evidence, not a blanket LM mandate.","hint":"Know which analysis and which time point generated the favourable signal.","id":48},{"difficulty":"Advanced","stem":"Which pairing correctly separates contemporary shock-support trials?","options":["DAN-GER: Impella CP reduced 180-day mortality but increased complications; ECLS-SHOCK: routine early VA-ECMO did not reduce 30-day mortality and increased complications.","DAN-GER tested IABP and ECLS-SHOCK tested MitraClip.","Both trials showed clear survival benefit without added complications.","DAN-GER was elective LM PCI and ECLS-SHOCK was a CABG trial.","Both established routine prophylactic support for stable LM PCI."],"correct":"DAN-GER: Impella CP reduced 180-day mortality but increased complications; ECLS-SHOCK: routine early VA-ECMO did not reduce 30-day mortality and increased complications.","rationale":"Shock-device evidence is device- and context-specific and should not be imported into elective LM PCI.","hint":"Two forms of support can have opposite efficacy signals while both increase harm.","id":49},{"difficulty":"Advanced","stem":"OCTOBER and DKCRUSH VIII were positive, whereas OPTIMAL was neutral. Which synthesis is most scientifically defensible?","options":["Imaging appears most valuable when it solves complex bifurcation execution problems; routine broad LM imaging superiority was not proven in OPTIMAL.","IVUS and OCT are ineffective in all LM PCI.","OPTIMAL invalidates every observational LM study.","Only OCT should be used because IVUS was neutral.","Angiography is always sufficient in DK crush."],"correct":"Imaging appears most valuable when it solves complex bifurcation execution problems; routine broad LM imaging superiority was not proven in OPTIMAL.","rationale":"The effect of imaging depends on lesion complexity, modality, operator response, and whether findings change treatment.","hint":"An intervention can be useful selectively even when routine use is neutral.","id":50},{"difficulty":"Advanced","stem":"During aorto-ostial LM PCI, a forceful injection propagates catheter-induced dissection into the shaft with hypotension. Which immediate sequence is most appropriate?","options":["Stop injection, disengage, wire the true lumen with IVUS confirmation if possible, seal the entry rapidly, and activate surgical backup.","Repeat selective injections to define the dissection length.","Remove all wires and wait for spontaneous healing.","Perform final kissing inflation before sealing the ostium.","Administer adenosine and measure FFR."],"correct":"Stop injection, disengage, wire the true lumen with IVUS confirmation if possible, seal the entry rapidly, and activate surgical backup.","rationale":"Additional contrast can extend the dissection; rapid true-lumen wiring and entry sealing are priorities.","hint":"The diagnostic manoeuvre has become the complication.","id":51},{"difficulty":"Advanced","stem":"After LM-to-LAD stenting, the LCx becomes TIMI 1 with ischaemic ECG changes. What is the best bailout sequence?","options":["Distal-cell rewire, small balloon, controlled NC/kissing inflation, then TAP or reverse-crush stenting if severe compromise persists, followed by re-POT.","Perform proximal POT repeatedly without rewiring the LCx.","Deploy a covered stent across the LCx ostium.","Wait because flow loss after crossover is usually benign.","Convert to V-stenting without restoring branch access."],"correct":"Distal-cell rewire, small balloon, controlled NC/kissing inflation, then TAP or reverse-crush stenting if severe compromise persists, followed by re-POT.","rationale":"The goal is to restore branch access and flow with the least additional metal, escalating only if balloon treatment fails.","hint":"Rewire first; technique names come later.","id":52},{"difficulty":"Advanced","stem":"IVUS shows a long calcified distal LM lesion with deep concentric calcium, a crossable balloon, and major expansion resistance. Which statement is most accurate?","options":["IVL is attractive for deep calcium, but no dedicated randomized LM trial proves it superior; modality should follow morphology and crossability.","Rotational atherectomy is always superior in deep calcium.","Scoring balloons are proven superior by a dedicated LM mortality trial.","Calcium modification is unnecessary if the lesion is balloon-crossable.","Orbital atherectomy is contraindicated in every bifurcation."],"correct":"IVL is attractive for deep calcium, but no dedicated randomized LM trial proves it superior; modality should follow morphology and crossability.","rationale":"The guide sets an evidence boundary: choose the device from calcium characteristics, not from a nonexistent LM head-to-head trial.","hint":"Mechanistic fit is stronger than brand hierarchy when comparative evidence is absent.","id":53},{"difficulty":"Advanced","stem":"A newly implanted LM stent remains focally underexpanded despite high-pressure NC inflation. IVUS shows persistent calcific restraint without edge dissection. Which next step is most rational?","options":["Use mechanism-directed escalation such as super-high-pressure balloon or IVL within safe vessel/stent limits, then re-image.","Add another DES inside the underexpanded segment immediately.","Accept the result because proximal MSA is adequate.","Perform routine thrombus aspiration.","Use a smaller compliant balloon at low pressure."],"correct":"Use mechanism-directed escalation such as super-high-pressure balloon or IVL within safe vessel/stent limits, then re-image.","rationale":"Underexpansion is a mechanical problem; identify and modify the constraint before adding more metal.","hint":"A good number in one segment cannot compensate for a focal failure elsewhere.","id":54},{"difficulty":"Advanced","stem":"A patient has recurrent diffuse LM ISR, three metal layers, and persistent underexpansion despite prior treatment. What is the most durable strategic question?","options":["Whether CABG now offers a better solution than adding another layer of PCI.","Which fourth DES has the highest radial strength.","Whether to ignore the underexpansion and use DAPT alone.","Whether to perform TEER.","Whether the 6-mm² diagnostic MLA can justify deferral."],"correct":"Whether CABG now offers a better solution than adding another layer of PCI.","rationale":"Mechanism-first imaging is essential, but repeated metal in an uncorrectable LM may make surgery the more durable option.","hint":"Sometimes the best bailout is to stop repeating the same mechanism of failure.","id":55},{"difficulty":"Advanced","stem":"NOBLE excluded lesions expected to require a complex two-stent strategy. How should that influence interpretation of its CABG advantage?","options":["The CABG durability signal occurred despite excluding some of the most complex distal PCI anatomy; it should not be used to claim PCI equivalence in those excluded lesions.","The exclusion proves two-stent PCI is superior.","The result applies only to SYNTAX ≥33.","The trial therefore included no distal lesions.","The exclusion makes repeat revascularization irrelevant."],"correct":"The CABG durability signal occurred despite excluding some of the most complex distal PCI anatomy; it should not be used to claim PCI equivalence in those excluded lesions.","rationale":"Trial selection can make a population easier for PCI; excluded complex anatomy remains an evidence gap rather than a favourable inference.","hint":"An exclusion criterion should narrow—not broaden—the conclusion.","id":56},{"difficulty":"Advanced","stem":"EXCEL used site-assessed low/intermediate SYNTAX and included periprocedural MI in its primary endpoint. Which interpretive trap is greatest?","options":["Using the result to support high-SYNTAX PCI while ignoring endpoint-definition sensitivity and later repeat revascularization.","Acknowledging that the composite was not significantly different at five years.","Noting that mortality was an underpowered individual endpoint.","Comparing its endpoint construction with NOBLE.","Recognizing that both strategies were judged feasible before randomization."],"correct":"Using the result to support high-SYNTAX PCI while ignoring endpoint-definition sensitivity and later repeat revascularization.","rationale":"EXCEL's result is specific to selected anatomy and its endpoint definitions; it does not erase durability differences.","hint":"The trial's eligibility and endpoint are part of the treatment effect.","id":57},{"difficulty":"Advanced","stem":"The 2021 LM IPD meta-analysis found lower early stroke with PCI but higher spontaneous MI and repeat revascularization later. Which patient preference most legitimately favours PCI?","options":["A well-informed patient prioritizes a less invasive early recovery and accepts a higher chance of later repeat procedures.","A patient wants the lowest possible repeat-revascularization risk.","A young patient with diffuse high-SYNTAX disease wants maximum durability.","A patient cannot take DAPT.","A patient has anatomy unsuitable for complete PCI."],"correct":"A well-informed patient prioritizes a less invasive early recovery and accepts a higher chance of later repeat procedures.","rationale":"Shared decision-making should map trial trade-offs to patient priorities without hiding long-term durability.","hint":"The preferred strategy can depend on which hazard the patient most wants to avoid.","id":58},{"difficulty":"Advanced","stem":"An operator uses IVUS MLA 5.8 mm² before PCI and argues that the post-stent proximal LM must therefore also exceed only 6 mm². What is the error?","options":["The LITRO 6-mm² diagnostic threshold and the post-stent segmental 5–6–7–8 framework answer different questions.","The proximal LM target is always 5 mm².","IVUS MLA cannot be measured before PCI.","The 5–6–7–8 rule applies only to FFR.","LITRO studied stent expansion after DK crush."],"correct":"The LITRO 6-mm² diagnostic threshold and the post-stent segmental 5–6–7–8 framework answer different questions.","rationale":"Diagnostic deferral and post-PCI optimization thresholds must not be conflated.","hint":"The same unit does not make two thresholds interchangeable.","id":59},{"difficulty":"Advanced","stem":"A Medina 1,1,1 distal LM lesion has an 8-mm, 65% LCx lesion, easy branch access, favourable angle, and limited calcium. The operator proposes DK crush solely because the bifurcation is 'true'. What is the strongest counterargument?","options":["The anatomy is not DEFINITION-complex; EBC MAIN supports a provisional default, and DKCRUSH-V should not be generalized to simple lesions.","True bifurcations should never be treated by PCI.","DK crush is inferior to provisional in all lesions.","The LCx must be stented because its lesion exceeds 5 mm.","Culotte is mandatory whenever both branches are diseased."],"correct":"The anatomy is not DEFINITION-complex; EBC MAIN supports a provisional default, and DKCRUSH-V should not be generalized to simple lesions.","rationale":"Complexity, not Medina class alone, should select the strategy.","hint":"A true bifurcation can still be a simple bifurcation.","id":60},{"difficulty":"Advanced","stem":"After successful two-stent DK crush, angiography looks excellent, but IVUS shows underexpansion at the LCx ostium and malapposition in the proximal LM. Which statement is correct?","options":["The procedure is not optimized; branch-specific expansion and proximal apposition require correction despite a good angiogram.","A good angiogram overrides IVUS.","The 8-mm² proximal LM area compensates for LCx underexpansion.","Final kissing should be avoided after DK crush.","Only the LAD limb matters for thrombosis risk."],"correct":"The procedure is not optimized; branch-specific expansion and proximal apposition require correction despite a good angiogram.","rationale":"A single satisfactory segment cannot compensate for underexpansion in another; correct focal mechanics and re-image.","hint":"Complex bifurcation success is the sum of several local results.","id":61}];
 const ECG_STRIPS={
@@ -585,6 +728,9 @@ function updateEcgChips(afterCorrect=false){
 }
 
 function renderEcgStage(){
+  closeFlashcard();
+  const ecgFc=document.getElementById('ecgFlashcardControl');
+  if(ecgFc)ecgFc.className='flashcard-control';
   const strip=ECG_STRIPS[activeEcgStripId];
   const s=strip.stages[ecgStage];
   ecgStageSolved=false;
@@ -619,6 +765,8 @@ function answerEcgStage(value,button){
     document.querySelectorAll('#ecgChoices .ecg-choice').forEach(b=>b.disabled=true);
     f.innerHTML='<b>Correct.</b><br>'+escapeHtml(s.success);
     f.className='ecg-feedback show success';
+    const ecgFc=document.getElementById('ecgFlashcardControl');
+    if(ecgFc)ecgFc.className='flashcard-control show';
     document.getElementById('ecgContinueBtn').style.display='inline-block';
     updateEcgChips(true);
   }else{
@@ -662,7 +810,7 @@ const MCS_BANK=[{"difficulty":"Easy","stem":"A patient with SCAI stage D shock h
 const QUIZZES={ecg:{title:'ECG Rhythms Step by Step',passcode:'ecg2026',mode:'ecg'},lm:{title:'Left Main Interventions',passcode:'lm2026',bank:LM_BANK,mode:'quiz'},mitral:{title:'Mitral Valve Interventions',passcode:'mitral2026',bank:MITRAL_BANK,mode:'quiz'},mcs:{title:'Mechanical Circulatory Support',passcode:'mcs2026',bank:MCS_BANK,mode:'quiz'}};
 let activeQuiz='ecg',attempt=[],answers=[],current=0,selected=null,competitorName='',submitted=false,hintShown=false;
 const difficultyRank={Easy:1,Intermediate:2,Advanced:3};
-function cfg(){return QUIZZES[activeQuiz]} function saveKey(){return 'acl_'+activeQuiz+'_quiz_progress_expert_v2'}
+function cfg(){return QUIZZES[activeQuiz]} function saveKey(){return 'acl_'+activeQuiz+'_quiz_progress_expert_v3'}
 function resetAccessRequest(){
   const form=document.getElementById('accessRequestForm');
   const status=document.getElementById('accessStatus');
@@ -791,10 +939,654 @@ function startQuiz(){
   renderQuestion();
 }
 function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function renderQuestion(){const q=attempt[current];submitted=false;selected=answers[current]?.selected??null;hintShown=answers[current]?.hintShown||false;document.getElementById('counter').textContent=`Question ${current+1} of ${attempt.length}`;document.getElementById('bar').style.width=`${(current/attempt.length)*100}%`;document.getElementById('difficulty').textContent=q.difficulty;document.getElementById('qid').textContent=`Bank Q${q.id}`;document.getElementById('stem').textContent=q.stem;const box=document.getElementById('options');box.innerHTML='';q.options.forEach((t,i)=>{const b=document.createElement('button');b.className='option'+(selected===i?' selected':'');b.innerHTML=`<b>${String.fromCharCode(65+i)}.</b> ${escapeHtml(t)}`;b.onclick=()=>selectOption(i,b);box.appendChild(b)});const hb=document.getElementById('hintBox');hb.className='hint-box';hb.innerHTML='';document.getElementById('hintBtn').disabled=false;if(hintShown)showHint(false);document.getElementById('feedback').className='feedback';document.getElementById('feedback').innerHTML='';document.getElementById('submitBtn').style.display='inline-block';document.getElementById('submitBtn').disabled=selected===null;document.getElementById('nextBtn').style.display='none'}
+const ECG_STRIP_FLASHCARDS={
+  vf:{kind:'Topic flashcard',title:'Ventricular Fibrillation',rows:[
+    ['Rhythm','Chaotic ventricular electrical activity without organized, reproducible QRS complexes.'],
+    ['RCP suspicion point','R: the absence of any organized ventricular rhythm is already decisive; C and P add no useful diagnostic step.'],
+    ['Clinical state','VF is a pulseless cardiac-arrest rhythm unless the tracing is artifact.'],
+    ['Emergency treatment','High-quality CPR plus prompt unsynchronized defibrillation, with immediate CPR resumption after the shock.']
+  ],takeaway:'Do not delay defibrillation for drug therapy or synchronized cardioversion.'},
+  vt:{kind:'Topic flashcard',title:'Sustained Monomorphic Ventricular Tachycardia',rows:[
+    ['Rhythm','Regular organized wide-complex tachycardia with a stable QRS morphology.'],
+    ['RCP suspicion point','C: QRS width and morphology raise the suspicion; P waves can provide supporting evidence.'],
+    ['P-wave value','AV dissociation, capture beats and fusion beats strongly support VT, but their absence does not exclude it.'],
+    ['Emergency treatment','Pulseless VT: CPR and defibrillation. Unstable VT with a pulse: synchronized cardioversion. Stable VT: monitored antiarrhythmic and cause-directed care.']
+  ],takeaway:'Treat a regular wide-complex tachycardia as VT until a secure alternative is established.'}
+};
+
+function openEcgFlashcard(){
+  if(!activeEcgStripId) return;
+  const strip=ECG_STRIPS[activeEcgStripId];
+  const stage=strip.stages[ecgStage];
+  const card=ECG_STRIP_FLASHCARDS[activeEcgStripId]||{
+    kind:'Topic flashcard',
+    title:strip.title,
+    rows:[['Main concept',stage.success],['Question focus',stage.prompt]],
+    takeaway:stage.success
+  };
+  document.getElementById('flashcardKind').textContent=card.kind||'Topic flashcard';
+  document.getElementById('flashcardTitle').textContent=card.title||strip.title;
+  document.getElementById('flashcardRows').innerHTML=renderFlashcardRows(card.rows);
+  document.getElementById('flashcardTakeaway').innerHTML=`<b>Keep this:</b> ${escapeHtml(card.takeaway||stage.success)}`;
+  document.getElementById('flashcardQuestionPearl').innerHTML=`<b>This question’s pearl:</b> ${escapeHtml(stage.success||'')}`;
+  const modal=document.getElementById('flashcardModal');
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('flashcard-open');
+  setTimeout(()=>modal.querySelector('.flashcard-close')?.focus(),30);
+}
+const TRIAL_FLASHCARDS={
+  'COAPT':{kind:'Trial flashcard',title:'COAPT',rows:[
+    ['Population','614 symptomatic HF patients with severe ventricular secondary MR despite maximally tolerated GDMT; strict anatomic and clinical selection.'],
+    ['Comparison','M-TEER plus GDMT versus GDMT alone.'],
+    ['Main result','Reduced HF hospitalization and all-cause mortality, with benefit sustained through 5 years.'],
+    ['Translation','The treatment strategy included optimized HF care, suitable anatomy, limited competing RV/PH disease, and durable MR reduction.']
+  ],takeaway:'COAPT is a patient-selection and HF-optimization trial as much as a device trial.'},
+  'MITRA-FR':{kind:'Trial flashcard',title:'MITRA-FR',rows:[
+    ['Population','304 HF patients using European MR thresholds, generally with more advanced LV dilatation.'],
+    ['Comparison','M-TEER plus medical therapy versus medical therapy alone.'],
+    ['Main result','No significant reduction in death or HF hospitalization.'],
+    ['Translation','A neutral result in a later-stage phenotype does not negate benefit in every secondary-MR population.']
+  ],takeaway:'Compare disease stage, GDMT, RV/PH status and procedural MR reduction—not EROA alone.'},
+  'RESHAPE-HF2':{kind:'Trial flashcard',title:'RESHAPE-HF2',rows:[
+    ['Population','505 symptomatic HF patients with functional MR across a broader MR-severity spectrum than COAPT.'],
+    ['Comparison','M-TEER plus GDMT versus GDMT alone.'],
+    ['Main result','Benefit on recurrent HF hospitalization/CV-death composite and health status.'],
+    ['Limit','It should not be quoted as an identical mortality replication of COAPT.']
+  ],takeaway:'RESHAPE-HF2 broadens the event and quality-of-life evidence base for TEER.'},
+  'MATTERHORN':{kind:'Trial flashcard',title:'MATTERHORN',rows:[
+    ['Population','208 surgery-eligible patients with secondary MR.'],
+    ['Comparison','M-TEER versus mitral surgery.'],
+    ['Main result','One-year noninferiority for a composite efficacy endpoint.'],
+    ['Limit','Limited sample and follow-up; not proof of universal long-term superiority.']
+  ],takeaway:'MATTERHORN supports TEER as an alternative in selected surgery-eligible SMR.'},
+  'EVEREST II':{kind:'Trial flashcard',title:'EVEREST II',rows:[
+    ['Population','Operable patients with significant MR in the early MitraClip era.'],
+    ['Comparison','Percutaneous edge-to-edge repair versus surgery.'],
+    ['Main result','Lower early procedural morbidity but less complete/durable MR elimination; many failures led to early surgery.'],
+    ['Translation','Separate procedural safety from durable valve efficacy.']
+  ],takeaway:'EVEREST II established the safety–efficacy trade-off of early TEER versus surgery.'},
+  'CLASP IID':{kind:'Trial flashcard',title:'CLASP IID',rows:[
+    ['Population','Prohibitive-risk degenerative MR with suitable TEER anatomy.'],
+    ['Comparison','PASCAL versus MitraClip.'],
+    ['Main result','Noninferiority for prespecified safety and effectiveness outcomes.'],
+    ['Translation','Supports platform tailoring in high-risk DMR, not replacement of surgery in low-risk repairable disease.']
+  ],takeaway:'Platform choice follows anatomy and operator strategy; indication still follows patient risk.'},
+  'CTSN severe MR':{kind:'Trial flashcard',title:'CTSN Severe Ischaemic MR',rows:[
+    ['Population','Severe ischaemic MR requiring surgery.'],
+    ['Comparison','Restrictive repair versus chordal-sparing replacement.'],
+    ['Main result','Replacement produced more durable valve competence; survival and reverse remodelling were not improved.'],
+    ['Translation','Marked tethering raises recurrent-MR risk after restrictive annuloplasty.']
+  ],takeaway:'Durability—not a proven survival advantage—is the principal argument for replacement in advanced tethering.'},
+  'CTSN moderate MR':{kind:'Trial flashcard',title:'CTSN Moderate Ischaemic MR',rows:[
+    ['Population','Moderate ischaemic MR undergoing CABG.'],
+    ['Comparison','CABG alone versus CABG plus mitral repair.'],
+    ['Main result','Better MR reduction with repair, without a clear clinical or remodelling advantage and with added procedural burden.'],
+    ['Translation','Routine repair during CABG is not automatically beneficial.']
+  ],takeaway:'Valve competence is a surrogate; the added operation must improve patient-centred outcomes.'},
+  'REDUCE-FMR':{kind:'Trial flashcard',title:'REDUCE-FMR',rows:[
+    ['Population','Functional MR treated with indirect coronary-sinus annuloplasty.'],
+    ['Comparison','Carillon therapy versus sham control.'],
+    ['Main result','Reduced regurgitant volume and favourable LV-remodelling signals.'],
+    ['Limit','No definitive hard-outcome or mortality superiority.']
+  ],takeaway:'Do not promote a positive remodelling endpoint into a mortality claim.'},
+  'LAMPOON IDE':{kind:'Trial flashcard',title:'LAMPOON IDE',rows:[
+    ['Question','Can intentional anterior mitral-leaflet laceration reduce TMVR-related LVOT obstruction risk?'],
+    ['Strategy','Electrosurgical leaflet laceration before TMVR in selected high-risk anatomy.'],
+    ['Main result','Expanded feasibility in patients otherwise considered prohibitive for TMVR.'],
+    ['Residual risk','The covered valve skirt can still create a small skirt neo-LVOT.']
+  ],takeaway:'LAMPOON addresses leaflet displacement; it does not eliminate all LVOT-obstruction mechanisms.'},
+  'CHOICE-MI':{kind:'Trial flashcard',title:'CHOICE-MI',rows:[
+    ['Design','Multidevice TMVR registry in highly selected, high-risk patients.'],
+    ['Technical result','Very high rates of MR elimination.'],
+    ['Clinical result','Meaningful early and midterm mortality remained.'],
+    ['Translation','Technical device success is not equivalent to clinical benefit.']
+  ],takeaway:'TMVR programmes must report survival and complications—not only MR abolition.'},
+  'SUMMIT':{kind:'Trial flashcard',title:'SUMMIT',rows:[
+    ['Programme','Tendyne TMVR programme with distinct cohorts, including MAC and non-MAC populations.'],
+    ['Interpretation','Results depend on the specific cohort and comparator.'],
+    ['Trap','The programme name alone does not establish a single randomized comparison.'],
+    ['Use','Quote published cohort-specific eligibility, endpoints and outcomes.']
+  ],takeaway:'Always identify which SUMMIT cohort is being discussed.'},
+  'APOLLO':{kind:'Trial flashcard',title:'APOLLO',rows:[
+    ['Programme','Intrepid TMVR clinical programme with evolving access routes and cohorts.'],
+    ['Interpretation','Published cohort-specific evidence must be separated from programme-level claims.'],
+    ['Trap','Do not claim survival superiority over TEER without a direct published comparison.'],
+    ['Use','State access route, population and study design before quoting an outcome.']
+  ],takeaway:'A device programme is not automatically a randomized comparative trial.'},
+  'LITRO':{kind:'Trial flashcard',title:'LITRO',rows:[
+    ['Population','354 patients with visually intermediate left-main stenosis.'],
+    ['Strategy','Prospective IVUS-guided deferral using MLA ≥6.0 mm².'],
+    ['Main result','Excellent 2-year cardiac-death-free survival when deferral criteria were met.'],
+    ['Translation','The 6-mm² value is a diagnostic deferral threshold—not a post-stent MSA target.']
+  ],takeaway:'Use LITRO before PCI to adjudicate significance, not after PCI to judge expansion.'},
+  'iLITRO-EPIC07':{kind:'Trial flashcard',title:'iLITRO-EPIC07',rows:[
+    ['Population','300 angiographically intermediate LM lesions.'],
+    ['Strategy','Structured hybrid iFR/IVUS assessment.'],
+    ['Main lesson','Deferral was feasible, but FFR–iFR discordance required technical review and IVUS integration.'],
+    ['Translation','Do not force discordant physiology into a single-index hierarchy.']
+  ],takeaway:'Hybrid adjudication is a troubleshooting strategy, not simple averaging.'},
+  'EXCEL':{kind:'Trial flashcard',title:'EXCEL',rows:[
+    ['Population','1,905 LM patients with low/intermediate site-assessed anatomic complexity.'],
+    ['Comparison','Everolimus-DES PCI versus CABG.'],
+    ['Five-year result','Death/stroke/MI 22.0% versus 19.2%, without a significant difference; repeat revascularization was higher after PCI.'],
+    ['Caveat','Endpoint definitions, mortality interpretation and selected anatomy remain central.']
+  ],takeaway:'EXCEL supports selected-patient comparability—not universal PCI/CABG interchangeability.'},
+  'NOBLE':{kind:'Trial flashcard',title:'NOBLE',rows:[
+    ['Population','1,201 randomized LM patients; anticipated complex two-stent lesions were excluded.'],
+    ['Comparison','PCI versus CABG.'],
+    ['Five-year result','MACE 28% versus 19%, driven mainly by nonprocedural MI and repeat revascularization; mortality was similar.'],
+    ['Caveat','Its endpoint excluded periprocedural MI and included repeat revascularization.']
+  ],takeaway:'NOBLE highlights CABG durability and the importance of endpoint construction.'},
+  'PRECOMBAT':{kind:'Trial flashcard',title:'PRECOMBAT',rows:[
+    ['Population','600 LM patients in an earlier DES era.'],
+    ['Comparison','Sirolimus-DES PCI versus CABG.'],
+    ['Ten-year result','MACCE 29.8% versus 24.7%; death similar, target-vessel revascularization higher after PCI.'],
+    ['Limit','Underpowered for small differences in hard endpoints.']
+  ],takeaway:'PRECOMBAT adds long-term durability evidence, not a definitive mortality verdict.'},
+  'SYNTAX LM':{kind:'Trial flashcard',title:'SYNTAX Left-Main Subgroup',rows:[
+    ['Population','705 LM patients from the SYNTAX trial using first-generation paclitaxel DES.'],
+    ['Five-year result','MACCE 36.9% after PCI versus 31.0% after CABG.'],
+    ['Pattern','Less stroke but more repeat revascularization after PCI.'],
+    ['Translation','Anatomic complexity modifies the PCI–CABG trade-off.']
+  ],takeaway:'Do not extrapolate older low-complexity PCI data to SYNTAX ≥33 anatomy.'},
+  'SYNTAXES':{kind:'Trial flashcard',title:'SYNTAXES',rows:[
+    ['Design','Ten-year survival extension of SYNTAX.'],
+    ['LM result','All-cause death 26% after PCI versus 28% after CABG; no significant survival difference.'],
+    ['Limit','Survival-only extension using first-generation DES.'],
+    ['Translation','Long-term mortality may be similar in selected LM patients while durability endpoints still differ.']
+  ],takeaway:'Mortality similarity does not erase spontaneous-MI and repeat-revascularization differences.'},
+  'EBC MAIN':{kind:'Trial flashcard',title:'EBC MAIN',rows:[
+    ['Population','467 mainly noncomplex true LM bifurcations.'],
+    ['Comparison','Stepwise provisional versus systematic dual-stent strategy.'],
+    ['Result','The primary endpoint was not improved by systematic two stents; longer-term TLR favoured provisional treatment.'],
+    ['Translation','Supports provisional stenting for the noncomplex anatomy actually enrolled.']
+  ],takeaway:'EBC MAIN and DKCRUSH-V answer different anatomy questions.'},
+  'DKCRUSH-V':{kind:'Trial flashcard',title:'DKCRUSH-V',rows:[
+    ['Population','482 complex true distal LM bifurcations with longer/more severe LCx disease.'],
+    ['Comparison','Planned DK crush versus provisional stenting.'],
+    ['Three-year result','TLF 8.3% versus 16.9%, with fewer target-vessel MI, TLR and stent thrombosis.'],
+    ['Translation','Benefit depends on complexity selection and expert DK execution.']
+  ],takeaway:'Do not apply DKCRUSH-V to every Medina 1,1,1 lesion.'},
+  'DEFINITION II':{kind:'Trial flashcard',title:'DEFINITION II',rows:[
+    ['Population','660 DEFINITION-complex bifurcations; not all were LM.'],
+    ['Comparison','Systematic two-stent strategy versus provisional treatment.'],
+    ['One-year result','TLF 6.1% versus 11.4%.'],
+    ['Translation','Supports complexity-based selection, with limited LM-specific certainty.']
+  ],takeaway:'The complexity definition is the bridge from anatomy to strategy.'},
+  'DKCRUSH-III':{kind:'Trial flashcard',title:'DKCRUSH-III',rows:[
+    ['Population','419 distal LM bifurcations.'],
+    ['Comparison','DK crush versus culotte.'],
+    ['Three-year result','MACE 8.2% versus 23.7%, with less TVR and stent thrombosis after DK crush.'],
+    ['Translation','Culotte may fit geometry, but DK crush has stronger randomized LM outcome data.']
+  ],takeaway:'Technique choice should combine anatomy with comparative evidence.'},
+  'DKCRUSH VIII':{kind:'Trial flashcard',title:'DKCRUSH VIII',rows:[
+    ['Population','556 complex true bifurcations; 44% LM and 97% DK crush.'],
+    ['Comparison','IVUS-guided versus angiography-guided PCI.'],
+    ['One-year result','Target-vessel failure 6.0% versus 14.7%.'],
+    ['Limit','The isolated LM subgroup was not separately powered.']
+  ],takeaway:'Imaging benefit is strongest when findings change complex bifurcation execution.'},
+  'OCTOBER':{kind:'Trial flashcard',title:'OCTOBER',rows:[
+    ['Population','1,201 complex bifurcation PCI patients; approximately 18–19% had LM disease.'],
+    ['Comparison','OCT-guided versus angiography-guided PCI.'],
+    ['Two-year result','MACE 10.1% versus 14.1%; HR 0.70.'],
+    ['Limit','Positive complex-bifurcation trial, not an LM-only trial.']
+  ],takeaway:'Use OCT to improve bifurcation decisions—not merely to produce images.'},
+  'OPTIMAL':{kind:'Trial flashcard',title:'OPTIMAL',rows:[
+    ['Population','806 unprotected LM patients treated at expert centres.'],
+    ['Comparison','Routine IVUS guidance versus angiography guidance.'],
+    ['Result','No superiority for the patient-oriented composite over median 2.9 years.'],
+    ['Translation','Neutral superiority does not prove imaging useless or equivalent in every high-value scenario.']
+  ],takeaway:'Imaging benefit is context- and action-dependent.'},
+  'IABP-SHOCK II':{kind:'Trial flashcard',title:'IABP-SHOCK II',rows:[
+    ['Population','600 revascularized patients with AMI cardiogenic shock.'],
+    ['Comparison','Routine IABP versus standard care.'],
+    ['Result','30-day mortality 39.7% versus 41.3%; no six-year survival benefit.'],
+    ['Translation','Routine use is not recommended without a specific physiologic or mechanical-complication indication.']
+  ],takeaway:'Useful physiology does not equal routine survival benefit.'},
+  'DanGer-Shock':{kind:'Trial flashcard',title:'DanGer-Shock',rows:[
+    ['Population','355 analyzed patients with selected severe STEMI-CS; persistent coma after out-of-hospital arrest was excluded.'],
+    ['Comparison','Impella CP plus standard care versus standard care.'],
+    ['180-day result','Death 45.8% versus 58.5%; HR 0.74.'],
+    ['Safety','Composite safety events 24.0% versus 6.2%; renal-replacement therapy 41.9% versus 26.7%.']
+  ],takeaway:'The survival benefit supports selective—not universal—Impella CP use.'},
+  'IMPRESS':{kind:'Trial flashcard',title:'IMPRESS',rows:[
+    ['Population','48 patients with severe AMI-CS; approximately 92% had cardiac arrest.'],
+    ['Comparison','Impella CP versus IABP.'],
+    ['Result','30-day death 46% versus 50%; six-month mortality 50% in both groups.'],
+    ['Limit','Very small, post-arrest-heavy and grossly underpowered for mortality.']
+  ],takeaway:'Population and statistical power explain why IMPRESS cannot refute or reproduce DanGer-Shock.'},
+  'ISAR-SHOCK':{kind:'Trial flashcard',title:'ISAR-SHOCK',rows:[
+    ['Population','26 patients with AMI-CS.'],
+    ['Comparison','Impella 2.5 versus IABP.'],
+    ['Result','Greater 30-minute cardiac-index improvement with Impella; 30-day mortality 46% in both groups.'],
+    ['Translation','Physiologic efficacy without survival proof.']
+  ],takeaway:'A short-term hemodynamic endpoint cannot answer a mortality question.'},
+  'PROTECT II':{kind:'Trial flashcard',title:'PROTECT II',rows:[
+    ['Population','452 patients undergoing high-risk nonemergent PCI.'],
+    ['Comparison','Impella 2.5 versus planned IABP.'],
+    ['Primary result','The randomized 30-day major-adverse-event endpoint was neutral.'],
+    ['Caveat','A later 90-day per-protocol signal is not definitive randomized superiority.']
+  ],takeaway:'PROTECT II does not mandate prophylactic Impella for every high-risk PCI.'},
+  'CHIP-BCIS3':{kind:'Trial flashcard',title:'CHIP-BCIS3',rows:[
+    ['Population','300 patients with LVEF ≤35% and extensive CAD undergoing complex PCI.'],
+    ['Comparison','Elective microaxial unloading versus standard care.'],
+    ['Result','Win ratio 0.85; P=0.30—no improvement in major clinical outcomes.'],
+    ['Translation','Contemporary evidence does not support routine elective unloading.']
+  ],takeaway:'A permissive high-risk-PCI guideline recommendation is not a device mandate.'},
+  'STEMI-DTU':{kind:'Trial flashcard',title:'STEMI-DTU',rows:[
+    ['Population','527 anterior STEMI patients without cardiogenic shock.'],
+    ['Comparison','Impella unloading followed by 30-minute reperfusion delay versus immediate reperfusion.'],
+    ['Result','CMR infarct size 30.8% versus 31.9% of LV mass—no significant reduction.'],
+    ['Safety','More access-site bleeding and vascular complications.']
+  ],takeaway:'Routine delayed reperfusion after unloading is not supported.'},
+  'Altshock-2':{kind:'Trial flashcard',title:'Altshock-2',rows:[
+    ['Population','101 HF-CS patients eligible for heart-replacement therapy.'],
+    ['Comparison','Early IABP versus standard strategy.'],
+    ['Result','60-day survival/successful bridge 81% versus 75%; HR 0.72, P=0.45; stopped for futility.'],
+    ['Translation','No default early-IABP bridge strategy.']
+  ],takeaway:'A neutral strategy trial still allows carefully selected physiology-based use.'},
+  'CRISP-AMI':{kind:'Trial flashcard',title:'CRISP-AMI',rows:[
+    ['Population','337 anterior STEMI patients without shock.'],
+    ['Comparison','Pre-PCI IABP versus PCI alone.'],
+    ['Result','No reduction in MRI infarct size or six-month clinical benefit.'],
+    ['Translation','No routine prophylactic IABP in nonshock anterior STEMI.']
+  ],takeaway:'The device did not improve the infarct-size endpoint it was intended to modify.'},
+  'BCIS-1':{kind:'Trial flashcard',title:'BCIS-1',rows:[
+    ['Population','301 patients undergoing high-risk PCI.'],
+    ['Comparison','Elective IABP versus no planned IABP.'],
+    ['Primary result','The short-term primary endpoint was neutral.'],
+    ['Follow-up','A later mortality signal is hypothesis-generating rather than definitive proof.']
+  ],takeaway:'Respect the prespecified randomized primary endpoint.'},
+  'ECLS-SHOCK':{kind:'Trial flashcard',title:'ECLS-SHOCK',rows:[
+    ['Population','417 analyzed patients with infarct-related cardiogenic shock.'],
+    ['Comparison','Routine early VA-ECLS versus control.'],
+    ['Result','30-day death 47.8% versus 49.0%; P=0.81.'],
+    ['Harm','Moderate/severe bleeding 23.4% versus 9.6%; vascular intervention 11.0% versus 3.8%.']
+  ],takeaway:'Reject routine unselected AMI-CS use—not selected rescue for a bridgeable phenotype.'},
+  'ECMO-CS':{kind:'Trial flashcard',title:'ECMO-CS',rows:[
+    ['Population','117 patients with severe SCAI D/E cardiogenic shock.'],
+    ['Comparison','Immediate VA-ECMO versus conservative management with bailout ECMO.'],
+    ['Result','30-day composite 63.8% versus 71.2%; HR 0.72, not significant.'],
+    ['Crossover','39% of controls received bailout ECMO.']
+  ],takeaway:'The result supports a rescue-strategy model rather than automatic immediate deployment.'},
+  'EURO SHOCK':{kind:'Trial flashcard',title:'EURO SHOCK',rows:[
+    ['Population','35 patients with persistent AMI-CS; trial stopped early.'],
+    ['Comparison','Early VA-ECMO versus standard care.'],
+    ['Result','Numerically lower 30-day death, but not statistically significant.'],
+    ['Safety','More bleeding and vascular harm.']
+  ],takeaway:'EURO SHOCK is inconclusive and underpowered—not a positive mortality trial.'},
+  'RECOVER RIGHT':{kind:'Trial flashcard',title:'RECOVER RIGHT',rows:[
+    ['Design','Prospective multicentre single-arm study; n=30.'],
+    ['Device','Impella RP for selected acute RV failure.'],
+    ['Result','Cardiac index increased from 1.8 to 3.3 L/min/m²; 30-day survival 73.3%.'],
+    ['Limit','No comparative control group.']
+  ],takeaway:'Feasibility and hemodynamic benefit are not comparative survival proof.'},
+  'REMATCH':{kind:'Trial flashcard',title:'REMATCH',rows:[
+    ['Population','129 transplant-ineligible NYHA IV HF patients.'],
+    ['Comparison','First-generation pulsatile LVAD versus medical therapy.'],
+    ['Result','48% mortality-risk reduction; one-year survival 52% versus 25%.'],
+    ['Trade-off','Major early-device morbidity remained substantial.']
+  ],takeaway:'REMATCH established the survival principle of durable LVAD therapy.'},
+  'MOMENTUM 3':{kind:'Trial flashcard',title:'MOMENTUM 3',rows:[
+    ['Population','1,028 patients requiring durable LVAD support.'],
+    ['Comparison','Fully magnetically levitated HeartMate 3 versus axial-flow HeartMate II.'],
+    ['Main result','HeartMate 3 improved survival free of disabling stroke or pump reoperation and markedly reduced pump thrombosis.'],
+    ['Five-year follow-up','Overall survival 58.4% versus 43.7%; extended follow-up became observational after the randomized phase.']
+  ],takeaway:'HeartMate 3 is the contemporary durable-LVAD evidence benchmark.'},
+  'ARIES-HM3':{kind:'Trial flashcard',title:'ARIES-HM3',rows:[
+    ['Population','628 HeartMate 3 recipients receiving vitamin-K-antagonist therapy.'],
+    ['Comparison','Aspirin versus placebo.'],
+    ['Main result','Aspirin avoidance was noninferior for hemocompatibility outcomes.'],
+    ['Safety','Aspirin avoidance reduced nonsurgical bleeding.']
+  ],takeaway:'In appropriate HeartMate 3 patients, routine aspirin may be unnecessary.'}
+};
+
+const TOPIC_FLASHCARDS=[
+  {keys:['lampoon','neo-lvot'],card:{kind:'Topic flashcard',title:'LAMPOON and TMVR LVOT Protection',rows:[
+    ['Mechanism','TMVR can displace the anterior mitral leaflet toward the septum and create dynamic LVOT obstruction.'],
+    ['LAMPOON','Electrosurgical laceration splits the anterior leaflet so blood can pass through the valve-frame cells.'],
+    ['Planning','CT-based neo-LVOT and skirt neo-LVOT assessment remain essential.'],
+    ['Pitfall','A successful leaflet laceration does not eliminate obstruction from the valve skirt.']
+  ],takeaway:'Identify the mechanism of predicted LVOT obstruction before selecting the prevention strategy.'}},
+  {keys:['valve-in-mac','vi-mac','mitral annular calcification'],card:{kind:'Topic flashcard',title:'Valve-in-MAC TMVR',rows:[
+    ['Challenge','Irregular calcium can impair anchoring and sealing while increasing embolization, PVL and LVOT-obstruction risk.'],
+    ['Planning','CT evaluates annular geometry, calcium distribution, landing zone and neo-LVOT.'],
+    ['Bailout planning','LAMPOON, septal reduction, closure devices or surgery may be needed.'],
+    ['Evidence','Technical MR elimination can coexist with substantial early mortality in prohibitive-risk cohorts.']
+  ],takeaway:'Valve-in-MAC is an anatomic-risk procedure, not simply valve-in-valve in a calcified ring.'}},
+  {keys:['tmvr','transcatheter mitral valve replacement','tendyne','intrepid'],card:{kind:'Topic flashcard',title:'Transcatheter Mitral Valve Replacement',rows:[
+    ['Goal','Replace rather than repair the native mitral valve and achieve near-complete MR elimination.'],
+    ['Planning','CT annular sizing, access trajectory, anchoring, PVL risk and neo-LVOT prediction are mandatory.'],
+    ['Trade-off','More complete MR abolition versus larger devices, thrombosis risk, LVOT obstruction and limited long-term evidence.'],
+    ['Selection','Best considered when repair is unsuitable and anatomy/device programme is appropriate.']
+  ],takeaway:'TMVR success requires both device implantation and acceptable post-implant physiology.'}},
+  {keys:['m-teer','teer','mitraclip','pascal','edge-to-edge'],card:{kind:'Topic flashcard',title:'Mitral Transcatheter Edge-to-Edge Repair',rows:[
+    ['Mechanism','Approximates anterior and posterior leaflets to reduce regurgitant orifice area.'],
+    ['Anatomic goals','Secure leaflet insertion, meaningful MR reduction, acceptable residual valve area and gradient.'],
+    ['Selection','Primary MR depends mainly on surgical risk and anatomy; secondary MR also requires optimized HF therapy and response-profile selection.'],
+    ['Failure modes','Residual MR, single-leaflet device attachment, leaflet injury and iatrogenic mitral stenosis.']
+  ],takeaway:'TEER is successful only when MR reduction is durable without creating a prohibitive gradient.'}},
+  {keys:['percutaneous mitral commissurotomy','pmc','rheumatic mitral stenosis','commissurotomy'],card:{kind:'Topic flashcard',title:'Percutaneous Mitral Commissurotomy',rows:[
+    ['Mechanism','Balloon splitting of fused rheumatic commissures.'],
+    ['Favourable anatomy','Commissural fusion with limited calcification and subvalvular disease, no LA thrombus and no more than mild MR.'],
+    ['Avoid','Nonrheumatic calcific stenosis, significant MR, LA thrombus or anatomy unlikely to split safely.'],
+    ['Complications','Severe MR, tamponade, embolism and residual ASD.']
+  ],takeaway:'PMC treats commissural fusion; it does not debulk degenerative calcium.'}},
+  {keys:['primary mr','degenerative mr','dmr'],card:{kind:'Topic flashcard',title:'Severe Primary Mitral Regurgitation',rows:[
+    ['Trigger','Symptoms, LV dysfunction, pulmonary hypertension, new AF and progressive remodelling can justify intervention.'],
+    ['LV thresholds','LVEF ≤60% or LVESD ≥40 mm already represents an intervention trigger in chronic severe primary MR.'],
+    ['Preferred therapy','Durable surgical repair at an expert centre when operative risk is acceptable.'],
+    ['Transcatheter role','TEER is mainly for high/prohibitive surgical risk with favourable anatomy.']
+  ],takeaway:'A “normal-looking” EF can already indicate LV dysfunction in chronic primary MR.'}},
+  {keys:['atrial secondary mr','atrial smr','atrial functional mr'],card:{kind:'Topic flashcard',title:'Atrial Secondary Mitral Regurgitation',rows:[
+    ['Phenotype','Annular and atrial dilatation with relatively preserved LV geometry and function.'],
+    ['Mechanisms','AF, LA enlargement and annular dilatation dominate more than ventricular tethering.'],
+    ['Treatment logic','Rhythm strategy, annular reduction and LAA management may be relevant.'],
+    ['Evidence gap','COAPT-style ventricular-SMR evidence should not be transferred automatically.']
+  ],takeaway:'Identify whether the ventricle or the atrium is driving secondary MR.'}},
+  {keys:['secondary mr','functional mr','smr'],card:{kind:'Topic flashcard',title:'Ventricular Secondary Mitral Regurgitation',rows:[
+    ['First treatment','Maximally tolerated HF therapy, CRT when indicated and revascularization assessment.'],
+    ['TEER candidates','Persistent severe MR, suitable anatomy, meaningful symptoms/events and a plausible COAPT-like response profile.'],
+    ['Poor-response signals','Extreme LV disease, severe RV failure/PH, incomplete GDMT and major competing mortality.'],
+    ['Principle','MR is both a lesion and a marker of ventricular disease.']
+  ],takeaway:'Treat the ventricle first, then decide whether correcting MR changes prognosis.'}},
+  {keys:['single-leaflet','slda'],card:{kind:'Topic flashcard',title:'Single-Leaflet Device Attachment',rows:[
+    ['Definition','Loss of secure attachment to one leaflet after TEER.'],
+    ['Clues','Recurrent eccentric MR, excessive device motion and absent leaflet insertion on TEE.'],
+    ['Causes','Inadequate grasp, leaflet tear, short leaflet, excessive tension or tissue fragility.'],
+    ['Management','Depends on stability and anatomy: additional device, surgery or transcatheter replacement.']
+  ],takeaway:'Confirm independent leaflet insertion before release; prevention is easier than bailout.'}},
+  {keys:['mitral gradient','iatrogenic mitral stenosis','mva'],card:{kind:'Topic flashcard',title:'Post-TEER Mitral Gradient',rows:[
+    ['Why it rises','Multiple devices and reduced residual valve area create functional mitral stenosis.'],
+    ['Assessment','Integrate mean gradient, heart rate, flow state, valve area and symptoms.'],
+    ['Prevention','Measure baseline area/gradient and reassess after each grasp before adding another device.'],
+    ['Trade-off','Do not pursue trivial MR at the cost of clinically important obstruction.']
+  ],takeaway:'The optimal TEER result balances residual MR against residual valve area.'}},
+  {keys:['intermediate lm','ivus mla','ffr','ifr'],card:{kind:'Topic flashcard',title:'Intermediate Left-Main Assessment',rows:[
+    ['Problem','Angiography is unreliable because the LM is short, foreshortened and vulnerable to pressure damping.'],
+    ['IVUS','MLA ≥6.0 mm² generally supports deferral in appropriate populations; 4.5–6.0 mm² is a grey zone.'],
+    ['Physiology','FFR ≤0.80 or iFR ≤0.89 supports significance when technically reliable.'],
+    ['Pitfalls','Downstream disease, drift, catheter damping and microvascular dysfunction can distort pressure indices.']
+  ],takeaway:'Use a hybrid anatomic–physiologic strategy rather than visual estimation alone.'}},
+  {keys:['pci versus cabg','pci vs cabg','syntax','complete revascularization'],card:{kind:'Topic flashcard',title:'Left Main PCI versus CABG',rows:[
+    ['CABG strength','Greater durability with less spontaneous MI and repeat revascularization.'],
+    ['PCI role','Reasonable when anatomic complexity is low/intermediate and equivalent complete revascularization is feasible.'],
+    ['Complexity','SYNTAX ≤22 supports PCI as an alternative; 23–32 requires careful selection; ≥33 generally favours CABG when feasible.'],
+    ['Decision','Heart Team integrates surgical risk, diabetes, LV function, completeness, DAPT and patient preference.']
+  ],takeaway:'The question is not “which procedure is better?” but “which strategy is durable and complete for this patient?”'}},
+  {keys:['dk crush','dkcrush','two-stent'],card:{kind:'Topic flashcard',title:'DK Crush for Distal Left Main',rows:[
+    ['Best fit','Complex true distal LM with long/severe LCx disease and unreliable provisional bailout.'],
+    ['Core sequence','LCx stent with controlled protrusion → crush → first rewiring/kiss → LM-LAD stent/POT → second rewiring/kiss → re-POT.'],
+    ['Strength','Strongest dedicated randomized outcome evidence among planned two-stent LM strategies.'],
+    ['Pitfall','Benefit depends on disciplined execution and should not be generalized to simple bifurcations.']
+  ],takeaway:'Use anatomy to select DK crush; do not use the trial name to select anatomy.'}},
+  {keys:['provisional stent','provisional strategy','lm-to-lad'],card:{kind:'Topic flashcard',title:'Stepwise Provisional Left-Main Stenting',rows:[
+    ['Default use','Noncomplex distal LM where LCx disease is short, less severe and easily rewired.'],
+    ['Sequence','Wire both branches → LM-LAD crossover → POT → reassess LCx → treat only if compromised.'],
+    ['Bailout triggers','Flow loss, dissection, severe residual stenosis with ischemia or failed balloon result.'],
+    ['Finish','If the side branch is treated, kissing inflation followed by re-POT is reproducible.']
+  ],takeaway:'Provisional means planned stepwise escalation—not neglect of the LCx.'}},
+  {keys:['proximal optimization','pot'],card:{kind:'Topic flashcard',title:'Proximal Optimization Technique',rows:[
+    ['Purpose','Correct proximal malapposition, restore bifurcation geometry and improve side-branch cell access.'],
+    ['Sizing','Short NC balloon approximately 1:1 to the proximal LM reference.'],
+    ['Position','The distal balloon marker should remain proximal to the carina.'],
+    ['Re-POT','Repeat after side-branch dilation or kissing to correct proximal deformation.']
+  ],takeaway:'POT is a geometric correction step, not cosmetic post-dilatation.'}},
+  {keys:['ivus','oct','intravascular imaging'],card:{kind:'Topic flashcard',title:'Imaging-Guided Complex PCI',rows:[
+    ['Before PCI','Define plaque distribution, calcium, reference size, landing zones and branch involvement.'],
+    ['After PCI','Assess expansion, apposition, edges, branch ostia and mechanism of any residual problem.'],
+    ['IVUS strength','Large-vessel sizing, deep calcium, ostial imaging and low-contrast use.'],
+    ['OCT strength','High-resolution strut, edge and three-dimensional bifurcation assessment when blood clearance is feasible.']
+  ],takeaway:'Imaging improves outcomes only when its findings change treatment.'}},
+  {keys:['iABP','intra-aortic balloon'],card:{kind:'Topic flashcard',title:'Intra-Aortic Balloon Pump',rows:[
+    ['Mechanism','Inflation at aortic-valve closure augments diastolic pressure; pre-systolic deflation reduces LV afterload.'],
+    ['Support','Modest and dependent on native ejection, rhythm and vascular tone.'],
+    ['Avoid','Moderate–severe AR, aortic dissection and prohibitive aorto-iliac disease.'],
+    ['Evidence','Routine AMI-CS and default early HF-CS strategies are neutral; selected bridges remain physiologically rational.']
+  ],takeaway:'IABP is a counterpulsation device—not a full-flow pump.'}},
+  {keys:['impella rp','right ventricular pump'],card:{kind:'Topic flashcard',title:'Impella RP',rows:[
+    ['Flow path','IVC/RA inlet to main PA outlet across the tricuspid and pulmonic valves.'],
+    ['Goal','Reduce RAP and raise pulmonary flow, LV preload and systemic output.'],
+    ['Prerequisites','A pulmonary bed and LV capable of accepting the delivered flow.'],
+    ['Risk','Pulmonary edema if the LV cannot accept the increased preload.']
+  ],takeaway:'An RV pump can fail by overloading the left heart.'}},
+  {keys:['impella cp','microaxial pump','transvalvular'],card:{kind:'Topic flashcard',title:'Impella CP',rows:[
+    ['Architecture','Catheter-mounted microaxial pump with LV inlet and ascending-aortic outlet.'],
+    ['Position','Inlet about 3.5 cm below the aortic annulus; outlet above the valve.'],
+    ['Physiology','Direct LV unloading and forward flow; preload dependent and afterload sensitive.'],
+    ['Main hazards','Bleeding, limb ischemia, hemolysis, suction, malposition and renal injury.']
+  ],takeaway:'High displayed support is not success if RV preload is inadequate or hemolysis is rising.'}},
+  {keys:['tandemheart'],card:{kind:'Topic flashcard',title:'TandemHeart',rows:[
+    ['Architecture','21 F transseptal LA drainage to an extracorporeal centrifugal pump with arterial return.'],
+    ['Support','Approximately 4–5 L/min with direct LA/LV unloading without crossing the aortic valve.'],
+    ['Requirements','Adequate RV output, pulmonary oxygenation, transseptal expertise and large-bore vascular access.'],
+    ['Hazards','Tamponade, air embolism, bleeding, limb ischemia, hemolysis and residual ASD.']
+  ],takeaway:'TandemHeart can deliver high flow only if the RV and lungs fill the left atrium.'}},
+  {keys:['va-ecmo','ecls','ecmo'],card:{kind:'Topic flashcard',title:'Peripheral VA-ECMO',rows:[
+    ['Architecture','Venous drainage → extracorporeal pump/oxygenator → retrograde arterial return.'],
+    ['Strength','Rapid full cardiopulmonary support for selected biventricular, hypoxemic or arrest phenotypes.'],
+    ['Counter-physiology','Raises LV afterload and can cause closed aortic valve, LV distension, pulmonary edema and root stasis.'],
+    ['Surveillance','Distal limb perfusion, right-radial oxygenation and early LV-unloading triggers.']
+  ],takeaway:'VA-ECMO restores systemic flow but may worsen the left ventricle.'}},
+  {keys:['protekduo'],card:{kind:'Topic flashcard',title:'ProtekDuo',rows:[
+    ['Architecture','29/31 F dual-lumen RIJ cannula: proximal RA drainage and distal main-PA return.'],
+    ['Use','Percutaneous RV bypass with potential mobilization; add an oxygenator for V-P support.'],
+    ['Risks','Migration, PA/RV injury, neck bleeding, hemolysis and LV overload.'],
+    ['Evidence','Heterogeneous observational cohorts without a pivotal mortality RCT.']
+  ],takeaway:'Position is the procedure; migration is a continuing hazard.'}},
+  {keys:['centrimag'],card:{kind:'Topic flashcard',title:'CentriMag',rows:[
+    ['Architecture','Magnetically levitated extracorporeal centrifugal pump with surgical cannulation.'],
+    ['Configurations','LVAD, RVAD, BiVAD or ECMO depending on drainage and return sites.'],
+    ['Strength','Flexible high-flow bridge for postcardiotomy or complex biventricular failure.'],
+    ['Evidence','Regulatory indication and cohort data, not randomized mortality superiority.']
+  ],takeaway:'Cannula configuration determines which ventricle is supported.'}},
+  {keys:['heartmate 3','durable lvad'],card:{kind:'Topic flashcard',title:'HeartMate 3 Durable LVAD',rows:[
+    ['Architecture','Fully magnetically levitated centrifugal pump with apical inflow, aortic outflow graft and driveline.'],
+    ['Guideline role','Class I, LOE A for selected advanced HFrEF dependent on continuous inotropes or temporary MCS.'],
+    ['Selection','RV reserve, end-organ reversibility, anticoagulation, infection risk and psychosocial support are decisive.'],
+    ['Emergencies','Right HF, bleeding, stroke, hemolysis/thrombosis, AR, infection and inflow/outflow obstruction.']
+  ],takeaway:'Patient and RV selection are as important as the pump.'}},
+  {keys:['cardiac power output','cpo'],card:{kind:'Topic flashcard',title:'Cardiac Power Output',rows:[
+    ['Formula','CPO = MAP × cardiac output / 451, expressed in watts.'],
+    ['Meaning','Integrates pressure and flow into a global hydraulic-power measure.'],
+    ['Risk signal','Values below roughly 0.6 W are high-risk in AMI-CS.'],
+    ['Use','Follow trends and phenotype; do not use one cut-off as an automatic device prescription.']
+  ],takeaway:'A satisfactory MAP can conceal critically low flow and power.'}},
+  {keys:['papi','pulmonary artery pulsatility'],card:{kind:'Topic flashcard',title:'Pulmonary Artery Pulsatility Index',rows:[
+    ['Formula','PAPi = (PASP − PADP) / RAP.'],
+    ['Meaning','Relates PA pulse pressure to right-sided filling pressure.'],
+    ['Use','Low values support RV-predominant failure and help assess RV recovery/weaning.'],
+    ['Caveat','Useful thresholds vary by AMI-RV, post-LVAD and other clinical settings.']
+  ],takeaway:'PAPi is a contextual RV signal—not a universal binary threshold.'}},
+  {keys:['harlequin','north–south','differential hypoxemia'],card:{kind:'Topic flashcard',title:'Differential Hypoxemia on VA-ECMO',rows:[
+    ['Mechanism','Recovering LV ejects poorly oxygenated pulmonary blood into the proximal aorta while retrograde ECMO blood perfuses the lower body.'],
+    ['Detection','Right-radial arterial line and right-hand ABG/SpO₂.'],
+    ['First steps','Optimize lungs, oxygenator and flow/mixing conditions.'],
+    ['Escalation','Redirect oxygenated return toward the upper body with V-AV, axillary or central return.']
+  ],takeaway:'A normal femoral saturation can coexist with coronary and cerebral hypoxemia.'}},
+  {keys:['lv unloading','closed aortic valve','aortic-root stasis','ecpella','ecmella'],card:{kind:'Topic flashcard',title:'LV Unloading During VA-ECMO',rows:[
+    ['Triggers','Absent/rare aortic-valve opening, rising PCWP, LV distension, pulmonary edema or root stasis.'],
+    ['Correct first','Avoid excessive ECMO flow, treat hypertension, optimize rhythm/inotropy and ventilation.'],
+    ['Devices','IABP, Impella, atrial septostomy/LA vent or surgical LV vent.'],
+    ['Evidence','Observational mortality signals are confounded; unload for demonstrated pathophysiology.']
+  ],takeaway:'Use an explicit unloading target rather than a routine hybrid-device slogan.'}},
+  {keys:['suction','hemolysis'],card:{kind:'Topic flashcard',title:'Impella Suction and Hemolysis',rows:[
+    ['Immediate action','Reduce P-level and verify pump position.'],
+    ['Physiology check','Hypovolemia, RV failure, tamponade, high PEEP, arrhythmia or obstruction.'],
+    ['Hemolysis clues','Dark urine, rising plasma-free Hb/LDH, low haptoglobin and AKI.'],
+    ['Pitfall','Do not reflexively give fluid to a congested patient with RV failure.']
+  ],takeaway:'Suction is often a physiology alarm before it is a volume prescription.'}}
+];
+
+const TRIAL_NAME_ALIASES=[
+  ['iLITRO-EPIC07',['ilitro-epic07','ilitro','epic07']],
+  ['CTSN severe MR',['ctsn severe']],
+  ['CTSN moderate MR',['ctsn moderate']],
+  ['SYNTAX LM',['syntax lm','syntax subgroup']],
+  ['DanGer-Shock',['danger-shock','danger shock']],
+  ['IABP-SHOCK II',['iabp-shock ii']],
+  ['DKCRUSH VIII',['dkcrush viii']],
+  ['DKCRUSH-III',['dkcrush-iii']],
+  ['DKCRUSH-V',['dkcrush-v']],
+  ['CLASP IID',['clasp iid']],
+  ['LAMPOON IDE',['lampoon ide']],
+  ['MOMENTUM 3',['momentum 3']],
+  ['ARIES-HM3',['aries-hm3']],
+  ['CHIP-BCIS3',['chip-bcis3']],
+  ['STEMI-DTU',['stemi-dtu']],
+  ['RESHAPE-HF2',['reshape-hf2']],
+  ['MITRA-FR',['mitra-fr']],
+  ['EBC MAIN',['ebc main']],
+  ['DEFINITION II',['definition ii']],
+  ['RECOVER RIGHT',['recover right']],
+  ['ECMO-CS',['ecmo-cs']],
+  ['ECLS-SHOCK',['ecls-shock']],
+  ['ISAR-SHOCK',['isar-shock']],
+  ['PROTECT II',['protect ii']],
+  ['CRISP-AMI',['crisp-ami']],
+  ['Altshock-2',['altshock-2']],
+  ['REDUCE-FMR',['reduce-fmr']],
+  ['CHOICE-MI',['choice-mi']],
+  ['EVEREST II',['everest ii']],
+  ['PRECOMBAT',['precombat']],
+  ['SYNTAXES',['syntaxes']],
+  ['OCTOBER',['october']],
+  ['OPTIMAL',['optimal']],
+  ['EXCEL',['excel']],
+  ['NOBLE',['noble']],
+  ['LITRO',['litro']],
+  ['COAPT',['coapt']],
+  ['MATTERHORN',['matterhorn']],
+  ['SUMMIT',['summit']],
+  ['APOLLO',['apollo']],
+  ['IMPRESS',['impress']],
+  ['BCIS-1',['bcis-1']],
+  ['EURO SHOCK',['euro shock']],
+  ['REMATCH',['rematch']]
+];
+
+const FLASHCARD_TRIAL_EXCLUSIONS=new Set([
+  'PCI','CABG','TEER','TMVR','MCS','ECMO','IABP','IVUS','OCT','FFR','IFR','LVEF','LVAD','RVAD',
+  'STEMI','AMI','ACS','ESC','ACC','AHA','SCAI','POT','MR','SMR','MAC','LVOT','GDMT','NYHA'
+]);
+
+function shortenFlashcardText(value,max=240){
+  const text=String(value||'').replace(/\s+/g,' ').trim();
+  return text.length<=max?text:text.slice(0,max-1).trim()+'…';
+}
+
+function detectFlashcardTrial(text){
+  const lower=String(text||'').toLowerCase();
+  for(const [canonical,aliases] of TRIAL_NAME_ALIASES){
+    if(aliases.some(alias=>lower.includes(alias))) return canonical;
+  }
+  const candidates=String(text||'').match(/\b(?:[A-Z][A-Z0-9-]{2,}(?:\s+(?:II|III|IV|V|VIII|MAIN|RIGHT|SHOCK|HF2|IDE|IID|MI|DTU|BCIS3))?|[A-Z][a-z]+-[A-Z][A-Za-z0-9-]+)\b/g)||[];
+  return candidates.find(name=>!FLASHCARD_TRIAL_EXCLUSIONS.has(name.toUpperCase()))||null;
+}
+
+function detectFlashcardTopic(text){
+  const lower=String(text||'').toLowerCase();
+  for(const rule of TOPIC_FLASHCARDS){
+    if(rule.keys.some(key=>lower.includes(key.toLowerCase()))) return rule.card;
+  }
+  return null;
+}
+
+function normalizeCustomFlashcard(card){
+  if(!card) return null;
+  if(typeof card==='string'){
+    return {kind:'Topic flashcard',title:'Key concept',rows:[['Core point',card]],takeaway:card};
+  }
+  return {
+    kind:card.kind||'Topic flashcard',
+    title:card.title||'Key concept',
+    rows:Array.isArray(card.rows)?card.rows:[],
+    takeaway:card.takeaway||''
+  };
+}
+
+function buildQuestionFlashcard(q){
+  const custom=normalizeCustomFlashcard(q.flashcard);
+  if(custom) return custom;
+
+  const source=[q.stem,q.answerText,q.correct,q.rationale,q.hint].filter(Boolean).join(' ');
+  const trial=detectFlashcardTrial(source);
+  if(trial&&TRIAL_FLASHCARDS[trial]) return TRIAL_FLASHCARDS[trial];
+
+  if(trial){
+    return {
+      kind:'Trial flashcard',
+      title:trial,
+      rows:[
+        ['Question tested',shortenFlashcardText(q.stem,220)],
+        ['Evidence pearl',shortenFlashcardText(q.rationale,260)],
+        ['Exam focus',shortenFlashcardText(q.hint||'Identify the population, comparator, primary endpoint and limitation.',220)]
+      ],
+      takeaway:'Quote only the population, endpoint and conclusion actually supported by the study.'
+    };
+  }
+
+  const topic=detectFlashcardTopic(source);
+  if(topic) return topic;
+
+  return {
+    kind:'Topic flashcard',
+    title:cfg().title,
+    rows:[
+      ['Main concept',shortenFlashcardText(q.rationale,270)],
+      ['Clinical frame',shortenFlashcardText(q.stem,220)],
+      ['Exam pearl',shortenFlashcardText(q.hint||'Link the mechanism to the evidence and the patient phenotype.',220)]
+    ],
+    takeaway:'Use the question rationale as the minimum high-yield fact to retain.'
+  };
+}
+
+function renderFlashcardRows(rows){
+  return (rows||[]).map(([label,value])=>
+    `<div class="flashcard-row"><div class="flashcard-label">${escapeHtml(label)}</div><div class="flashcard-value">${escapeHtml(value)}</div></div>`
+  ).join('');
+}
+
+function openFlashcard(){
+  if(!attempt.length||!attempt[current]||!answers[current]) return;
+  const q=attempt[current];
+  const card=buildQuestionFlashcard(q);
+  document.getElementById('flashcardKind').textContent=card.kind||'Topic flashcard';
+  document.getElementById('flashcardTitle').textContent=card.title||'Flashcard';
+  document.getElementById('flashcardRows').innerHTML=renderFlashcardRows(card.rows);
+  const takeaway=document.getElementById('flashcardTakeaway');
+  takeaway.innerHTML=`<b>Keep this:</b> ${escapeHtml(card.takeaway||q.rationale||'Review the central mechanism and evidence.')}`;
+  const pearl=document.getElementById('flashcardQuestionPearl');
+  pearl.innerHTML=`<b>This question’s pearl:</b> ${escapeHtml(q.rationale||'')}`;
+  const modal=document.getElementById('flashcardModal');
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('flashcard-open');
+  setTimeout(()=>modal.querySelector('.flashcard-close')?.focus(),30);
+}
+
+function closeFlashcard(){
+  const modal=document.getElementById('flashcardModal');
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+  document.body.classList.remove('flashcard-open');
+}
+
+function flashcardBackdropClose(event){
+  if(event.target===document.getElementById('flashcardModal')) closeFlashcard();
+}
+
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&document.getElementById('flashcardModal')?.classList.contains('show')){
+    closeFlashcard();
+  }
+});
+function renderQuestion(){closeFlashcard();const fc=document.getElementById('flashcardControl');if(fc)fc.className='flashcard-control';const q=attempt[current];submitted=false;selected=answers[current]?.selected??null;hintShown=answers[current]?.hintShown||false;document.getElementById('counter').textContent=`Question ${current+1} of ${attempt.length}`;document.getElementById('bar').style.width=`${(current/attempt.length)*100}%`;document.getElementById('difficulty').textContent=q.difficulty;document.getElementById('qid').textContent=`Bank Q${q.id}`;document.getElementById('stem').textContent=q.stem;const box=document.getElementById('options');box.innerHTML='';q.options.forEach((t,i)=>{const b=document.createElement('button');b.className='option'+(selected===i?' selected':'');b.innerHTML=`<b>${String.fromCharCode(65+i)}.</b> ${escapeHtml(t)}`;b.onclick=()=>selectOption(i,b);box.appendChild(b)});const hb=document.getElementById('hintBox');hb.className='hint-box';hb.innerHTML='';document.getElementById('hintBtn').disabled=false;if(hintShown)showHint(false);document.getElementById('feedback').className='feedback';document.getElementById('feedback').innerHTML='';document.getElementById('submitBtn').style.display='inline-block';document.getElementById('submitBtn').disabled=selected===null;document.getElementById('nextBtn').style.display='none'}
 function selectOption(i,b){if(submitted)return;selected=i;document.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');document.getElementById('submitBtn').disabled=false;saveProgress()}
 function showHint(save=true){const q=attempt[current],h=document.getElementById('hintBox');h.innerHTML=`<span class="hint-icon">💡</span><div><b>Hint</b><br>${escapeHtml(q.hint||'Focus on the clinical mechanism and the strongest evidence.')}</div>`;h.className='hint-box show';document.getElementById('hintBtn').disabled=true;hintShown=true;if(save)saveProgress()}
-function submitAnswer(){if(selected===null||submitted)return;submitted=true;const q=attempt[current],chosen=String.fromCharCode(65+selected),correct=chosen===q.answer;answers[current]={selected,correct,hintShown};document.querySelectorAll('.option').forEach((b,i)=>{b.disabled=true;if(String.fromCharCode(65+i)===q.answer)b.classList.add('correct');if(i===selected&&!correct)b.classList.add('incorrect')});const f=document.getElementById('feedback');f.innerHTML=`<b>${correct?'Correct.':'Incorrect.'}</b><br><b>Correct answer:</b> ${q.answer}. ${escapeHtml(q.answerText)}<br><b>Explanation:</b> ${escapeHtml(q.rationale)}`;f.className='feedback show';document.getElementById('submitBtn').style.display='none';const nb=document.getElementById('nextBtn');nb.style.display='inline-block';nb.textContent=current===attempt.length-1?'Finish quiz':'Next question';saveProgress()}
+function submitAnswer(){if(selected===null||submitted)return;submitted=true;const q=attempt[current],chosen=String.fromCharCode(65+selected),correct=chosen===q.answer;answers[current]={selected,correct,hintShown};document.querySelectorAll('.option').forEach((b,i)=>{b.disabled=true;if(String.fromCharCode(65+i)===q.answer)b.classList.add('correct');if(i===selected&&!correct)b.classList.add('incorrect')});const f=document.getElementById('feedback');f.innerHTML=`<b>${correct?'Correct.':'Incorrect.'}</b><br><b>Correct answer:</b> ${q.answer}. ${escapeHtml(q.answerText)}<br><b>Explanation:</b> ${escapeHtml(q.rationale)}`;f.className='feedback show';const fc=document.getElementById('flashcardControl');if(fc)fc.className='flashcard-control show';document.getElementById('submitBtn').style.display='none';const nb=document.getElementById('nextBtn');nb.style.display='inline-block';nb.textContent=current===attempt.length-1?'Finish quiz':'Next question';saveProgress()}
 function nextQuestion(){if(!submitted)return;if(current<attempt.length-1){current++;selected=null;hintShown=false;renderQuestion();saveProgress()}else finishQuiz()}
 function finishQuiz(){const score=answers.filter(a=>a&&a.correct).length;document.getElementById('resultTopic').textContent=cfg().title;document.getElementById('resultName').textContent=`Competitor: ${competitorName}`;document.getElementById('score').textContent=`${score} / ${attempt.length}`;document.getElementById('resultText').textContent=score>=17?'Excellent advanced-level performance.':score>=14?'Strong performance with targeted revision needed.':score>=10?'Good foundation; review missed mechanisms and evidence.':'Repeat the study guide before another attempt.';const r=document.getElementById('review');r.innerHTML='';attempt.forEach((q,i)=>{const a=answers[i],chosen=a?String.fromCharCode(65+a.selected):'—',ok=!!a?.correct,d=document.createElement('article');d.className='review-item'+(ok?' correct':'');d.innerHTML=`<h4>Q${i+1}. ${escapeHtml(q.stem)}</h4><div class="small"><b>Your answer:</b> ${chosen}${a?'. '+escapeHtml(q.options[a.selected]):' Not answered'}<br><b>Correct answer:</b> ${q.answer}. ${escapeHtml(q.answerText)}<br><b>Rationale:</b> ${escapeHtml(q.rationale)}</div>`;r.appendChild(d)});clearProgress();showScreen('results')}
 function saveProgress(){if(!attempt.length)return;localStorage.setItem(saveKey(),JSON.stringify({activeQuiz,competitorName,attempt,answers,current,selected,submitted,hintShown,updatedAt:new Date().toISOString()}))}
