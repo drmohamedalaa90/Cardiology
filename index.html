@@ -275,6 +275,14 @@ body.flashcard-open{overflow:hidden}
   .flashcard-body{padding:18px 20px 22px}
   .flashcard-row{grid-template-columns:1fr;gap:5px;padding:12px 0}
 }
+.flashcard-section{margin:0 0 22px;padding:0 0 18px;border-bottom:1px solid #dfe9f1}
+.flashcard-section:last-child{margin-bottom:0;border-bottom:0}
+.flashcard-section-title{margin:0 0 10px;color:var(--navy);font-size:1.13rem;font-weight:950;line-height:1.35}
+.flashcard-list{margin:0;padding-left:23px;color:#243b50}
+.flashcard-list li{margin:0 0 8px;line-height:1.6}
+.flashcard-list li:last-child{margin-bottom:0}
+.flashcard-dialog{width:min(830px,96vw)}
+.flashcard-body{font-size:1rem}
 </style></head><body>
 <header class="topbar"><div><div class="brand">ALEXANDRIA <b>CARDIOLOGY</b> LEAGUE</div><div class="season">THE EXPERT EDITION • Trial Literacy • Technical Reasoning</div></div><div>ACL</div></header>
 <main class="wrap">
@@ -810,7 +818,7 @@ const MCS_BANK=[{"difficulty":"Easy","stem":"A patient with SCAI stage D shock h
 const QUIZZES={ecg:{title:'ECG Rhythms Step by Step',passcode:'ecg2026',mode:'ecg'},lm:{title:'Left Main Interventions',passcode:'lm2026',bank:LM_BANK,mode:'quiz'},mitral:{title:'Mitral Valve Interventions',passcode:'mitral2026',bank:MITRAL_BANK,mode:'quiz'},mcs:{title:'Mechanical Circulatory Support',passcode:'mcs2026',bank:MCS_BANK,mode:'quiz'}};
 let activeQuiz='ecg',attempt=[],answers=[],current=0,selected=null,competitorName='',submitted=false,hintShown=false;
 const difficultyRank={Easy:1,Intermediate:2,Advanced:3};
-function cfg(){return QUIZZES[activeQuiz]} function saveKey(){return 'acl_'+activeQuiz+'_quiz_progress_expert_v3'}
+function cfg(){return QUIZZES[activeQuiz]} function saveKey(){return 'acl_'+activeQuiz+'_quiz_progress_expert_v4'}
 function resetAccessRequest(){
   const form=document.getElementById('accessRequestForm');
   const status=document.getElementById('accessStatus');
@@ -940,13 +948,13 @@ function startQuiz(){
 }
 function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 const ECG_STRIP_FLASHCARDS={
-  vf:{kind:'Topic flashcard',title:'Ventricular Fibrillation',rows:[
+  vf:{kind:'FLASHCARD',title:'Ventricular Fibrillation',rows:[
     ['Rhythm','Chaotic ventricular electrical activity without organized, reproducible QRS complexes.'],
     ['RCP suspicion point','R: the absence of any organized ventricular rhythm is already decisive; C and P add no useful diagnostic step.'],
     ['Clinical state','VF is a pulseless cardiac-arrest rhythm unless the tracing is artifact.'],
     ['Emergency treatment','High-quality CPR plus prompt unsynchronized defibrillation, with immediate CPR resumption after the shock.']
   ],takeaway:'Do not delay defibrillation for drug therapy or synchronized cardioversion.'},
-  vt:{kind:'Topic flashcard',title:'Sustained Monomorphic Ventricular Tachycardia',rows:[
+  vt:{kind:'FLASHCARD',title:'Sustained Monomorphic Ventricular Tachycardia',rows:[
     ['Rhythm','Regular organized wide-complex tachycardia with a stable QRS morphology.'],
     ['RCP suspicion point','C: QRS width and morphology raise the suspicion; P waves can provide supporting evidence.'],
     ['P-wave value','AV dissociation, capture beats and fusion beats strongly support VT, but their absence does not exclude it.'],
@@ -958,283 +966,281 @@ function openEcgFlashcard(){
   if(!activeEcgStripId) return;
   const strip=ECG_STRIPS[activeEcgStripId];
   const stage=strip.stages[ecgStage];
-  const card=ECG_STRIP_FLASHCARDS[activeEcgStripId]||{
-    kind:'Topic flashcard',
+  const baseCard=ECG_STRIP_FLASHCARDS[activeEcgStripId]||{
+    kind:'FLASHCARD',
     title:strip.title,
-    rows:[['Main concept',stage.success],['Question focus',stage.prompt]],
+    rows:[['Definition and recognition',stage.success],['Question focus',stage.prompt]],
     takeaway:stage.success
   };
-  document.getElementById('flashcardKind').textContent=card.kind||'Topic flashcard';
-  document.getElementById('flashcardTitle').textContent=card.title||strip.title;
-  document.getElementById('flashcardRows').innerHTML=renderFlashcardRows(card.rows);
-  document.getElementById('flashcardTakeaway').innerHTML=`<b>Keep this:</b> ${escapeHtml(card.takeaway||stage.success)}`;
-  document.getElementById('flashcardQuestionPearl').innerHTML=`<b>This question’s pearl:</b> ${escapeHtml(stage.success||'')}`;
-  const modal=document.getElementById('flashcardModal');
-  modal.classList.add('show');
-  modal.setAttribute('aria-hidden','false');
-  document.body.classList.add('flashcard-open');
-  setTimeout(()=>modal.querySelector('.flashcard-close')?.focus(),30);
+  const q={
+    stem:stage.prompt,
+    rationale:stage.success,
+    hint:stage.retry,
+    correct:stage.correct,
+    answerText:stage.options.find(option=>option.value===stage.correct)?.text||stage.correct
+  };
+  presentDetailedFlashcard(baseCard,q);
 }
 const TRIAL_FLASHCARDS={
-  'COAPT':{kind:'Trial flashcard',title:'COAPT',rows:[
+  'COAPT':{kind:'TRIAL FLASHCARD',title:'COAPT',rows:[
     ['Population','614 symptomatic HF patients with severe ventricular secondary MR despite maximally tolerated GDMT; strict anatomic and clinical selection.'],
     ['Comparison','M-TEER plus GDMT versus GDMT alone.'],
     ['Main result','Reduced HF hospitalization and all-cause mortality, with benefit sustained through 5 years.'],
     ['Translation','The treatment strategy included optimized HF care, suitable anatomy, limited competing RV/PH disease, and durable MR reduction.']
   ],takeaway:'COAPT is a patient-selection and HF-optimization trial as much as a device trial.'},
-  'MITRA-FR':{kind:'Trial flashcard',title:'MITRA-FR',rows:[
+  'MITRA-FR':{kind:'TRIAL FLASHCARD',title:'MITRA-FR',rows:[
     ['Population','304 HF patients using European MR thresholds, generally with more advanced LV dilatation.'],
     ['Comparison','M-TEER plus medical therapy versus medical therapy alone.'],
     ['Main result','No significant reduction in death or HF hospitalization.'],
     ['Translation','A neutral result in a later-stage phenotype does not negate benefit in every secondary-MR population.']
   ],takeaway:'Compare disease stage, GDMT, RV/PH status and procedural MR reduction—not EROA alone.'},
-  'RESHAPE-HF2':{kind:'Trial flashcard',title:'RESHAPE-HF2',rows:[
+  'RESHAPE-HF2':{kind:'TRIAL FLASHCARD',title:'RESHAPE-HF2',rows:[
     ['Population','505 symptomatic HF patients with functional MR across a broader MR-severity spectrum than COAPT.'],
     ['Comparison','M-TEER plus GDMT versus GDMT alone.'],
     ['Main result','Benefit on recurrent HF hospitalization/CV-death composite and health status.'],
     ['Limit','It should not be quoted as an identical mortality replication of COAPT.']
   ],takeaway:'RESHAPE-HF2 broadens the event and quality-of-life evidence base for TEER.'},
-  'MATTERHORN':{kind:'Trial flashcard',title:'MATTERHORN',rows:[
+  'MATTERHORN':{kind:'TRIAL FLASHCARD',title:'MATTERHORN',rows:[
     ['Population','208 surgery-eligible patients with secondary MR.'],
     ['Comparison','M-TEER versus mitral surgery.'],
     ['Main result','One-year noninferiority for a composite efficacy endpoint.'],
     ['Limit','Limited sample and follow-up; not proof of universal long-term superiority.']
   ],takeaway:'MATTERHORN supports TEER as an alternative in selected surgery-eligible SMR.'},
-  'EVEREST II':{kind:'Trial flashcard',title:'EVEREST II',rows:[
+  'EVEREST II':{kind:'TRIAL FLASHCARD',title:'EVEREST II',rows:[
     ['Population','Operable patients with significant MR in the early MitraClip era.'],
     ['Comparison','Percutaneous edge-to-edge repair versus surgery.'],
     ['Main result','Lower early procedural morbidity but less complete/durable MR elimination; many failures led to early surgery.'],
     ['Translation','Separate procedural safety from durable valve efficacy.']
   ],takeaway:'EVEREST II established the safety–efficacy trade-off of early TEER versus surgery.'},
-  'CLASP IID':{kind:'Trial flashcard',title:'CLASP IID',rows:[
+  'CLASP IID':{kind:'TRIAL FLASHCARD',title:'CLASP IID',rows:[
     ['Population','Prohibitive-risk degenerative MR with suitable TEER anatomy.'],
     ['Comparison','PASCAL versus MitraClip.'],
     ['Main result','Noninferiority for prespecified safety and effectiveness outcomes.'],
     ['Translation','Supports platform tailoring in high-risk DMR, not replacement of surgery in low-risk repairable disease.']
   ],takeaway:'Platform choice follows anatomy and operator strategy; indication still follows patient risk.'},
-  'CTSN severe MR':{kind:'Trial flashcard',title:'CTSN Severe Ischaemic MR',rows:[
+  'CTSN severe MR':{kind:'TRIAL FLASHCARD',title:'CTSN Severe Ischaemic MR',rows:[
     ['Population','Severe ischaemic MR requiring surgery.'],
     ['Comparison','Restrictive repair versus chordal-sparing replacement.'],
     ['Main result','Replacement produced more durable valve competence; survival and reverse remodelling were not improved.'],
     ['Translation','Marked tethering raises recurrent-MR risk after restrictive annuloplasty.']
   ],takeaway:'Durability—not a proven survival advantage—is the principal argument for replacement in advanced tethering.'},
-  'CTSN moderate MR':{kind:'Trial flashcard',title:'CTSN Moderate Ischaemic MR',rows:[
+  'CTSN moderate MR':{kind:'TRIAL FLASHCARD',title:'CTSN Moderate Ischaemic MR',rows:[
     ['Population','Moderate ischaemic MR undergoing CABG.'],
     ['Comparison','CABG alone versus CABG plus mitral repair.'],
     ['Main result','Better MR reduction with repair, without a clear clinical or remodelling advantage and with added procedural burden.'],
     ['Translation','Routine repair during CABG is not automatically beneficial.']
   ],takeaway:'Valve competence is a surrogate; the added operation must improve patient-centred outcomes.'},
-  'REDUCE-FMR':{kind:'Trial flashcard',title:'REDUCE-FMR',rows:[
+  'REDUCE-FMR':{kind:'TRIAL FLASHCARD',title:'REDUCE-FMR',rows:[
     ['Population','Functional MR treated with indirect coronary-sinus annuloplasty.'],
     ['Comparison','Carillon therapy versus sham control.'],
     ['Main result','Reduced regurgitant volume and favourable LV-remodelling signals.'],
     ['Limit','No definitive hard-outcome or mortality superiority.']
   ],takeaway:'Do not promote a positive remodelling endpoint into a mortality claim.'},
-  'LAMPOON IDE':{kind:'Trial flashcard',title:'LAMPOON IDE',rows:[
+  'LAMPOON IDE':{kind:'TRIAL FLASHCARD',title:'LAMPOON IDE',rows:[
     ['Question','Can intentional anterior mitral-leaflet laceration reduce TMVR-related LVOT obstruction risk?'],
     ['Strategy','Electrosurgical leaflet laceration before TMVR in selected high-risk anatomy.'],
     ['Main result','Expanded feasibility in patients otherwise considered prohibitive for TMVR.'],
     ['Residual risk','The covered valve skirt can still create a small skirt neo-LVOT.']
   ],takeaway:'LAMPOON addresses leaflet displacement; it does not eliminate all LVOT-obstruction mechanisms.'},
-  'CHOICE-MI':{kind:'Trial flashcard',title:'CHOICE-MI',rows:[
+  'CHOICE-MI':{kind:'TRIAL FLASHCARD',title:'CHOICE-MI',rows:[
     ['Design','Multidevice TMVR registry in highly selected, high-risk patients.'],
     ['Technical result','Very high rates of MR elimination.'],
     ['Clinical result','Meaningful early and midterm mortality remained.'],
     ['Translation','Technical device success is not equivalent to clinical benefit.']
   ],takeaway:'TMVR programmes must report survival and complications—not only MR abolition.'},
-  'SUMMIT':{kind:'Trial flashcard',title:'SUMMIT',rows:[
+  'SUMMIT':{kind:'TRIAL FLASHCARD',title:'SUMMIT',rows:[
     ['Programme','Tendyne TMVR programme with distinct cohorts, including MAC and non-MAC populations.'],
     ['Interpretation','Results depend on the specific cohort and comparator.'],
     ['Trap','The programme name alone does not establish a single randomized comparison.'],
     ['Use','Quote published cohort-specific eligibility, endpoints and outcomes.']
   ],takeaway:'Always identify which SUMMIT cohort is being discussed.'},
-  'APOLLO':{kind:'Trial flashcard',title:'APOLLO',rows:[
+  'APOLLO':{kind:'TRIAL FLASHCARD',title:'APOLLO',rows:[
     ['Programme','Intrepid TMVR clinical programme with evolving access routes and cohorts.'],
     ['Interpretation','Published cohort-specific evidence must be separated from programme-level claims.'],
     ['Trap','Do not claim survival superiority over TEER without a direct published comparison.'],
     ['Use','State access route, population and study design before quoting an outcome.']
   ],takeaway:'A device programme is not automatically a randomized comparative trial.'},
-  'LITRO':{kind:'Trial flashcard',title:'LITRO',rows:[
+  'LITRO':{kind:'TRIAL FLASHCARD',title:'LITRO',rows:[
     ['Population','354 patients with visually intermediate left-main stenosis.'],
     ['Strategy','Prospective IVUS-guided deferral using MLA ≥6.0 mm².'],
     ['Main result','Excellent 2-year cardiac-death-free survival when deferral criteria were met.'],
     ['Translation','The 6-mm² value is a diagnostic deferral threshold—not a post-stent MSA target.']
   ],takeaway:'Use LITRO before PCI to adjudicate significance, not after PCI to judge expansion.'},
-  'iLITRO-EPIC07':{kind:'Trial flashcard',title:'iLITRO-EPIC07',rows:[
+  'iLITRO-EPIC07':{kind:'TRIAL FLASHCARD',title:'iLITRO-EPIC07',rows:[
     ['Population','300 angiographically intermediate LM lesions.'],
     ['Strategy','Structured hybrid iFR/IVUS assessment.'],
     ['Main lesson','Deferral was feasible, but FFR–iFR discordance required technical review and IVUS integration.'],
     ['Translation','Do not force discordant physiology into a single-index hierarchy.']
   ],takeaway:'Hybrid adjudication is a troubleshooting strategy, not simple averaging.'},
-  'EXCEL':{kind:'Trial flashcard',title:'EXCEL',rows:[
+  'EXCEL':{kind:'TRIAL FLASHCARD',title:'EXCEL',rows:[
     ['Population','1,905 LM patients with low/intermediate site-assessed anatomic complexity.'],
     ['Comparison','Everolimus-DES PCI versus CABG.'],
     ['Five-year result','Death/stroke/MI 22.0% versus 19.2%, without a significant difference; repeat revascularization was higher after PCI.'],
     ['Caveat','Endpoint definitions, mortality interpretation and selected anatomy remain central.']
   ],takeaway:'EXCEL supports selected-patient comparability—not universal PCI/CABG interchangeability.'},
-  'NOBLE':{kind:'Trial flashcard',title:'NOBLE',rows:[
+  'NOBLE':{kind:'TRIAL FLASHCARD',title:'NOBLE',rows:[
     ['Population','1,201 randomized LM patients; anticipated complex two-stent lesions were excluded.'],
     ['Comparison','PCI versus CABG.'],
     ['Five-year result','MACE 28% versus 19%, driven mainly by nonprocedural MI and repeat revascularization; mortality was similar.'],
     ['Caveat','Its endpoint excluded periprocedural MI and included repeat revascularization.']
   ],takeaway:'NOBLE highlights CABG durability and the importance of endpoint construction.'},
-  'PRECOMBAT':{kind:'Trial flashcard',title:'PRECOMBAT',rows:[
+  'PRECOMBAT':{kind:'TRIAL FLASHCARD',title:'PRECOMBAT',rows:[
     ['Population','600 LM patients in an earlier DES era.'],
     ['Comparison','Sirolimus-DES PCI versus CABG.'],
     ['Ten-year result','MACCE 29.8% versus 24.7%; death similar, target-vessel revascularization higher after PCI.'],
     ['Limit','Underpowered for small differences in hard endpoints.']
   ],takeaway:'PRECOMBAT adds long-term durability evidence, not a definitive mortality verdict.'},
-  'SYNTAX LM':{kind:'Trial flashcard',title:'SYNTAX Left-Main Subgroup',rows:[
+  'SYNTAX LM':{kind:'TRIAL FLASHCARD',title:'SYNTAX Left-Main Subgroup',rows:[
     ['Population','705 LM patients from the SYNTAX trial using first-generation paclitaxel DES.'],
     ['Five-year result','MACCE 36.9% after PCI versus 31.0% after CABG.'],
     ['Pattern','Less stroke but more repeat revascularization after PCI.'],
     ['Translation','Anatomic complexity modifies the PCI–CABG trade-off.']
   ],takeaway:'Do not extrapolate older low-complexity PCI data to SYNTAX ≥33 anatomy.'},
-  'SYNTAXES':{kind:'Trial flashcard',title:'SYNTAXES',rows:[
+  'SYNTAXES':{kind:'TRIAL FLASHCARD',title:'SYNTAXES',rows:[
     ['Design','Ten-year survival extension of SYNTAX.'],
     ['LM result','All-cause death 26% after PCI versus 28% after CABG; no significant survival difference.'],
     ['Limit','Survival-only extension using first-generation DES.'],
     ['Translation','Long-term mortality may be similar in selected LM patients while durability endpoints still differ.']
   ],takeaway:'Mortality similarity does not erase spontaneous-MI and repeat-revascularization differences.'},
-  'EBC MAIN':{kind:'Trial flashcard',title:'EBC MAIN',rows:[
+  'EBC MAIN':{kind:'TRIAL FLASHCARD',title:'EBC MAIN',rows:[
     ['Population','467 mainly noncomplex true LM bifurcations.'],
     ['Comparison','Stepwise provisional versus systematic dual-stent strategy.'],
     ['Result','The primary endpoint was not improved by systematic two stents; longer-term TLR favoured provisional treatment.'],
     ['Translation','Supports provisional stenting for the noncomplex anatomy actually enrolled.']
   ],takeaway:'EBC MAIN and DKCRUSH-V answer different anatomy questions.'},
-  'DKCRUSH-V':{kind:'Trial flashcard',title:'DKCRUSH-V',rows:[
+  'DKCRUSH-V':{kind:'TRIAL FLASHCARD',title:'DKCRUSH-V',rows:[
     ['Population','482 complex true distal LM bifurcations with longer/more severe LCx disease.'],
     ['Comparison','Planned DK crush versus provisional stenting.'],
     ['Three-year result','TLF 8.3% versus 16.9%, with fewer target-vessel MI, TLR and stent thrombosis.'],
     ['Translation','Benefit depends on complexity selection and expert DK execution.']
   ],takeaway:'Do not apply DKCRUSH-V to every Medina 1,1,1 lesion.'},
-  'DEFINITION II':{kind:'Trial flashcard',title:'DEFINITION II',rows:[
+  'DEFINITION II':{kind:'TRIAL FLASHCARD',title:'DEFINITION II',rows:[
     ['Population','660 DEFINITION-complex bifurcations; not all were LM.'],
     ['Comparison','Systematic two-stent strategy versus provisional treatment.'],
     ['One-year result','TLF 6.1% versus 11.4%.'],
     ['Translation','Supports complexity-based selection, with limited LM-specific certainty.']
   ],takeaway:'The complexity definition is the bridge from anatomy to strategy.'},
-  'DKCRUSH-III':{kind:'Trial flashcard',title:'DKCRUSH-III',rows:[
+  'DKCRUSH-III':{kind:'TRIAL FLASHCARD',title:'DKCRUSH-III',rows:[
     ['Population','419 distal LM bifurcations.'],
     ['Comparison','DK crush versus culotte.'],
     ['Three-year result','MACE 8.2% versus 23.7%, with less TVR and stent thrombosis after DK crush.'],
     ['Translation','Culotte may fit geometry, but DK crush has stronger randomized LM outcome data.']
   ],takeaway:'Technique choice should combine anatomy with comparative evidence.'},
-  'DKCRUSH VIII':{kind:'Trial flashcard',title:'DKCRUSH VIII',rows:[
+  'DKCRUSH VIII':{kind:'TRIAL FLASHCARD',title:'DKCRUSH VIII',rows:[
     ['Population','556 complex true bifurcations; 44% LM and 97% DK crush.'],
     ['Comparison','IVUS-guided versus angiography-guided PCI.'],
     ['One-year result','Target-vessel failure 6.0% versus 14.7%.'],
     ['Limit','The isolated LM subgroup was not separately powered.']
   ],takeaway:'Imaging benefit is strongest when findings change complex bifurcation execution.'},
-  'OCTOBER':{kind:'Trial flashcard',title:'OCTOBER',rows:[
+  'OCTOBER':{kind:'TRIAL FLASHCARD',title:'OCTOBER',rows:[
     ['Population','1,201 complex bifurcation PCI patients; approximately 18–19% had LM disease.'],
     ['Comparison','OCT-guided versus angiography-guided PCI.'],
     ['Two-year result','MACE 10.1% versus 14.1%; HR 0.70.'],
     ['Limit','Positive complex-bifurcation trial, not an LM-only trial.']
   ],takeaway:'Use OCT to improve bifurcation decisions—not merely to produce images.'},
-  'OPTIMAL':{kind:'Trial flashcard',title:'OPTIMAL',rows:[
+  'OPTIMAL':{kind:'TRIAL FLASHCARD',title:'OPTIMAL',rows:[
     ['Population','806 unprotected LM patients treated at expert centres.'],
     ['Comparison','Routine IVUS guidance versus angiography guidance.'],
     ['Result','No superiority for the patient-oriented composite over median 2.9 years.'],
     ['Translation','Neutral superiority does not prove imaging useless or equivalent in every high-value scenario.']
   ],takeaway:'Imaging benefit is context- and action-dependent.'},
-  'IABP-SHOCK II':{kind:'Trial flashcard',title:'IABP-SHOCK II',rows:[
+  'IABP-SHOCK II':{kind:'TRIAL FLASHCARD',title:'IABP-SHOCK II',rows:[
     ['Population','600 revascularized patients with AMI cardiogenic shock.'],
     ['Comparison','Routine IABP versus standard care.'],
     ['Result','30-day mortality 39.7% versus 41.3%; no six-year survival benefit.'],
     ['Translation','Routine use is not recommended without a specific physiologic or mechanical-complication indication.']
   ],takeaway:'Useful physiology does not equal routine survival benefit.'},
-  'DanGer-Shock':{kind:'Trial flashcard',title:'DanGer-Shock',rows:[
+  'DanGer-Shock':{kind:'TRIAL FLASHCARD',title:'DanGer-Shock',rows:[
     ['Population','355 analyzed patients with selected severe STEMI-CS; persistent coma after out-of-hospital arrest was excluded.'],
     ['Comparison','Impella CP plus standard care versus standard care.'],
     ['180-day result','Death 45.8% versus 58.5%; HR 0.74.'],
     ['Safety','Composite safety events 24.0% versus 6.2%; renal-replacement therapy 41.9% versus 26.7%.']
   ],takeaway:'The survival benefit supports selective—not universal—Impella CP use.'},
-  'IMPRESS':{kind:'Trial flashcard',title:'IMPRESS',rows:[
+  'IMPRESS':{kind:'TRIAL FLASHCARD',title:'IMPRESS',rows:[
     ['Population','48 patients with severe AMI-CS; approximately 92% had cardiac arrest.'],
     ['Comparison','Impella CP versus IABP.'],
     ['Result','30-day death 46% versus 50%; six-month mortality 50% in both groups.'],
     ['Limit','Very small, post-arrest-heavy and grossly underpowered for mortality.']
   ],takeaway:'Population and statistical power explain why IMPRESS cannot refute or reproduce DanGer-Shock.'},
-  'ISAR-SHOCK':{kind:'Trial flashcard',title:'ISAR-SHOCK',rows:[
+  'ISAR-SHOCK':{kind:'TRIAL FLASHCARD',title:'ISAR-SHOCK',rows:[
     ['Population','26 patients with AMI-CS.'],
     ['Comparison','Impella 2.5 versus IABP.'],
     ['Result','Greater 30-minute cardiac-index improvement with Impella; 30-day mortality 46% in both groups.'],
     ['Translation','Physiologic efficacy without survival proof.']
   ],takeaway:'A short-term hemodynamic endpoint cannot answer a mortality question.'},
-  'PROTECT II':{kind:'Trial flashcard',title:'PROTECT II',rows:[
+  'PROTECT II':{kind:'TRIAL FLASHCARD',title:'PROTECT II',rows:[
     ['Population','452 patients undergoing high-risk nonemergent PCI.'],
     ['Comparison','Impella 2.5 versus planned IABP.'],
     ['Primary result','The randomized 30-day major-adverse-event endpoint was neutral.'],
     ['Caveat','A later 90-day per-protocol signal is not definitive randomized superiority.']
   ],takeaway:'PROTECT II does not mandate prophylactic Impella for every high-risk PCI.'},
-  'CHIP-BCIS3':{kind:'Trial flashcard',title:'CHIP-BCIS3',rows:[
+  'CHIP-BCIS3':{kind:'TRIAL FLASHCARD',title:'CHIP-BCIS3',rows:[
     ['Population','300 patients with LVEF ≤35% and extensive CAD undergoing complex PCI.'],
     ['Comparison','Elective microaxial unloading versus standard care.'],
     ['Result','Win ratio 0.85; P=0.30—no improvement in major clinical outcomes.'],
     ['Translation','Contemporary evidence does not support routine elective unloading.']
   ],takeaway:'A permissive high-risk-PCI guideline recommendation is not a device mandate.'},
-  'STEMI-DTU':{kind:'Trial flashcard',title:'STEMI-DTU',rows:[
+  'STEMI-DTU':{kind:'TRIAL FLASHCARD',title:'STEMI-DTU',rows:[
     ['Population','527 anterior STEMI patients without cardiogenic shock.'],
     ['Comparison','Impella unloading followed by 30-minute reperfusion delay versus immediate reperfusion.'],
     ['Result','CMR infarct size 30.8% versus 31.9% of LV mass—no significant reduction.'],
     ['Safety','More access-site bleeding and vascular complications.']
   ],takeaway:'Routine delayed reperfusion after unloading is not supported.'},
-  'Altshock-2':{kind:'Trial flashcard',title:'Altshock-2',rows:[
+  'Altshock-2':{kind:'TRIAL FLASHCARD',title:'Altshock-2',rows:[
     ['Population','101 HF-CS patients eligible for heart-replacement therapy.'],
     ['Comparison','Early IABP versus standard strategy.'],
     ['Result','60-day survival/successful bridge 81% versus 75%; HR 0.72, P=0.45; stopped for futility.'],
     ['Translation','No default early-IABP bridge strategy.']
   ],takeaway:'A neutral strategy trial still allows carefully selected physiology-based use.'},
-  'CRISP-AMI':{kind:'Trial flashcard',title:'CRISP-AMI',rows:[
+  'CRISP-AMI':{kind:'TRIAL FLASHCARD',title:'CRISP-AMI',rows:[
     ['Population','337 anterior STEMI patients without shock.'],
     ['Comparison','Pre-PCI IABP versus PCI alone.'],
     ['Result','No reduction in MRI infarct size or six-month clinical benefit.'],
     ['Translation','No routine prophylactic IABP in nonshock anterior STEMI.']
   ],takeaway:'The device did not improve the infarct-size endpoint it was intended to modify.'},
-  'BCIS-1':{kind:'Trial flashcard',title:'BCIS-1',rows:[
+  'BCIS-1':{kind:'TRIAL FLASHCARD',title:'BCIS-1',rows:[
     ['Population','301 patients undergoing high-risk PCI.'],
     ['Comparison','Elective IABP versus no planned IABP.'],
     ['Primary result','The short-term primary endpoint was neutral.'],
     ['Follow-up','A later mortality signal is hypothesis-generating rather than definitive proof.']
   ],takeaway:'Respect the prespecified randomized primary endpoint.'},
-  'ECLS-SHOCK':{kind:'Trial flashcard',title:'ECLS-SHOCK',rows:[
+  'ECLS-SHOCK':{kind:'TRIAL FLASHCARD',title:'ECLS-SHOCK',rows:[
     ['Population','417 analyzed patients with infarct-related cardiogenic shock.'],
     ['Comparison','Routine early VA-ECLS versus control.'],
     ['Result','30-day death 47.8% versus 49.0%; P=0.81.'],
     ['Harm','Moderate/severe bleeding 23.4% versus 9.6%; vascular intervention 11.0% versus 3.8%.']
   ],takeaway:'Reject routine unselected AMI-CS use—not selected rescue for a bridgeable phenotype.'},
-  'ECMO-CS':{kind:'Trial flashcard',title:'ECMO-CS',rows:[
+  'ECMO-CS':{kind:'TRIAL FLASHCARD',title:'ECMO-CS',rows:[
     ['Population','117 patients with severe SCAI D/E cardiogenic shock.'],
     ['Comparison','Immediate VA-ECMO versus conservative management with bailout ECMO.'],
     ['Result','30-day composite 63.8% versus 71.2%; HR 0.72, not significant.'],
     ['Crossover','39% of controls received bailout ECMO.']
   ],takeaway:'The result supports a rescue-strategy model rather than automatic immediate deployment.'},
-  'EURO SHOCK':{kind:'Trial flashcard',title:'EURO SHOCK',rows:[
+  'EURO SHOCK':{kind:'TRIAL FLASHCARD',title:'EURO SHOCK',rows:[
     ['Population','35 patients with persistent AMI-CS; trial stopped early.'],
     ['Comparison','Early VA-ECMO versus standard care.'],
     ['Result','Numerically lower 30-day death, but not statistically significant.'],
     ['Safety','More bleeding and vascular harm.']
   ],takeaway:'EURO SHOCK is inconclusive and underpowered—not a positive mortality trial.'},
-  'RECOVER RIGHT':{kind:'Trial flashcard',title:'RECOVER RIGHT',rows:[
+  'RECOVER RIGHT':{kind:'TRIAL FLASHCARD',title:'RECOVER RIGHT',rows:[
     ['Design','Prospective multicentre single-arm study; n=30.'],
     ['Device','Impella RP for selected acute RV failure.'],
     ['Result','Cardiac index increased from 1.8 to 3.3 L/min/m²; 30-day survival 73.3%.'],
     ['Limit','No comparative control group.']
   ],takeaway:'Feasibility and hemodynamic benefit are not comparative survival proof.'},
-  'REMATCH':{kind:'Trial flashcard',title:'REMATCH',rows:[
+  'REMATCH':{kind:'TRIAL FLASHCARD',title:'REMATCH',rows:[
     ['Population','129 transplant-ineligible NYHA IV HF patients.'],
     ['Comparison','First-generation pulsatile LVAD versus medical therapy.'],
     ['Result','48% mortality-risk reduction; one-year survival 52% versus 25%.'],
     ['Trade-off','Major early-device morbidity remained substantial.']
   ],takeaway:'REMATCH established the survival principle of durable LVAD therapy.'},
-  'MOMENTUM 3':{kind:'Trial flashcard',title:'MOMENTUM 3',rows:[
+  'MOMENTUM 3':{kind:'TRIAL FLASHCARD',title:'MOMENTUM 3',rows:[
     ['Population','1,028 patients requiring durable LVAD support.'],
     ['Comparison','Fully magnetically levitated HeartMate 3 versus axial-flow HeartMate II.'],
     ['Main result','HeartMate 3 improved survival free of disabling stroke or pump reoperation and markedly reduced pump thrombosis.'],
     ['Five-year follow-up','Overall survival 58.4% versus 43.7%; extended follow-up became observational after the randomized phase.']
   ],takeaway:'HeartMate 3 is the contemporary durable-LVAD evidence benchmark.'},
-  'ARIES-HM3':{kind:'Trial flashcard',title:'ARIES-HM3',rows:[
+  'ARIES-HM3':{kind:'TRIAL FLASHCARD',title:'ARIES-HM3',rows:[
     ['Population','628 HeartMate 3 recipients receiving vitamin-K-antagonist therapy.'],
     ['Comparison','Aspirin versus placebo.'],
     ['Main result','Aspirin avoidance was noninferior for hemocompatibility outcomes.'],
@@ -1243,175 +1249,175 @@ const TRIAL_FLASHCARDS={
 };
 
 const TOPIC_FLASHCARDS=[
-  {keys:['lampoon','neo-lvot'],card:{kind:'Topic flashcard',title:'LAMPOON and TMVR LVOT Protection',rows:[
+  {keys:['lampoon','neo-lvot'],card:{kind:'FLASHCARD',title:'LAMPOON and TMVR LVOT Protection',rows:[
     ['Mechanism','TMVR can displace the anterior mitral leaflet toward the septum and create dynamic LVOT obstruction.'],
     ['LAMPOON','Electrosurgical laceration splits the anterior leaflet so blood can pass through the valve-frame cells.'],
     ['Planning','CT-based neo-LVOT and skirt neo-LVOT assessment remain essential.'],
     ['Pitfall','A successful leaflet laceration does not eliminate obstruction from the valve skirt.']
   ],takeaway:'Identify the mechanism of predicted LVOT obstruction before selecting the prevention strategy.'}},
-  {keys:['valve-in-mac','vi-mac','mitral annular calcification'],card:{kind:'Topic flashcard',title:'Valve-in-MAC TMVR',rows:[
+  {keys:['valve-in-mac','vi-mac','mitral annular calcification'],card:{kind:'FLASHCARD',title:'Valve-in-MAC TMVR',rows:[
     ['Challenge','Irregular calcium can impair anchoring and sealing while increasing embolization, PVL and LVOT-obstruction risk.'],
     ['Planning','CT evaluates annular geometry, calcium distribution, landing zone and neo-LVOT.'],
     ['Bailout planning','LAMPOON, septal reduction, closure devices or surgery may be needed.'],
     ['Evidence','Technical MR elimination can coexist with substantial early mortality in prohibitive-risk cohorts.']
   ],takeaway:'Valve-in-MAC is an anatomic-risk procedure, not simply valve-in-valve in a calcified ring.'}},
-  {keys:['tmvr','transcatheter mitral valve replacement','tendyne','intrepid'],card:{kind:'Topic flashcard',title:'Transcatheter Mitral Valve Replacement',rows:[
+  {keys:['tmvr','transcatheter mitral valve replacement','tendyne','intrepid'],card:{kind:'FLASHCARD',title:'Transcatheter Mitral Valve Replacement',rows:[
     ['Goal','Replace rather than repair the native mitral valve and achieve near-complete MR elimination.'],
     ['Planning','CT annular sizing, access trajectory, anchoring, PVL risk and neo-LVOT prediction are mandatory.'],
     ['Trade-off','More complete MR abolition versus larger devices, thrombosis risk, LVOT obstruction and limited long-term evidence.'],
     ['Selection','Best considered when repair is unsuitable and anatomy/device programme is appropriate.']
   ],takeaway:'TMVR success requires both device implantation and acceptable post-implant physiology.'}},
-  {keys:['m-teer','teer','mitraclip','pascal','edge-to-edge'],card:{kind:'Topic flashcard',title:'Mitral Transcatheter Edge-to-Edge Repair',rows:[
+  {keys:['m-teer','teer','mitraclip','pascal','edge-to-edge'],card:{kind:'FLASHCARD',title:'Mitral Transcatheter Edge-to-Edge Repair',rows:[
     ['Mechanism','Approximates anterior and posterior leaflets to reduce regurgitant orifice area.'],
     ['Anatomic goals','Secure leaflet insertion, meaningful MR reduction, acceptable residual valve area and gradient.'],
     ['Selection','Primary MR depends mainly on surgical risk and anatomy; secondary MR also requires optimized HF therapy and response-profile selection.'],
     ['Failure modes','Residual MR, single-leaflet device attachment, leaflet injury and iatrogenic mitral stenosis.']
   ],takeaway:'TEER is successful only when MR reduction is durable without creating a prohibitive gradient.'}},
-  {keys:['percutaneous mitral commissurotomy','pmc','rheumatic mitral stenosis','commissurotomy'],card:{kind:'Topic flashcard',title:'Percutaneous Mitral Commissurotomy',rows:[
+  {keys:['percutaneous mitral commissurotomy','pmc','rheumatic mitral stenosis','commissurotomy'],card:{kind:'FLASHCARD',title:'Percutaneous Mitral Commissurotomy',rows:[
     ['Mechanism','Balloon splitting of fused rheumatic commissures.'],
     ['Favourable anatomy','Commissural fusion with limited calcification and subvalvular disease, no LA thrombus and no more than mild MR.'],
     ['Avoid','Nonrheumatic calcific stenosis, significant MR, LA thrombus or anatomy unlikely to split safely.'],
     ['Complications','Severe MR, tamponade, embolism and residual ASD.']
   ],takeaway:'PMC treats commissural fusion; it does not debulk degenerative calcium.'}},
-  {keys:['primary mr','degenerative mr','dmr'],card:{kind:'Topic flashcard',title:'Severe Primary Mitral Regurgitation',rows:[
+  {keys:['primary mr','degenerative mr','dmr'],card:{kind:'FLASHCARD',title:'Severe Primary Mitral Regurgitation',rows:[
     ['Trigger','Symptoms, LV dysfunction, pulmonary hypertension, new AF and progressive remodelling can justify intervention.'],
     ['LV thresholds','LVEF ≤60% or LVESD ≥40 mm already represents an intervention trigger in chronic severe primary MR.'],
     ['Preferred therapy','Durable surgical repair at an expert centre when operative risk is acceptable.'],
     ['Transcatheter role','TEER is mainly for high/prohibitive surgical risk with favourable anatomy.']
   ],takeaway:'A “normal-looking” EF can already indicate LV dysfunction in chronic primary MR.'}},
-  {keys:['atrial secondary mr','atrial smr','atrial functional mr'],card:{kind:'Topic flashcard',title:'Atrial Secondary Mitral Regurgitation',rows:[
+  {keys:['atrial secondary mr','atrial smr','atrial functional mr'],card:{kind:'FLASHCARD',title:'Atrial Secondary Mitral Regurgitation',rows:[
     ['Phenotype','Annular and atrial dilatation with relatively preserved LV geometry and function.'],
     ['Mechanisms','AF, LA enlargement and annular dilatation dominate more than ventricular tethering.'],
     ['Treatment logic','Rhythm strategy, annular reduction and LAA management may be relevant.'],
     ['Evidence gap','COAPT-style ventricular-SMR evidence should not be transferred automatically.']
   ],takeaway:'Identify whether the ventricle or the atrium is driving secondary MR.'}},
-  {keys:['secondary mr','functional mr','smr'],card:{kind:'Topic flashcard',title:'Ventricular Secondary Mitral Regurgitation',rows:[
+  {keys:['secondary mr','functional mr','smr'],card:{kind:'FLASHCARD',title:'Ventricular Secondary Mitral Regurgitation',rows:[
     ['First treatment','Maximally tolerated HF therapy, CRT when indicated and revascularization assessment.'],
     ['TEER candidates','Persistent severe MR, suitable anatomy, meaningful symptoms/events and a plausible COAPT-like response profile.'],
     ['Poor-response signals','Extreme LV disease, severe RV failure/PH, incomplete GDMT and major competing mortality.'],
     ['Principle','MR is both a lesion and a marker of ventricular disease.']
   ],takeaway:'Treat the ventricle first, then decide whether correcting MR changes prognosis.'}},
-  {keys:['single-leaflet','slda'],card:{kind:'Topic flashcard',title:'Single-Leaflet Device Attachment',rows:[
+  {keys:['single-leaflet','slda'],card:{kind:'FLASHCARD',title:'Single-Leaflet Device Attachment',rows:[
     ['Definition','Loss of secure attachment to one leaflet after TEER.'],
     ['Clues','Recurrent eccentric MR, excessive device motion and absent leaflet insertion on TEE.'],
     ['Causes','Inadequate grasp, leaflet tear, short leaflet, excessive tension or tissue fragility.'],
     ['Management','Depends on stability and anatomy: additional device, surgery or transcatheter replacement.']
   ],takeaway:'Confirm independent leaflet insertion before release; prevention is easier than bailout.'}},
-  {keys:['mitral gradient','iatrogenic mitral stenosis','mva'],card:{kind:'Topic flashcard',title:'Post-TEER Mitral Gradient',rows:[
+  {keys:['mitral gradient','iatrogenic mitral stenosis','mva'],card:{kind:'FLASHCARD',title:'Post-TEER Mitral Gradient',rows:[
     ['Why it rises','Multiple devices and reduced residual valve area create functional mitral stenosis.'],
     ['Assessment','Integrate mean gradient, heart rate, flow state, valve area and symptoms.'],
     ['Prevention','Measure baseline area/gradient and reassess after each grasp before adding another device.'],
     ['Trade-off','Do not pursue trivial MR at the cost of clinically important obstruction.']
   ],takeaway:'The optimal TEER result balances residual MR against residual valve area.'}},
-  {keys:['intermediate lm','ivus mla','ffr','ifr'],card:{kind:'Topic flashcard',title:'Intermediate Left-Main Assessment',rows:[
+  {keys:['intermediate lm','ivus mla','ffr','ifr'],card:{kind:'FLASHCARD',title:'Intermediate Left-Main Assessment',rows:[
     ['Problem','Angiography is unreliable because the LM is short, foreshortened and vulnerable to pressure damping.'],
     ['IVUS','MLA ≥6.0 mm² generally supports deferral in appropriate populations; 4.5–6.0 mm² is a grey zone.'],
     ['Physiology','FFR ≤0.80 or iFR ≤0.89 supports significance when technically reliable.'],
     ['Pitfalls','Downstream disease, drift, catheter damping and microvascular dysfunction can distort pressure indices.']
   ],takeaway:'Use a hybrid anatomic–physiologic strategy rather than visual estimation alone.'}},
-  {keys:['pci versus cabg','pci vs cabg','syntax','complete revascularization'],card:{kind:'Topic flashcard',title:'Left Main PCI versus CABG',rows:[
+  {keys:['pci versus cabg','pci vs cabg','syntax','complete revascularization'],card:{kind:'FLASHCARD',title:'Left Main PCI versus CABG',rows:[
     ['CABG strength','Greater durability with less spontaneous MI and repeat revascularization.'],
     ['PCI role','Reasonable when anatomic complexity is low/intermediate and equivalent complete revascularization is feasible.'],
     ['Complexity','SYNTAX ≤22 supports PCI as an alternative; 23–32 requires careful selection; ≥33 generally favours CABG when feasible.'],
     ['Decision','Heart Team integrates surgical risk, diabetes, LV function, completeness, DAPT and patient preference.']
   ],takeaway:'The question is not “which procedure is better?” but “which strategy is durable and complete for this patient?”'}},
-  {keys:['dk crush','dkcrush','two-stent'],card:{kind:'Topic flashcard',title:'DK Crush for Distal Left Main',rows:[
+  {keys:['dk crush','dkcrush','two-stent'],card:{kind:'FLASHCARD',title:'DK Crush for Distal Left Main',rows:[
     ['Best fit','Complex true distal LM with long/severe LCx disease and unreliable provisional bailout.'],
     ['Core sequence','LCx stent with controlled protrusion → crush → first rewiring/kiss → LM-LAD stent/POT → second rewiring/kiss → re-POT.'],
     ['Strength','Strongest dedicated randomized outcome evidence among planned two-stent LM strategies.'],
     ['Pitfall','Benefit depends on disciplined execution and should not be generalized to simple bifurcations.']
   ],takeaway:'Use anatomy to select DK crush; do not use the trial name to select anatomy.'}},
-  {keys:['provisional stent','provisional strategy','lm-to-lad'],card:{kind:'Topic flashcard',title:'Stepwise Provisional Left-Main Stenting',rows:[
+  {keys:['provisional stent','provisional strategy','lm-to-lad'],card:{kind:'FLASHCARD',title:'Stepwise Provisional Left-Main Stenting',rows:[
     ['Default use','Noncomplex distal LM where LCx disease is short, less severe and easily rewired.'],
     ['Sequence','Wire both branches → LM-LAD crossover → POT → reassess LCx → treat only if compromised.'],
     ['Bailout triggers','Flow loss, dissection, severe residual stenosis with ischemia or failed balloon result.'],
     ['Finish','If the side branch is treated, kissing inflation followed by re-POT is reproducible.']
   ],takeaway:'Provisional means planned stepwise escalation—not neglect of the LCx.'}},
-  {keys:['proximal optimization','pot'],card:{kind:'Topic flashcard',title:'Proximal Optimization Technique',rows:[
+  {keys:['proximal optimization','pot'],card:{kind:'FLASHCARD',title:'Proximal Optimization Technique',rows:[
     ['Purpose','Correct proximal malapposition, restore bifurcation geometry and improve side-branch cell access.'],
     ['Sizing','Short NC balloon approximately 1:1 to the proximal LM reference.'],
     ['Position','The distal balloon marker should remain proximal to the carina.'],
     ['Re-POT','Repeat after side-branch dilation or kissing to correct proximal deformation.']
   ],takeaway:'POT is a geometric correction step, not cosmetic post-dilatation.'}},
-  {keys:['ivus','oct','intravascular imaging'],card:{kind:'Topic flashcard',title:'Imaging-Guided Complex PCI',rows:[
+  {keys:['ivus','oct','intravascular imaging'],card:{kind:'FLASHCARD',title:'Imaging-Guided Complex PCI',rows:[
     ['Before PCI','Define plaque distribution, calcium, reference size, landing zones and branch involvement.'],
     ['After PCI','Assess expansion, apposition, edges, branch ostia and mechanism of any residual problem.'],
     ['IVUS strength','Large-vessel sizing, deep calcium, ostial imaging and low-contrast use.'],
     ['OCT strength','High-resolution strut, edge and three-dimensional bifurcation assessment when blood clearance is feasible.']
   ],takeaway:'Imaging improves outcomes only when its findings change treatment.'}},
-  {keys:['iABP','intra-aortic balloon'],card:{kind:'Topic flashcard',title:'Intra-Aortic Balloon Pump',rows:[
+  {keys:['iABP','intra-aortic balloon'],card:{kind:'FLASHCARD',title:'Intra-Aortic Balloon Pump',rows:[
     ['Mechanism','Inflation at aortic-valve closure augments diastolic pressure; pre-systolic deflation reduces LV afterload.'],
     ['Support','Modest and dependent on native ejection, rhythm and vascular tone.'],
     ['Avoid','Moderate–severe AR, aortic dissection and prohibitive aorto-iliac disease.'],
     ['Evidence','Routine AMI-CS and default early HF-CS strategies are neutral; selected bridges remain physiologically rational.']
   ],takeaway:'IABP is a counterpulsation device—not a full-flow pump.'}},
-  {keys:['impella rp','right ventricular pump'],card:{kind:'Topic flashcard',title:'Impella RP',rows:[
+  {keys:['impella rp','right ventricular pump'],card:{kind:'FLASHCARD',title:'Impella RP',rows:[
     ['Flow path','IVC/RA inlet to main PA outlet across the tricuspid and pulmonic valves.'],
     ['Goal','Reduce RAP and raise pulmonary flow, LV preload and systemic output.'],
     ['Prerequisites','A pulmonary bed and LV capable of accepting the delivered flow.'],
     ['Risk','Pulmonary edema if the LV cannot accept the increased preload.']
   ],takeaway:'An RV pump can fail by overloading the left heart.'}},
-  {keys:['impella cp','microaxial pump','transvalvular'],card:{kind:'Topic flashcard',title:'Impella CP',rows:[
+  {keys:['impella cp','microaxial pump','transvalvular'],card:{kind:'FLASHCARD',title:'Impella CP',rows:[
     ['Architecture','Catheter-mounted microaxial pump with LV inlet and ascending-aortic outlet.'],
     ['Position','Inlet about 3.5 cm below the aortic annulus; outlet above the valve.'],
     ['Physiology','Direct LV unloading and forward flow; preload dependent and afterload sensitive.'],
     ['Main hazards','Bleeding, limb ischemia, hemolysis, suction, malposition and renal injury.']
   ],takeaway:'High displayed support is not success if RV preload is inadequate or hemolysis is rising.'}},
-  {keys:['tandemheart'],card:{kind:'Topic flashcard',title:'TandemHeart',rows:[
+  {keys:['tandemheart'],card:{kind:'FLASHCARD',title:'TandemHeart',rows:[
     ['Architecture','21 F transseptal LA drainage to an extracorporeal centrifugal pump with arterial return.'],
     ['Support','Approximately 4–5 L/min with direct LA/LV unloading without crossing the aortic valve.'],
     ['Requirements','Adequate RV output, pulmonary oxygenation, transseptal expertise and large-bore vascular access.'],
     ['Hazards','Tamponade, air embolism, bleeding, limb ischemia, hemolysis and residual ASD.']
   ],takeaway:'TandemHeart can deliver high flow only if the RV and lungs fill the left atrium.'}},
-  {keys:['va-ecmo','ecls','ecmo'],card:{kind:'Topic flashcard',title:'Peripheral VA-ECMO',rows:[
+  {keys:['va-ecmo','ecls','ecmo'],card:{kind:'FLASHCARD',title:'Peripheral VA-ECMO',rows:[
     ['Architecture','Venous drainage → extracorporeal pump/oxygenator → retrograde arterial return.'],
     ['Strength','Rapid full cardiopulmonary support for selected biventricular, hypoxemic or arrest phenotypes.'],
     ['Counter-physiology','Raises LV afterload and can cause closed aortic valve, LV distension, pulmonary edema and root stasis.'],
     ['Surveillance','Distal limb perfusion, right-radial oxygenation and early LV-unloading triggers.']
   ],takeaway:'VA-ECMO restores systemic flow but may worsen the left ventricle.'}},
-  {keys:['protekduo'],card:{kind:'Topic flashcard',title:'ProtekDuo',rows:[
+  {keys:['protekduo'],card:{kind:'FLASHCARD',title:'ProtekDuo',rows:[
     ['Architecture','29/31 F dual-lumen RIJ cannula: proximal RA drainage and distal main-PA return.'],
     ['Use','Percutaneous RV bypass with potential mobilization; add an oxygenator for V-P support.'],
     ['Risks','Migration, PA/RV injury, neck bleeding, hemolysis and LV overload.'],
     ['Evidence','Heterogeneous observational cohorts without a pivotal mortality RCT.']
   ],takeaway:'Position is the procedure; migration is a continuing hazard.'}},
-  {keys:['centrimag'],card:{kind:'Topic flashcard',title:'CentriMag',rows:[
+  {keys:['centrimag'],card:{kind:'FLASHCARD',title:'CentriMag',rows:[
     ['Architecture','Magnetically levitated extracorporeal centrifugal pump with surgical cannulation.'],
     ['Configurations','LVAD, RVAD, BiVAD or ECMO depending on drainage and return sites.'],
     ['Strength','Flexible high-flow bridge for postcardiotomy or complex biventricular failure.'],
     ['Evidence','Regulatory indication and cohort data, not randomized mortality superiority.']
   ],takeaway:'Cannula configuration determines which ventricle is supported.'}},
-  {keys:['heartmate 3','durable lvad'],card:{kind:'Topic flashcard',title:'HeartMate 3 Durable LVAD',rows:[
+  {keys:['heartmate 3','durable lvad'],card:{kind:'FLASHCARD',title:'HeartMate 3 Durable LVAD',rows:[
     ['Architecture','Fully magnetically levitated centrifugal pump with apical inflow, aortic outflow graft and driveline.'],
     ['Guideline role','Class I, LOE A for selected advanced HFrEF dependent on continuous inotropes or temporary MCS.'],
     ['Selection','RV reserve, end-organ reversibility, anticoagulation, infection risk and psychosocial support are decisive.'],
     ['Emergencies','Right HF, bleeding, stroke, hemolysis/thrombosis, AR, infection and inflow/outflow obstruction.']
   ],takeaway:'Patient and RV selection are as important as the pump.'}},
-  {keys:['cardiac power output','cpo'],card:{kind:'Topic flashcard',title:'Cardiac Power Output',rows:[
+  {keys:['cardiac power output','cpo'],card:{kind:'FLASHCARD',title:'Cardiac Power Output',rows:[
     ['Formula','CPO = MAP × cardiac output / 451, expressed in watts.'],
     ['Meaning','Integrates pressure and flow into a global hydraulic-power measure.'],
     ['Risk signal','Values below roughly 0.6 W are high-risk in AMI-CS.'],
     ['Use','Follow trends and phenotype; do not use one cut-off as an automatic device prescription.']
   ],takeaway:'A satisfactory MAP can conceal critically low flow and power.'}},
-  {keys:['papi','pulmonary artery pulsatility'],card:{kind:'Topic flashcard',title:'Pulmonary Artery Pulsatility Index',rows:[
+  {keys:['papi','pulmonary artery pulsatility'],card:{kind:'FLASHCARD',title:'Pulmonary Artery Pulsatility Index',rows:[
     ['Formula','PAPi = (PASP − PADP) / RAP.'],
     ['Meaning','Relates PA pulse pressure to right-sided filling pressure.'],
     ['Use','Low values support RV-predominant failure and help assess RV recovery/weaning.'],
     ['Caveat','Useful thresholds vary by AMI-RV, post-LVAD and other clinical settings.']
   ],takeaway:'PAPi is a contextual RV signal—not a universal binary threshold.'}},
-  {keys:['harlequin','north–south','differential hypoxemia'],card:{kind:'Topic flashcard',title:'Differential Hypoxemia on VA-ECMO',rows:[
+  {keys:['harlequin','north–south','differential hypoxemia'],card:{kind:'FLASHCARD',title:'Differential Hypoxemia on VA-ECMO',rows:[
     ['Mechanism','Recovering LV ejects poorly oxygenated pulmonary blood into the proximal aorta while retrograde ECMO blood perfuses the lower body.'],
     ['Detection','Right-radial arterial line and right-hand ABG/SpO₂.'],
     ['First steps','Optimize lungs, oxygenator and flow/mixing conditions.'],
     ['Escalation','Redirect oxygenated return toward the upper body with V-AV, axillary or central return.']
   ],takeaway:'A normal femoral saturation can coexist with coronary and cerebral hypoxemia.'}},
-  {keys:['lv unloading','closed aortic valve','aortic-root stasis','ecpella','ecmella'],card:{kind:'Topic flashcard',title:'LV Unloading During VA-ECMO',rows:[
+  {keys:['lv unloading','closed aortic valve','aortic-root stasis','ecpella','ecmella'],card:{kind:'FLASHCARD',title:'LV Unloading During VA-ECMO',rows:[
     ['Triggers','Absent/rare aortic-valve opening, rising PCWP, LV distension, pulmonary edema or root stasis.'],
     ['Correct first','Avoid excessive ECMO flow, treat hypertension, optimize rhythm/inotropy and ventilation.'],
     ['Devices','IABP, Impella, atrial septostomy/LA vent or surgical LV vent.'],
     ['Evidence','Observational mortality signals are confounded; unload for demonstrated pathophysiology.']
   ],takeaway:'Use an explicit unloading target rather than a routine hybrid-device slogan.'}},
-  {keys:['suction','hemolysis'],card:{kind:'Topic flashcard',title:'Impella Suction and Hemolysis',rows:[
+  {keys:['suction','hemolysis'],card:{kind:'FLASHCARD',title:'Impella Suction and Hemolysis',rows:[
     ['Immediate action','Reduce P-level and verify pump position.'],
     ['Physiology check','Hypovolemia, RV failure, tamponade, high PEEP, arrhythmia or obstruction.'],
     ['Hemolysis clues','Dark urine, rising plasma-free Hb/LDH, low haptoglobin and AKI.'],
@@ -1468,7 +1474,9 @@ const TRIAL_NAME_ALIASES=[
 
 const FLASHCARD_TRIAL_EXCLUSIONS=new Set([
   'PCI','CABG','TEER','TMVR','MCS','ECMO','IABP','IVUS','OCT','FFR','IFR','LVEF','LVAD','RVAD',
-  'STEMI','AMI','ACS','ESC','ACC','AHA','SCAI','POT','MR','SMR','MAC','LVOT','GDMT','NYHA'
+  'STEMI','AMI','ACS','ESC','ACC','AHA','SCAI','POT','MR','SMR','MAC','LVOT','GDMT','NYHA',
+  'RAP','PAPI','PA','PASP','PADP','RV','LV','RA','LA','PCWP','CVP','CPO','CO','CI','MAP','PVR','SVR',
+  'LVEF','RRT','ABG','NIRS','VSD','AR','ASD','TR','PR','HR','BP','ECG','QRS'
 ]);
 
 function shortenFlashcardText(value,max=240){
@@ -1477,11 +1485,18 @@ function shortenFlashcardText(value,max=240){
 }
 
 function detectFlashcardTrial(text){
-  const lower=String(text||'').toLowerCase();
+  const raw=String(text||'');
+  const lower=raw.toLowerCase();
+
   for(const [canonical,aliases] of TRIAL_NAME_ALIASES){
     if(aliases.some(alias=>lower.includes(alias))) return canonical;
   }
-  const candidates=String(text||'').match(/\b(?:[A-Z][A-Z0-9-]{2,}(?:\s+(?:II|III|IV|V|VIII|MAIN|RIGHT|SHOCK|HF2|IDE|IID|MI|DTU|BCIS3))?|[A-Z][a-z]+-[A-Z][A-Za-z0-9-]+)\b/g)||[];
+
+  // Only attempt free-text trial detection when the question explicitly discusses a study.
+  const studyLanguage=/\b(trial|study|randomized|randomised|registry|cohort|substudy|follow-up|meta-analysis|programme|program)\b/i.test(raw);
+  if(!studyLanguage) return null;
+
+  const candidates=raw.match(/\b(?:[A-Z][A-Z0-9-]{2,}(?:\s+(?:II|III|IV|V|VIII|MAIN|RIGHT|SHOCK|HF2|IDE|IID|MI|DTU|BCIS3))?|[A-Z][a-z]+-[A-Z][A-Za-z0-9-]+)\b/g)||[];
   return candidates.find(name=>!FLASHCARD_TRIAL_EXCLUSIONS.has(name.toUpperCase()))||null;
 }
 
@@ -1496,7 +1511,7 @@ function detectFlashcardTopic(text){
 function normalizeCustomFlashcard(card){
   if(!card) return null;
   if(typeof card==='string'){
-    return {kind:'Topic flashcard',title:'Key concept',rows:[['Core point',card]],takeaway:card};
+    return {kind:'FLASHCARD',title:'Key concept',rows:[['Core point',card]],takeaway:card};
   }
   return {
     kind:card.kind||'Topic flashcard',
@@ -1506,6 +1521,297 @@ function normalizeCustomFlashcard(card){
   };
 }
 
+const DETAILED_TOPIC_FLASHCARDS={
+  'Pulmonary Artery Pulsatility Index':{
+    kind:'FLASHCARD',
+    title:'Pulmonary Artery Pulsatility Index (PAPi)',
+    sections:[
+      {heading:'What is PAPi?',bullets:[
+        'PAPi is an invasive-hemodynamic index used to estimate right-ventricular pulsatile performance.',
+        'It combines pulmonary-artery pulse pressure with right-atrial pressure rather than interpreting either value alone.',
+        'It is most useful when the clinical question is whether shock or congestion is predominantly right-ventricular.'
+      ]},
+      {heading:'How is PAPi calculated?',bullets:[
+        'PAPi = (pulmonary-artery systolic pressure − pulmonary-artery diastolic pressure) ÷ right-atrial pressure.',
+        'The numerator represents the pressure pulse generated through the pulmonary circulation.',
+        'The denominator reflects right-sided filling pressure and the load under which the RV is working.'
+      ]},
+      {heading:'Why is PAPi important?',bullets:[
+        'A low PAPi supports impaired RV pulsatility and may identify RV-predominant shock or impending right-heart failure.',
+        'It helps explain why an LV support device may deliver poor flow when the RV cannot provide adequate preload.',
+        'It can contribute to RVAD selection, escalation decisions, and assessment of readiness for RV-support weaning.'
+      ]},
+      {heading:'How should PAPi be interpreted?',bullets:[
+        'Interpret PAPi together with RAP, PCWP, cardiac output, echocardiographic RV findings, lactate, and the patient trajectory.',
+        'Thresholds are context dependent; post-RV-infarction values are not automatically interchangeable with post-LVAD thresholds.',
+        'A trend after changes in preload, rhythm, PVR, ventilation, or support is more informative than one isolated number.'
+      ]},
+      {heading:'What can make PAPi misleading?',bullets:[
+        'Mechanical ventilation, pulmonary vascular resistance, vasopressors, severe tricuspid regurgitation, and abrupt loading changes may alter PAPi.',
+        'An overdamped or incorrect pulmonary-artery waveform can produce an inaccurate numerator.',
+        'A low value is a risk signal; it does not by itself prove that an RVAD is required.'
+      ]},
+      {heading:'How is PAPi used clinically?',bullets:[
+        'Use PAPi to support—not replace—classification of LV, RV, biventricular, or mixed shock.',
+        'Low PAPi with high RAP and a small underfilled LV should prompt evaluation of RV failure before increasing an LV-pump speed.',
+        'The exam-quality interpretation is that PAPi is a contextual RV marker integrated with imaging, hemodynamics, and end-organ response.'
+      ]}
+    ],
+    takeaway:'PAPi is a contextual RV-performance marker: calculate it correctly, verify the waveform, and never use one threshold as an automatic device prescription.'
+  }
+};
+
+function flashcardClean(items){
+  const out=[];
+  (items||[]).flat().forEach(value=>{
+    String(value||'').split(/\n+/).forEach(part=>{
+      const text=part.replace(/\s+/g,' ').trim().replace(/^[-•]\s*/,'');
+      if(text&&!out.includes(text)) out.push(text);
+    });
+  });
+  return out;
+}
+
+function flashcardSplit(value){
+  const text=String(value||'').replace(/\s+/g,' ').trim();
+  if(!text) return [];
+  return text.split(/(?:;\s+|(?<=[.!?])\s+(?=[A-Z0-9]))/).map(x=>x.trim()).filter(Boolean);
+}
+
+function flashcardRows(card){
+  return (card.rows||[]).map(row=>({
+    label:String(row[0]||''),
+    value:String(row[1]||''),
+    search:(String(row[0]||'')+' '+String(row[1]||'')).toLowerCase()
+  }));
+}
+
+function flashcardSelect(rows,keywords){
+  return rows.filter(row=>keywords.some(key=>row.search.includes(key))).flatMap(row=>flashcardSplit(row.value));
+}
+
+function flashcardFill(primary,fallbacks,target=3){
+  const out=flashcardClean(primary);
+  flashcardClean(fallbacks).forEach(item=>{
+    if(out.length<target&&!out.includes(item)) out.push(item);
+  });
+  while(out.length<target){
+    out.push('Interpret this point together with the complete clinical phenotype, anatomy, and strength of evidence.');
+  }
+  return out.slice(0,4);
+}
+
+function flashcardCategory(title){
+  const t=String(title||'').toLowerCase();
+  if(/papi|power output|index|score|gradient|pressure|area|ratio/.test(t)) return 'metric';
+  if(/impella|ecmo|iabp|tandemheart|protekduo|centrimag|heartmate|lvad|rvad|pump/.test(t)) return 'device';
+  if(/teer|tmvr|commissurotomy|lampoon|dk crush|stenting|optimization|imaging|pci|cabg|valve-in/.test(t)) return 'procedure';
+  if(/regurgitation|stenosis|failure|hypoxemia|hemolysis|attachment|shock|fibrillation|tachycardia/.test(t)) return 'condition';
+  return 'concept';
+}
+
+function enrichTopicFlashcard(card,q){
+  if(DETAILED_TOPIC_FLASHCARDS[card.title]) return DETAILED_TOPIC_FLASHCARDS[card.title];
+
+  const rows=flashcardRows(card);
+  const title=card.title||cfg().title;
+  const category=flashcardCategory(title);
+  const values=rows.flatMap(row=>flashcardSplit(row.value));
+  const definition=flashcardSelect(rows,['definition','mechanism','meaning','goal','architecture','configuration','formula','phenotype']);
+  const importance=flashcardSelect(rows,['importance','role','strength','why','use','guideline','benefit','best fit']);
+  const assessment=flashcardSelect(rows,['diagnos','assess','planning','selection','sizing','position','imaging','calculated','interpret']);
+  const management=flashcardSelect(rows,['treat','management','deployment','strategy','sequence','weaning','escalation','response']);
+  const risks=flashcardSelect(rows,['risk','complication','pitfall','avoid','contraindication','limit','failure','hazard','caveat']);
+  const evidence=flashcardSelect(rows,['evidence','trial','result','translation','guideline','class','loe']);
+
+  const rationale=shortenFlashcardText(q?.rationale||'',360);
+  const hint=shortenFlashcardText(q?.hint||'',300);
+  const correct=shortenFlashcardText(q?.answerText||q?.correct||'',240);
+  const takeaway=shortenFlashcardText(card.takeaway||rationale,340);
+
+  let headings;
+  if(category==='metric'){
+    headings=[
+      `What is ${title}?`,
+      `Why is ${title} important?`,
+      `How is ${title} calculated or measured?`,
+      `How should ${title} be interpreted?`,
+      `What are the limitations and pitfalls?`,
+      `How is ${title} used clinically?`
+    ];
+  }else if(category==='device'){
+    headings=[
+      `What is ${title}?`,
+      `How does ${title} work?`,
+      `When is ${title} used?`,
+      `How is ${title} positioned, monitored, or weaned?`,
+      `What are the contraindications and complications?`,
+      `What are the high-yield practical points?`
+    ];
+  }else if(category==='procedure'){
+    headings=[
+      `What is ${title}?`,
+      `Why and when is it used?`,
+      `How is it planned or performed?`,
+      `How is procedural success assessed?`,
+      `What are the complications and failure modes?`,
+      `What are the guideline and exam takeaways?`
+    ];
+  }else if(category==='condition'){
+    headings=[
+      `What is ${title}?`,
+      `Why is it clinically important?`,
+      `How is it diagnosed or recognized?`,
+      `How is it treated or managed?`,
+      `What are the complications and adverse prognostic features?`,
+      `What are the high-yield decision points?`
+    ];
+  }else{
+    headings=[
+      `What is ${title}?`,
+      `Why is it important?`,
+      `How is it assessed?`,
+      `How is it applied in practice?`,
+      `What are the pitfalls and limitations?`,
+      `What should be remembered for the exam or cath lab?`
+    ];
+  }
+
+  const commonDefinition=[
+    ...definition,
+    values[0],
+    rationale,
+    `${title} should be understood by its mechanism, purpose, and the clinical question it is intended to answer.`
+  ];
+  const commonImportance=[
+    ...importance,
+    takeaway,
+    `Its importance lies in how it changes patient selection, procedural planning, monitoring, or treatment.`,
+    `The concept should be linked to patient-centred outcomes rather than treated as an isolated technical detail.`
+  ];
+  const commonAssessment=[
+    ...assessment,
+    hint,
+    `Confirm the measurement, anatomy, waveform, or device position before acting on the result.`,
+    `Use complementary clinical, hemodynamic, imaging, and laboratory information whenever discordance exists.`
+  ];
+  const commonManagement=[
+    ...management,
+    correct?`The correct response in this question was: ${correct}`:'',
+    rationale,
+    `Management should address the underlying physiology rather than merely normalizing a displayed value.`
+  ];
+  const commonRisks=[
+    ...risks,
+    `Look for patient-selection errors, technical failure, and counter-physiology before escalating treatment.`,
+    `A technically successful intervention may still fail clinically if complications or unsupported physiology are ignored.`,
+    `Do not generalize a recommendation beyond the population, anatomy, or setting in which it was studied.`
+  ];
+  const commonEvidence=[
+    ...evidence,
+    takeaway,
+    hint,
+    `State whether support comes from randomized trials, observational data, physiologic studies, or guideline consensus.`,
+    `A strong answer separates mechanism, evidence strength, and practical application.`
+  ];
+
+  return {
+    kind:'FLASHCARD',
+    title,
+    sections:[
+      {heading:headings[0],bullets:flashcardFill(commonDefinition,[rationale,takeaway],3)},
+      {heading:headings[1],bullets:flashcardFill(commonImportance,[takeaway,rationale],3)},
+      {heading:headings[2],bullets:flashcardFill(commonAssessment,[hint,rationale],3)},
+      {heading:headings[3],bullets:flashcardFill(commonManagement,[correct,rationale],3)},
+      {heading:headings[4],bullets:flashcardFill(commonRisks,[takeaway,hint],3)},
+      {heading:headings[5],bullets:flashcardFill(commonEvidence,[takeaway,rationale],3)}
+    ],
+    takeaway:card.takeaway||q?.rationale||'Retain the definition, importance, assessment, management, complications, and evidence as one integrated topic.'
+  };
+}
+
+function enrichTrialFlashcard(card,q){
+  const rows=flashcardRows(card);
+  const title=card.title||'Clinical trial';
+  const population=flashcardSelect(rows,['population','design','setting','programme']);
+  const comparison=flashcardSelect(rows,['comparison','intervention','strategy','device','versus','vs']);
+  const endpoint=flashcardSelect(rows,['endpoint','follow-up','primary','outcome']);
+  const result=flashcardSelect(rows,['result','main result','five-year','three-year','one-year','180-day','30-day','safety','harm']);
+  const limitation=flashcardSelect(rows,['limit','caveat','translation','interpretation']);
+  const values=rows.flatMap(row=>flashcardSplit(row.value));
+  const rationale=shortenFlashcardText(q?.rationale||'',380);
+  const hint=shortenFlashcardText(q?.hint||'',300);
+  const takeaway=shortenFlashcardText(card.takeaway||rationale,340);
+
+  return {
+    kind:'TRIAL FLASHCARD',
+    title,
+    sections:[
+      {heading:`What clinical question did ${title} address?`,bullets:flashcardFill([
+        comparison[0]?`The study compared: ${comparison[0]}`:'',
+        'The trial asked whether the tested intervention improved its prespecified clinical or procedural outcomes.',
+        rationale
+      ],[takeaway,rationale],3)},
+      {heading:'Who was studied?',bullets:flashcardFill([
+        ...population,
+        'Apply the result only to patients who resemble the enrolled population and eligibility criteria.',
+        'Shock stage, anatomy, background therapy, surgical risk, and device generation may limit external validity.'
+      ],values,3)},
+      {heading:'What was the study design and comparator?',bullets:flashcardFill([
+        ...comparison,
+        endpoint[0]?`The reported endpoint or follow-up information included: ${endpoint[0]}`:'',
+        'Interpret the evidence according to whether it was randomized, single-arm, observational, registry-based, or a programme cohort.',
+        'Do not replace the prespecified primary analysis with a later subgroup or per-protocol signal.'
+      ],values,3)},
+      {heading:'What were the main outcomes?',bullets:flashcardFill([
+        ...result,
+        rationale,
+        'Separate mortality, hospitalization, revascularization, hemodynamic, technical, and safety outcomes.',
+        'A positive surrogate or technical endpoint does not automatically establish a survival benefit.'
+      ],values,3)},
+      {heading:'What are the important limitations?',bullets:flashcardFill([
+        ...limitation,
+        hint,
+        'Review sample size, crossover, endpoint definitions, follow-up duration, and statistical power.',
+        'Do not extrapolate the result to devices, anatomies, or populations that were not studied.'
+      ],[takeaway,rationale],3)},
+      {heading:'How should the trial change practice?',bullets:flashcardFill([
+        takeaway,
+        'Use the trial to answer the question it actually tested—not a broader question.',
+        'State the population, comparator, main endpoint, direction of effect, safety signal, and major limitation.',
+        'Clinical implementation still requires individual patient selection and assessment of harm.'
+      ],[rationale,hint],3)}
+    ],
+    takeaway:card.takeaway||q?.rationale||'Apply the result only to the population, comparator, and endpoint actually studied.'
+  };
+}
+
+function prepareDetailedFlashcard(card,q){
+  const isTrial=String(card?.kind||'').toLowerCase().includes('trial');
+  return isTrial?enrichTrialFlashcard(card,q):enrichTopicFlashcard(card,q);
+}
+
+function renderFlashcardSections(sections){
+  return (sections||[]).map(section=>
+    `<section class="flashcard-section"><h3 class="flashcard-section-title">${escapeHtml(section.heading)}</h3><ul class="flashcard-list">${flashcardClean(section.bullets).map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul></section>`
+  ).join('');
+}
+
+function presentDetailedFlashcard(baseCard,q){
+  const card=prepareDetailedFlashcard(baseCard,q);
+  document.getElementById('flashcardKind').textContent=card.kind==='TRIAL FLASHCARD'?'TRIAL FLASHCARD':'FLASHCARD';
+  document.getElementById('flashcardTitle').textContent=card.title||'Flashcard';
+  document.getElementById('flashcardRows').innerHTML=renderFlashcardSections(card.sections);
+  document.getElementById('flashcardTakeaway').innerHTML=`<b>High-yield summary:</b> ${escapeHtml(card.takeaway||q?.rationale||'Review the complete topic before continuing.')}`;
+  document.getElementById('flashcardQuestionPearl').innerHTML=`<b>How this question connects:</b> ${escapeHtml(q?.rationale||'This flashcard reviews the principal topic tested by the question.')}`;
+  const modal=document.getElementById('flashcardModal');
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+  const dialog=modal.querySelector('.flashcard-dialog');
+  if(dialog)dialog.scrollTop=0;
+  document.body.classList.add('flashcard-open');
+  setTimeout(()=>modal.querySelector('.flashcard-close')?.focus(),30);
+}
 function buildQuestionFlashcard(q){
   const custom=normalizeCustomFlashcard(q.flashcard);
   if(custom) return custom;
@@ -1516,14 +1822,14 @@ function buildQuestionFlashcard(q){
 
   if(trial){
     return {
-      kind:'Trial flashcard',
+      kind:'TRIAL FLASHCARD',
       title:trial,
       rows:[
-        ['Question tested',shortenFlashcardText(q.stem,220)],
-        ['Evidence pearl',shortenFlashcardText(q.rationale,260)],
-        ['Exam focus',shortenFlashcardText(q.hint||'Identify the population, comparator, primary endpoint and limitation.',220)]
+        ['Clinical question',shortenFlashcardText(q.stem,280)],
+        ['Main evidence',shortenFlashcardText(q.rationale,360)],
+        ['Interpretation',shortenFlashcardText(q.hint||'Identify the population, comparator, primary endpoint, numerical result, safety signal, and limitation.',300)]
       ],
-      takeaway:'Quote only the population, endpoint and conclusion actually supported by the study.'
+      takeaway:'Apply the trial only to the population and clinical question it actually studied.'
     };
   }
 
@@ -1531,39 +1837,27 @@ function buildQuestionFlashcard(q){
   if(topic) return topic;
 
   return {
-    kind:'Topic flashcard',
+    kind:'FLASHCARD',
     title:cfg().title,
     rows:[
-      ['Main concept',shortenFlashcardText(q.rationale,270)],
-      ['Clinical frame',shortenFlashcardText(q.stem,220)],
-      ['Exam pearl',shortenFlashcardText(q.hint||'Link the mechanism to the evidence and the patient phenotype.',220)]
+      ['Definition and mechanism',shortenFlashcardText(q.rationale,360)],
+      ['Clinical importance',shortenFlashcardText(q.stem,300)],
+      ['Assessment and interpretation',shortenFlashcardText(q.hint||'Link the finding to the full clinical phenotype and verify important confounders.',300)],
+      ['Management or application',shortenFlashcardText(q.answerText||q.correct||'',260)]
     ],
-    takeaway:'Use the question rationale as the minimum high-yield fact to retain.'
+    takeaway:'Review the definition, importance, assessment, management, complications, and evidence as one integrated topic.'
   };
 }
 
 function renderFlashcardRows(rows){
-  return (rows||[]).map(([label,value])=>
-    `<div class="flashcard-row"><div class="flashcard-label">${escapeHtml(label)}</div><div class="flashcard-value">${escapeHtml(value)}</div></div>`
-  ).join('');
+  const base={kind:'FLASHCARD',title:'Flashcard',rows:rows||[],takeaway:''};
+  return renderFlashcardSections(enrichTopicFlashcard(base,{}).sections);
 }
 
 function openFlashcard(){
   if(!attempt.length||!attempt[current]||!answers[current]) return;
   const q=attempt[current];
-  const card=buildQuestionFlashcard(q);
-  document.getElementById('flashcardKind').textContent=card.kind||'Topic flashcard';
-  document.getElementById('flashcardTitle').textContent=card.title||'Flashcard';
-  document.getElementById('flashcardRows').innerHTML=renderFlashcardRows(card.rows);
-  const takeaway=document.getElementById('flashcardTakeaway');
-  takeaway.innerHTML=`<b>Keep this:</b> ${escapeHtml(card.takeaway||q.rationale||'Review the central mechanism and evidence.')}`;
-  const pearl=document.getElementById('flashcardQuestionPearl');
-  pearl.innerHTML=`<b>This question’s pearl:</b> ${escapeHtml(q.rationale||'')}`;
-  const modal=document.getElementById('flashcardModal');
-  modal.classList.add('show');
-  modal.setAttribute('aria-hidden','false');
-  document.body.classList.add('flashcard-open');
-  setTimeout(()=>modal.querySelector('.flashcard-close')?.focus(),30);
+  presentDetailedFlashcard(buildQuestionFlashcard(q),q);
 }
 
 function closeFlashcard(){
