@@ -1621,7 +1621,7 @@ body.expert-open{overflow:hidden}
       </div>
 
       <div class="field">
-        <label for="personalPin">Personal PIN</label><input id="personalPin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="24" placeholder="Create or enter your personal PIN"><div class="signin-cloud-note">Your WhatsApp number + PIN will sync your profile and quiz progress across devices.</div><label for="institution">Institution</label>
+        <label for="personalPin">Personal PIN</label><input id="personalPin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="24" placeholder="Create or enter your personal PIN"><div class="signin-cloud-note">Your WhatsApp number + PIN will securely sync your profile and quiz progress across devices. No email is required.</div><label for="institution">Institution</label>
         <input id="institution" autocomplete="organization" placeholder="University or hospital">
       </div>
     </div>
@@ -2493,26 +2493,42 @@ function setCloudStatus(text,state='offline'){
   badge.className='cloud-status-badge '+state;
 }
 
-function normalizeCloudEmail(whatsapp){
-  const normalized=normalizeEgyptWhatsapp(whatsapp);
-  if(!normalized.valid) return '';
-  return `acl.${normalized.canonical}@example.com`;
-}
+
 
 async function ensureCloudSession(profile,pin){
-  if(!supabaseClient) throw new Error('Supabase client unavailable.');
-  const email=normalizeCloudEmail(profile.whatsapp);
-  if(!email) throw new Error('Invalid WhatsApp number.');
-  if(!pin||pin.length<6) throw new Error('PIN must contain at least 6 characters.');
+  if(!supabaseClient){
+    throw new Error('Supabase client unavailable.');
+  }
+
+  const normalized=normalizeEgyptWhatsapp(profile.whatsapp);
+  if(!normalized.valid){
+    throw new Error('Enter a valid Egyptian WhatsApp number.');
+  }
+
+  if(!pin||pin.length<6){
+    throw new Error('PIN must contain at least 6 characters.');
+  }
+
+  const phone=normalized.display;
 
   let result=await supabaseClient.auth.signInWithPassword({
-    email,
+    phone,
     password:pin
   });
 
   if(result.error){
+    const signInMessage=String(result.error.message||'').toLowerCase();
+
+    const mayNeedSignup=
+      signInMessage.includes('invalid login credentials')
+      || signInMessage.includes('user not found');
+
+    if(!mayNeedSignup){
+      throw result.error;
+    }
+
     const signup=await supabaseClient.auth.signUp({
-      email,
+      phone,
       password:pin,
       options:{
         data:{
@@ -2523,7 +2539,31 @@ async function ensureCloudSession(profile,pin){
         }
       }
     });
-    if(signup.error) throw signup.error;
+
+    if(signup.error){
+      const signupMessage=String(signup.error.message||'').toLowerCase();
+
+      if(
+        signupMessage.includes('already registered')
+        || signupMessage.includes('already been registered')
+      ){
+        throw new Error(
+          'This WhatsApp number already has an ACL account. Check the personal PIN.'
+        );
+      }
+
+      if(
+        signupMessage.includes('sms')
+        || signupMessage.includes('phone provider')
+      ){
+        throw new Error(
+          'Enable Phone authentication in Supabase and keep phone confirmation disabled during testing.'
+        );
+      }
+
+      throw signup.error;
+    }
+
     result=signup;
   }
 
@@ -2532,7 +2572,7 @@ async function ensureCloudSession(profile,pin){
 
   if(!cloudUser){
     throw new Error(
-      'Account created, but no active session was returned. In Supabase, open Authentication → Providers → Email and temporarily disable Confirm email, then sign in again.'
+      'Account created but no session was returned. In Supabase, enable Phone authentication and disable phone confirmation during testing.'
     );
   }
 
@@ -3061,7 +3101,7 @@ async function submitSiteSignIn(){
     showScreen('home');
   }catch(cloudError){
     console.warn('Cloud sign-in failed:',cloudError);
-    const message=String(cloudError.message||'Please check your PIN and connection.');
+    const message=String(cloudError.message||'Please check your phone, PIN, and connection.');
     error.textContent='Cloud sign-in failed: '+message;
     if(message.toLowerCase().includes('email')&&message.toLowerCase().includes('invalid')){
       error.textContent='Cloud sign-in failed because the internal account identifier was rejected. Please upload the corrected index.html and try again.';
