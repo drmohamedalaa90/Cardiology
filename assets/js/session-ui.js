@@ -15,7 +15,23 @@ export async function loadProfile() {
   if (!user) return null;
   const { data, error } = await supabaseClient.from("profiles").select("*").eq("id", user.id).single();
   if (error) throw error;
-  return { ...data, email: user.email };
+  const metadata = user.user_metadata || {};
+  return {
+    ...data,
+    email: user.email,
+    full_name:
+      data?.full_name ||
+      metadata.full_name ||
+      metadata.name ||
+      metadata.display_name ||
+      "",
+    avatar_url:
+      data?.avatar_url ||
+      metadata.avatar_url ||
+      metadata.picture ||
+      metadata.photo_url ||
+      ""
+  };
 }
 
 function nestedPath(file) {
@@ -317,7 +333,46 @@ function buildUnifiedHeader() {
   }, { once: false });
 }
 
-function initializeNavigation() {
+let aclHeaderHydrationPromise = null;
+
+async function hydrateHeaderProfile() {
+  if (window.aclCurrentProfile) return window.aclCurrentProfile;
+  if (aclHeaderHydrationPromise) return aclHeaderHydrationPromise;
+
+  aclHeaderHydrationPromise = (async () => {
+    try {
+      const profile = await loadProfile();
+      if (!profile) return null;
+
+      try {
+        const { data: rpcAdmin, error: rpcAdminError } = await supabaseClient.rpc("acl_is_admin");
+        if (!rpcAdminError && rpcAdmin === true) {
+          profile.role = "admin";
+          profile.is_admin = true;
+        } else {
+          profile.is_admin =
+            profile?.role === "admin" ||
+            profile?.role === "administrator";
+        }
+      } catch {
+        profile.is_admin =
+          profile?.role === "admin" ||
+          profile?.role === "administrator";
+      }
+
+      window.aclCurrentProfile = profile;
+      return profile;
+    } catch (error) {
+      console.warn("Could not hydrate header profile:", error);
+      return null;
+    }
+  })();
+
+  return aclHeaderHydrationPromise;
+}
+
+async function initializeNavigation() {
+  await hydrateHeaderProfile();
   buildUnifiedHeader();
 }
 

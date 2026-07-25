@@ -1,5 +1,5 @@
 import { supabaseClient } from './supabase-client.js';
-import { protectAndRender } from './session-ui.js';
+import { protectAndRender } from './session-ui.js?v=2.7.12';
 const $=id=>document.getElementById(id), status=$('accessStatus'); let modules=[];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function msg(t,k=''){status.textContent=t;status.className=`status-box ${k}`.trim();status.hidden=!t}

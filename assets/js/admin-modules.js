@@ -1,5 +1,5 @@
 import { supabaseClient } from "./supabase-client.js";
-import { protectAndRender } from "./session-ui.js";
+import { protectAndRender } from "./session-ui.js?v=2.7.12";
 
 const $ = id => document.getElementById(id);
 const grid = $("adminModulesGrid");

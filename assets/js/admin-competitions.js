@@ -1,4 +1,4 @@
-import { supabaseClient } from './supabase-client.js'; import { protectAndRender } from './session-ui.js';
+import { supabaseClient } from './supabase-client.js'; import { protectAndRender } from './session-ui.js?v=2.7.12';
 const $=x=>document.getElementById(x), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); let modules=[],quizzes=[],items=[],profile;
 function msg(t,c=''){const e=$('status');e.textContent=t;e.className='status-box '+c;e.hidden=!t} function dt(v){return v?new Date(v).toISOString().slice(0,16):''}
 async function load(){let r=await supabaseClient.from('modules').select('id,title').order('title');modules=r.data||[];r=await supabaseClient.from('quizzes').select('id,module_id,title,status').neq('status','archived');quizzes=r.data||[];r=await supabaseClient.from('competitions').select('*').order('opens_at',{ascending:false});if(r.error)return msg(r.error.message,'error');items=r.data||[];render();}

@@ -1,5 +1,5 @@
 import { supabaseClient } from "./supabase-client.js";
-import { protectAndRender } from "./session-ui.js";
+import { protectAndRender } from "./session-ui.js?v=2.7.12";
 
 const $ = id => document.getElementById(id);
 const list = $("adminQuestionsList");
@@ -9,6 +9,8 @@ let modules = [];
 let questions = [];
 let adminProfile = null;
 let optionCounter = 0;
+let aiDrafts = [];
+let activeAiDraftId = null;
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]));
 const titleCase = value => String(value || "").replaceAll("_", " ").replace(/\b\w/g, x => x.toUpperCase());
@@ -66,6 +68,104 @@ async function loadQuestions() {
   renderStats(); applyFilters(); setStatus("");
 }
 
+
+function normalizeAiDraftRow(row) {
+  return {
+    ...row,
+    payload: typeof row.payload === "string" ? JSON.parse(row.payload) : (row.payload || {})
+  };
+}
+
+function renderAiDrafts() {
+  const host = $("aiDraftList");
+  if (!host) return;
+  if (!aiDrafts.length) {
+    host.innerHTML = '<div class="ai-empty">No pending AI drafts. Generate questions when you are ready.</div>';
+    return;
+  }
+  host.innerHTML = aiDrafts.map(row => {
+    const p = row.payload || {};
+    const module = modules.find(m => m.id === row.module_id);
+    return `<article class="ai-draft-card" data-ai-draft-id="${escapeHtml(row.id)}">
+      <span class="ai-review-badge">Awaiting review</span>
+      <h3>${escapeHtml(p.stem || "Untitled generated question")}</h3>
+      <div class="ai-draft-meta">
+        <span>${escapeHtml(module?.title || row.module_id || "Module")}</span>
+        <span>${escapeHtml(titleCase(p.difficulty || "intermediate"))}</span>
+        <span>${escapeHtml(titleCase(p.question_type || "single_best_answer"))}</span>
+        <span>${Array.isArray(p.options) ? p.options.length : 0} options</span>
+      </div>
+      <div class="ai-draft-actions">
+        <button class="primary-btn review-ai-draft" type="button">Review and edit</button>
+        <button class="secondary-btn reject-ai-draft" type="button">Reject</button>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+async function loadAiDrafts() {
+  const { data, error } = await supabaseClient
+    .from("ai_question_drafts")
+    .select("*")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.warn("AI drafts unavailable:", error.message);
+    return;
+  }
+  aiDrafts = (data || []).map(normalizeAiDraftRow);
+  renderAiDrafts();
+}
+
+function draftToQuestion(row) {
+  const p = row.payload || {};
+  return {
+    module_id: row.module_id,
+    question_type: p.question_type || "single_best_answer",
+    status: "draft",
+    clinical_scenario: p.clinical_scenario || "",
+    stem: p.stem || "",
+    topic: p.topic || "",
+    subtopic: p.subtopic || "",
+    difficulty: p.difficulty || "intermediate",
+    default_seconds: Number(p.default_seconds || 60),
+    points: 1,
+    negative_points: 0,
+    display_order: 100,
+    explanation: p.explanation || "",
+    reference_text: p.reference_text || "",
+    reference_url: "",
+    confidence_enabled: false,
+    randomize_options: true,
+    question_options: (p.options || []).map((option, index) => ({
+      option_key: option.key || String.fromCharCode(65 + index),
+      option_text: option.text || "",
+      image_url: null,
+      is_correct: Boolean(option.is_correct),
+      display_order: index + 1
+    }))
+  };
+}
+
+function openAiDialog() {
+  $("aiModule").innerHTML = moduleOptions();
+  $("aiModule").value = $("questionModuleFilter").value !== "all"
+    ? $("questionModuleFilter").value
+    : (modules[0]?.id || "");
+  $("aiGenerationProgress").textContent = "";
+  $("aiQuestionDialog").showModal();
+}
+
+async function rejectAiDraft(id) {
+  if (!confirm("Reject this AI-generated draft?")) return;
+  const { error } = await supabaseClient
+    .from("ai_question_drafts")
+    .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: adminProfile.id })
+    .eq("id", id);
+  if (error) return setStatus(error.message, "error");
+  await loadAiDrafts();
+}
+
 function updateOptionHelp() {
   const type = $("questionType").value;
   const multiple = type === "multiple_response";
@@ -99,6 +199,7 @@ function renumberOptions() {
 function clearOptions() { $("optionRows").innerHTML = ""; optionCounter = 0; }
 
 function fillForm(question = null, duplicate = false) {
+  activeAiDraftId = null;
   form.reset(); clearOptions();
   const source = question || {};
   $("questionDialogTitle").textContent = duplicate ? "Duplicate question" : question ? "Edit question" : "Create question";
@@ -172,6 +273,7 @@ function optionPayload(questionId) {
 form.addEventListener("submit", async event => {
   event.preventDefault();
   const payload = questionPayload();
+  if (activeAiDraftId) payload.status = "draft";
   if (!payload.module_id || !payload.stem) return setStatus("Module and question stem are required.", "error");
   const optionRows = [...document.querySelectorAll(".option-row")];
   if (!optionRows.length) return setStatus("Add at least one answer option.", "error");
@@ -198,7 +300,21 @@ form.addEventListener("submit", async event => {
   const normalized = options.map(o => { const copy = {...o}; if (!copy.id) delete copy.id; return copy; });
   const { error: optionError } = await supabaseClient.from("question_options").upsert(normalized, { onConflict: "id" });
   if (optionError) return setStatus(optionError.message, "error");
-  dialog.close(); setStatus("Question saved.", "success"); await loadQuestions();
+  if (activeAiDraftId) {
+    const { error: reviewError } = await supabaseClient
+      .from("ai_question_drafts")
+      .update({
+        status: "approved",
+        linked_question_id: questionId,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: adminProfile.id
+      })
+      .eq("id", activeAiDraftId);
+    if (reviewError) return setStatus(`Question saved, but AI review status failed: ${reviewError.message}`, "error");
+    activeAiDraftId = null;
+    await loadAiDrafts();
+  }
+  dialog.close(); setStatus("Question saved as a draft.", "success"); await loadQuestions();
 });
 
 $("newQuestionButton").addEventListener("click", () => fillForm());
@@ -214,6 +330,67 @@ $("optionRows").addEventListener("click", event => { if (event.target.closest(".
 $("archiveQuestionButton").addEventListener("click", async () => { const id = $("questionId").value; if (!id || !confirm("Archive this question?")) return; const { error } = await supabaseClient.from("questions").update({status:"archived"}).eq("id",id); if (error) return setStatus(error.message,"error"); dialog.close(); await loadQuestions(); });
 $("duplicateQuestionButton").addEventListener("click", () => { const q = questions.find(x => x.id === $("questionId").value); if (q) fillForm(q, true); });
 
+
+$("generateAiQuestionsButton")?.addEventListener("click", openAiDialog);
+$("generateAiQuestionsButtonSecondary")?.addEventListener("click", openAiDialog);
+$("closeAiQuestionDialog")?.addEventListener("click", () => $("aiQuestionDialog").close());
+$("cancelAiQuestionDialog")?.addEventListener("click", () => $("aiQuestionDialog").close());
+
+$("aiQuestionForm")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const submit = $("submitAiGeneration");
+  submit.disabled = true;
+  $("aiGenerationProgress").textContent = "Generating secure review drafts…";
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("generate-question-drafts", {
+      body: {
+        module_id: $("aiModule").value,
+        module_title: modules.find(m => m.id === $("aiModule").value)?.title || "",
+        count: Number($("aiQuestionCount").value || 5),
+        difficulty: $("aiDifficulty").value,
+        question_type: $("aiQuestionType").value,
+        prompt: $("aiPrompt").value.trim(),
+        reference_context: $("aiReferenceContext").value.trim()
+      }
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    $("aiGenerationProgress").textContent = `${data?.created_count || 0} draft question(s) generated for review.`;
+    await loadAiDrafts();
+    setTimeout(() => $("aiQuestionDialog").close(), 700);
+  } catch (error) {
+    $("aiGenerationProgress").textContent = error.message || "AI generation failed.";
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+$("aiDraftList")?.addEventListener("click", async (event) => {
+  const card = event.target.closest("[data-ai-draft-id]");
+  if (!card) return;
+  const row = aiDrafts.find(item => item.id === card.dataset.aiDraftId);
+  if (!row) return;
+
+  if (event.target.closest(".reject-ai-draft")) {
+    await rejectAiDraft(row.id);
+    return;
+  }
+
+  if (event.target.closest(".review-ai-draft")) {
+    const generated = draftToQuestion(row);
+    fillForm(generated, true);
+    activeAiDraftId = row.id;
+    $("questionDialogTitle").textContent = "Review AI-generated question";
+    $("questionStatus").value = "draft";
+    $("questionStatus").disabled = true;
+  }
+});
+
+dialog.addEventListener("close", () => {
+  $("questionStatus").disabled = false;
+  activeAiDraftId = null;
+});
+
 list.addEventListener("click", async event => {
   const card = event.target.closest(".question-admin-card"); if (!card) return;
   const q = questions.find(x => x.id === card.dataset.id); if (!q) return;
@@ -226,6 +403,6 @@ list.addEventListener("click", async event => {
 (async () => {
   adminProfile = await protectAndRender("login.html");
   if (!adminProfile) return;
-  if (adminProfile.role !== "admin") { window.location.replace("modules.html"); return; }
-  try { await loadModules(); await loadQuestions(); } catch (error) { console.error(error); setStatus(error.message, "error"); }
+  if (!(adminProfile.is_admin || adminProfile.role === "admin" || adminProfile.role === "administrator")) { window.location.replace("modules.html"); return; }
+  try { await loadModules(); await Promise.all([loadQuestions(), loadAiDrafts()]); } catch (error) { console.error(error); setStatus(error.message, "error"); }
 })();

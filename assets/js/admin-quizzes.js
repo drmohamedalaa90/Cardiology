@@ -1,5 +1,5 @@
 import { supabaseClient } from './supabase-client.js';
-import { protectAndRender } from './session-ui.js';
+import { protectAndRender } from './session-ui.js?v=2.7.12';
 const $=id=>document.getElementById(id); let modules=[], questions=[], quizzes=[], adminProfile=null;
 const esc=(v='')=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const title=v=>String(v||'').replaceAll('_',' ').replace(/\b\w/g,x=>x.toUpperCase());

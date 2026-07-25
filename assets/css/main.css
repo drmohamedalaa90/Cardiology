@@ -2465,3 +2465,198 @@ dialog .danger-btn {
     margin-right:0!important;
   }
 }
+
+
+/* Phase 2.8.0 — persistent single-line admin navigation */
+.acl-admin-shell{
+  display:grid;
+  gap:12px;
+  margin:0 0 20px;
+  padding:18px 20px;
+  border:1px solid #cfe0f0;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 10px 28px rgba(14,63,113,.07);
+}
+.acl-admin-shell-heading span{
+  color:#0c66bd;
+  font-size:.76rem;
+  font-weight:950;
+  letter-spacing:.18em;
+}
+.acl-admin-nav-line{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:8px;
+  width:100%;
+}
+.acl-admin-nav-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  min-height:58px;
+  padding:9px 10px;
+  border:1px solid #cfe0f0;
+  border-radius:12px;
+  background:linear-gradient(180deg,#fff 0%,#f5faff 100%);
+  color:#0b2748;
+  text-decoration:none;
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.acl-admin-nav-item:hover,
+.acl-admin-nav-item:focus-visible{
+  transform:translateY(-2px);
+  border-color:#2b82d5;
+  box-shadow:0 7px 17px rgba(13,69,124,.11);
+  outline:none;
+}
+.acl-admin-nav-item.is-active{
+  border-color:#ffc400;
+  background:linear-gradient(180deg,#fff9dc 0%,#fff3b9 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,196,0,.22);
+}
+.acl-admin-nav-icon{
+  display:grid;
+  place-items:center;
+  flex:0 0 31px;
+  width:31px;
+  height:31px;
+  border-radius:9px;
+  background:#e6f2ff;
+  font-size:1rem;
+}
+.acl-admin-nav-item.is-active .acl-admin-nav-icon{background:#ffc400}
+.acl-admin-nav-copy{
+  display:grid;
+  gap:1px;
+  min-width:0;
+}
+.acl-admin-nav-copy strong{
+  color:#0b2748;
+  font-size:.76rem;
+  line-height:1.08;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.acl-admin-nav-copy small{
+  color:#60758c;
+  font-size:.58rem;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Opened admin page title sits below the persistent line */
+.admin-page-heading{
+  margin:0 0 20px;
+}
+.admin-page-heading h1{margin:.15rem 0 .45rem}
+.admin-page-heading p{margin:0}
+
+/* AI question drafting */
+.ai-question-panel{
+  margin:0 0 22px;
+  padding:20px;
+  border:1px solid #bcd9f2;
+  border-radius:18px;
+  background:linear-gradient(120deg,#f3f9ff 0%,#fffaf0 100%);
+  box-shadow:0 10px 28px rgba(14,63,113,.06);
+}
+.ai-question-panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.ai-question-panel h2{margin:0;color:#0b2748}
+.ai-question-panel p{margin:.35rem 0 0;color:#58708b}
+.ai-draft-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-top:16px;
+}
+.ai-draft-card{
+  display:grid;
+  gap:10px;
+  padding:16px;
+  border:1px solid #d3e3f0;
+  border-radius:14px;
+  background:#fff;
+}
+.ai-draft-card h3{
+  margin:0;
+  color:#0b2748;
+  font-size:1rem;
+  line-height:1.3;
+}
+.ai-draft-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  color:#567089;
+  font-size:.72rem;
+}
+.ai-draft-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.ai-empty{
+  grid-column:1/-1;
+  padding:18px;
+  border:1px dashed #bed2e4;
+  border-radius:12px;
+  color:#5a7188;
+  text-align:center;
+  background:#fff;
+}
+.ai-dialog-note{
+  padding:12px 14px;
+  border-left:4px solid #ffc400;
+  border-radius:8px;
+  background:#fff8d9;
+  color:#4a4b3e;
+  font-size:.78rem;
+  line-height:1.45;
+}
+.ai-generation-progress{
+  min-height:22px;
+  margin-top:10px;
+  color:#0c66bd;
+  font-weight:800;
+}
+.ai-review-badge{
+  display:inline-flex;
+  width:max-content;
+  padding:5px 9px;
+  border-radius:999px;
+  background:#fff1b8;
+  color:#5b4300;
+  font-size:.68rem;
+  font-weight:900;
+}
+
+@media(max-width:1200px){
+  .acl-admin-nav-line{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .acl-admin-shell{padding:14px}
+  .acl-admin-nav-line{
+    display:flex;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    padding-bottom:3px;
+  }
+  .acl-admin-nav-item{
+    flex:0 0 145px;
+    scroll-snap-align:start;
+  }
+  .ai-question-panel-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .ai-draft-grid{grid-template-columns:1fr}
+}

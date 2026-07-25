@@ -46,7 +46,8 @@ byId("signInForm")?.addEventListener("submit", async (event) => {
       refresh_token: data.session.refresh_token
     });
     if (sessionError) throw sessionError;
-    window.location.href = "modules.html";
+    const { data: isAdmin, error: adminError } = await supabaseClient.rpc("acl_is_admin");
+    window.location.href = (!adminError && isAdmin === true) ? "admin.html" : "modules.html";
   } catch (error) {
     setMessage("signInError", error.message || "Could not sign in.");
   } finally { if (submit) submit.disabled = false; }
@@ -83,7 +84,8 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
       setMessage("registerSuccess", "Account created. Open the confirmation email, confirm your address, then return to sign in.");
       event.target.reset();
     } else {
-      window.location.href = "modules.html";
+      const { data: isAdmin, error: adminError } = await supabaseClient.rpc("acl_is_admin");
+      window.location.href = (!adminError && isAdmin === true) ? "admin.html" : "modules.html";
     }
   } catch (error) {
     setMessage("registerError", error.message || "Could not create account.");

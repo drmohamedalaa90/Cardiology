@@ -1,9 +1,25 @@
 <!doctype html><html lang="en"><head>
 <meta name="referrer" content="strict-origin-when-cross-origin"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Question Bank | ACL Admin</title>
-<link rel="stylesheet" href="assets/css/main.css?v=2.7.11"><link rel="stylesheet" href="assets/css/auth.css?v=2.2"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
+<link rel="stylesheet" href="assets/css/main.css?v=2.8.0"><link rel="stylesheet" href="assets/css/auth.css?v=2.2"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
 <header class="topbar"><a class="brand brand-link" href="modules.html">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
 <main class="container">
-<section class="card admin-hero"><div><span class="admin-kicker">PHASE 2 QUESTION BANK</span><h1>Manage Questions</h1><p class="muted">Create secure, reusable questions with answer options, explanations, images, references, timing, difficulty and confidence scoring.</p></div><div class="admin-hero-actions"><a class="secondary-btn" href="admin.html">Students</a><a class="secondary-btn" href="admin-modules.html">Modules</a><button id="newQuestionButton" class="primary-btn" type="button">+ New question</button></div></section>
+<section data-admin-shell data-active="questions"></section>
+<section class="card admin-hero"><div><span class="admin-kicker">PHASE 2 QUESTION BANK</span><h1>Manage Questions</h1><p class="muted">Create secure, reusable questions with answer options, explanations, images, references, timing, difficulty and confidence scoring.</p></div><div class="admin-hero-actions"><a class="secondary-btn" href="admin.html">Students</a><a class="secondary-btn" href="admin-modules.html">Modules</a><button id="generateAiQuestionsButton" class="secondary-btn" type="button">✨ Generate with AI</button><button id="newQuestionButton" class="primary-btn" type="button">+ New question</button></div></section>
+
+<section class="ai-question-panel">
+  <div class="ai-question-panel-head">
+    <div>
+      <span class="admin-kicker">AI DRAFT WORKSPACE</span>
+      <h2>Generated questions awaiting your approval</h2>
+      <p>AI output never enters the question bank automatically. Review, edit, and save each item as a draft first.</p>
+    </div>
+    <button id="generateAiQuestionsButtonSecondary" class="primary-btn" type="button">✨ Generate questions</button>
+  </div>
+  <div id="aiDraftList" class="ai-draft-grid">
+    <div class="ai-empty">No pending AI drafts.</div>
+  </div>
+</section>
+
 <section class="admin-stats"><div class="stat-card"><span>All questions</span><strong id="questionTotal">—</strong></div><div class="stat-card"><span>Published</span><strong id="questionPublished">—</strong></div><div class="stat-card"><span>Draft</span><strong id="questionDraft">—</strong></div><div class="stat-card"><span>Modules represented</span><strong id="questionModules">—</strong></div></section>
 <section class="card admin-toolbar question-toolbar"><div class="field"><label for="questionModuleFilter">Module</label><select id="questionModuleFilter"><option value="all">All modules</option></select></div><div class="field"><label for="questionStatusFilter">Status</label><select id="questionStatusFilter"><option value="all">All statuses</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div><div class="field"><label for="questionSearch">Search</label><input id="questionSearch" type="search" placeholder="Stem, topic, reference or ID"></div><button id="refreshQuestions" class="secondary-btn" type="button">Refresh</button></section>
 <div id="adminQuestionsStatus" class="status-box" hidden></div>
@@ -31,4 +47,28 @@
 <div class="toggle-grid"><label><input id="questionConfidence" type="checkbox"> Confidence scoring</label><label><input id="questionRandomize" type="checkbox" checked> Randomize options</label></div>
 <div class="dialog-actions"><button id="archiveQuestionButton" type="button" class="danger-btn" hidden>Archive question</button><button id="duplicateQuestionButton" type="button" class="secondary-btn" hidden>Duplicate</button><button id="cancelQuestionButton" type="button" class="secondary-btn">Cancel</button><button type="submit" class="primary-btn">Save question</button></div>
 </form></dialog>
-<script type="module" src="assets/js/admin-questions.js?v=2.2"></script><script type="module" src="assets/js/session-ui.js?v=2.7.10"></script></body></html>
+
+<dialog id="aiQuestionDialog" class="module-dialog">
+  <form id="aiQuestionForm">
+    <div class="dialog-title-row">
+      <div><span class="admin-kicker">AI QUESTION GENERATOR</span><h2>Generate reviewable drafts</h2></div>
+      <button type="button" id="closeAiQuestionDialog" class="dialog-close" aria-label="Close">×</button>
+    </div>
+    <div class="ai-dialog-note"><strong>Approval workflow:</strong> Generated questions are saved only in an AI-review queue. They are not added to quizzes or published until you open them, edit them, and save them manually.</div>
+    <div class="form-grid" style="margin-top:18px">
+      <div class="field"><label for="aiModule">Module *</label><select id="aiModule" required></select></div>
+      <div class="field"><label for="aiQuestionCount">Number of questions</label><input id="aiQuestionCount" type="number" min="1" max="10" value="5" required></div>
+      <div class="field"><label for="aiDifficulty">Difficulty</label><select id="aiDifficulty"><option value="foundation">Foundation</option><option value="intermediate" selected>Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>
+      <div class="field"><label for="aiQuestionType">Question type</label><select id="aiQuestionType"><option value="single_best_answer">Single best answer</option><option value="multiple_response">Multiple response</option><option value="true_false">True / False</option><option value="image_based">Image-based MCQ</option></select></div>
+      <div class="field span-2"><label for="aiPrompt">Topic and instructions *</label><textarea id="aiPrompt" rows="5" required placeholder="Example: Generate guideline-based questions on STEMI reperfusion strategy. Use realistic clinical scenarios and avoid ambiguous distractors."></textarea></div>
+      <div class="field span-2"><label for="aiReferenceContext">Reference context</label><textarea id="aiReferenceContext" rows="4" placeholder="Paste the guideline passage, trial summary, learning objectives, or source notes that the AI must use."></textarea></div>
+    </div>
+    <div id="aiGenerationProgress" class="ai-generation-progress"></div>
+    <div class="dialog-actions">
+      <button id="cancelAiQuestionDialog" type="button" class="secondary-btn">Cancel</button>
+      <button id="submitAiGeneration" type="submit" class="primary-btn">Generate drafts</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="assets/js/admin-questions.js?v=2.8.0"></script><script type="module" src="assets/js/session-ui.js?v=2.7.12"></script><script type="module" src="assets/js/admin-shell.js?v=2.8.0"></script></body></html>
