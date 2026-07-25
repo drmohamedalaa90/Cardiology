@@ -1,0 +1,18 @@
+ACL Expert Edition V2 — Phase 2.1 installation
+
+1. Stay on GitHub branch: v2-development.
+2. In Supabase > SQL Editor, open phase2_1_modules_patch.sql, copy all, and Run.
+3. Confirm the query finishes successfully.
+4. Upload ALL extracted files/folders to v2-development, replacing existing files.
+5. Commit message: ACL V2 Phase 2.1 database-driven modules
+6. Wait for GitHub Pages deployment to turn green.
+7. Sign in as admin and open admin-modules.html.
+8. Test: create a temporary Draft module. It must NOT appear for a student.
+9. Change it to Published. It must appear on modules.html.
+10. Archive the temporary module after testing.
+
+Important:
+- Do not run older module SQL after this patch.
+- Do not upload to main yet.
+- Existing PPCI attempts remain linked to id ppci-fundamentals.
+- Passcode entry and full minimum-score rules are prepared, but the complete quiz-builder/access workflow continues in later Phase 2 releases.
