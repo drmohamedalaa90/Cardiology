@@ -1,0 +1,18 @@
+ACL Expert Edition V2 — Phase 2.7.5 Compact Clickable Header
+
+No SQL required.
+
+Changes:
+- compact dark title row
+- icon-only navigation below it
+- first click expands and shows the label
+- second click opens the destination
+- direct window.location navigation, avoiding broken anchor overlays
+- Admin always first
+- no profile block in the header
+- old generated header rows hidden
+- higher z-index and pointer events forced for reliable clicking
+
+Upload all files to v2-development and replace existing files.
+Commit: ACL V2 Phase 2.7.5 compact clickable header
+After deployment use Ctrl+F5.

@@ -77,142 +77,133 @@ export async function signOut() {
 window.aclSignOut = signOut;
 
 const iconSvgs = {
-  admin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8.2 8 9 4.6-.8 8-4 8-9V7z"/><path d="M8.5 10.5 10 14l2-2 2 2 1.5-3.5"/></svg>`,
-  modules: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c2.7-1.2 5.4-.9 8.5 1.1v12c-3.1-2-5.8-2.3-8.5-1.1z"/><path d="M20.5 5.5c-2.7-1.2-5.4-.9-8.5 1.1v12c3.1-2 5.8-2.3 8.5-1.1z"/></svg>`,
-  progress: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19v-5M16 19V6M3 20h18"/><path d="m4 10 6-4 6 3 4-5"/></svg>`,
-  analytics: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9h9A9 9 0 1 1 12 3z"/><path d="M15 3.5A7.5 7.5 0 0 1 20.5 9H15z"/></svg>`,
+  admin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8.2 8 9 4.6-.8 8-4 8-9V7z"/><path d="m9 12 2 2 4-4"/></svg>`,
+  profile: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>`,
+  modules: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
+  progress: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19v-5M16 19V6M3 20h18"/></svg>`,
   contact: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>`,
   signout: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/></svg>`
 };
 
-function makeHeaderAction({ type, label, href, onClick }) {
-  const action = document.createElement(href ? "a" : "button");
-  action.className = `unified-icon-btn mobile-icon-${type}`;
-  action.innerHTML = `<span class="mobile-icon-glyph">${iconSvgs[type]}</span><span class="mobile-icon-label">${label}</span>`;
-  action.setAttribute("aria-label", label);
-  action.title = label;
-  if (href) action.href = href;
-  else action.type = "button";
+function createCompactAction({ type, label, href, action }) {
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = `compact-header-action compact-${type}`;
+  element.setAttribute("aria-label", label);
+  element.innerHTML = `
+    <span class="compact-action-icon">${iconSvgs[type]}</span>
+    <span class="compact-action-label">${label}</span>
+  `;
 
-  action.addEventListener("click", (event) => {
-    const compactMode = window.matchMedia("(max-width: 760px)").matches;
-    if (compactMode && !action.classList.contains("is-expanded")) {
-      event.preventDefault();
-      event.stopPropagation();
-      action.parentElement?.querySelectorAll(".is-expanded").forEach(btn => {
-        if (btn !== action) btn.classList.remove("is-expanded");
+  element.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const expanded = element.classList.contains("is-expanded");
+    if (!expanded) {
+      document.querySelectorAll(".compact-header-action.is-expanded").forEach((item) => {
+        if (item !== element) item.classList.remove("is-expanded");
       });
-      action.classList.add("is-expanded");
+      element.classList.add("is-expanded");
       return;
     }
 
-    // Explicit navigation avoids any inherited overlay or stale click handler
-    // blocking the header links on secondary pages.
-    event.preventDefault();
-    event.stopPropagation();
-    if (onClick) {
-      onClick();
-    } else if (href) {
-      if (href.startsWith("mailto:")) window.location.href = href;
-      else window.location.assign(href);
+    if (typeof action === "function") {
+      action();
+      return;
+    }
+
+    if (href) {
+      window.location.assign(href);
     }
   });
-  return action;
+
+  return element;
 }
-let outsideHandlerInstalled = false;
+
+let compactOutsideHandlerBound = false;
 
 function buildUnifiedHeader() {
   const topbar = document.querySelector(".topbar");
-  const nav = topbar?.querySelector("nav");
-  if (!topbar || !nav) return;
+  if (!topbar) return;
 
-  topbar.classList.add("unified-topbar");
+  topbar.classList.add("compact-two-row-header");
+
   const brand = topbar.querySelector(".brand-link, .brand");
-  brand?.classList.add("unified-brand");
+  if (brand) brand.classList.add("compact-header-brand");
 
-  let row = topbar.querySelector(".unified-account-row");
-  if (!row) {
-    row = document.createElement("div");
-    row.className = "unified-account-row";
-    topbar.appendChild(row);
+  const oldNav = topbar.querySelector("nav");
+  const isAdmin = Boolean(oldNav?.querySelector("#adminNavLink"));
+
+  let actions = topbar.querySelector(".compact-header-actions");
+  if (!actions) {
+    actions = document.createElement("div");
+    actions.className = "compact-header-actions";
+    topbar.appendChild(actions);
   }
-  row.replaceChildren();
-
-  const chip = nav.querySelector("#userChip");
-  const isAdmin = Boolean(nav.querySelector("#adminNavLink"));
-
-  if (chip) {
-    const identity = document.createElement("a");
-    identity.className = "unified-signed-user";
-    identity.href = chip.href || nestedPath("profile.html");
-    identity.addEventListener("click", (event) => { event.preventDefault(); window.location.assign(identity.href); });
-    const image = chip.querySelector("img")?.cloneNode(true) ||
-                  chip.querySelector(".avatar-placeholder")?.cloneNode(true);
-    if (image) identity.appendChild(image);
-
-    const name = chip.querySelector(".user-name")?.textContent || "ACL User";
-    const copy = document.createElement("span");
-    copy.className = "unified-user-copy";
-    copy.innerHTML = `<strong>${name}</strong><small>Edit profile ✎</small>`;
-    identity.appendChild(copy);
-    row.appendChild(identity);
-  }
-
-  const actions = document.createElement("div");
-  actions.className = "unified-icon-actions";
+  actions.replaceChildren();
 
   if (isAdmin) {
-    actions.appendChild(makeHeaderAction({
+    actions.appendChild(createCompactAction({
       type: "admin",
       label: "Admin",
       href: nestedPath("admin.html")
     }));
   }
 
-  actions.appendChild(makeHeaderAction({
+  actions.appendChild(createCompactAction({
+    type: "profile",
+    label: "Edit profile",
+    href: nestedPath("profile.html")
+  }));
+
+  actions.appendChild(createCompactAction({
     type: "modules",
     label: "Modules",
     href: nestedPath("modules.html")
   }));
-  actions.appendChild(makeHeaderAction({
+
+  actions.appendChild(createCompactAction({
     type: "progress",
     label: "My Progress",
     href: nestedPath("progress.html")
   }));
 
-  if (isAdmin) {
-    actions.appendChild(makeHeaderAction({
-      type: "analytics",
-      label: "Analytics",
-      href: nestedPath("admin-analytics.html")
-    }));
-  }
-
-  actions.appendChild(makeHeaderAction({
+  actions.appendChild(createCompactAction({
     type: "contact",
     label: "Contact us",
     href: "mailto:drmohamedalaa90@gmail.com"
   }));
-  actions.appendChild(makeHeaderAction({
+
+  actions.appendChild(createCompactAction({
     type: "signout",
-    label: "Sign Out",
-    onClick: () => window.aclSignOut?.()
+    label: "Sign out",
+    action: () => {
+      if (typeof window.aclSignOut === "function") {
+        window.aclSignOut();
+      } else {
+        window.location.assign(nestedPath("login.html"));
+      }
+    }
   }));
 
-  row.appendChild(actions);
+  if (oldNav) oldNav.style.display = "none";
 
-  if (!outsideHandlerInstalled) {
+  if (!compactOutsideHandlerBound) {
     document.addEventListener("click", (event) => {
-      document.querySelectorAll(".unified-icon-actions").forEach(group => {
-        if (!group.contains(event.target)) {
-          group.querySelectorAll(".is-expanded").forEach(btn => btn.classList.remove("is-expanded"));
-        }
-      });
+      if (!event.target.closest(".compact-header-action")) {
+        document.querySelectorAll(".compact-header-action.is-expanded").forEach((item) => {
+          item.classList.remove("is-expanded");
+        });
+      }
     });
-    outsideHandlerInstalled = true;
+    compactOutsideHandlerBound = true;
   }
 }
 
-function initializeNavigation() { buildUnifiedHeader(); }
+function initializeNavigation() {
+  buildUnifiedHeader();
+}
+
 document.addEventListener("DOMContentLoaded", initializeNavigation);
 if (document.readyState !== "loading") initializeNavigation();
