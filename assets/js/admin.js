@@ -64,9 +64,9 @@ function renderRows() {
       <td><span class="account-pill ${statusClass}">${esc(p.account_status || "active")}</span></td>
       <td>${fmtDate(p.created_at)}</td>
       <td><div class="admin-actions">
-        <button class="table-btn" data-action="view" data-id="${p.id}">View</button>
-        <button class="table-btn" data-action="reset" data-id="${p.id}" ${!p.email ? "disabled" : ""}>Reset password</button>
-        <button class="table-btn ${p.account_status === "suspended" ? "restore-btn" : "danger-btn"}" data-action="toggle" data-id="${p.id}" ${isSelf ? "disabled title='You cannot suspend your own administrator account.'" : ""}>${toggleLabel}</button>
+        <button class="table-action-icon" data-action="view" data-id="${p.id}" title="First click shows label; second click opens"><span class="table-action-glyph">👁️</span><span class="table-action-label">View</span></button>
+        <button class="table-action-icon" data-action="reset" data-id="${p.id}" ${!p.email ? "disabled" : ""} title="First click shows label; second click sends reset"><span class="table-action-glyph">🔑</span><span class="table-action-label">Reset password</span></button>
+        <button class="table-action-icon ${p.account_status === "suspended" ? "restore-btn" : "danger-btn"}" data-action="toggle" data-id="${p.id}" ${isSelf ? "disabled title='You cannot suspend your own administrator account.'" : ""}><span class="table-action-glyph">${p.account_status === "suspended" ? "✅" : "⛔"}</span><span class="table-action-label">${toggleLabel}</span></button>
       </div></td>
     </tr>`;
   }).join("");
@@ -76,7 +76,12 @@ async function loadProfiles() {
     .select("id,full_name,username,email,phone_e164,academic_year,institution,avatar_url,role,account_status,created_at,updated_at,last_seen_at")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  allProfiles = data || [];
+  allProfiles = (data || []).sort((a, b) => {
+    const roleOrder = { admin: 0, student: 1 };
+    const roleDiff = (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9);
+    if (roleDiff !== 0) return roleDiff;
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  });
   updateStats();
   renderRows();
 }
@@ -142,6 +147,12 @@ byId("exportCsv").addEventListener("click", exportCsv);
 byId("studentsBody").addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-action]"); if (!button) return;
   const profile = allProfiles.find(p => p.id === button.dataset.id); if (!profile) return;
+  if (button.classList.contains("table-action-icon") && !button.classList.contains("is-expanded")) {
+    event.preventDefault();
+    document.querySelectorAll(".table-action-icon.is-expanded").forEach(item => item.classList.remove("is-expanded"));
+    button.classList.add("is-expanded");
+    return;
+  }
   button.disabled = true;
   try {
     if (button.dataset.action === "view") openDetails(profile);
@@ -149,9 +160,15 @@ byId("studentsBody").addEventListener("click", async (event) => {
     if (button.dataset.action === "toggle") await toggleStatus(profile);
     if (button.dataset.action === "reset") await sendReset(profile);
   } catch (error) { show(error.message || "Admin action failed.", "error"); }
-  finally { button.disabled = false; }
+  finally { button.disabled = false; button.classList.remove("is-expanded"); }
 });
 
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".table-action-icon")) {
+    document.querySelectorAll(".table-action-icon.is-expanded").forEach(item => item.classList.remove("is-expanded"));
+  }
+});
 async function init() {
   try {
     currentAdmin = await protectAndRender("login.html");

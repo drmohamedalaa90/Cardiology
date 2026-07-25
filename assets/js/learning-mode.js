@@ -14,7 +14,13 @@ function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.fl
 function state(){return {questionIds:questions.map(q=>q.id),currentIndex:index,answers,score:answers.reduce((s,a)=>s+Number(a.points||0),0)}}
 async function persist(done=false){if(!attempt||saving)return;saving=true;status('Saving…');try{attempt=done?await completeAttempt(attempt.id,state()):await saveAttempt(attempt.id,state());status(done?'Completed and saved':'Saved to cloud')}catch(e){console.error(e);status('Save failed — check connection',true)}finally{saving=false}}
 function currentAnswer(q){return answers.find(a=>a.questionId===q.id)}
-function optionsFor(q){return q._options||(q._options=quiz.randomize_options?shuffle(q.options):q.options)}
+function optionsFor(q){
+  return q._options || (q._options = [...(q.options || [])].sort((a,b) => {
+    const ao = Number(a.display_order ?? 999), bo = Number(b.display_order ?? 999);
+    if (ao !== bo) return ao - bo;
+    return String(a.key || '').localeCompare(String(b.key || ''));
+  }));
+}
 
 function render(){
   const q=questions[index];

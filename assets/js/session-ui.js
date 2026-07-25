@@ -18,16 +18,18 @@ export async function loadProfile() {
   return { ...data, email: user.email };
 }
 
+function nestedPath(file) {
+  return location.pathname.includes("/modules/") ? `../../${file}` : file;
+}
+
 export function renderUserChip(profile) {
   const chip = document.getElementById("userChip");
   if (!chip || !profile) return;
-  const nested = location.pathname.includes("/modules/");
-  const profileHref = nested ? "../../profile.html" : "profile.html";
   const initials = (profile.full_name || "ACL").split(/\s+/).slice(0,2).map(x => x[0] || "").join("").toUpperCase();
-  chip.href = profileHref;
+  chip.href = nestedPath("profile.html");
   chip.innerHTML = profile.avatar_url
-    ? `<img src="${profile.avatar_url}" alt=""><span class="user-chip-copy"><span class="user-name">${profile.full_name}</span><span class="edit-profile-link">/ Edit profile</span></span>`
-    : `<span class="avatar-placeholder">${initials}</span><span class="user-chip-copy"><span class="user-name">${profile.full_name}</span><span class="edit-profile-link">/ Edit profile</span></span>`;
+    ? `<img src="${profile.avatar_url}" alt=""><span class="user-chip-copy"><span class="user-name">${profile.full_name || "ACL User"}</span><span class="edit-profile-link">/ Edit profile</span></span>`
+    : `<span class="avatar-placeholder">${initials}</span><span class="user-chip-copy"><span class="user-name">${profile.full_name || "ACL User"}</span><span class="edit-profile-link">/ Edit profile</span></span>`;
 
   const nav = chip.closest("nav");
   if (nav && !nav.querySelector(".contact-nav-link")) {
@@ -37,7 +39,7 @@ export function renderUserChip(profile) {
     contact.textContent = "Contact us";
     nav.insertBefore(contact, chip);
   }
-  buildCompactMobileHeader();
+  buildUnifiedHeader();
 }
 
 function renderAdminLink(profile) {
@@ -47,11 +49,10 @@ function renderAdminLink(profile) {
   const link = document.createElement("a");
   link.id = "adminNavLink";
   link.className = "nav-btn admin-nav-btn";
-  link.href = location.pathname.includes("/modules/") ? "../../admin.html" : "admin.html";
+  link.href = nestedPath("admin.html");
   link.textContent = "Admin";
-  const signOutButton = [...nav.querySelectorAll("button")].find(btn => /sign out/i.test(btn.textContent));
-  nav.insertBefore(link, signOutButton || null);
-  buildCompactMobileHeader();
+  nav.prepend(link);
+  buildUnifiedHeader();
 }
 
 export async function protectAndRender(relativeLogin = "login.html") {
@@ -71,13 +72,11 @@ export async function protectAndRender(relativeLogin = "login.html") {
 
 export async function signOut() {
   await supabaseClient.auth.signOut();
-  const nested = location.pathname.includes("/modules/");
-  window.location.replace(nested ? "../../login.html" : "login.html");
+  window.location.replace(nestedPath("login.html"));
 }
 window.aclSignOut = signOut;
 
-
-const mobileIconSvgs = {
+const iconSvgs = {
   contact: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 7l8 6 8-6"/></svg>`,
   modules: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="5" rx="1"/><rect x="14" y="15" width="7" height="5" rx="1"/></svg>`,
   progress: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3 19h18"/></svg>`,
@@ -98,46 +97,45 @@ function navIconFor(element) {
   return "modules";
 }
 
-function mobileLabelFor(element) {
-  const type = navIconFor(element);
-  return ({profile:"Edit profile",modules:"Modules",progress:"My Progress",admin:"Admin",contact:"Contact us",signout:"Sign out"})[type] || "Open";
+function labelFor(type) {
+  return ({ profile:"Edit profile", modules:"Modules", progress:"My Progress", admin:"Admin", contact:"Contact us", signout:"Sign out" })[type] || "Open";
 }
 
-function buildCompactMobileHeader() {
+let outsideHandlerInstalled = false;
+function buildUnifiedHeader() {
   const topbar = document.querySelector(".topbar");
   const nav = topbar?.querySelector("nav");
   if (!topbar || !nav) return;
 
-  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  topbar.classList.add("unified-topbar");
+  const brand = topbar.querySelector(".brand-link, .brand");
+  brand?.classList.add("unified-brand");
+
   let row = topbar.querySelector(".mobile-account-row");
-
-  if (!isMobile) {
-    row?.remove();
-    return;
-  }
-
   if (!row) {
     row = document.createElement("div");
-    row.className = "mobile-account-row";
+    row.className = "mobile-account-row unified-account-row";
     topbar.appendChild(row);
   }
   row.innerHTML = "";
 
   const chip = nav.querySelector("#userChip");
   if (chip) {
-    const identity = document.createElement("div");
-    identity.className = "mobile-signed-user";
+    const identity = document.createElement("a");
+    identity.className = "mobile-signed-user unified-signed-user";
+    identity.href = chip.href || nestedPath("profile.html");
     const image = chip.querySelector("img")?.cloneNode(true) || chip.querySelector(".avatar-placeholder")?.cloneNode(true);
     if (image) identity.appendChild(image);
-    const name = document.createElement("span");
-    name.textContent = chip.querySelector(".user-name")?.textContent || chip.textContent.trim() || "ACL User";
-    identity.appendChild(name);
+    const copy = document.createElement("span");
+    copy.className = "unified-user-copy";
+    copy.innerHTML = `<strong>${chip.querySelector(".user-name")?.textContent || "ACL User"}</strong><small>Signed in</small>`;
+    identity.appendChild(copy);
     row.appendChild(identity);
   }
 
   const actions = document.createElement("div");
-  actions.className = "mobile-icon-actions";
-  const order = ["profile", "modules", "progress", "admin", "contact", "signout"];
+  actions.className = "mobile-icon-actions unified-icon-actions";
+  const order = ["admin", "profile", "modules", "progress", "contact", "signout"];
   const sources = [...nav.children].filter(el => el.matches?.("a,button"));
 
   const collapseOthers = (except) => {
@@ -149,48 +147,43 @@ function buildCompactMobileHeader() {
   order.forEach(type => {
     const source = sources.find(el => navIconFor(el) === type);
     if (!source) return;
-
     const action = document.createElement(source.tagName === "A" ? "a" : "button");
-    const label = mobileLabelFor(source);
-    action.className = `mobile-icon-btn mobile-icon-${type}`;
-    action.innerHTML = `<span class="mobile-icon-glyph">${mobileIconSvgs[type]}</span><span class="mobile-icon-label">${label}</span>`;
+    const label = labelFor(type);
+    action.className = `mobile-icon-btn unified-icon-btn mobile-icon-${type}`;
+    action.innerHTML = `<span class="mobile-icon-glyph">${iconSvgs[type]}</span><span class="mobile-icon-label">${label}</span>`;
     action.setAttribute("aria-label", label);
-    action.title = label;
-    if (source.tagName === "BUTTON") action.type = "button";
+    action.title = `${label}: first click shows the label, second click opens`;
+    if (source.tagName === "A") action.href = source.href;
+    else action.type = "button";
 
     action.addEventListener("click", (event) => {
-      const alreadyExpanded = action.classList.contains("is-expanded");
-      if (!alreadyExpanded) {
+      const expanded = action.classList.contains("is-expanded");
+      if (!expanded) {
         event.preventDefault();
         event.stopPropagation();
         collapseOthers(action);
         action.classList.add("is-expanded");
         return;
       }
-
-      if (source.tagName === "A") {
-        event.preventDefault();
-        window.location.href = source.href;
-      } else {
-        event.preventDefault();
-        window.aclSignOut?.();
-      }
+      event.preventDefault();
+      if (source.tagName === "A") window.location.href = source.href;
+      else window.aclSignOut?.();
     });
-
     actions.appendChild(action);
   });
 
-  document.addEventListener("click", (event) => {
-    if (!actions.contains(event.target)) collapseOthers(null);
-  }, { once: true });
-
   row.appendChild(actions);
+  if (!outsideHandlerInstalled) {
+    document.addEventListener("click", (event) => {
+      document.querySelectorAll(".unified-icon-actions").forEach(group => {
+        if (!group.contains(event.target)) group.querySelectorAll(".is-expanded").forEach(btn => btn.classList.remove("is-expanded"));
+      });
+    });
+    outsideHandlerInstalled = true;
+  }
 }
 
-function initializeMobileNavigation() {
-  buildCompactMobileHeader();
-}
-
-document.addEventListener("DOMContentLoaded", initializeMobileNavigation);
-window.addEventListener("resize", initializeMobileNavigation);
-if (document.readyState !== "loading") initializeMobileNavigation();
+function initializeNavigation() { buildUnifiedHeader(); }
+document.addEventListener("DOMContentLoaded", initializeNavigation);
+window.addEventListener("resize", initializeNavigation);
+if (document.readyState !== "loading") initializeNavigation();

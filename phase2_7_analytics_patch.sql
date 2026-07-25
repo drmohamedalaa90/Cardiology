@@ -157,7 +157,11 @@ $$;
 
 grant execute on function public.acl_admin_competition_report(uuid) to authenticated;
 
-create or replace function public.acl_admin_question_report(p_module_id text default null)
+drop function if exists public.acl_admin_question_report(text);
+
+create or replace function public.acl_admin_question_report(
+  p_module_id text default null
+)
 returns table (
   question_id uuid,
   module_id text,
@@ -175,25 +179,64 @@ security definer
 set search_path = public
 as $$
   select
+    q.id as question_id,
+    q.module_id::text as module_id,
+    q.stem::text as stem,
+    q.topic::text as topic,
+    q.difficulty::text as difficulty,
+
+    count(ca.id)::bigint as response_count,
+
+    count(ca.id)
+      filter (where ca.is_correct is true)::bigint
+      as correct_count,
+
+    coalesce(
+      round(
+        100.0 *
+        count(ca.id) filter (where ca.is_correct is true)
+        / nullif(count(ca.id), 0),
+        1
+      ),
+      0
+    )::numeric as correct_percentage,
+
+    coalesce(
+      round(avg(ca.points_awarded), 2),
+      0
+    )::numeric as average_points,
+
+    count(ca.id)
+      filter (where ca.confidence = 'high')::bigint
+      as high_confidence_count
+
+  from public.questions q
+
+  left join public.competition_answers ca
+    on ca.question_id = q.id
+
+  where public.acl_is_admin()
+    and (
+      p_module_id is null
+      or q.module_id::text = p_module_id
+    )
+
+  group by
     q.id,
     q.module_id,
     q.stem,
     q.topic,
     q.difficulty,
-    count(ca.id),
-    count(ca.id) filter (where ca.is_correct is true),
-    coalesce(round(100.0 * count(ca.id) filter (where ca.is_correct is true) / nullif(count(ca.id), 0), 1), 0),
-    coalesce(round(avg(ca.points_awarded), 2), 0),
-    count(ca.id) filter (where ca.confidence = 'high')
-  from public.questions q
-  left join public.competition_answers ca on ca.question_id = q.id
-  where public.acl_is_admin()
-    and (p_module_id is null or q.module_id = p_module_id)
-  group by q.id, q.module_id, q.stem, q.topic, q.difficulty, q.display_order
-  order by response_count desc, q.display_order asc;
+    q.display_order
+
+  order by
+    count(ca.id) desc,
+    q.display_order asc;
 $$;
 
-grant execute on function public.acl_admin_question_report(text) to authenticated;
+grant execute
+on function public.acl_admin_question_report(text)
+to authenticated;
 
 create or replace function public.acl_season_leaderboard(p_season_id uuid)
 returns table (
@@ -219,7 +262,7 @@ as $$
   where sp.season_id = p_season_id
     and (public.acl_is_admin() or (public.acl_is_active_user() and s.status in ('active','completed')))
   group by sp.user_id, p.full_name, p.username, p.academic_year
-  order by total_points desc;
+  order by sum(sp.points) desc, min(sp.awarded_at) asc;
 $$;
 
 grant execute on function public.acl_season_leaderboard(uuid) to authenticated;

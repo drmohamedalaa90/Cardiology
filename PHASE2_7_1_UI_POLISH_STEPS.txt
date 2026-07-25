@@ -1,0 +1,20 @@
+ACL Expert Edition V2 — Phase 2.7.1 UI Polish
+
+No new SQL is required if Phase 2.7 already ran successfully.
+
+1. Upload all files in this package to the v2-development branch.
+2. Replace existing files.
+3. Commit: ACL V2 Phase 2.7.1 responsive header and UI polish
+4. Wait for GitHub Pages deployment.
+5. Hard refresh with Ctrl+F5 or test in an incognito window.
+
+Included fixes:
+- Full-width two-line header on laptops, tablets and phones.
+- Photo/name below the title.
+- Admin icon is always first for administrators.
+- First click expands an icon label; second click opens it.
+- Deep-blue content panels changed to a light-blue ACL palette.
+- Redesigned graphical admin control menu.
+- Student actions changed to compact two-step icons.
+- Administrators listed first in Registered Students.
+- Answer options remain in A-B-C-D-E database order (no option swapping).
