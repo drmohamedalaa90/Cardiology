@@ -98,6 +98,65 @@ function navIconFor(element) {
   return "modules";
 }
 
+
+function mobileLabelFor(element) {
+  const href = (element.getAttribute?.("href") || "").toLowerCase();
+  const label = (element.textContent || "").trim();
+  if (element.classList?.contains("user-chip") || href.includes("profile")) return "Edit profile";
+  if (element.classList?.contains("contact-nav-link") || href.startsWith("mailto:")) return "Contact us";
+  if (href.includes("modules")) return "Modules";
+  if (href.includes("progress")) return "My Progress";
+  if (label.toLowerCase().includes("sign out")) return "Sign Out";
+  return label || "Open";
+}
+
+function buildMobileQuickActions(nav, topbar) {
+  if (!nav || !topbar || topbar.querySelector(".mobile-quick-actions")) return;
+  const quick = document.createElement("div");
+  quick.className = "mobile-quick-actions";
+  quick.setAttribute("aria-label", "Quick navigation");
+
+  const wanted = ["profile", "modules", "progress", "contact", "signout"];
+  const sourceItems = [...nav.children].filter((item) => item.matches?.("a,button"));
+
+  wanted.forEach((type) => {
+    const source = sourceItems.find((item) => navIconFor(item) === type);
+    if (!source) return;
+    const action = source.tagName === "A" ? document.createElement("a") : document.createElement("button");
+    action.className = `mobile-quick-action mobile-quick-${type}`;
+    action.innerHTML = `<span class="mobile-quick-icon">${mobileIconSvgs[type]}</span><span class="mobile-quick-label">${mobileLabelFor(source)}</span>`;
+    action.setAttribute("aria-label", mobileLabelFor(source));
+    action.title = mobileLabelFor(source);
+    if (source.tagName === "A") action.href = source.href;
+    else {
+      action.type = "button";
+      action.addEventListener("click", () => window.aclSignOut?.());
+    }
+
+    // First tap reveals and enlarges the label; a second tap performs the action.
+    action.addEventListener("click", (event) => {
+      if (!window.matchMedia("(max-width: 760px)").matches) return;
+      if (!action.classList.contains("is-expanded")) {
+        event.preventDefault();
+        event.stopPropagation();
+        quick.querySelectorAll(".is-expanded").forEach((item) => item.classList.remove("is-expanded"));
+        action.classList.add("is-expanded");
+        window.clearTimeout(action._collapseTimer);
+        action._collapseTimer = window.setTimeout(() => action.classList.remove("is-expanded"), 1800);
+      }
+    }, true);
+    quick.appendChild(action);
+  });
+  topbar.appendChild(quick);
+}
+
+function orderMobileDrawer(nav, drawerHead) {
+  const items = [...nav.children].filter((item) => item !== drawerHead && item.matches?.("a,button"));
+  const rank = { profile: 1, modules: 2, progress: 3, admin: 4, contact: 5, signout: 6 };
+  items.sort((a,b) => (rank[navIconFor(a)] || 99) - (rank[navIconFor(b)] || 99));
+  items.forEach((item) => nav.appendChild(item));
+}
+
 function decorateMobileNav(nav) {
   if (!nav || nav.dataset.mobileReady === "true") return;
   nav.dataset.mobileReady = "true";
@@ -118,8 +177,11 @@ function decorateMobileNav(nav) {
     }
   });
 
+  orderMobileDrawer(nav, drawerHead);
+
   const topbar = nav.closest(".topbar");
   if (!topbar) return;
+  buildMobileQuickActions(nav, topbar);
 
   const trigger = document.createElement("button");
   trigger.type = "button";

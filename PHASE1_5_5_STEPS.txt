@@ -1,0 +1,10 @@
+ACL Expert Edition V2 — Phase 1.5.5
+
+Changes:
+- Compact two-line mobile brand.
+- Icon-only quick actions for profile, modules, progress, contact, and sign out.
+- First tap enlarges an icon and displays its name; second tap opens it.
+- Fixed drawer stacking so links are bright and clickable.
+- Drawer order: profile, modules, progress, admin (if applicable), contact us, sign out.
+
+Upload all extracted contents to v2-development and replace existing files.

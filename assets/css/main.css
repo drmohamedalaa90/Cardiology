@@ -255,3 +255,31 @@ a, button { font: inherit; }
   .brand-link{font-size:.82rem;letter-spacing:.025em}
   .topbar{padding-inline:14px}
 }
+
+
+/* Phase 1.5.5 mobile quick icons and reliable navigation drawer */
+.mobile-quick-actions{display:none}
+.mobile-quick-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:760px){
+  .topbar{display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:10px;row-gap:9px;min-height:92px;padding:10px 14px;z-index:70!important}
+  .brand-link{grid-column:1;grid-row:1;display:flex!important;flex-direction:column;align-items:flex-start;justify-content:center;line-height:1.02;white-space:normal!important;max-width:none!important;font-size:.86rem!important;letter-spacing:.035em}
+  .brand-link b{display:block;font-size:.98rem;margin-top:2px}
+  .mobile-menu-trigger{grid-column:2;grid-row:1;width:42px;height:42px;flex-basis:42px}
+  .mobile-quick-actions{grid-column:1/-1;grid-row:2;display:flex;align-items:center;gap:7px;min-width:0;overflow:visible}
+  .mobile-quick-action{position:relative;display:flex;align-items:center;justify-content:center;width:39px;height:39px;min-width:39px;padding:0;border:1px solid rgba(255,255,255,.38);border-radius:13px;background:rgba(255,255,255,.07);color:#fff;text-decoration:none;cursor:pointer;transition:width .18s ease,background .18s ease,transform .18s ease;overflow:hidden}
+  .mobile-quick-action:hover,.mobile-quick-action:focus-visible,.mobile-quick-action.is-expanded{background:rgba(255,255,255,.16)}
+  .mobile-quick-action.is-expanded{width:132px;justify-content:flex-start;padding:0 10px;transform:scale(1.03);z-index:5}
+  .mobile-quick-label{max-width:0;opacity:0;white-space:nowrap;font-size:.72rem;font-weight:900;transition:max-width .18s ease,opacity .18s ease,margin .18s ease}
+  .mobile-quick-action.is-expanded .mobile-quick-label{max-width:94px;opacity:1;margin-left:7px}
+  .mobile-quick-icon{display:grid;place-items:center;flex:0 0 21px}
+  .topbar nav{z-index:90!important}
+  .mobile-nav-backdrop{z-index:80!important;background:rgba(3,20,37,.48)}
+  .mobile-nav-open .topbar nav{pointer-events:auto}
+  .topbar nav>a,.topbar nav>button{pointer-events:auto!important;position:relative;z-index:1}
+  .contact-nav-link{order:initial!important}
+}
+@media(max-width:390px){
+  .mobile-quick-actions{gap:5px}
+  .mobile-quick-action{width:36px;height:36px;min-width:36px;border-radius:12px}
+  .mobile-quick-action.is-expanded{width:118px}
+}
