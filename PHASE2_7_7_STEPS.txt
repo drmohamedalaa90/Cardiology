@@ -1,0 +1,15 @@
+ACL Expert Edition V2 — Phase 2.7.7
+
+No SQL required.
+
+Changes:
+- Signed-in user's photo and name shown beside the header icons.
+- Identity display is not clickable.
+- Edit Profile remains a separate icon.
+- Admin dashboard tools are graphical tiles in one section.
+- Tiles sit below ADMIN CONTROL CENTRE and above the opened section title.
+- Registered Students appears as the active/opened section beneath the tiles.
+
+Upload all files to v2-development and replace existing files.
+Commit: ACL V2 Phase 2.7.7 user identity and admin dashboard tiles
+Refresh with Ctrl+F5.

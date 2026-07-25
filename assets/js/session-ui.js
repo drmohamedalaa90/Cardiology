@@ -150,15 +150,51 @@ function buildUnifiedHeader() {
   if (brand) brand.classList.add("compact-header-brand");
 
   const oldNav = topbar.querySelector("nav");
-  const isAdmin = Boolean(oldNav?.querySelector("#adminNavLink"));
+  const profile = window.aclCurrentProfile || null;
+  const isAdmin = Boolean(
+    profile?.is_admin ||
+    profile?.role === "admin" ||
+    profile?.role === "administrator" ||
+    oldNav?.querySelector("#adminNavLink")
+  );
 
-  let actions = topbar.querySelector(".compact-header-actions");
-  if (!actions) {
-    actions = document.createElement("div");
-    actions.className = "compact-header-actions";
-    topbar.appendChild(actions);
+  let secondRow = topbar.querySelector(".compact-header-second-row");
+  if (!secondRow) {
+    secondRow = document.createElement("div");
+    secondRow.className = "compact-header-second-row";
+    topbar.appendChild(secondRow);
   }
-  actions.replaceChildren();
+  secondRow.replaceChildren();
+
+  const identity = document.createElement("div");
+  identity.className = "compact-user-identity";
+  identity.setAttribute("aria-label", "Signed-in user");
+
+  const avatar = document.createElement("div");
+  avatar.className = "compact-user-avatar";
+  const avatarUrl = profile?.avatar_url || profile?.photo_url || "";
+  if (avatarUrl) {
+    const img = document.createElement("img");
+    img.src = avatarUrl;
+    img.alt = "";
+    avatar.appendChild(img);
+  } else {
+    avatar.textContent = (profile?.full_name || profile?.username || "U").trim().charAt(0).toUpperCase();
+  }
+
+  const identityText = document.createElement("div");
+  identityText.className = "compact-user-text";
+  identityText.innerHTML = `
+    <strong>${profile?.full_name || profile?.username || "Signed-in user"}</strong>
+    <span>Signed in</span>
+  `;
+
+  identity.appendChild(avatar);
+  identity.appendChild(identityText);
+  secondRow.appendChild(identity);
+
+  const actions = document.createElement("div");
+  actions.className = "compact-header-actions";
 
   if (isAdmin) {
     actions.appendChild(createCompactAction({
@@ -203,6 +239,8 @@ function buildUnifiedHeader() {
       }
     }
   }));
+
+  secondRow.appendChild(actions);
 
   if (oldNav) oldNav.style.display = "none";
 
