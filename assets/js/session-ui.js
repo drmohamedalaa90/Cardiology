@@ -26,18 +26,16 @@ export function renderUserChip(profile) {
   const initials = (profile.full_name || "ACL").split(/\s+/).slice(0,2).map(x => x[0] || "").join("").toUpperCase();
   chip.href = profileHref;
   chip.innerHTML = profile.avatar_url
-    ? `<img src="${profile.avatar_url}" alt=""><span>Signed in as <b>${profile.full_name}</b></span>`
-    : `<span class="avatar-placeholder">${initials}</span><span>Signed in as <b>${profile.full_name}</b></span>`;
+    ? `<img src="${profile.avatar_url}" alt=""><span class="user-chip-copy"><span>Signed in as <b>${profile.full_name}</b></span><span class="edit-profile-link">Edit profile</span></span>`
+    : `<span class="avatar-placeholder">${initials}</span><span class="user-chip-copy"><span>Signed in as <b>${profile.full_name}</b></span><span class="edit-profile-link">Edit profile</span></span>`;
 
-  if (!chip.closest(".user-area")) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "user-area";
-    chip.parentNode.insertBefore(wrapper, chip);
-    wrapper.appendChild(chip);
-    const quickLinks = document.createElement("div");
-    quickLinks.className = "user-quick-links";
-    quickLinks.innerHTML = `<a href="${profileHref}">Edit profile</a><a href="mailto:drmohamedalaa90@gmail.com">Contact us</a>`;
-    wrapper.appendChild(quickLinks);
+  const nav = chip.closest("nav");
+  if (nav && !nav.querySelector(".contact-nav-link")) {
+    const contact = document.createElement("a");
+    contact.className = "nav-btn contact-nav-link";
+    contact.href = "mailto:drmohamedalaa90@gmail.com";
+    contact.textContent = "Contact us";
+    nav.insertBefore(contact, chip);
   }
 }
 

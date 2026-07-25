@@ -1,0 +1,9 @@
+ACL Expert Edition V2 — Phase 1.5.2
+
+Changes:
+- Clicking ACL; THE EXPERT EDITION opens Modules (the current Home page).
+- Edit profile now appears inside the signed-in user rectangle.
+- Contact us is a separate rounded rectangle immediately to the left of the signed-in user rectangle.
+- Contact email: drmohamedalaa90@gmail.com
+
+Upload all extracted files to the v2-development branch and replace existing files.

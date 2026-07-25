@@ -210,14 +210,12 @@ a, button { font: inherit; }
 @media(max-width:800px){.progress-stats{grid-template-columns:repeat(2,1fr)}.completed-attempt{grid-template-columns:58px 1fr}.score-ring{width:56px;height:56px}.review-btn{grid-column:1/-1;width:100%}.progress-hero{align-items:flex-start;flex-direction:column}}
 @media(max-width:520px){.progress-stats{grid-template-columns:1fr 1fr}.section-heading{align-items:stretch;flex-direction:column}.progress-filter{width:100%}}
 
-/* Phase 1.5.1 header, profile shortcut and contact refinements */
+/* Phase 1.5.2 header navigation refinements */
 .brand-link{color:inherit;text-decoration:none;display:inline-flex;align-items:center;white-space:nowrap}
 .brand-link:hover,.brand-link:focus-visible{opacity:.88;text-decoration:none}
-.user-area{display:flex;flex-direction:column;align-items:stretch;gap:3px}
-.user-area .user-chip{margin:0}
-.user-quick-links{display:flex;justify-content:flex-end;gap:10px;padding:0 10px;font-size:.72rem;font-weight:800}
-.user-quick-links a{color:#d8ebff;text-decoration:none}
-.user-quick-links a:hover,.user-quick-links a:focus-visible{color:#fff;text-decoration:underline}
-.contact-nav-link{white-space:nowrap}
-.field select{width:100%;min-height:46px;border:1px solid #b9cee0;border-radius:12px;padding:0 12px;background:#fff;color:var(--text);font:inherit}
-@media(max-width:760px){.user-area{order:2;width:100%;align-items:flex-start}.user-quick-links{justify-content:flex-start;padding-left:0}.topbar nav{flex-wrap:wrap}.contact-nav-link{display:inline-flex}}
+.user-chip{min-height:48px}
+.user-chip-copy{display:flex;flex-direction:column;align-items:flex-start;gap:2px;line-height:1.15}
+.edit-profile-link{font-size:.7rem;font-weight:800;color:#d8ebff}
+.user-chip:hover .edit-profile-link,.user-chip:focus-visible .edit-profile-link{color:#fff;text-decoration:underline}
+.contact-nav-link{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center}
+@media(max-width:760px){.topbar nav{flex-wrap:wrap}.contact-nav-link{order:1}.user-chip{order:2}.nav-btn:not(.contact-nav-link){order:3}}
