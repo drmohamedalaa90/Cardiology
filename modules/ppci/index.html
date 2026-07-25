@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>PPCI Pilot | ACL</title>
-  <link rel="stylesheet" href="../../assets/css/main.css?v=1.5.1">
+  <link rel="stylesheet" href="../../assets/css/main.css?v=1.5.3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     .quiz-status{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0 20px}
@@ -18,7 +18,7 @@
 <body>
   <header class="topbar">
     <a class="brand brand-link" href="../../modules.html" aria-label="ACL Expert Edition home">ACL; <b>THE EXPERT EDITION</b></a>
-    <nav><a class="nav-btn" href="../../modules.html">Modules</a><a class="nav-btn" href="../../progress.html">My Progress</a></nav>
+    <nav><a id="userChip" class="user-chip" href="../../profile.html"></a><a class="nav-btn" href="../../modules.html">Modules</a><a class="nav-btn" href="../../progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav>
   </header>
 
   <main class="container">
@@ -35,12 +35,12 @@
   </main>
 
   <script type="module">
-    import { requireSession } from "../../assets/js/session-ui.js";
+    import { protectAndRender } from "../../assets/js/session-ui.js";
     import { QuizEngine } from "../../assets/js/quiz-engine.js";
     import { getOpenAttempt, createAttempt, saveAttempt, completeAttempt } from "../../assets/js/cloud-progress.js";
     import { PPCI_QUESTIONS } from "./questions.js";
 
-    await requireSession("../../login.html");
+    await protectAndRender("../../login.html");
 
     const MODULE_ID = "ppci-fundamentals";
     const MODULE_TITLE = "Primary PCI Fundamentals";

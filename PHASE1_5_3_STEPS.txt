@@ -1,0 +1,10 @@
+ACL Expert Edition V2 — Phase 1.5.3
+
+Changes:
+- All protected pages now use one consistent authenticated header.
+- PPCI quiz header now includes Contact us, user profile chip, Modules, My Progress, Admin when applicable, and Sign Out.
+- User chip now displays: Name / Edit profile.
+- Removed the words “Signed in as”.
+
+Upload all files to the v2-development branch and replace existing files.
+Suggested commit message: ACL V2 Phase 1.5.3 consistent authenticated header

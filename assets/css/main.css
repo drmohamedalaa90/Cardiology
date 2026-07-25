@@ -219,3 +219,9 @@ a, button { font: inherit; }
 .user-chip:hover .edit-profile-link,.user-chip:focus-visible .edit-profile-link{color:#fff;text-decoration:underline}
 .contact-nav-link{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center}
 @media(max-width:760px){.topbar nav{flex-wrap:wrap}.contact-nav-link{order:1}.user-chip{order:2}.nav-btn:not(.contact-nav-link){order:3}}
+
+/* Phase 1.5.3 consistent authenticated header */
+.user-chip-copy{flex-direction:row;align-items:center;gap:5px;white-space:nowrap}
+.user-name{font-weight:900;color:#fff}
+.edit-profile-link{font-size:.72rem;color:#d8ebff}
+@media(max-width:760px){.user-chip-copy{white-space:normal;flex-wrap:wrap}}

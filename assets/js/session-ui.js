@@ -26,8 +26,8 @@ export function renderUserChip(profile) {
   const initials = (profile.full_name || "ACL").split(/\s+/).slice(0,2).map(x => x[0] || "").join("").toUpperCase();
   chip.href = profileHref;
   chip.innerHTML = profile.avatar_url
-    ? `<img src="${profile.avatar_url}" alt=""><span class="user-chip-copy"><span>Signed in as <b>${profile.full_name}</b></span><span class="edit-profile-link">Edit profile</span></span>`
-    : `<span class="avatar-placeholder">${initials}</span><span class="user-chip-copy"><span>Signed in as <b>${profile.full_name}</b></span><span class="edit-profile-link">Edit profile</span></span>`;
+    ? `<img src="${profile.avatar_url}" alt=""><span class="user-chip-copy"><span class="user-name">${profile.full_name}</span><span class="edit-profile-link">/ Edit profile</span></span>`
+    : `<span class="avatar-placeholder">${initials}</span><span class="user-chip-copy"><span class="user-name">${profile.full_name}</span><span class="edit-profile-link">/ Edit profile</span></span>`;
 
   const nav = chip.closest("nav");
   if (nav && !nav.querySelector(".contact-nav-link")) {
