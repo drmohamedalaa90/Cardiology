@@ -1611,8 +1611,14 @@ body.expert-open{overflow:hidden}
       </div>
 
       <div class="field full">
+        <label for="email">Email address</label>
+        <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com">
+        <div class="signin-cloud-note">Your email and personal PIN are used for secure login. WhatsApp remains required profile information.</div>
+      </div>
+
+      <div class="field full">
         <label for="whatsapp">WhatsApp number</label>
-        <input id="whatsapp" inputmode="tel" autocomplete="tel" placeholder="+201XXXXXXXXX or 01XXXXXXXXX"><div class="whatsapp-id-note">Your WhatsApp number is your unique participant ID. <b>+201…</b>, <b>00201…</b>, and <b>01…</b> are treated as the same account.</div><div id="participantLookupStatus" class="participant-lookup-status"></div>
+        <input id="whatsapp" inputmode="tel" autocomplete="tel" placeholder="+201XXXXXXXXX or 01XXXXXXXXX"><div class="whatsapp-id-note">Required profile information. Egyptian formats <b>+201…</b>, <b>00201…</b>, and <b>01…</b> are normalized automatically.</div><div id="participantLookupStatus" class="participant-lookup-status"></div>
       </div>
 
       <div class="field">
@@ -1621,14 +1627,14 @@ body.expert-open{overflow:hidden}
       </div>
 
       <div class="field">
-        <label for="personalPin">Personal PIN</label><input id="personalPin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="24" placeholder="Create or enter your personal PIN"><div class="signin-cloud-note">Your WhatsApp number + PIN securely syncs your profile and quiz progress across devices. No email or SMS is required.</div><label for="institution">Institution</label>
+        <label for="personalPin">Personal PIN</label><input id="personalPin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="24" placeholder="Create or enter your personal PIN"><div class="signin-cloud-note">Your email + PIN securely sync your profile and quiz progress across devices.</div><label for="institution">Institution</label>
         <input id="institution" autocomplete="organization" placeholder="University or hospital">
       </div>
     </div>
 
     <div class="profile-memory-note">
-      <b>Your profile, unfinished quizzes, completed scores, and reviews are linked to your WhatsApp number on this browser.</b>
-      Signing in later with the same number restores the same participant record, even if the name is written differently.
+      <b>Your cloud account is linked to your email address.</b>
+      Your name, WhatsApp number, academic year, institution, unfinished quizzes, scores, and reviews are restored after login.
     </div>
 
     <div id="siteSigninError" class="error"></div>
@@ -2495,22 +2501,16 @@ function setCloudStatus(text,state='offline'){
 
 
 
-function cloudAuthEmail(whatsapp){
-  const normalized=normalizeEgyptWhatsapp(whatsapp);
-  if(!normalized.valid) return '';
 
-  // Internal Supabase Auth identity. Candidates never see or enter it.
-  return `acl${normalized.canonical}@proton.me`;
-}
 
 async function ensureCloudSession(profile,pin){
   if(!supabaseClient){
     throw new Error('Supabase client unavailable.');
   }
 
-  const email=cloudAuthEmail(profile.whatsapp);
-  if(!email){
-    throw new Error('Enter a valid Egyptian WhatsApp number.');
+  const email=String(profile.email||'').trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    throw new Error('Enter a valid email address.');
   }
 
   if(!pin||pin.length<6){
@@ -2548,18 +2548,18 @@ async function ensureCloudSession(profile,pin){
     if(signup.error){
       const signupMessage=String(signup.error.message||'').toLowerCase();
 
-      if(signupMessage.includes('rate limit')){
-        throw new Error(
-          'In Supabase, open Authentication → Providers → Email and switch Confirm email OFF. Then try again.'
-        );
-      }
-
       if(
         signupMessage.includes('already registered')
         || signupMessage.includes('already been registered')
       ){
         throw new Error(
-          'This WhatsApp number already has an ACL account. Check the personal PIN.'
+          'This email already has an ACL account. Check the PIN.'
+        );
+      }
+
+      if(signupMessage.includes('rate limit')){
+        throw new Error(
+          'Supabase email confirmation is still enabled. Disable Confirm email, then try again.'
         );
       }
 
@@ -2574,7 +2574,7 @@ async function ensureCloudSession(profile,pin){
 
   if(!cloudUser){
     throw new Error(
-      'Open Supabase Authentication → Providers → Email and switch Confirm email OFF, then sign in again.'
+      'Account created but no active session was returned. Disable Confirm email in Supabase, then sign in again.'
     );
   }
 
@@ -2583,10 +2583,9 @@ async function ensureCloudSession(profile,pin){
 
 async function upsertCloudProfile(profile){
   if(!supabaseClient||!cloudUser) return null;
-  const normalized=normalizeEgyptWhatsapp(profile.whatsapp);
 
+  const normalized=normalizeEgyptWhatsapp(profile.whatsapp);
   const payload={
-    id:cloudUser.id,
     phone_e164:normalized.valid?normalized.display:profile.whatsapp,
     full_name:profile.name||'',
     academic_year:profile.academicYear||'',
@@ -2594,13 +2593,23 @@ async function upsertCloudProfile(profile){
     last_seen_at:new Date().toISOString()
   };
 
+  // The auth trigger already creates the profile row.
+  // Update only the authenticated user's row to respect RLS.
   const {data,error}=await supabaseClient
     .from('profiles')
-    .upsert(payload)
+    .update(payload)
+    .eq('id',cloudUser.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if(error) throw error;
+
+  if(!data){
+    throw new Error(
+      'The profile record was not created by the authentication trigger. Re-run the database setup SQL, then try again.'
+    );
+  }
+
   cloudProfile=data;
   return data;
 }
@@ -2624,8 +2633,10 @@ async function restoreCloudProfile(){
 
 function profileFromCloud(row){
   if(!row) return null;
+
   return {
     name:row.full_name||'',
+    email:cloudUser?.email||'',
     whatsapp:row.phone_e164||'',
     whatsappId:normalizeEgyptWhatsapp(row.phone_e164||'').canonical,
     academicYear:row.academic_year||'',
@@ -2969,8 +2980,10 @@ function readRememberedProfile(){
 function candidateProfileFromForm(){
   const enteredWhatsapp=(document.getElementById('whatsapp')?.value||'').trim();
   const normalized=normalizeEgyptWhatsapp(enteredWhatsapp);
+
   return {
     name:(document.getElementById('name')?.value||'').trim(),
+    email:(document.getElementById('email')?.value||'').trim().toLowerCase(),
     whatsapp:normalized.valid?normalized.display:enteredWhatsapp,
     whatsappId:normalized.valid?normalized.canonical:'',
     academicYear:(document.getElementById('academicYear')?.value||'').trim(),
@@ -3002,12 +3015,15 @@ function saveCandidateProfile(profile){
 
 function applyCandidateProfile(profile){
   if(!profile) return;
+
   const values={
     name:profile.name||'',
+    email:profile.email||'',
     whatsapp:profile.whatsapp||'',
     academicYear:profile.academicYear||'',
     institution:profile.institution||''
   };
+
   Object.entries(values).forEach(([id,value])=>{
     const field=document.getElementById(id);
     if(field) field.value=value;
@@ -3022,12 +3038,24 @@ function prefillCandidateProfile(){
 function validateCandidateProfile(profile){
   const missing=[];
   if(!profile.name) missing.push('name');
+  if(!profile.email) missing.push('email address');
   if(!profile.whatsapp) missing.push('WhatsApp number');
   if(!profile.academicYear) missing.push('academic year');
   if(!profile.institution) missing.push('institution');
 
   if(missing.length){
-    return {ok:false,message:'Please complete: '+missing.join(', ')+'.'};
+    return {
+      ok:false,
+      message:'Please complete: '+missing.join(', ')+'.'
+    };
+  }
+
+  const emailValid=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email);
+  if(!emailValid){
+    return {
+      ok:false,
+      message:'Enter a valid email address.'
+    };
   }
 
   const normalized=normalizeEgyptWhatsapp(profile.whatsapp);
@@ -3038,7 +3066,11 @@ function validateCandidateProfile(profile){
     };
   }
 
-  return {ok:true,message:'',normalized};
+  return {
+    ok:true,
+    message:'',
+    normalized
+  };
 }
 
 function profileSummaryText(profile){
@@ -3103,10 +3135,10 @@ async function submitSiteSignIn(){
     showScreen('home');
   }catch(cloudError){
     console.warn('Cloud sign-in failed:',cloudError);
-    const message=String(cloudError.message||'Please check your phone, PIN, and connection.');
+    const message=String(cloudError.message||'Please check your email, PIN, and connection.');
     error.textContent='Cloud sign-in failed: '+message;
     if(message.toLowerCase().includes('email')&&message.toLowerCase().includes('invalid')){
-      error.textContent='Cloud sign-in failed because the internal account identifier was rejected. Please upload the corrected index.html and try again.';
+      error.textContent='Cloud sign-in failed because the account email was rejected. Please upload the corrected index.html and try again.';
     }
     setCloudStatus('Cloud sign-in failed','offline');
   }
@@ -5744,7 +5776,7 @@ function resumeQuiz(){
 }
 function restartFresh(){clearProgress();document.getElementById('pass').value='';selectQuiz(activeQuiz)}
 document.getElementById('pass').addEventListener('keydown',e=>{if(e.key==='Enter')startQuiz()});
-['name','whatsapp','personalPin','academicYear','institution'].forEach(id=>{
+['name','email','whatsapp','personalPin','academicYear','institution'].forEach(id=>{
   document.getElementById(id)?.addEventListener('keydown',e=>{
     if(e.key==='Enter')submitSiteSignIn();
   });
