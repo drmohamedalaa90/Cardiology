@@ -1,0 +1,11 @@
+ACL Expert Edition V2 — Phase 1.5.4
+
+Mobile navigation update:
+- Compact header on phones
+- Menu icon opens a left slide-out navigation drawer
+- Drawer shows clear icons and names for Contact, Profile, Modules, Progress, Admin and Sign Out
+- Desktop header remains unchanged
+
+Upload all extracted files to v2-development and replace existing files.
+Commit message: ACL V2 Phase 1.5.4 mobile navigation drawer
+After deployment, refresh once with Ctrl+F5.

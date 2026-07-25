@@ -73,3 +73,87 @@ export async function signOut() {
   window.location.replace(nested ? "../../login.html" : "login.html");
 }
 window.aclSignOut = signOut;
+
+
+const mobileIconSvgs = {
+  menu: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>`,
+  close: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>`,
+  contact: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 7l8 6 8-6"/></svg>`,
+  modules: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="5" rx="1"/><rect x="14" y="15" width="7" height="5" rx="1"/></svg>`,
+  progress: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3 19h18"/></svg>`,
+  admin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8.2 8 9 4.6-.8 8-4 8-9V7z"/><path d="M9.5 12.5 11 14l3.5-4"/></svg>`,
+  signout: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/></svg>`,
+  profile: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c.7-4.5 3.4-7 8-7s7.3 2.5 8 7"/></svg>`
+};
+
+function navIconFor(element) {
+  const label = (element.textContent || "").trim().toLowerCase();
+  const href = (element.getAttribute?.("href") || "").toLowerCase();
+  if (element.classList?.contains("contact-nav-link") || href.startsWith("mailto:")) return "contact";
+  if (href.includes("modules")) return "modules";
+  if (href.includes("progress")) return "progress";
+  if (href.includes("admin")) return "admin";
+  if (href.includes("profile") || element.classList?.contains("user-chip")) return "profile";
+  if (label.includes("sign out")) return "signout";
+  return "modules";
+}
+
+function decorateMobileNav(nav) {
+  if (!nav || nav.dataset.mobileReady === "true") return;
+  nav.dataset.mobileReady = "true";
+  nav.id ||= "aclMobileNavigation";
+
+  const drawerHead = document.createElement("div");
+  drawerHead.className = "mobile-drawer-head";
+  drawerHead.innerHTML = `<strong>ACL Navigation</strong><button type="button" class="mobile-drawer-close" aria-label="Close navigation">${mobileIconSvgs.close}</button>`;
+  nav.prepend(drawerHead);
+
+  [...nav.children].forEach((item) => {
+    if (item === drawerHead || !item.matches("a,button")) return;
+    if (!item.querySelector(".mobile-nav-icon")) {
+      const icon = document.createElement("span");
+      icon.className = "mobile-nav-icon";
+      icon.innerHTML = mobileIconSvgs[navIconFor(item)];
+      item.prepend(icon);
+    }
+  });
+
+  const topbar = nav.closest(".topbar");
+  if (!topbar) return;
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "mobile-menu-trigger";
+  trigger.setAttribute("aria-label", "Open navigation");
+  trigger.setAttribute("aria-controls", nav.id);
+  trigger.setAttribute("aria-expanded", "false");
+  trigger.innerHTML = mobileIconSvgs.menu;
+  topbar.appendChild(trigger);
+
+  const backdrop = document.createElement("button");
+  backdrop.type = "button";
+  backdrop.className = "mobile-nav-backdrop";
+  backdrop.setAttribute("aria-label", "Close navigation");
+  document.body.appendChild(backdrop);
+
+  const setOpen = (open) => {
+    document.body.classList.toggle("mobile-nav-open", open);
+    trigger.setAttribute("aria-expanded", String(open));
+  };
+
+  trigger.addEventListener("click", () => setOpen(!document.body.classList.contains("mobile-nav-open")));
+  backdrop.addEventListener("click", () => setOpen(false));
+  drawerHead.querySelector("button").addEventListener("click", () => setOpen(false));
+  nav.addEventListener("click", (event) => {
+    if (event.target.closest("a,button") && !event.target.closest(".mobile-drawer-close")) setOpen(false);
+  });
+  window.addEventListener("keydown", (event) => { if (event.key === "Escape") setOpen(false); });
+}
+
+function initializeMobileNavigation() {
+  const nav = document.querySelector(".topbar nav");
+  if (nav) decorateMobileNav(nav);
+}
+
+document.addEventListener("DOMContentLoaded", initializeMobileNavigation);
+if (document.readyState !== "loading") initializeMobileNavigation();
