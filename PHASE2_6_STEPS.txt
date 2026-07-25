@@ -1,0 +1,9 @@
+ACL Expert Edition V2 — Phase 2.6
+
+1. Back up the current v2-development branch.
+2. In Supabase SQL Editor, run phase2_6_access_engine_patch.sql once.
+3. Upload every file in this package to v2-development, replacing older files.
+4. Commit: ACL V2 Phase 2.6 adaptive access and learning pathways
+5. Test as admin: open admin-access.html and add a temporary prerequisite rule.
+6. Test as student: open learning-path.html and confirm locked/unlocked states are correct.
+7. Remove the temporary rule after testing.
