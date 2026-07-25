@@ -21,10 +21,24 @@ export async function loadProfile() {
 export function renderUserChip(profile) {
   const chip = document.getElementById("userChip");
   if (!chip || !profile) return;
+  const nested = location.pathname.includes("/modules/");
+  const profileHref = nested ? "../../profile.html" : "profile.html";
   const initials = (profile.full_name || "ACL").split(/\s+/).slice(0,2).map(x => x[0] || "").join("").toUpperCase();
+  chip.href = profileHref;
   chip.innerHTML = profile.avatar_url
     ? `<img src="${profile.avatar_url}" alt=""><span>Signed in as <b>${profile.full_name}</b></span>`
     : `<span class="avatar-placeholder">${initials}</span><span>Signed in as <b>${profile.full_name}</b></span>`;
+
+  if (!chip.closest(".user-area")) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "user-area";
+    chip.parentNode.insertBefore(wrapper, chip);
+    wrapper.appendChild(chip);
+    const quickLinks = document.createElement("div");
+    quickLinks.className = "user-quick-links";
+    quickLinks.innerHTML = `<a href="${profileHref}">Edit profile</a><a href="mailto:drmohamedalaa90@gmail.com">Contact us</a>`;
+    wrapper.appendChild(quickLinks);
+  }
 }
 
 function renderAdminLink(profile) {

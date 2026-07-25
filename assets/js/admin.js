@@ -103,7 +103,7 @@ function openDetails(profile) {
   byId("studentDialogContent").innerHTML = `<div class="dialog-profile">${accountAvatar(profile)}<div><h2>${esc(profile.full_name || "Unnamed user")}</h2><p class="muted">@${esc(profile.username || "not-set")}</p></div></div>
   <dl class="detail-grid">
     <div><dt>Email</dt><dd>${esc(profile.email || "—")}</dd></div><div><dt>WhatsApp</dt><dd>${esc(profile.phone_e164 || "—")}</dd></div>
-    <div><dt>Academic year</dt><dd>${esc(profile.academic_year || "—")}</dd></div><div><dt>Institution</dt><dd>${esc(profile.institution || "—")}</dd></div>
+    <div><dt>Position</dt><dd>${esc(profile.academic_year || "—")}</dd></div><div><dt>Institution</dt><dd>${esc(profile.institution || "—")}</dd></div>
     <div><dt>Role</dt><dd>${esc(profile.role || "student")}</dd></div><div><dt>Status</dt><dd>${esc(profile.account_status || "active")}</dd></div>
     <div><dt>Registered</dt><dd>${fmtDate(profile.created_at)}</dd></div><div><dt>Last activity</dt><dd>${fmtDate(profile.last_seen_at)}</dd></div>
     <div class="detail-full"><dt>User ID</dt><dd class="mono">${esc(profile.id)}</dd></div>
