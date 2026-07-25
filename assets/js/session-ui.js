@@ -94,6 +94,8 @@ export async function signOut() {
 window.aclSignOut = signOut;
 
 const iconSvgs = {
+  menu: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>`,
+  close: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>`,
   admin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8.2 8 9 4.6-.8 8-4 8-9V7z"/><path d="m9 12 2 2 4-4"/></svg>`,
   profile: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>`,
   modules: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
@@ -102,52 +104,45 @@ const iconSvgs = {
   signout: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/></svg>`
 };
 
-function createCompactAction({ type, label, href, action }) {
-  const element = document.createElement("button");
-  element.type = "button";
-  element.className = `compact-header-action compact-${type}`;
-  element.setAttribute("aria-label", label);
-  element.innerHTML = `
-    <span class="compact-action-icon">${iconSvgs[type]}</span>
-    <span class="compact-action-label">${label}</span>
+function createDrawerItem({ type, label, href, action, admin = false }) {
+  const item = document.createElement("button");
+  item.type = "button";
+  item.className = `acl-drawer-item${admin ? " acl-drawer-admin-item" : ""}`;
+  item.innerHTML = `
+    <span class="acl-drawer-item-icon">${iconSvgs[type]}</span>
+    <span class="acl-drawer-item-label">${label}</span>
   `;
-
-  element.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const expanded = element.classList.contains("is-expanded");
-    if (!expanded) {
-      document.querySelectorAll(".compact-header-action.is-expanded").forEach((item) => {
-        if (item !== element) item.classList.remove("is-expanded");
-      });
-      element.classList.add("is-expanded");
-      return;
-    }
-
+  item.addEventListener("click", () => {
+    closeAclDrawer();
     if (typeof action === "function") {
       action();
-      return;
-    }
-
-    if (href) {
+    } else if (href) {
       window.location.assign(href);
     }
   });
-
-  return element;
+  return item;
 }
 
-let compactOutsideHandlerBound = false;
+function openAclDrawer() {
+  document.body.classList.add("acl-drawer-open");
+  document.querySelector(".acl-side-drawer")?.setAttribute("aria-hidden", "false");
+  document.querySelector(".acl-drawer-overlay")?.setAttribute("aria-hidden", "false");
+}
+
+function closeAclDrawer() {
+  document.body.classList.remove("acl-drawer-open");
+  document.querySelector(".acl-side-drawer")?.setAttribute("aria-hidden", "true");
+  document.querySelector(".acl-drawer-overlay")?.setAttribute("aria-hidden", "true");
+}
 
 function buildUnifiedHeader() {
   const topbar = document.querySelector(".topbar");
   if (!topbar) return;
 
-  topbar.classList.add("compact-two-row-header");
+  topbar.classList.add("acl-drawer-header");
 
   const brand = topbar.querySelector(".brand-link, .brand");
-  if (brand) brand.classList.add("compact-header-brand");
+  if (brand) brand.classList.add("acl-drawer-brand");
 
   const oldNav = topbar.querySelector("nav");
   const profile = window.aclCurrentProfile || null;
@@ -158,20 +153,49 @@ function buildUnifiedHeader() {
     oldNav?.querySelector("#adminNavLink")
   );
 
-  let secondRow = topbar.querySelector(".compact-header-second-row");
-  if (!secondRow) {
-    secondRow = document.createElement("div");
-    secondRow.className = "compact-header-second-row";
-    topbar.appendChild(secondRow);
-  }
-  secondRow.replaceChildren();
+  topbar.querySelector(".compact-header-second-row")?.remove();
+  topbar.querySelector(".acl-menu-button")?.remove();
+
+  const menuButton = document.createElement("button");
+  menuButton.type = "button";
+  menuButton.className = "acl-menu-button";
+  menuButton.setAttribute("aria-label", "Open navigation menu");
+  menuButton.innerHTML = iconSvgs.menu;
+  menuButton.addEventListener("click", openAclDrawer);
+  topbar.appendChild(menuButton);
+
+  oldNav?.setAttribute("hidden", "hidden");
+  if (oldNav) oldNav.style.display = "none";
+
+  document.querySelector(".acl-side-drawer")?.remove();
+  document.querySelector(".acl-drawer-overlay")?.remove();
+
+  const overlay = document.createElement("button");
+  overlay.type = "button";
+  overlay.className = "acl-drawer-overlay";
+  overlay.setAttribute("aria-label", "Close navigation menu");
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.addEventListener("click", closeAclDrawer);
+
+  const drawer = document.createElement("aside");
+  drawer.className = "acl-side-drawer";
+  drawer.setAttribute("aria-hidden", "true");
+
+  const drawerHeader = document.createElement("div");
+  drawerHeader.className = "acl-drawer-top";
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "acl-drawer-close";
+  closeButton.setAttribute("aria-label", "Close navigation menu");
+  closeButton.innerHTML = iconSvgs.close;
+  closeButton.addEventListener("click", closeAclDrawer);
 
   const identity = document.createElement("div");
-  identity.className = "compact-user-identity";
-  identity.setAttribute("aria-label", "Signed-in user");
+  identity.className = "acl-drawer-identity";
 
   const avatar = document.createElement("div");
-  avatar.className = "compact-user-avatar";
+  avatar.className = "acl-drawer-avatar";
   const avatarUrl = profile?.avatar_url || profile?.photo_url || "";
   if (avatarUrl) {
     const img = document.createElement("img");
@@ -182,53 +206,59 @@ function buildUnifiedHeader() {
     avatar.textContent = (profile?.full_name || profile?.username || "U").trim().charAt(0).toUpperCase();
   }
 
-  const identityText = document.createElement("div");
-  identityText.className = "compact-user-text";
-  identityText.innerHTML = `
+  const identityCopy = document.createElement("div");
+  identityCopy.className = "acl-drawer-identity-copy";
+  identityCopy.innerHTML = `
     <strong>${profile?.full_name || profile?.username || "Signed-in user"}</strong>
     <span>Signed in</span>
   `;
 
   identity.appendChild(avatar);
-  identity.appendChild(identityText);
-  secondRow.appendChild(identity);
+  identity.appendChild(identityCopy);
 
-  const actions = document.createElement("div");
-  actions.className = "compact-header-actions";
+  drawerHeader.appendChild(identity);
+  drawerHeader.appendChild(closeButton);
+
+  const divider = document.createElement("div");
+  divider.className = "acl-drawer-divider";
+
+  const menu = document.createElement("nav");
+  menu.className = "acl-drawer-menu";
 
   if (isAdmin) {
-    actions.appendChild(createCompactAction({
+    menu.appendChild(createDrawerItem({
       type: "admin",
       label: "Admin",
-      href: nestedPath("admin.html")
+      href: nestedPath("admin.html"),
+      admin: true
     }));
   }
 
-  actions.appendChild(createCompactAction({
+  menu.appendChild(createDrawerItem({
     type: "profile",
     label: "Edit profile",
     href: nestedPath("profile.html")
   }));
 
-  actions.appendChild(createCompactAction({
+  menu.appendChild(createDrawerItem({
     type: "modules",
     label: "Modules",
     href: nestedPath("modules.html")
   }));
 
-  actions.appendChild(createCompactAction({
+  menu.appendChild(createDrawerItem({
     type: "progress",
     label: "My Progress",
     href: nestedPath("progress.html")
   }));
 
-  actions.appendChild(createCompactAction({
+  menu.appendChild(createDrawerItem({
     type: "contact",
     label: "Contact us",
     href: "mailto:drmohamedalaa90@gmail.com"
   }));
 
-  actions.appendChild(createCompactAction({
+  menu.appendChild(createDrawerItem({
     type: "signout",
     label: "Sign out",
     action: () => {
@@ -240,20 +270,16 @@ function buildUnifiedHeader() {
     }
   }));
 
-  secondRow.appendChild(actions);
+  drawer.appendChild(drawerHeader);
+  drawer.appendChild(divider);
+  drawer.appendChild(menu);
 
-  if (oldNav) oldNav.style.display = "none";
+  document.body.appendChild(overlay);
+  document.body.appendChild(drawer);
 
-  if (!compactOutsideHandlerBound) {
-    document.addEventListener("click", (event) => {
-      if (!event.target.closest(".compact-header-action")) {
-        document.querySelectorAll(".compact-header-action.is-expanded").forEach((item) => {
-          item.classList.remove("is-expanded");
-        });
-      }
-    });
-    compactOutsideHandlerBound = true;
-  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeAclDrawer();
+  }, { once: false });
 }
 
 function initializeNavigation() {

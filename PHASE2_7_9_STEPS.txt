@@ -1,0 +1,25 @@
+ACL Expert Edition V2 — Phase 2.7.9 Left Drawer Navigation
+
+No SQL required.
+
+Header:
+- compact title bar
+- hamburger button on the left
+- no icon row in the header
+
+Left slide drawer order:
+1. Photo and signed-in name
+2. Space/divider
+3. Admin (admins only)
+4. Edit profile
+5. Modules
+6. My Progress
+7. Contact us
+8. Sign out
+
+The drawer slides from the left on laptop, tablet, and mobile.
+Click outside it, press Escape, or press X to close.
+
+Upload all files to v2-development and replace existing files.
+Commit: ACL V2 Phase 2.7.9 left drawer navigation
+Refresh with Ctrl+F5 or use an incognito window.
