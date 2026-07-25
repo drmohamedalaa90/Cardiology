@@ -613,3 +613,84 @@ body{background:linear-gradient(180deg,#edf8ff 0%,#f8fcff 55%,#eef8ff 100%)}
   .admin-hero-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}.admin-tool-card{grid-template-columns:34px 1fr!important;min-height:58px!important;padding:8px!important}.admin-tool-icon{width:34px;height:34px;border-radius:10px;font-size:1rem}
 }
 @media(max-width:410px){.unified-signed-user{max-width:102px!important}.unified-icon-actions{gap:3px!important}.unified-icon-btn{width:29px!important;min-width:29px!important;height:29px!important;padding:0 6px!important}.unified-icon-btn.is-expanded{width:101px!important}}
+
+/* Phase 2.7.2 — high-contrast navy, sky and gold theme */
+:root{
+  --navy:#082f5b;
+  --navy-2:#0b477f;
+  --blue:#2e91cf;
+  --blue-soft:#dff2ff;
+  --blue-pale:#f6fbff;
+  --gold:#ffbf2f;
+  --bg:#eef7fd;
+  --text:#0b2b49;
+  --muted:#526f86;
+}
+body{background:linear-gradient(180deg,#eaf5fc 0%,#f9fcff 48%,#edf7fd 100%)!important;color:var(--text)!important}
+
+/* Dark, taller header: title on row 1; account and icons always visible on row 2. */
+.topbar.unified-topbar{
+  grid-template-rows:auto minmax(58px,auto)!important;
+  gap:13px!important;
+  min-height:142px!important;
+  padding:18px clamp(16px,3.4vw,62px) 17px!important;
+  overflow:visible!important;
+  background:linear-gradient(115deg,#072c57 0%,#0a4278 50%,#0b578e 100%)!important;
+  border-bottom:4px solid #ffbf2f!important;
+  box-shadow:0 9px 26px rgba(2,28,58,.25)!important;
+}
+.unified-brand{color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.28)!important}
+.unified-brand b{color:#ffd66a!important}
+.unified-account-row{display:flex!important;visibility:visible!important;opacity:1!important;min-height:52px!important;overflow:visible!important}
+.unified-signed-user{color:#fff!important;background:rgba(255,255,255,.10)!important;border-color:rgba(255,255,255,.55)!important}
+.unified-icon-actions{display:flex!important;visibility:visible!important;opacity:1!important;overflow:visible!important}
+.unified-icon-btn{background:rgba(255,255,255,.08)!important;color:#fff!important;border-color:rgba(255,255,255,.58)!important}
+.unified-icon-btn:hover,.unified-icon-btn:focus-visible{background:rgba(255,255,255,.18)!important}
+.unified-icon-btn.is-expanded{background:#fff!important;color:#083d70!important;border-color:#fff!important}
+.mobile-icon-admin{background:rgba(255,191,47,.22)!important;border-color:#ffd66a!important}
+
+/* Catalogue hero: light surface, dark text, clear summary badge. */
+.catalogue-hero{
+  background:linear-gradient(135deg,#ffffff 0%,#dff2ff 100%)!important;
+  color:#0b2b49!important;border-color:#9bcbea!important;
+}
+.catalogue-hero h1,.catalogue-hero .admin-kicker{color:#0b2b49!important}
+.catalogue-hero p{color:#496b84!important}
+.catalogue-summary{background:#0a467d!important;color:#fff!important;border:1px solid #0a467d!important}
+
+/* Module cards: medium-blue cover with white text, white body with dark text. */
+.module-card{background:#fff!important;color:#0b2b49!important;border-color:#a7d1e9!important;box-shadow:0 14px 34px rgba(20,91,139,.13)!important}
+.module-cover{background:linear-gradient(135deg,#0a4a82 0%,#1689b5 100%)!important;color:#fff!important}
+.module-category{background:#062f59!important;color:#fff!important}
+.featured-badge{background:#ffbf2f!important;color:#102d47!important}
+.module-card-body{background:#fff!important;color:#0b2b49!important}
+.module-card h2,.module-card p,.module-meta,.module-progress-line,.module-lock-reason{color:#0b2b49!important}
+.module-card p,.module-lock-reason{color:#55738a!important}
+.module-meta{color:#355d78!important}
+.mode-pills span{background:#dff2ff!important;color:#0a5487!important}
+.module-progress-line{background:#edf7fd!important}
+.difficulty-pill{background:#1b6598!important;color:#fff!important}
+.difficulty-pill.intermediate{background:#176c5a!important}.difficulty-pill.advanced{background:#8a5a17!important}.difficulty-pill.expert{background:#79396f!important}
+.module-action.disabled{background:#d8e4ed!important;color:#4e687c!important;opacity:1!important}
+
+/* Admin and question cards: pale panels with dark typography. */
+.admin-module-card,.question-admin-card,.competition-card,.path-card,.hero{
+  background:linear-gradient(145deg,#ffffff 0%,#e5f4fd 100%)!important;
+  color:#0b2b49!important;border-color:#a6d0e8!important;
+}
+.admin-module-card h1,.admin-module-card h2,.admin-module-card p,
+.question-admin-card h1,.question-admin-card h2,.question-admin-card p,
+.competition-card h1,.competition-card h2,.competition-card p,.path-card h1,.path-card h2,.path-card p{color:#0b2b49!important}
+.question-scenario-preview,.module-admin-meta span,.muted{color:#55738a!important}
+
+/* Quiz options: fixed high contrast. */
+.learning-card,.quiz-card,.question-panel{background:#fff!important;color:#0b2b49!important}
+.learning-card h1,.learning-card h2,.learning-card h3,.quiz-card h1,.quiz-card h2,.question-panel h1,.question-panel h2{color:#0b2b49!important}
+.learning-option,.answer-option{background:#fff!important;color:#0b2b49!important;border-color:#9fcbe5!important}
+.learning-option:hover,.answer-option:hover{background:#eaf6fd!important}
+.option-key{background:#0b568b!important;color:#fff!important}
+
+@media(max-width:760px){
+  .topbar.unified-topbar{grid-template-rows:auto minmax(48px,auto)!important;min-height:112px!important;padding:11px 9px 12px!important;gap:9px!important}
+  .unified-account-row{min-height:43px!important}
+}

@@ -1,0 +1,16 @@
+ACL Expert Edition V2 — Phase 2.7.2
+
+No SQL is required.
+
+1. Upload all files and folders to the v2-development branch, replacing previous files.
+2. Commit: ACL V2 Phase 2.7.2 high-contrast theme and restored header icons
+3. Wait for GitHub Pages deployment.
+4. Refresh with Ctrl+F5 or test in Incognito.
+
+Changes:
+- Restored dark navy header with white and gold title.
+- Increased header height to accommodate the account and icon row.
+- Forced the second row and icons to remain visible.
+- Bumped CSS/JS cache versions to 2.7.2.
+- Applied strict high-contrast light panels/dark text and dark panels/light text.
+- Redesigned module cards with blue covers and white readable bodies.
