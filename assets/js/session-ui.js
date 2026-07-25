@@ -37,6 +37,7 @@ export function renderUserChip(profile) {
     contact.textContent = "Contact us";
     nav.insertBefore(contact, chip);
   }
+  buildCompactMobileHeader();
 }
 
 function renderAdminLink(profile) {
@@ -50,6 +51,7 @@ function renderAdminLink(profile) {
   link.textContent = "Admin";
   const signOutButton = [...nav.querySelectorAll("button")].find(btn => /sign out/i.test(btn.textContent));
   nav.insertBefore(link, signOutButton || null);
+  buildCompactMobileHeader();
 }
 
 export async function protectAndRender(relativeLogin = "login.html") {
@@ -76,8 +78,6 @@ window.aclSignOut = signOut;
 
 
 const mobileIconSvgs = {
-  menu: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>`,
-  close: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>`,
   contact: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 7l8 6 8-6"/></svg>`,
   modules: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="5" rx="1"/><rect x="14" y="15" width="7" height="5" rx="1"/></svg>`,
   progress: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3 19h18"/></svg>`,
@@ -98,124 +98,64 @@ function navIconFor(element) {
   return "modules";
 }
 
-
 function mobileLabelFor(element) {
-  const href = (element.getAttribute?.("href") || "").toLowerCase();
-  const label = (element.textContent || "").trim();
-  if (element.classList?.contains("user-chip") || href.includes("profile")) return "Edit profile";
-  if (element.classList?.contains("contact-nav-link") || href.startsWith("mailto:")) return "Contact us";
-  if (href.includes("modules")) return "Modules";
-  if (href.includes("progress")) return "My Progress";
-  if (label.toLowerCase().includes("sign out")) return "Sign Out";
-  return label || "Open";
+  const type = navIconFor(element);
+  return ({profile:"Edit profile",modules:"Modules",progress:"My Progress",admin:"Admin",contact:"Contact us",signout:"Sign out"})[type] || "Open";
 }
 
-function buildMobileQuickActions(nav, topbar) {
-  if (!nav || !topbar || topbar.querySelector(".mobile-quick-actions")) return;
-  const quick = document.createElement("div");
-  quick.className = "mobile-quick-actions";
-  quick.setAttribute("aria-label", "Quick navigation");
+function buildCompactMobileHeader() {
+  if (!window.matchMedia("(max-width: 760px)").matches) return;
+  const topbar = document.querySelector(".topbar");
+  const nav = topbar?.querySelector("nav");
+  if (!topbar || !nav) return;
 
-  const wanted = ["profile", "modules", "progress", "contact", "signout"];
-  const sourceItems = [...nav.children].filter((item) => item.matches?.("a,button"));
+  let row = topbar.querySelector(".mobile-account-row");
+  if (!row) {
+    row = document.createElement("div");
+    row.className = "mobile-account-row";
+    topbar.appendChild(row);
+  }
+  row.innerHTML = "";
 
-  wanted.forEach((type) => {
-    const source = sourceItems.find((item) => navIconFor(item) === type);
+  const chip = nav.querySelector("#userChip");
+  if (chip) {
+    const identity = document.createElement("div");
+    identity.className = "mobile-signed-user";
+    const image = chip.querySelector("img")?.cloneNode(true) || chip.querySelector(".avatar-placeholder")?.cloneNode(true);
+    if (image) identity.appendChild(image);
+    const name = document.createElement("span");
+    name.textContent = chip.querySelector(".user-name")?.textContent || chip.textContent.trim() || "ACL User";
+    identity.appendChild(name);
+    row.appendChild(identity);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "mobile-icon-actions";
+  const order = ["profile", "modules", "progress", "admin", "contact", "signout"];
+  const sources = [...nav.children].filter(el => el.matches?.("a,button"));
+  order.forEach(type => {
+    const source = sources.find(el => navIconFor(el) === type);
     if (!source) return;
     const action = source.tagName === "A" ? document.createElement("a") : document.createElement("button");
-    action.className = `mobile-quick-action mobile-quick-${type}`;
-    action.innerHTML = `<span class="mobile-quick-icon">${mobileIconSvgs[type]}</span><span class="mobile-quick-label">${mobileLabelFor(source)}</span>`;
+    action.className = `mobile-icon-btn mobile-icon-${type}`;
+    action.innerHTML = mobileIconSvgs[type];
     action.setAttribute("aria-label", mobileLabelFor(source));
     action.title = mobileLabelFor(source);
-    if (source.tagName === "A") action.href = source.href;
-    else {
+    if (source.tagName === "A") {
+      action.href = source.href;
+    } else {
       action.type = "button";
       action.addEventListener("click", () => window.aclSignOut?.());
     }
-
-    // First tap reveals and enlarges the label; a second tap performs the action.
-    action.addEventListener("click", (event) => {
-      if (!window.matchMedia("(max-width: 760px)").matches) return;
-      if (!action.classList.contains("is-expanded")) {
-        event.preventDefault();
-        event.stopPropagation();
-        quick.querySelectorAll(".is-expanded").forEach((item) => item.classList.remove("is-expanded"));
-        action.classList.add("is-expanded");
-        window.clearTimeout(action._collapseTimer);
-        action._collapseTimer = window.setTimeout(() => action.classList.remove("is-expanded"), 1800);
-      }
-    }, true);
-    quick.appendChild(action);
+    actions.appendChild(action);
   });
-  topbar.appendChild(quick);
-}
-
-function orderMobileDrawer(nav, drawerHead) {
-  const items = [...nav.children].filter((item) => item !== drawerHead && item.matches?.("a,button"));
-  const rank = { profile: 1, modules: 2, progress: 3, admin: 4, contact: 5, signout: 6 };
-  items.sort((a,b) => (rank[navIconFor(a)] || 99) - (rank[navIconFor(b)] || 99));
-  items.forEach((item) => nav.appendChild(item));
-}
-
-function decorateMobileNav(nav) {
-  if (!nav || nav.dataset.mobileReady === "true") return;
-  nav.dataset.mobileReady = "true";
-  nav.id ||= "aclMobileNavigation";
-
-  const drawerHead = document.createElement("div");
-  drawerHead.className = "mobile-drawer-head";
-  drawerHead.innerHTML = `<strong>ACL Navigation</strong><button type="button" class="mobile-drawer-close" aria-label="Close navigation">${mobileIconSvgs.close}</button>`;
-  nav.prepend(drawerHead);
-
-  [...nav.children].forEach((item) => {
-    if (item === drawerHead || !item.matches("a,button")) return;
-    if (!item.querySelector(".mobile-nav-icon")) {
-      const icon = document.createElement("span");
-      icon.className = "mobile-nav-icon";
-      icon.innerHTML = mobileIconSvgs[navIconFor(item)];
-      item.prepend(icon);
-    }
-  });
-
-  orderMobileDrawer(nav, drawerHead);
-
-  const topbar = nav.closest(".topbar");
-  if (!topbar) return;
-  buildMobileQuickActions(nav, topbar);
-
-  const trigger = document.createElement("button");
-  trigger.type = "button";
-  trigger.className = "mobile-menu-trigger";
-  trigger.setAttribute("aria-label", "Open navigation");
-  trigger.setAttribute("aria-controls", nav.id);
-  trigger.setAttribute("aria-expanded", "false");
-  trigger.innerHTML = mobileIconSvgs.menu;
-  topbar.appendChild(trigger);
-
-  const backdrop = document.createElement("button");
-  backdrop.type = "button";
-  backdrop.className = "mobile-nav-backdrop";
-  backdrop.setAttribute("aria-label", "Close navigation");
-  document.body.appendChild(backdrop);
-
-  const setOpen = (open) => {
-    document.body.classList.toggle("mobile-nav-open", open);
-    trigger.setAttribute("aria-expanded", String(open));
-  };
-
-  trigger.addEventListener("click", () => setOpen(!document.body.classList.contains("mobile-nav-open")));
-  backdrop.addEventListener("click", () => setOpen(false));
-  drawerHead.querySelector("button").addEventListener("click", () => setOpen(false));
-  nav.addEventListener("click", (event) => {
-    if (event.target.closest("a,button") && !event.target.closest(".mobile-drawer-close")) setOpen(false);
-  });
-  window.addEventListener("keydown", (event) => { if (event.key === "Escape") setOpen(false); });
+  row.appendChild(actions);
 }
 
 function initializeMobileNavigation() {
-  const nav = document.querySelector(".topbar nav");
-  if (nav) decorateMobileNav(nav);
+  buildCompactMobileHeader();
 }
 
 document.addEventListener("DOMContentLoaded", initializeMobileNavigation);
+window.addEventListener("resize", initializeMobileNavigation);
 if (document.readyState !== "loading") initializeMobileNavigation();

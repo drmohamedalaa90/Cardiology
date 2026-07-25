@@ -1,0 +1,13 @@
+ACL Expert Edition V2 — Phase 1.5.6
+
+1. Upload all extracted files to the v2-development branch.
+2. Replace existing files.
+3. Commit: ACL V2 Phase 1.5.6 clickable compact mobile header
+4. Wait for GitHub Pages deployment.
+5. Refresh mobile browser or open with ?v=156.
+
+Changes:
+- First line: Alexandria Cardiology League; THE EXPERT EDITION
+- Second line: signed-in name plus icon-only Profile, Modules, Progress, Admin (when applicable), Contact, and Sign out.
+- All icons open immediately on one tap.
+- Drawer, backdrop, dim overlay, and two-tap behavior removed.
