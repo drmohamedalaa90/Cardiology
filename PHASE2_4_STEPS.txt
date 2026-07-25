@@ -1,0 +1,15 @@
+ACL Expert Edition V2 — Phase 2.4 Learning Mode
+
+1. Supabase > SQL Editor > New query.
+2. Run phase2_4_learning_mode_patch.sql completely.
+3. Upload all package files to GitHub branch v2-development, replacing previous files.
+4. Commit: ACL V2 Phase 2.4 student learning mode
+5. Open modules.html and launch Primary PCI Fundamentals.
+
+Test:
+- A published learning quiz opens from the module card.
+- Correct answers are checked securely by Supabase.
+- Immediate feedback and explanation appear.
+- Attempt autosaves and resumes on another device.
+- Completion screen displays points, percentage and pass status.
+- Review and retry both work.

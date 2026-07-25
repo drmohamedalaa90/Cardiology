@@ -8,7 +8,7 @@ async function currentUser() {
   return user;
 }
 
-export async function getOpenAttempt(moduleId) {
+export async function getOpenAttempt(moduleId, quizId = null) {
   const user = await currentUser();
   const { data, error } = await supabaseClient
     .from("quiz_attempts")
@@ -16,17 +16,21 @@ export async function getOpenAttempt(moduleId) {
     .eq("user_id", user.id)
     .eq("module_id", moduleId)
     .eq("status", "in_progress")
+    .eq(quizId ? "quiz_id" : "module_id", quizId || moduleId)
     .maybeSingle();
   if (error) throw error;
   return data;
 }
 
-export async function createAttempt({ moduleId, moduleTitle, questionIds, lifelines = {} }) {
+export async function createAttempt({ moduleId, moduleTitle, quizId = null, quizTitle = null, mode = "learning", questionIds, lifelines = {} }) {
   const user = await currentUser();
   const row = {
     user_id: user.id,
     module_id: moduleId,
     module_title: moduleTitle,
+    quiz_id: quizId,
+    quiz_title: quizTitle || moduleTitle,
+    mode,
     question_count: questionIds.length,
     question_ids: questionIds,
     current_question_index: 0,
@@ -41,7 +45,7 @@ export async function createAttempt({ moduleId, moduleTitle, questionIds, lifeli
     .select("*")
     .single();
   if (error) {
-    if (error.code === "23505") return getOpenAttempt(moduleId);
+    if (error.code === "23505") return getOpenAttempt(moduleId, quizId);
     throw error;
   }
   return data;
