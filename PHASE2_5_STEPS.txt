@@ -1,0 +1,7 @@
+ACL Expert Edition V2 — Phase 2.5
+1. Run phase2_5_competition_patch.sql in Supabase SQL Editor.
+2. Upload all files to the v2-development branch, replacing older files.
+3. Commit: ACL V2 Phase 2.5 competition engine
+4. Open admin-competitions.html as admin and create a draft competition.
+5. Publish it, test with a normal account, then inspect competition-dashboard.html?id=COMPETITION_ID.
+Important: test with a non-production competition before using it for an official round.
