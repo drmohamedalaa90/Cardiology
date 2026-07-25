@@ -41,3 +41,10 @@ input {
 @media (max-width: 650px) {
   .form-grid { grid-template-columns: 1fr; }
 }
+
+.auth-tabs { display:flex; gap:8px; padding:5px; background:#eaf3fa; border-radius:999px; margin-bottom:24px; }
+.auth-tab { flex:1; border:0; border-radius:999px; padding:11px 14px; background:transparent; color:var(--navy); font-weight:900; cursor:pointer; }
+.auth-tab.active { background:white; box-shadow:0 4px 14px rgba(15,65,110,.12); }
+.field small { color:var(--muted); font-size:.82rem; }
+form[hidden] { display:none !important; }
+button:disabled { opacity:.65; cursor:wait; }

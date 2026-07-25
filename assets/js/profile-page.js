@@ -1,72 +1,13 @@
 import { supabaseClient } from "./supabase-client.js";
-import { protectAndRender, loadProfile } from "./session-ui.js";
-
-const form = document.getElementById("profileForm");
-const status = document.getElementById("profileStatus");
+import { protectAndRender } from "./session-ui.js";
+const profileForm = document.getElementById("profileForm");
+const passwordForm = document.getElementById("passwordForm");
 let currentProfile = null;
-
-function showStatus(message, type) {
-  status.textContent = message;
-  status.className = `status-box show ${type}`;
-}
-
-function initials(name) {
-  return String(name || "ACL").split(/\s+/).slice(0,2).map(x => x[0] || "").join("").toUpperCase();
-}
-
-function renderAvatar(url, name) {
-  const img = document.getElementById("avatarPreview");
-  const placeholder = document.getElementById("avatarPlaceholder");
-  if (url) {
-    img.src = url; img.style.display = "block"; placeholder.style.display = "none";
-  } else {
-    img.style.display = "none"; placeholder.style.display = "grid"; placeholder.textContent = initials(name);
-  }
-}
-
-async function init() {
-  currentProfile = await protectAndRender("login.html");
-  if (!currentProfile) return;
-  document.getElementById("name").value = currentProfile.full_name || "";
-  document.getElementById("email").value = currentProfile.email || "";
-  document.getElementById("whatsapp").value = currentProfile.phone_e164 || "";
-  document.getElementById("academicYear").value = currentProfile.academic_year || "";
-  document.getElementById("institution").value = currentProfile.institution || "";
-  renderAvatar(currentProfile.avatar_url, currentProfile.full_name);
-}
-
-async function uploadAvatar(file, userId) {
-  if (!file) return currentProfile.avatar_url || null;
-  if (file.size > 5 * 1024 * 1024) throw new Error("Photo must be smaller than 5 MB.");
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-  const path = `${userId}/avatar.${ext}`;
-  const { error } = await supabaseClient.storage.from("avatars").upload(path, file, { upsert: true });
-  if (error) throw error;
-  const { data } = supabaseClient.storage.from("avatars").getPublicUrl(path);
-  return `${data.publicUrl}?v=${Date.now()}`;
-}
-
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  try {
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const user = sessionData.session?.user;
-    if (!user) throw new Error("Session expired. Sign in again.");
-    const avatarUrl = await uploadAvatar(document.getElementById("avatarFile").files[0], user.id);
-    const { data, error } = await supabaseClient.from("profiles").update({
-      phone_e164: document.getElementById("whatsapp").value.trim(),
-      academic_year: document.getElementById("academicYear").value.trim(),
-      institution: document.getElementById("institution").value.trim(),
-      avatar_url: avatarUrl,
-      last_seen_at: new Date().toISOString()
-    }).eq("id", user.id).select().single();
-    if (error) throw error;
-    currentProfile = { ...data, email: user.email };
-    renderAvatar(currentProfile.avatar_url, currentProfile.full_name);
-    showStatus("Profile saved successfully.", "success");
-  } catch (error) {
-    showStatus(error.message || "Could not save profile.", "error");
-  }
-});
-
+function show(id, message, type) { const box=document.getElementById(id); box.textContent=message; box.className=`status-box show ${type}`; }
+function initials(name) { return String(name||"ACL").split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase(); }
+function renderAvatar(url,name){const img=document.getElementById("avatarPreview"),p=document.getElementById("avatarPlaceholder");if(url){img.src=url;img.style.display="block";p.style.display="none";}else{img.style.display="none";p.style.display="grid";p.textContent=initials(name);}}
+async function init(){currentProfile=await protectAndRender("login.html");if(!currentProfile)return;for(const [id,key] of [["name","full_name"],["email","email"],["username","username"],["whatsapp","phone_e164"],["academicYear","academic_year"],["institution","institution"]]) document.getElementById(id).value=currentProfile[key]||"";renderAvatar(currentProfile.avatar_url,currentProfile.full_name);}
+async function uploadAvatar(file,userId){if(!file)return currentProfile.avatar_url||null;if(file.size>5*1024*1024)throw new Error("Photo must be smaller than 5 MB.");const ext=(file.name.split(".").pop()||"jpg").toLowerCase(),path=`${userId}/avatar.${ext}`;const{error}=await supabaseClient.storage.from("avatars").upload(path,file,{upsert:true});if(error)throw error;const{data}=supabaseClient.storage.from("avatars").getPublicUrl(path);return `${data.publicUrl}?v=${Date.now()}`;}
+profileForm.addEventListener("submit",async(event)=>{event.preventDefault();try{const{data:sessionData}=await supabaseClient.auth.getSession();const user=sessionData.session?.user;if(!user)throw new Error("Session expired. Sign in again.");const username=document.getElementById("username").value.trim().toLowerCase();if(!/^[a-z0-9._]{3,30}$/.test(username))throw new Error("Username must be 3–30 characters using letters, numbers, dots or underscores.");const avatarUrl=await uploadAvatar(document.getElementById("avatarFile").files[0],user.id);const{data,error}=await supabaseClient.from("profiles").update({username,phone_e164:document.getElementById("whatsapp").value.trim(),academic_year:document.getElementById("academicYear").value.trim(),institution:document.getElementById("institution").value.trim(),avatar_url:avatarUrl,last_seen_at:new Date().toISOString()}).eq("id",user.id).select().single();if(error)throw error;currentProfile={...data,email:user.email};renderAvatar(currentProfile.avatar_url,currentProfile.full_name);show("profileStatus","Profile saved successfully.","success");}catch(error){show("profileStatus",error.code==="23505"?"This username is already taken.":(error.message||"Could not save profile."),"error");}});
+passwordForm.addEventListener("submit",async(event)=>{event.preventDefault();try{const current=document.getElementById("currentPassword").value,newPassword=document.getElementById("profileNewPassword").value,confirm=document.getElementById("profileConfirmPassword").value;if(newPassword.length<8)throw new Error("New password must contain at least 8 characters.");if(newPassword!==confirm)throw new Error("New passwords do not match.");const{data:{user}}=await supabaseClient.auth.getUser();if(!user?.email)throw new Error("Session expired. Sign in again.");const{error:verifyError}=await supabaseClient.auth.signInWithPassword({email:user.email,password:current});if(verifyError)throw new Error("Current password is incorrect.");const{error}=await supabaseClient.auth.updateUser({password:newPassword});if(error)throw error;passwordForm.reset();show("passwordStatus","Password changed successfully.","success");}catch(error){show("passwordStatus",error.message||"Could not change password.","error");}});
 init();
