@@ -3,7 +3,7 @@ import { supabaseClient } from "./supabase-client.js";
 export async function requireSession(relativeLogin = "login.html") {
   const { data, error } = await supabaseClient.auth.getSession();
   if (error || !data.session) {
-    window.location.href = relativeLogin;
+    window.location.replace(relativeLogin);
     return null;
   }
   return data.session;
@@ -47,7 +47,7 @@ export async function protectAndRender(relativeLogin = "login.html") {
   if (!profile || profile.account_status === "suspended") {
     await supabaseClient.auth.signOut();
     alert("This account has been suspended. Contact the ACL administrator.");
-    window.location.href = relativeLogin;
+    window.location.replace(relativeLogin);
     return null;
   }
   renderUserChip(profile);
@@ -58,6 +58,6 @@ export async function protectAndRender(relativeLogin = "login.html") {
 export async function signOut() {
   await supabaseClient.auth.signOut();
   const nested = location.pathname.includes("/modules/");
-  window.location.href = nested ? "../../login.html" : "login.html";
+  window.location.replace(nested ? "../../login.html" : "login.html");
 }
 window.aclSignOut = signOut;

@@ -1,0 +1,8 @@
+ACL Expert Edition V2 — Phase 1.5
+
+1. Run phase1_5_security_patch.sql in Supabase SQL Editor.
+2. In GitHub, select v2-development.
+3. Upload the contents of this folder and replace existing files.
+4. Commit message: ACL V2 Phase 1.5 security hardening and final testing
+5. Wait for GitHub Pages deployment to succeed.
+6. Complete PHASE1_5_TEST_CHECKLIST.md before merging to main.
