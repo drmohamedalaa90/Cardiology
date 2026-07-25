@@ -192,3 +192,20 @@ a, button { font: inherit; }
 .photo-dialog img{display:block;width:100%;max-height:75vh;object-fit:contain;border-radius:14px;background:#eef5fb}
 .photo-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.photo-dialog-head h3{margin:0}.photo-dialog-close{border:0;background:#edf4fa;color:var(--navy);width:36px;height:36px;border-radius:50%;font-size:1.4rem;cursor:pointer}
 @media(max-width:900px){.admin-toolbar{grid-template-columns:1fr 1fr}.admin-table{min-width:900px}}
+
+/* Phase 1.4 progress dashboard */
+.progress-hero{display:flex;align-items:center;justify-content:space-between;gap:20px;background:linear-gradient(135deg,#fff,#eef7ff)}
+.progress-hero h1{margin:.25rem 0 .5rem;font-size:clamp(2rem,5vw,3.4rem)}
+.progress-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0 28px}
+.progress-section{margin-top:28px}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:14px}.section-heading h2{margin:0}.section-heading p{margin:.35rem 0 0}
+.progress-filter{height:42px;border:1px solid #b9cee0;border-radius:12px;padding:0 12px;background:#fff;color:var(--text);font-weight:700}
+.attempt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}.attempt-card h3,.completed-attempt h3{margin:8px 0 0}.attempt-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.attempt-top>strong{font-size:1.15rem;color:var(--navy);white-space:nowrap}
+.attempt-status{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}.attempt-status.open{background:#fff3d2;color:#805300}.attempt-status.completed{background:#e7f8ee;color:#176a3f}
+.progress-track{height:9px;background:#e5eef5;border-radius:999px;overflow:hidden;margin:18px 0 12px}.progress-track span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),#49a4ec);border-radius:inherit}
+.attempt-meta{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--muted);font-size:.83rem;margin:12px 0}.attempt-action{display:inline-block;text-decoration:none;margin-top:8px}
+.attempt-list{display:grid;gap:12px}.completed-attempt{display:grid;grid-template-columns:74px 1fr auto;gap:18px;align-items:center;padding:17px 20px}.completed-main{min-width:0}.review-btn{white-space:nowrap}
+.score-ring{--score:0;width:68px;height:68px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--blue) calc(var(--score)*1%),#e2edf5 0);position:relative}.score-ring:before{content:"";position:absolute;inset:7px;border-radius:50%;background:#fff}.score-ring span{position:relative;font-weight:900;color:var(--navy);font-size:.9rem}
+.empty-progress{text-align:center;padding:34px}.empty-progress h3{margin-top:0}.empty-progress a{display:inline-block;text-decoration:none;margin-top:8px}
+.review-dialog{width:min(820px,94vw);max-height:86vh;overflow:auto}.review-list{display:grid;gap:12px;margin-top:20px}.review-item{display:grid;grid-template-columns:34px 1fr 30px;gap:12px;padding:14px;border:1px solid #dbe7ef;border-left:5px solid #adbcc8;border-radius:14px;background:#f9fcfe}.review-item.correct{border-left-color:#2b9a5e}.review-item.incorrect{border-left-color:#c43a46}.review-number{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e6f0f8;font-weight:900}.review-item h4{margin:2px 0 10px}.review-item p{margin:5px 0}.review-mark{font-size:1.5rem;font-weight:900}.review-item.correct .review-mark{color:#23824f}.review-item.incorrect .review-mark{color:#b52e3b}
+@media(max-width:800px){.progress-stats{grid-template-columns:repeat(2,1fr)}.completed-attempt{grid-template-columns:58px 1fr}.score-ring{width:56px;height:56px}.review-btn{grid-column:1/-1;width:100%}.progress-hero{align-items:flex-start;flex-direction:column}}
+@media(max-width:520px){.progress-stats{grid-template-columns:1fr 1fr}.section-heading{align-items:stretch;flex-direction:column}.progress-filter{width:100%}}

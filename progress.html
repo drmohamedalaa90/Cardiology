@@ -1,5 +1,21 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Progress | ACL</title>
-<link rel="stylesheet" href="assets/css/main.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header class="topbar"><div class="brand">ACL; <b>THE EXPERT EDITION</b></div><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container"><section class="card"><h1>My Progress</h1><p class="muted">Cloud progress will appear here in the next step.</p></section></main>
-<script type="module">import { protectAndRender } from "./assets/js/session-ui.js"; protectAndRender("login.html");</script><script type="module" src="assets/js/session-ui.js"></script></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Progress | ACL Expert Edition</title>
+<link rel="stylesheet" href="assets/css/main.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+<body>
+<header class="topbar"><div class="brand">ACL; <b>THE EXPERT EDITION</b></div><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn active" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
+<main class="container progress-page">
+<section class="card progress-hero"><div><span class="admin-kicker">PERSONAL LEARNING DASHBOARD</span><h1>My Progress</h1><p class="muted">Continue unfinished quizzes, review completed attempts, and track your ACL performance across devices.</p></div><button id="refreshProgress" class="secondary-btn" type="button">Refresh</button></section>
+<section class="progress-stats" aria-label="Progress statistics">
+<div class="stat-card"><span>Completed attempts</span><strong id="completedCount">—</strong></div>
+<div class="stat-card"><span>Open attempts</span><strong id="openCount">—</strong></div>
+<div class="stat-card"><span>Overall accuracy</span><strong id="overallAccuracy">—</strong></div>
+<div class="stat-card"><span>Total correct</span><strong id="totalCorrect">—</strong></div>
+</section>
+<div id="progressStatus" class="status-box"></div>
+<section class="progress-section"><div class="section-heading"><div><h2>Continue learning</h2><p class="muted">Your unfinished cloud attempts.</p></div></div><div id="openAttempts" class="attempt-grid"><div class="card muted">Loading unfinished attempts…</div></div></section>
+<section class="progress-section"><div class="section-heading"><div><h2>Completed attempts</h2><p class="muted">Your saved quiz history and results.</p></div><select id="moduleFilter" class="progress-filter"><option value="all">All modules</option></select></div><div id="completedAttempts" class="attempt-list"><div class="card muted">Loading completed attempts…</div></div></section>
+</main>
+<dialog id="reviewDialog" class="student-dialog review-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form><div id="reviewContent"></div></dialog>
+<script type="module" src="assets/js/progress-page.js"></script><script type="module" src="assets/js/session-ui.js"></script>
+</body></html>

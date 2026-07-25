@@ -1,0 +1,10 @@
+ACL Expert Edition V2 — Phase 1.4
+REAL MY PROGRESS DASHBOARD
+
+1. No new SQL is required if Phase 1.3 SQL ran successfully.
+2. Upload all files to the v2-development branch and replace existing files.
+3. Commit changes with: ACL V2 Phase 1.4 progress dashboard and quiz review
+4. Wait 2–5 minutes.
+5. Open progress.html while signed in.
+6. Confirm open attempts show Continue, completed attempts show score/date/duration, and Review opens answer details.
+7. Test on desktop and mobile.
