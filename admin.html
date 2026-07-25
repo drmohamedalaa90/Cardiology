@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACL Admin | Expert Edition</title>
+<link rel="stylesheet" href="assets/css/main.css"><link rel="stylesheet" href="assets/css/auth.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
+<header class="topbar"><div class="brand">ACL; <b>THE EXPERT EDITION</b></div><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
+<main class="container">
+<section class="card admin-hero"><div><span class="admin-kicker">ADMIN CONTROL CENTRE</span><h1>Registered Students</h1><p class="muted">Search accounts, review profile data, suspend or restore access, send password-reset emails, and export the current list.</p></div><button id="exportCsv" class="primary-btn" type="button">Export CSV</button></section>
+<section class="admin-stats" aria-label="Account statistics">
+<div class="stat-card"><span>Total registered</span><strong id="totalStudents">—</strong></div>
+<div class="stat-card"><span>Active</span><strong id="activeStudents">—</strong></div>
+<div class="stat-card"><span>Suspended</span><strong id="suspendedStudents">—</strong></div>
+<div class="stat-card"><span>Administrators</span><strong id="adminCount">—</strong></div>
+</section>
+<section class="card admin-toolbar">
+<div class="field"><label for="studentSearch">Search</label><input id="studentSearch" type="search" placeholder="Name, username, email, WhatsApp or institution"></div>
+<div class="field"><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All accounts</option><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
+<div class="field"><label for="roleFilter">Role</label><select id="roleFilter"><option value="all">All roles</option><option value="student">Students</option><option value="admin">Administrators</option></select></div>
+<button id="refreshStudents" class="secondary-btn" type="button">Refresh</button>
+</section>
+<div id="adminStatus" class="status-box"></div>
+<section class="card admin-table-card">
+<div class="table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Contact</th><th>Academic details</th><th>Role</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody id="studentsBody"><tr><td colspan="7" class="table-empty">Loading registered accounts…</td></tr></tbody></table></div>
+</section>
+</main>
+<dialog id="studentDialog" class="student-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form><div id="studentDialogContent"></div></dialog>
+<script type="module" src="assets/js/admin.js"></script><script type="module" src="assets/js/session-ui.js"></script></body></html>

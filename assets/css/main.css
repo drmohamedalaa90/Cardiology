@@ -145,3 +145,21 @@ a, button { font: inherit; }
 .status-box.success { background:#edf9f1; color:#176a3f; border:1px solid #93d0ab; }
 .status-box.error { background:#fff0f0; color:#b5202e; border:1px solid #e3abb1; }
 @media(max-width:760px){ .profile-layout{grid-template-columns:1fr;} }
+
+/* Phase 1.2 admin dashboard */
+.admin-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;background:linear-gradient(135deg,#fff,#eef7ff)}
+.admin-hero h1{margin:.25rem 0 .5rem;font-size:clamp(2rem,5vw,3.5rem)}
+.admin-kicker{font-size:.78rem;font-weight:900;letter-spacing:.15em;color:var(--blue)}
+.admin-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}
+.stat-card{background:#fff;border:1px solid #cadce9;border-radius:18px;padding:18px;box-shadow:0 8px 24px rgba(15,65,110,.06)}
+.stat-card span{display:block;color:var(--muted);font-weight:800;font-size:.82rem}.stat-card strong{display:block;font-size:2rem;margin-top:5px;color:var(--navy)}
+.admin-toolbar{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:14px;align-items:end;margin-bottom:18px}
+.admin-toolbar .field{margin:0}.admin-toolbar input,.admin-toolbar select{width:100%}
+.admin-table-card{padding:0;overflow:hidden}.table-wrap{overflow:auto}.admin-table{width:100%;border-collapse:collapse;min-width:1080px}
+.admin-table th,.admin-table td{padding:14px 16px;text-align:left;border-bottom:1px solid #e0ebf3;vertical-align:middle}.admin-table th{background:#f4f9fd;color:#31516d;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0}.admin-table tbody tr:hover{background:#f9fcff}
+.student-cell{display:flex;align-items:center;gap:11px}.student-cell small,.admin-table td small{display:block;color:var(--muted);margin-top:3px}.admin-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:0 0 auto}.admin-avatar-fallback{display:grid;place-items:center;background:#dceeff;color:var(--navy);font-weight:900}
+.role-pill,.account-pill{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:.75rem;font-weight:900;text-transform:capitalize}.role-admin{background:#fff2cf;color:#7b5100}.role-student{background:#eaf3ff;color:#175389}.status-active{background:#e7f8ee;color:#176a3f}.status-suspended{background:#ffe9eb;color:#a51f2d}
+.admin-actions{display:flex;flex-wrap:wrap;gap:6px}.table-btn{border:1px solid #a8c3d7;background:#fff;color:var(--navy);border-radius:9px;padding:7px 9px;font-size:.76rem;font-weight:800;cursor:pointer}.table-btn:hover{background:#edf6ff}.danger-btn{border-color:#e0a7ad;color:#a51f2d}.restore-btn{border-color:#8bc7a3;color:#176a3f}.table-btn:disabled{opacity:.45;cursor:not-allowed}.table-empty{text-align:center!important;color:var(--muted);padding:32px!important}
+.student-dialog{width:min(700px,92vw);border:0;border-radius:22px;padding:26px;box-shadow:0 24px 80px rgba(0,0,0,.28)}.student-dialog::backdrop{background:rgba(5,27,50,.58)}.dialog-close{float:right;border:0;background:transparent;font-size:2rem;cursor:pointer;color:var(--muted)}.dialog-profile{display:flex;align-items:center;gap:15px;margin-bottom:20px}.dialog-profile .admin-avatar{width:64px;height:64px}.dialog-profile h2{margin:0}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0}.detail-grid>div{background:#f5f9fc;border-radius:12px;padding:12px}.detail-grid dt{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:900}.detail-grid dd{margin:5px 0 0;font-weight:800;overflow-wrap:anywhere}.detail-full{grid-column:1/-1}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.8rem}
+@media(max-width:900px){.admin-stats{grid-template-columns:repeat(2,1fr)}.admin-toolbar{grid-template-columns:1fr 1fr}.admin-toolbar .field:first-child{grid-column:1/-1}.admin-hero{align-items:flex-start;flex-direction:column}}
+@media(max-width:560px){.admin-stats{grid-template-columns:1fr 1fr}.admin-toolbar{grid-template-columns:1fr}.admin-toolbar .field:first-child{grid-column:auto}.detail-grid{grid-template-columns:1fr}.detail-full{grid-column:auto}}
