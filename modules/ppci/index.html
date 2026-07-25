@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PPCI Pilot | ACL</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">ACL; <b>THE EXPERT EDITION</b></div>
+    <nav><a class="nav-btn" href="../../modules.html">Modules</a></nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h1>Primary PCI Fundamentals</h1>
+      <p class="muted">V2 pilot quiz.</p>
+      <div id="quizArea"></div>
+      <button id="nextBtn" class="primary-btn" style="display:none">Next</button>
+    </section>
+  </main>
+
+  <script type="module">
+    import { QuizEngine } from "../../assets/js/quiz-engine.js";
+    import { PPCI_QUESTIONS } from "./questions.js";
+
+    const engine = new QuizEngine({ questions: PPCI_QUESTIONS, count: 2 });
+    const quizArea = document.getElementById("quizArea");
+    const nextBtn = document.getElementById("nextBtn");
+
+    function render() {
+      const q = engine.current();
+      if (!q) {
+        quizArea.innerHTML = `<h2>Finished</h2><p>Score: ${engine.score()} / ${engine.answers.length}</p>`;
+        nextBtn.style.display = "none";
+        return;
+      }
+
+      quizArea.innerHTML = `
+        <h2>${q.stem}</h2>
+        <div class="card-grid">
+          ${q.options.map((option, index) => `
+            <button class="secondary-btn option-btn" data-index="${index}">${String.fromCharCode(65 + index)}. ${option}</button>
+          `).join("")}
+        </div>
+        <div id="feedback" style="margin-top:16px;font-weight:800"></div>
+      `;
+
+      document.querySelectorAll(".option-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+          const choice = Number(button.dataset.index);
+          const correct = engine.answer(choice);
+          document.getElementById("feedback").textContent =
+            (correct ? "Correct. " : "Incorrect. ") + q.explanation;
+          document.querySelectorAll(".option-btn").forEach((item) => item.disabled = true);
+          nextBtn.style.display = "inline-block";
+        });
+      });
+    }
+
+    nextBtn.addEventListener("click", () => {
+      engine.next();
+      nextBtn.style.display = "none";
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>

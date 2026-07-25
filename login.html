@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sign In | ACL Expert Edition</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">ALEXANDRIA <b>CARDIOLOGY</b> LEAGUE</div>
+    <nav><a class="nav-btn" href="index.html">Home</a></nav>
+  </header>
+
+  <main class="auth-shell">
+    <section class="auth-card">
+      <h1>Sign in or register</h1>
+      <p class="muted">Use email + personal PIN. New accounts require email confirmation.</p>
+
+      <form id="loginForm">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="name">Name</label>
+            <input id="name" required>
+          </div>
+
+          <div class="field full">
+            <label for="email">Email</label>
+            <input id="email" type="email" required>
+          </div>
+
+          <div class="field full">
+            <label for="whatsapp">WhatsApp</label>
+            <input id="whatsapp" required placeholder="+201XXXXXXXXX">
+          </div>
+
+          <div class="field">
+            <label for="academicYear">Academic year</label>
+            <input id="academicYear" required>
+          </div>
+
+          <div class="field">
+            <label for="institution">Institution</label>
+            <input id="institution" required>
+          </div>
+
+          <div class="field full">
+            <label for="pin">Personal PIN</label>
+            <input id="pin" type="password" minlength="6" required>
+          </div>
+        </div>
+
+        <button class="primary-btn" type="submit" style="margin-top:18px">Continue</button>
+        <div id="authError" class="message error"></div>
+        <div id="authSuccess" class="message success"></div>
+      </form>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/auth.js"></script>
+</body>
+</html>

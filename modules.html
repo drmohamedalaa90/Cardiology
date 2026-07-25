@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Modules | ACL</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">ACL; <b>THE EXPERT EDITION</b></div>
+    <nav>
+      <a class="nav-btn" href="progress.html">My Progress</a>
+      <button class="nav-btn" onclick="aclSignOut()">Sign Out</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1>Modules</h1>
+    <div class="card-grid">
+      <article class="card">
+        <h2>Primary PCI Fundamentals</h2>
+        <p class="muted">Pilot V2 module with cloud-ready quiz architecture.</p>
+        <a class="primary-btn" href="modules/ppci/" style="display:inline-block;text-decoration:none">Open module</a>
+      </article>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireSession } from "./assets/js/navigation.js";
+    requireSession();
+  </script>
+  <script type="module" src="assets/js/navigation.js"></script>
+</body>
+</html>
