@@ -1,0 +1,12 @@
+ACL Expert Edition V2 — Phase 1.3 installation
+
+1. Open phase1_3_quiz_autosave_patch.sql and run all of it in Supabase SQL Editor.
+2. Upload every file/folder in this package to the v2-development GitHub branch, replacing existing files.
+3. Commit changes with: ACL V2 Phase 1.3 cloud quiz autosave and resume
+4. Wait for GitHub Pages deployment.
+5. Sign in, open Modules > PPCI pilot, answer question 1, then close the tab.
+6. Reopen the quiz. It should restore the answered question and current position.
+7. Sign in on another browser/device and open the same quiz. The same unfinished attempt should return.
+8. Finish the quiz. A completed row should appear in Supabase Table Editor > quiz_attempts.
+
+This pilot has two PPCI questions because the current PPCI question file contains two questions. The system supports larger question sets when they are added.

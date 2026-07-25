@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PPCI Pilot | ACL</title>
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .quiz-status{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0 20px}
+    .save-pill{padding:7px 12px;border-radius:999px;background:#edf7ff;border:1px solid #b9daf2;font-weight:700}
+    .save-pill.error{background:#fff0f0;border-color:#efb2b2;color:#9e1c1c}
+    .question-count{font-weight:800;color:#244b78}
+    .option-btn.selected{outline:3px solid #85baf1}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">ACL; <b>THE EXPERT EDITION</b></div>
+    <nav><a class="nav-btn" href="../../modules.html">Modules</a><a class="nav-btn" href="../../progress.html">My Progress</a></nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h1>Primary PCI Fundamentals</h1>
+      <p class="muted">Phase 1.3 pilot: progress is saved automatically and can be resumed on another device.</p>
+      <div class="quiz-status">
+        <span id="questionCount" class="question-count"></span>
+        <span id="saveStatus" class="save-pill">Preparing cloud attempt…</span>
+      </div>
+      <div id="quizArea"><p>Loading your attempt…</p></div>
+      <button id="nextBtn" class="primary-btn" style="display:none">Next</button>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireSession } from "../../assets/js/session-ui.js";
+    import { QuizEngine } from "../../assets/js/quiz-engine.js";
+    import { getOpenAttempt, createAttempt, saveAttempt, completeAttempt } from "../../assets/js/cloud-progress.js";
+    import { PPCI_QUESTIONS } from "./questions.js";
+
+    await requireSession("../../login.html");
+
+    const MODULE_ID = "ppci-fundamentals";
+    const MODULE_TITLE = "Primary PCI Fundamentals";
+    const quizArea = document.getElementById("quizArea");
+    const nextBtn = document.getElementById("nextBtn");
+    const saveStatus = document.getElementById("saveStatus");
+    const questionCount = document.getElementById("questionCount");
+    let attempt;
+    let engine;
+    let saving = false;
+
+    function setSaveStatus(text, isError = false) {
+      saveStatus.textContent = text;
+      saveStatus.classList.toggle("error", isError);
+    }
+
+    async function persist(completed = false) {
+      if (!attempt || !engine || saving) return;
+      saving = true;
+      setSaveStatus("Saving…");
+      try {
+        const state = engine.state();
+        attempt = completed
+          ? await completeAttempt(attempt.id, state)
+          : await saveAttempt(attempt.id, state);
+        setSaveStatus(completed ? "Completed and saved" : "Saved to cloud");
+      } catch (error) {
+        console.error(error);
+        setSaveStatus("Save failed — check connection", true);
+      } finally {
+        saving = false;
+      }
+    }
+
+    function render() {
+      const q = engine.current();
+      questionCount.textContent = q
+        ? `Question ${engine.index + 1} of ${engine.questions.length}`
+        : `${engine.questions.length} questions completed`;
+
+      if (!q) {
+        quizArea.innerHTML = `<h2>Finished</h2><p>Score: <strong>${engine.score()} / ${engine.questions.length}</strong></p><p>Your result has been stored in your ACL cloud account.</p>`;
+        nextBtn.style.display = "none";
+        persist(true);
+        return;
+      }
+
+      const answered = engine.currentAnswer();
+      quizArea.innerHTML = `
+        <h2>${q.stem}</h2>
+        <div class="card-grid">
+          ${q.options.map((option, index) => `
+            <button class="secondary-btn option-btn ${answered?.choice === index ? "selected" : ""}" data-index="${index}" ${answered ? "disabled" : ""}>
+              ${String.fromCharCode(65 + index)}. ${option}
+            </button>
+          `).join("")}
+        </div>
+        <div id="feedback" style="margin-top:16px;font-weight:800">${answered ? `${answered.correct ? "Correct. " : "Incorrect. "}${q.explanation}` : ""}</div>
+      `;
+
+      nextBtn.style.display = answered ? "inline-block" : "none";
+      document.querySelectorAll(".option-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const choice = Number(button.dataset.index);
+          const correct = engine.answer(choice);
+          document.getElementById("feedback").textContent = (correct ? "Correct. " : "Incorrect. ") + q.explanation;
+          document.querySelectorAll(".option-btn").forEach((item) => item.disabled = true);
+          button.classList.add("selected");
+          nextBtn.style.display = "inline-block";
+          await persist(false);
+        });
+      });
+    }
+
+    nextBtn.addEventListener("click", async () => {
+      engine.next();
+      nextBtn.style.display = "none";
+      await persist(false);
+      render();
+    });
+
+    window.addEventListener("online", () => persist(false));
+
+    try {
+      attempt = await getOpenAttempt(MODULE_ID);
+      if (attempt) {
+        engine = new QuizEngine({
+          questions: PPCI_QUESTIONS,
+          questionIds: attempt.question_ids,
+          currentIndex: attempt.current_question_index,
+          answers: attempt.answers
+        });
+        setSaveStatus("Unfinished attempt restored");
+      } else {
+        engine = new QuizEngine({ questions: PPCI_QUESTIONS, count: PPCI_QUESTIONS.length });
+        attempt = await createAttempt({
+          moduleId: MODULE_ID,
+          moduleTitle: MODULE_TITLE,
+          questionIds: engine.state().questionIds
+        });
+        setSaveStatus("New attempt saved to cloud");
+      }
+      render();
+    } catch (error) {
+      console.error(error);
+      setSaveStatus("Could not load cloud attempt", true);
+      quizArea.innerHTML = `<p>We could not open the quiz. Confirm that the Phase 1.3 SQL patch was run, then refresh this page.</p>`;
+    }
+  </script>
+</body>
+</html>

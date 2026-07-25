@@ -1,0 +1,25 @@
+ACL Expert Edition V2 — Phase 1.2 setup
+
+1) Supabase SQL Editor
+   - Open phase1_2_admin_patch.sql.
+   - Run the whole file.
+   - Your account has already been marked admin; verify it remains admin/active.
+
+2) Update the existing Edge Function
+   - Supabase > Edge Functions > username-login > Code.
+   - Replace index.ts with supabase/functions/username-login/index.ts.
+   - Click Deploy updates.
+   - Keep Verify JWT OFF.
+   This makes suspended accounts unable to sign in.
+
+3) GitHub
+   - Stay on v2-development.
+   - Upload every extracted file/folder and replace existing files.
+   - Suggested commit: ACL V2 Phase 1.2 admin dashboard and student control
+
+4) Test
+   - Sign in with the admin account.
+   - An Admin button should appear automatically in the navigation.
+   - Open admin.html.
+   - Test search, CSV export, reset-password email, suspend and restore.
+   - Never suspend your own admin account.

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Account Access | ACL Expert Edition</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header class="topbar"><div class="brand">ACL; <b>THE EXPERT EDITION</b></div><nav><a class="nav-btn" href="index.html">Home</a></nav></header>
+<main class="auth-shell">
+  <section class="auth-card">
+    <div class="auth-tabs" role="tablist">
+      <button id="signInTab" class="auth-tab active" type="button">Sign in</button>
+      <button id="registerTab" class="auth-tab" type="button">Create account</button>
+    </div>
+
+    <form id="signInForm">
+      <h1>Welcome back</h1>
+      <p class="muted">Use your username or verified email and password.</p>
+      <div class="form-grid">
+        <div class="field full"><label for="identifier">Username or email</label><input id="identifier" autocomplete="username" required></div>
+        <div class="field full"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" minlength="6" required></div>
+      </div>
+      <button class="primary-btn" type="submit" style="margin-top:18px">Sign in</button>
+      <p><a href="forgot-password.html">Forgot password?</a></p>
+      <div id="signInError" class="message error"></div>
+      <div id="signInSuccess" class="message success"></div>
+    </form>
+
+    <form id="registerForm" hidden>
+      <h1>Create your account</h1>
+      <p class="muted">Email confirmation is required once. Afterwards, sign in using username or email.</p>
+      <div class="form-grid">
+        <div class="field full"><label for="name">Full name</label><input id="name" autocomplete="name" required></div>
+        <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9._]+" required><small>Letters, numbers, dots and underscores only.</small></div>
+        <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required></div>
+        <div class="field full"><label for="whatsapp">WhatsApp</label><input id="whatsapp" required placeholder="+201XXXXXXXXX"></div>
+        <div class="field"><label for="academicYear">Academic year</label><input id="academicYear" required></div>
+        <div class="field"><label for="institution">Institution</label><input id="institution" required></div>
+        <div class="field"><label for="registerPassword">Password</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required></div>
+        <div class="field"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></div>
+      </div>
+      <button class="primary-btn" type="submit" style="margin-top:18px">Create account</button>
+      <div id="registerError" class="message error"></div>
+      <div id="registerSuccess" class="message success"></div>
+    </form>
+  </section>
+</main>
+<script type="module" src="assets/js/auth.js"></script>
+</body>
+</html>
