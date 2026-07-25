@@ -77,31 +77,47 @@ export async function signOut() {
 window.aclSignOut = signOut;
 
 const iconSvgs = {
-  contact: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 7l8 6 8-6"/></svg>`,
-  modules: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="5" rx="1"/><rect x="14" y="15" width="7" height="5" rx="1"/></svg>`,
-  progress: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V5M19 19v-7"/><path d="M3 19h18"/></svg>`,
-  admin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8.2 8 9 4.6-.8 8-4 8-9V7z"/><path d="M9.5 12.5 11 14l3.5-4"/></svg>`,
-  signout: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/></svg>`,
-  profile: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c.7-4.5 3.4-7 8-7s7.3 2.5 8 7"/></svg>`
+  admin: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8.2 8 9 4.6-.8 8-4 8-9V7z"/><path d="M8.5 10.5 10 14l2-2 2 2 1.5-3.5"/></svg>`,
+  modules: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c2.7-1.2 5.4-.9 8.5 1.1v12c-3.1-2-5.8-2.3-8.5-1.1z"/><path d="M20.5 5.5c-2.7-1.2-5.4-.9-8.5 1.1v12c3.1-2 5.8-2.3 8.5-1.1z"/></svg>`,
+  progress: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19v-5M16 19V6M3 20h18"/><path d="m4 10 6-4 6 3 4-5"/></svg>`,
+  analytics: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9h9A9 9 0 1 1 12 3z"/><path d="M15 3.5A7.5 7.5 0 0 1 20.5 9H15z"/></svg>`,
+  contact: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>`,
+  signout: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/></svg>`
 };
 
-function navIconFor(element) {
-  const label = (element.textContent || "").trim().toLowerCase();
-  const href = (element.getAttribute?.("href") || "").toLowerCase();
-  if (element.classList?.contains("contact-nav-link") || href.startsWith("mailto:")) return "contact";
-  if (href.includes("modules")) return "modules";
-  if (href.includes("progress")) return "progress";
-  if (href.includes("admin")) return "admin";
-  if (href.includes("profile") || element.classList?.contains("user-chip")) return "profile";
-  if (label.includes("sign out")) return "signout";
-  return "modules";
-}
+function makeHeaderAction({ type, label, href, onClick }) {
+  const action = document.createElement(href ? "a" : "button");
+  action.className = `unified-icon-btn mobile-icon-${type}`;
+  action.innerHTML = `<span class="mobile-icon-glyph">${iconSvgs[type]}</span><span class="mobile-icon-label">${label}</span>`;
+  action.setAttribute("aria-label", label);
+  action.title = label;
+  if (href) action.href = href;
+  else action.type = "button";
 
-function labelFor(type) {
-  return ({ profile:"Edit profile", modules:"Modules", progress:"My Progress", admin:"Admin", contact:"Contact us", signout:"Sign out" })[type] || "Open";
+  // Desktop labels are always visible. On narrow screens, first tap expands and second activates.
+  action.addEventListener("click", (event) => {
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      const expanded = action.classList.contains("is-expanded");
+      if (!expanded) {
+        event.preventDefault();
+        event.stopPropagation();
+        action.parentElement?.querySelectorAll(".is-expanded").forEach(btn => {
+          if (btn !== action) btn.classList.remove("is-expanded");
+        });
+        action.classList.add("is-expanded");
+        return;
+      }
+    }
+    if (onClick) {
+      event.preventDefault();
+      onClick();
+    }
+  });
+  return action;
 }
 
 let outsideHandlerInstalled = false;
+
 function buildUnifiedHeader() {
   const topbar = document.querySelector(".topbar");
   const nav = topbar?.querySelector("nav");
@@ -111,72 +127,82 @@ function buildUnifiedHeader() {
   const brand = topbar.querySelector(".brand-link, .brand");
   brand?.classList.add("unified-brand");
 
-  let row = topbar.querySelector(".mobile-account-row");
+  let row = topbar.querySelector(".unified-account-row");
   if (!row) {
     row = document.createElement("div");
-    row.className = "mobile-account-row unified-account-row";
+    row.className = "unified-account-row";
     topbar.appendChild(row);
   }
-  row.innerHTML = "";
+  row.replaceChildren();
 
   const chip = nav.querySelector("#userChip");
+  const isAdmin = Boolean(nav.querySelector("#adminNavLink"));
+
   if (chip) {
     const identity = document.createElement("a");
-    identity.className = "mobile-signed-user unified-signed-user";
+    identity.className = "unified-signed-user";
     identity.href = chip.href || nestedPath("profile.html");
-    const image = chip.querySelector("img")?.cloneNode(true) || chip.querySelector(".avatar-placeholder")?.cloneNode(true);
+    const image = chip.querySelector("img")?.cloneNode(true) ||
+                  chip.querySelector(".avatar-placeholder")?.cloneNode(true);
     if (image) identity.appendChild(image);
+
+    const name = chip.querySelector(".user-name")?.textContent || "ACL User";
     const copy = document.createElement("span");
     copy.className = "unified-user-copy";
-    copy.innerHTML = `<strong>${chip.querySelector(".user-name")?.textContent || "ACL User"}</strong><small>Signed in</small>`;
+    copy.innerHTML = `<strong>${name}</strong><small>Edit profile ✎</small>`;
     identity.appendChild(copy);
     row.appendChild(identity);
   }
 
   const actions = document.createElement("div");
-  actions.className = "mobile-icon-actions unified-icon-actions";
-  const order = ["admin", "profile", "modules", "progress", "contact", "signout"];
-  const sources = [...nav.children].filter(el => el.matches?.("a,button"));
+  actions.className = "unified-icon-actions";
 
-  const collapseOthers = (except) => {
-    actions.querySelectorAll(".mobile-icon-btn.is-expanded").forEach(btn => {
-      if (btn !== except) btn.classList.remove("is-expanded");
-    });
-  };
+  if (isAdmin) {
+    actions.appendChild(makeHeaderAction({
+      type: "admin",
+      label: "Admin",
+      href: nestedPath("admin.html")
+    }));
+  }
 
-  order.forEach(type => {
-    const source = sources.find(el => navIconFor(el) === type);
-    if (!source) return;
-    const action = document.createElement(source.tagName === "A" ? "a" : "button");
-    const label = labelFor(type);
-    action.className = `mobile-icon-btn unified-icon-btn mobile-icon-${type}`;
-    action.innerHTML = `<span class="mobile-icon-glyph">${iconSvgs[type]}</span><span class="mobile-icon-label">${label}</span>`;
-    action.setAttribute("aria-label", label);
-    action.title = `${label}: first click shows the label, second click opens`;
-    if (source.tagName === "A") action.href = source.href;
-    else action.type = "button";
+  actions.appendChild(makeHeaderAction({
+    type: "modules",
+    label: "Modules",
+    href: nestedPath("modules.html")
+  }));
+  actions.appendChild(makeHeaderAction({
+    type: "progress",
+    label: "My Progress",
+    href: nestedPath("progress.html")
+  }));
 
-    action.addEventListener("click", (event) => {
-      const expanded = action.classList.contains("is-expanded");
-      if (!expanded) {
-        event.preventDefault();
-        event.stopPropagation();
-        collapseOthers(action);
-        action.classList.add("is-expanded");
-        return;
-      }
-      event.preventDefault();
-      if (source.tagName === "A") window.location.href = source.href;
-      else window.aclSignOut?.();
-    });
-    actions.appendChild(action);
-  });
+  if (isAdmin) {
+    actions.appendChild(makeHeaderAction({
+      type: "analytics",
+      label: "Analytics",
+      href: nestedPath("admin-analytics.html")
+    }));
+  }
+
+  actions.appendChild(makeHeaderAction({
+    type: "contact",
+    label: "Contact us",
+    href: "mailto:drmohamedalaa90@gmail.com"
+  }));
+  actions.appendChild(makeHeaderAction({
+    type: "signout",
+    label: "Sign Out",
+    onClick: () => window.aclSignOut?.()
+  }));
 
   row.appendChild(actions);
+
   if (!outsideHandlerInstalled) {
     document.addEventListener("click", (event) => {
       document.querySelectorAll(".unified-icon-actions").forEach(group => {
-        if (!group.contains(event.target)) group.querySelectorAll(".is-expanded").forEach(btn => btn.classList.remove("is-expanded"));
+        if (!group.contains(event.target)) {
+          group.querySelectorAll(".is-expanded").forEach(btn => btn.classList.remove("is-expanded"));
+        }
       });
     });
     outsideHandlerInstalled = true;
@@ -185,5 +211,4 @@ function buildUnifiedHeader() {
 
 function initializeNavigation() { buildUnifiedHeader(); }
 document.addEventListener("DOMContentLoaded", initializeNavigation);
-window.addEventListener("resize", initializeNavigation);
 if (document.readyState !== "loading") initializeNavigation();

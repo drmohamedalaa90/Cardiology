@@ -1,0 +1,21 @@
+ACL Expert Edition V2 — Phase 2.7.3 Premium UI
+
+1. No SQL is required.
+2. Upload all extracted files to the v2-development branch.
+3. Replace existing files.
+4. Commit: ACL V2 Phase 2.7.3 premium two-row header and high-contrast catalogue
+5. After deployment, press Ctrl+F5 or use an incognito window.
+
+Header:
+- full-width title with safe line-height (no clipped descenders)
+- profile + name on second row
+- Admin first
+- Modules, My Progress, Analytics, Contact us, Sign Out
+- visible icon labels on desktop
+- two-tap compact icons on mobile
+
+Theme:
+- dark navy and gold header
+- white cards with dark text
+- blue module bands with white text
+- no light-on-light or dark-on-dark key content
