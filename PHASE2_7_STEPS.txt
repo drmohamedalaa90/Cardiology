@@ -1,0 +1,13 @@
+ACL Expert Edition V2 — Phase 2.7 installation
+
+1. Keep GitHub on the v2-development branch.
+2. In Supabase > SQL Editor, run phase2_7_analytics_patch.sql once.
+3. Upload every extracted file and folder, replacing the previous Phase 2.6 files.
+4. Commit: ACL V2 Phase 2.7 analytics, reporting and seasons
+5. Open admin-analytics.html while signed in as an administrator.
+6. Confirm the overview cards, competition report and question report load.
+7. Test both CSV export buttons.
+
+Important:
+- This package corrects the Phase 2.5 leaderboard profile column to academic_year.
+- Run only the new Phase 2.7 SQL patch during this update; earlier SQL files remain included for reference.

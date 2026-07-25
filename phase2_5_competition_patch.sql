@@ -103,10 +103,10 @@ grant select,insert on public.competition_events to authenticated;
 
 -- Public leaderboard without answer data.
 create or replace function public.acl_competition_leaderboard(p_competition uuid)
-returns table(rank bigint,user_id uuid,display_name text,position text,score numeric,accuracy numeric,duration_seconds integer,submitted_at timestamptz)
+returns table(leaderboard_rank bigint,user_id uuid,display_name text,academic_position text,score numeric,accuracy numeric,duration_seconds integer,submitted_at timestamptz)
 language sql security definer set search_path=public as $$
  select row_number() over(order by a.score desc,a.accuracy desc,a.duration_seconds asc,a.submitted_at asc),a.user_id,
- coalesce(p.full_name,p.username,'Participant'),p.position,a.score,a.accuracy,a.duration_seconds,a.submitted_at
+ coalesce(p.full_name,p.username,'Participant'),p.academic_year,a.score,a.accuracy,a.duration_seconds,a.submitted_at
  from competition_attempts a left join profiles p on p.id=a.user_id
  join competitions c on c.id=a.competition_id
  where a.competition_id=p_competition and a.status='submitted' and c.leaderboard_visible=true
