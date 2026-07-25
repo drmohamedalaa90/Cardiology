@@ -1,0 +1,6 @@
+ACL Expert Edition V2 — Phase 2.7.4 Header Fix
+
+No SQL required.
+Upload all extracted files to v2-development and replace old files.
+Commit: ACL V2 Phase 2.7.4 fixed heading and clickable navigation
+Then hard refresh with Ctrl+F5.

@@ -94,28 +94,31 @@ function makeHeaderAction({ type, label, href, onClick }) {
   if (href) action.href = href;
   else action.type = "button";
 
-  // Desktop labels are always visible. On narrow screens, first tap expands and second activates.
   action.addEventListener("click", (event) => {
-    if (window.matchMedia("(max-width: 760px)").matches) {
-      const expanded = action.classList.contains("is-expanded");
-      if (!expanded) {
-        event.preventDefault();
-        event.stopPropagation();
-        action.parentElement?.querySelectorAll(".is-expanded").forEach(btn => {
-          if (btn !== action) btn.classList.remove("is-expanded");
-        });
-        action.classList.add("is-expanded");
-        return;
-      }
-    }
-    if (onClick) {
+    const compactMode = window.matchMedia("(max-width: 760px)").matches;
+    if (compactMode && !action.classList.contains("is-expanded")) {
       event.preventDefault();
+      event.stopPropagation();
+      action.parentElement?.querySelectorAll(".is-expanded").forEach(btn => {
+        if (btn !== action) btn.classList.remove("is-expanded");
+      });
+      action.classList.add("is-expanded");
+      return;
+    }
+
+    // Explicit navigation avoids any inherited overlay or stale click handler
+    // blocking the header links on secondary pages.
+    event.preventDefault();
+    event.stopPropagation();
+    if (onClick) {
       onClick();
+    } else if (href) {
+      if (href.startsWith("mailto:")) window.location.href = href;
+      else window.location.assign(href);
     }
   });
   return action;
 }
-
 let outsideHandlerInstalled = false;
 
 function buildUnifiedHeader() {
@@ -142,6 +145,7 @@ function buildUnifiedHeader() {
     const identity = document.createElement("a");
     identity.className = "unified-signed-user";
     identity.href = chip.href || nestedPath("profile.html");
+    identity.addEventListener("click", (event) => { event.preventDefault(); window.location.assign(identity.href); });
     const image = chip.querySelector("img")?.cloneNode(true) ||
                   chip.querySelector(".avatar-placeholder")?.cloneNode(true);
     if (image) identity.appendChild(image);
