@@ -104,12 +104,18 @@ function mobileLabelFor(element) {
 }
 
 function buildCompactMobileHeader() {
-  if (!window.matchMedia("(max-width: 760px)").matches) return;
   const topbar = document.querySelector(".topbar");
   const nav = topbar?.querySelector("nav");
   if (!topbar || !nav) return;
 
+  const isMobile = window.matchMedia("(max-width: 760px)").matches;
   let row = topbar.querySelector(".mobile-account-row");
+
+  if (!isMobile) {
+    row?.remove();
+    return;
+  }
+
   if (!row) {
     row = document.createElement("div");
     row.className = "mobile-account-row";
@@ -133,22 +139,51 @@ function buildCompactMobileHeader() {
   actions.className = "mobile-icon-actions";
   const order = ["profile", "modules", "progress", "admin", "contact", "signout"];
   const sources = [...nav.children].filter(el => el.matches?.("a,button"));
+
+  const collapseOthers = (except) => {
+    actions.querySelectorAll(".mobile-icon-btn.is-expanded").forEach(btn => {
+      if (btn !== except) btn.classList.remove("is-expanded");
+    });
+  };
+
   order.forEach(type => {
     const source = sources.find(el => navIconFor(el) === type);
     if (!source) return;
-    const action = source.tagName === "A" ? document.createElement("a") : document.createElement("button");
+
+    const action = document.createElement(source.tagName === "A" ? "a" : "button");
+    const label = mobileLabelFor(source);
     action.className = `mobile-icon-btn mobile-icon-${type}`;
-    action.innerHTML = mobileIconSvgs[type];
-    action.setAttribute("aria-label", mobileLabelFor(source));
-    action.title = mobileLabelFor(source);
-    if (source.tagName === "A") {
-      action.href = source.href;
-    } else {
-      action.type = "button";
-      action.addEventListener("click", () => window.aclSignOut?.());
-    }
+    action.innerHTML = `<span class="mobile-icon-glyph">${mobileIconSvgs[type]}</span><span class="mobile-icon-label">${label}</span>`;
+    action.setAttribute("aria-label", label);
+    action.title = label;
+    if (source.tagName === "BUTTON") action.type = "button";
+
+    action.addEventListener("click", (event) => {
+      const alreadyExpanded = action.classList.contains("is-expanded");
+      if (!alreadyExpanded) {
+        event.preventDefault();
+        event.stopPropagation();
+        collapseOthers(action);
+        action.classList.add("is-expanded");
+        return;
+      }
+
+      if (source.tagName === "A") {
+        event.preventDefault();
+        window.location.href = source.href;
+      } else {
+        event.preventDefault();
+        window.aclSignOut?.();
+      }
+    });
+
     actions.appendChild(action);
   });
+
+  document.addEventListener("click", (event) => {
+    if (!actions.contains(event.target)) collapseOthers(null);
+  }, { once: true });
+
   row.appendChild(actions);
 }
 

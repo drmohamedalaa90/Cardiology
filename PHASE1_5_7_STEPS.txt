@@ -1,0 +1,12 @@
+ACL Expert Edition V2 — Phase 1.5.7
+
+1. Upload all files to the v2-development branch and replace existing files.
+2. Commit message: ACL V2 Phase 1.5.7 responsive title and two-tap mobile icons
+3. Wait for GitHub Pages deployment.
+4. Test on mobile using modules/ppci/index.html?v=157
+
+Mobile behavior:
+- First tap on an icon expands it and reveals its name.
+- Second tap opens the destination or signs out.
+- The brand uses the full available width.
+- The quiz module title stays in one themed line.

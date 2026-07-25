@@ -313,3 +313,129 @@ a, button { font: inherit; }
   .mobile-signed-user{max-width:105px}
   .mobile-icon-btn{width:30px!important;height:30px!important;min-width:30px!important}
 }
+
+
+/* Phase 1.5.7: full-width mobile title, two-tap icon labels, themed module title */
+@media (max-width: 760px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    padding: 10px 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .brand-link {
+    width: 100% !important;
+    max-width: none !important;
+    display: block !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    font-size: clamp(.62rem, 3.25vw, .92rem) !important;
+    letter-spacing: .012em !important;
+    line-height: 1.1 !important;
+  }
+
+  .brand-link b {
+    display: inline !important;
+    font-size: inherit !important;
+  }
+
+  .mobile-account-row {
+    display: grid !important;
+    grid-template-columns: minmax(92px, auto) minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 7px !important;
+    width: 100% !important;
+  }
+
+  .mobile-signed-user {
+    min-width: 0 !important;
+    max-width: 150px !important;
+  }
+
+  .mobile-icon-actions {
+    min-width: 0 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
+    overflow: visible !important;
+  }
+
+  .mobile-icon-btn {
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    padding: 0 7px !important;
+    overflow: hidden !important;
+    transition: width .2s ease, background .2s ease, transform .15s ease !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-icon-btn.is-expanded {
+    width: 118px !important;
+    justify-content: flex-start !important;
+    background: rgba(255,255,255,.2) !important;
+  }
+
+  .mobile-icon-glyph {
+    display: grid;
+    place-items: center;
+    flex: 0 0 18px;
+  }
+
+  .mobile-icon-label {
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-left: 0;
+    font-size: .68rem;
+    font-weight: 900;
+    transition: max-width .2s ease, opacity .2s ease, margin-left .2s ease;
+  }
+
+  .mobile-icon-btn.is-expanded .mobile-icon-label {
+    max-width: 84px;
+    opacity: 1;
+    margin-left: 6px;
+  }
+
+  .quiz-module-title {
+    margin: -2px -2px 20px !important;
+    padding: 13px 16px !important;
+    border-radius: 16px !important;
+    background: linear-gradient(135deg, var(--navy), var(--blue)) !important;
+    color: #fff !important;
+    border-left: 6px solid var(--gold) !important;
+    box-shadow: 0 10px 24px rgba(10,63,120,.16) !important;
+    font-size: clamp(1rem, 5.2vw, 1.45rem) !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .mobile-account-row {
+    grid-template-columns: minmax(78px, auto) minmax(0, 1fr) !important;
+  }
+  .mobile-signed-user {
+    max-width: 108px !important;
+    font-size: .66rem !important;
+  }
+  .mobile-icon-actions { gap: 3px !important; }
+  .mobile-icon-btn {
+    width: 29px !important;
+    min-width: 29px !important;
+    height: 29px !important;
+    padding: 0 6px !important;
+  }
+  .mobile-icon-btn.is-expanded { width: 108px !important; }
+  .mobile-icon-label { font-size: .62rem !important; }
+}
