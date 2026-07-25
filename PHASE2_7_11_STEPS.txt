@@ -1,0 +1,29 @@
+ACL Expert Edition V2 — Phase 2.7.11 Professional Modals
+
+No SQL required.
+
+All pop-out windows now share one professional system:
+- competition creator/editor
+- module editor
+- question editor
+- quiz builder
+- quiz preview
+- student details
+- profile-photo viewer
+- answer review
+
+Improvements:
+- navy/gold modal header
+- aligned two-column forms on desktop
+- single-column mobile layout
+- consistent labels and input spacing
+- readable toggles in professional cards
+- sticky action footer
+- modern close button
+- blurred backdrop
+- controlled scrolling
+- high contrast throughout
+
+Upload all files to v2-development and replace existing files.
+Commit: ACL V2 Phase 2.7.11 professional modal system
+Refresh with Ctrl+F5.
