@@ -1655,3 +1655,82 @@ main,
     grid-template-columns:1fr!important;
   }
 }
+
+
+/* Phase 2.7.8 — restore the entire second header row.
+   This specifically overrides the older broad child-hiding rule. */
+.topbar.compact-two-row-header > .compact-header-second-row{
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  position:relative!important;
+  z-index:10002!important;
+  pointer-events:auto!important;
+}
+
+.topbar.compact-two-row-header > .compact-header-second-row .compact-user-identity,
+.topbar.compact-two-row-header > .compact-header-second-row .compact-header-actions,
+.topbar.compact-two-row-header > .compact-header-second-row .compact-header-action{
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+
+.topbar.compact-two-row-header > .compact-header-second-row .compact-header-actions{
+  pointer-events:auto!important;
+  position:relative!important;
+  z-index:10003!important;
+}
+
+.topbar.compact-two-row-header > .compact-header-second-row .compact-header-action{
+  pointer-events:auto!important;
+  cursor:pointer!important;
+}
+
+/* Keep the header compact while allowing the identity and icons to fit. */
+.topbar.compact-two-row-header{
+  grid-template-rows:auto auto!important;
+  gap:6px!important;
+  padding:8px 14px 9px!important;
+}
+
+.compact-header-second-row{
+  min-height:36px!important;
+}
+
+.compact-user-identity{
+  min-height:34px!important;
+}
+
+/* Admin dashboard tiles must remain directly under the control-centre label. */
+.admin-dashboard-heading{
+  display:grid!important;
+  gap:14px!important;
+}
+.admin-dashboard-tiles{
+  display:grid!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+.admin-opened-panel-heading{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+
+@media(max-width:760px){
+  .topbar.compact-two-row-header > .compact-header-second-row{
+    display:flex!important;
+    width:100%!important;
+    justify-content:center!important;
+    gap:5px!important;
+  }
+
+  .compact-user-identity{
+    max-width:115px!important;
+  }
+
+  .compact-user-text strong{
+    max-width:68px!important;
+  }
+}

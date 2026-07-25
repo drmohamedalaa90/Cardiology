@@ -1,0 +1,22 @@
+ACL Expert Edition V2 — Phase 2.7.8
+
+No SQL required.
+
+This corrects the CSS rule that accidentally hid the whole second header row.
+
+Visible again:
+- signed-in user photo and name
+- Edit Profile icon
+- Admin icon for administrators
+- Modules
+- My Progress
+- Contact us
+- Sign out
+
+The admin dashboard graphical tiles remain:
+- below ADMIN CONTROL CENTRE
+- above Registered Students
+
+Upload all files to v2-development and replace existing files.
+Commit: ACL V2 Phase 2.7.8 restore visible header row and admin tiles
+After deployment use Ctrl+F5 or an incognito window.
