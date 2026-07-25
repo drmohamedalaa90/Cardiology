@@ -1,0 +1,11 @@
+ACL EXPERT EDITION V2 — PHASE 2.3 INSTALLATION
+
+1. Keep GitHub on v2-development.
+2. Supabase > SQL Editor > New query.
+3. Paste all of phase2_3_quiz_builder_patch.sql and Run.
+4. Upload every extracted file/folder to v2-development, replacing existing files.
+5. Commit: ACL V2 Phase 2.3 admin quiz builder
+6. Open admin-quizzes.html as admin.
+7. Test: create a draft quiz, choose a module, select questions, preview, save, publish, then unpublish.
+
+Phase 2.3 adds reusable quiz definitions. It does not yet replace the student quiz runner; that integration belongs to Phase 2.4 learning mode.
