@@ -2496,7 +2496,7 @@ function setCloudStatus(text,state='offline'){
 function normalizeCloudEmail(whatsapp){
   const normalized=normalizeEgyptWhatsapp(whatsapp);
   if(!normalized.valid) return '';
-  return `${normalized.canonical}@acl-expert.app`;
+  return `acl.${normalized.canonical}@example.com`;
 }
 
 async function ensureCloudSession(profile,pin){
@@ -3061,7 +3061,11 @@ async function submitSiteSignIn(){
     showScreen('home');
   }catch(cloudError){
     console.warn('Cloud sign-in failed:',cloudError);
-    error.textContent='Cloud sign-in failed: '+(cloudError.message||'Please check your PIN and connection.');
+    const message=String(cloudError.message||'Please check your PIN and connection.');
+    error.textContent='Cloud sign-in failed: '+message;
+    if(message.toLowerCase().includes('email')&&message.toLowerCase().includes('invalid')){
+      error.textContent='Cloud sign-in failed because the internal account identifier was rejected. Please upload the corrected index.html and try again.';
+    }
     setCloudStatus('Cloud sign-in failed','offline');
   }
 }
