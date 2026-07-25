@@ -82,8 +82,10 @@ export async function protectAndRender(relativeLogin = "login.html") {
     window.location.replace(relativeLogin);
     return null;
   }
+  window.aclCurrentProfile = profile;
   renderUserChip(profile);
   renderAdminLink(profile);
+  buildUnifiedHeader();
   return profile;
 }
 
@@ -196,22 +198,55 @@ function buildUnifiedHeader() {
 
   const avatar = document.createElement("div");
   avatar.className = "acl-drawer-avatar";
-  const avatarUrl = profile?.avatar_url || profile?.photo_url || "";
+  const candidateName =
+    profile?.full_name ||
+    profile?.display_name ||
+    profile?.name ||
+    profile?.username ||
+    profile?.email ||
+    "Signed-in user";
+
+  const avatarUrl =
+    profile?.avatar_url ||
+    profile?.photo_url ||
+    profile?.profile_photo_url ||
+    profile?.image_url ||
+    "";
+
+  const initials = candidateName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join("")
+    .toUpperCase() || "U";
+
+  const showInitials = () => {
+    avatar.replaceChildren();
+    avatar.textContent = initials;
+  };
+
   if (avatarUrl) {
     const img = document.createElement("img");
     img.src = avatarUrl;
-    img.alt = "";
+    img.alt = `${candidateName} profile photo`;
+    img.addEventListener("error", showInitials, { once: true });
     avatar.appendChild(img);
   } else {
-    avatar.textContent = (profile?.full_name || profile?.username || "U").trim().charAt(0).toUpperCase();
+    showInitials();
   }
 
   const identityCopy = document.createElement("div");
   identityCopy.className = "acl-drawer-identity-copy";
-  identityCopy.innerHTML = `
-    <strong>${profile?.full_name || profile?.username || "Signed-in user"}</strong>
-    <span>Signed in</span>
-  `;
+
+  const nameElement = document.createElement("strong");
+  nameElement.textContent = candidateName;
+
+  const signedInElement = document.createElement("span");
+  signedInElement.textContent = "Signed in";
+
+  identityCopy.appendChild(nameElement);
+  identityCopy.appendChild(signedInElement);
 
   identity.appendChild(avatar);
   identity.appendChild(identityCopy);

@@ -1,0 +1,14 @@
+ACL Expert Edition V2 — Phase 2.7.10 Drawer Identity Fix
+
+No SQL required.
+
+Fixes:
+- The authenticated profile is now saved before rebuilding the drawer.
+- The left drawer shows the actual signed-in candidate's photo and name.
+- Name fallbacks: full_name, display_name, name, username, then email.
+- Photo fallbacks: avatar_url, photo_url, profile_photo_url, then image_url.
+- If the stored image cannot load, the candidate's initials appear automatically.
+
+Upload all files to v2-development and replace existing files.
+Commit: ACL V2 Phase 2.7.10 signed-in candidate drawer identity
+After deployment use Ctrl+F5 or an incognito window.
