@@ -1,0 +1,18 @@
+ACL EXPERT EDITION V2 — PHASE 2.2 INSTALLATION
+
+1. Keep GitHub on the v2-development branch.
+2. In Supabase, open SQL Editor > New query.
+3. Paste the full contents of phase2_2_question_bank_patch.sql and click Run.
+4. Upload every extracted file/folder from this package to v2-development, replacing existing files.
+5. Commit message:
+   ACL V2 Phase 2.2 secure question bank and admin editor
+6. After GitHub Pages deploys, sign in as admin and open:
+   admin-questions.html
+7. Confirm the two PPCI pilot questions appear.
+8. Create a temporary Draft question, add options and a correct answer, save it, publish it, then archive it.
+
+IMPORTANT SECURITY DESIGN
+- Correct answers remain inside admin-protected question_options rows.
+- Students cannot directly select the answer key.
+- acl_get_module_questions(module_id) returns sanitized questions without is_correct or explanations.
+- Later phases will add secure grading and quiz-builder workflows.

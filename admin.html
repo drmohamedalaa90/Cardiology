@@ -1,10 +1,10 @@
 <!doctype html><html lang="en"><head>
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACL Admin | Expert Edition</title>
-<link rel="stylesheet" href="assets/css/main.css?v=2.1"><link rel="stylesheet" href="assets/css/auth.css?v=1.5.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
+<link rel="stylesheet" href="assets/css/main.css?v=2.2"><link rel="stylesheet" href="assets/css/auth.css?v=1.5.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
 <header class="topbar"><a class="brand brand-link" href="modules.html" aria-label="ACL Expert Edition home">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
 <main class="container">
-<section class="card admin-hero"><div><span class="admin-kicker">ADMIN CONTROL CENTRE</span><h1>Registered Students</h1><p class="muted">Search accounts, review profile data, suspend or restore access, send password-reset emails, and export the current list.</p></div><div class="admin-hero-actions"><a class="secondary-btn" href="admin-modules.html">Manage Modules</a><button id="exportCsv" class="primary-btn" type="button">Export CSV</button></div></section>
+<section class="card admin-hero"><div><span class="admin-kicker">ADMIN CONTROL CENTRE</span><h1>Registered Students</h1><p class="muted">Search accounts, review profile data, suspend or restore access, send password-reset emails, and export the current list.</p></div><div class="admin-hero-actions"><a class="secondary-btn" href="admin-modules.html">Manage Modules</a><a class="secondary-btn" href="admin-questions.html">Question Bank</a><button id="exportCsv" class="primary-btn" type="button">Export CSV</button></div></section>
 <section class="admin-stats" aria-label="Account statistics">
 <div class="stat-card"><span>Total registered</span><strong id="totalStudents">—</strong></div>
 <div class="stat-card"><span>Active</span><strong id="activeStudents">—</strong></div>
@@ -24,4 +24,4 @@
 </main>
 <dialog id="studentDialog" class="student-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form><div id="studentDialogContent"></div></dialog>
 <dialog id="photoDialog" class="photo-dialog"><div class="photo-dialog-head"><h3 id="photoDialogTitle">Profile photo</h3><form method="dialog"><button class="photo-dialog-close" aria-label="Close">×</button></form></div><img id="photoDialogImage" alt="Student profile photo"></dialog>
-<script type="module" src="assets/js/admin.js?v=1.5.1"></script><script type="module" src="assets/js/session-ui.js?v=2.1"></script></body></html>
+<script type="module" src="assets/js/admin.js?v=1.5.1"></script><script type="module" src="assets/js/session-ui.js?v=2.2"></script></body></html>
