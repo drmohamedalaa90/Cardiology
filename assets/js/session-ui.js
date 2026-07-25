@@ -43,7 +43,7 @@ export function renderUserChip(profile) {
 }
 
 function renderAdminLink(profile) {
-  if (profile?.role !== "admin") return;
+  if (!(profile?.is_admin || profile?.role === "admin" || profile?.role === "administrator")) return;
   const nav = document.querySelector(".topbar nav");
   if (!nav || document.getElementById("adminNavLink")) return;
   const link = document.createElement("a");
@@ -59,6 +59,23 @@ export async function protectAndRender(relativeLogin = "login.html") {
   const session = await requireSession(relativeLogin);
   if (!session) return null;
   const profile = await loadProfile();
+
+  // Resolve administrator status from the secure database RPC as the source of truth.
+  // This also normalizes older profile rows whose role value may not literally be "admin".
+  try {
+    const { data: rpcAdmin, error: rpcAdminError } = await supabaseClient.rpc("acl_is_admin");
+    if (!rpcAdminError && rpcAdmin === true) {
+      profile.role = "admin";
+      profile.is_admin = true;
+    } else {
+      profile.is_admin = profile?.role === "admin" || profile?.role === "administrator";
+      if (profile.is_admin) profile.role = "admin";
+    }
+  } catch {
+    profile.is_admin = profile?.role === "admin" || profile?.role === "administrator";
+    if (profile.is_admin) profile.role = "admin";
+  }
+
   if (!profile || profile.account_status === "suspended") {
     await supabaseClient.auth.signOut();
     alert("This account has been suspended. Contact the ACL administrator.");

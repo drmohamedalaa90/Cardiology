@@ -1,0 +1,17 @@
+ACL Expert Edition V2 — Phase 2.7.6
+
+No SQL required.
+
+Fixes:
+- much more compact two-row header
+- smaller title
+- profile/name block removed from header
+- Edit Profile remains as its own icon
+- secure acl_is_admin() RPC used as source of truth
+- admin role normalized to "admin" so all admin pages open correctly
+- Admin icon appears first for administrators
+- first tap expands label; second tap opens
+
+Upload all files to v2-development and replace existing files.
+Commit: ACL V2 Phase 2.7.6 compact header and admin access fix
+Then press Ctrl+F5 or use an incognito window.
