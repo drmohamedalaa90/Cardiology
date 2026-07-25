@@ -22,10 +22,13 @@ function fmtDate(value) {
 function initials(name) {
   return String(name || "ACL").split(/\s+/).slice(0,2).map(x => x[0] || "").join("").toUpperCase();
 }
-function accountAvatar(profile) {
-  return profile.avatar_url
-    ? `<img class="admin-avatar" src="${esc(profile.avatar_url)}" alt="">`
+function accountAvatar(profile, clickable = false) {
+  const image = profile.avatar_url
+    ? `<img class="admin-avatar" src="${esc(profile.avatar_url)}" alt="${esc(profile.full_name || "Student")} profile photo">`
     : `<span class="admin-avatar admin-avatar-fallback">${esc(initials(profile.full_name))}</span>`;
+  return clickable
+    ? `<button class="admin-avatar-button" type="button" data-action="photo" data-id="${esc(profile.id)}" aria-label="Open profile photo">${image}</button>`
+    : image;
 }
 function updateStats() {
   byId("totalStudents").textContent = allProfiles.length;
@@ -54,7 +57,7 @@ function renderRows() {
     const statusClass = p.account_status === "suspended" ? "status-suspended" : "status-active";
     const toggleLabel = p.account_status === "suspended" ? "Restore" : "Suspend";
     return `<tr>
-      <td><div class="student-cell">${accountAvatar(p)}<div><strong>${esc(p.full_name || "Unnamed user")}</strong><small>@${esc(p.username || "not-set")}</small></div></div></td>
+      <td><div class="student-cell">${accountAvatar(p, true)}<div><strong>${esc(p.full_name || "Unnamed user")}</strong><small>@${esc(p.username || "not-set")}</small></div></div></td>
       <td><div>${esc(p.email || "—")}</div><small>${esc(p.phone_e164 || "—")}</small></td>
       <td><div>${esc(p.academic_year || "—")}</div><small>${esc(p.institution || "—")}</small></td>
       <td><span class="role-pill role-${esc(p.role || "student")}">${esc(p.role || "student")}</span></td>
@@ -107,6 +110,18 @@ function openDetails(profile) {
   </dl>`;
   byId("studentDialog").showModal();
 }
+
+function openPhoto(profile) {
+  if (!profile.avatar_url) {
+    show("This student has not uploaded a profile photo.", "error");
+    return;
+  }
+  byId("photoDialogTitle").textContent = `${profile.full_name || profile.username || "Student"} — profile photo`;
+  byId("photoDialogImage").src = profile.avatar_url;
+  byId("photoDialogImage").alt = `${profile.full_name || "Student"} profile photo`;
+  byId("photoDialog").showModal();
+}
+
 function exportCsv() {
   const rows = filteredProfiles();
   const fields = ["full_name","username","email","phone_e164","academic_year","institution","role","account_status","created_at","last_seen_at"];
@@ -130,6 +145,7 @@ byId("studentsBody").addEventListener("click", async (event) => {
   button.disabled = true;
   try {
     if (button.dataset.action === "view") openDetails(profile);
+    if (button.dataset.action === "photo") openPhoto(profile);
     if (button.dataset.action === "toggle") await toggleStatus(profile);
     if (button.dataset.action === "reset") await sendReset(profile);
   } catch (error) { show(error.message || "Admin action failed.", "error"); }

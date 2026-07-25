@@ -163,3 +163,32 @@ a, button { font: inherit; }
 .student-dialog{width:min(700px,92vw);border:0;border-radius:22px;padding:26px;box-shadow:0 24px 80px rgba(0,0,0,.28)}.student-dialog::backdrop{background:rgba(5,27,50,.58)}.dialog-close{float:right;border:0;background:transparent;font-size:2rem;cursor:pointer;color:var(--muted)}.dialog-profile{display:flex;align-items:center;gap:15px;margin-bottom:20px}.dialog-profile .admin-avatar{width:64px;height:64px}.dialog-profile h2{margin:0}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0}.detail-grid>div{background:#f5f9fc;border-radius:12px;padding:12px}.detail-grid dt{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:900}.detail-grid dd{margin:5px 0 0;font-weight:800;overflow-wrap:anywhere}.detail-full{grid-column:1/-1}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.8rem}
 @media(max-width:900px){.admin-stats{grid-template-columns:repeat(2,1fr)}.admin-toolbar{grid-template-columns:1fr 1fr}.admin-toolbar .field:first-child{grid-column:1/-1}.admin-hero{align-items:flex-start;flex-direction:column}}
 @media(max-width:560px){.admin-stats{grid-template-columns:1fr 1fr}.admin-toolbar{grid-template-columns:1fr}.admin-toolbar .field:first-child{grid-column:auto}.detail-grid{grid-template-columns:1fr}.detail-full{grid-column:auto}}
+
+
+/* Phase 1.2.1 compact admin dashboard refinements */
+.admin-hero{padding:24px 26px;border-radius:22px}
+.admin-hero h1{font-size:clamp(1.8rem,4vw,2.8rem)}
+.admin-stats{margin:16px 0;gap:12px}
+.stat-card{padding:15px 16px;border-radius:16px}
+.stat-card strong{font-size:1.7rem}
+.admin-toolbar{padding:18px;grid-template-columns:minmax(280px,2fr) minmax(150px,.8fr) minmax(150px,.8fr) auto}
+.admin-toolbar label{display:block;margin-bottom:6px;font-size:.78rem;font-weight:900;color:#31516d;text-transform:uppercase;letter-spacing:.04em}
+.admin-toolbar input,.admin-toolbar select{height:44px;border:1px solid #b9cee0;border-radius:12px;padding:0 12px;background:#fff;color:var(--text);font-size:.95rem}
+.admin-toolbar .secondary-btn{height:44px;padding:0 17px}
+.admin-table-card{border-radius:20px}
+.admin-table{min-width:980px;table-layout:fixed}
+.admin-table th:nth-child(1){width:25%}.admin-table th:nth-child(2){width:20%}.admin-table th:nth-child(3){width:17%}.admin-table th:nth-child(4){width:8%}.admin-table th:nth-child(5){width:9%}.admin-table th:nth-child(6){width:11%}.admin-table th:nth-child(7){width:10%}
+.admin-table th,.admin-table td{padding:11px 12px;font-size:.9rem}
+.student-cell{gap:10px;min-width:0}.student-cell>div{min-width:0}.student-cell strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.student-cell small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-avatar,.dialog-profile .admin-avatar{display:block;object-fit:cover;object-position:center;aspect-ratio:1/1;max-width:none!important;max-height:none!important}
+.admin-avatar{width:46px!important;height:46px!important;border-radius:50%!important;border:2px solid #d6e5f1;background:#e8f2fb;cursor:pointer}
+.admin-avatar-button{width:46px;height:46px;padding:0;border:0;border-radius:50%;background:transparent;display:block;flex:0 0 46px;cursor:pointer}
+.admin-avatar-button:focus-visible{outline:3px solid rgba(14,90,167,.3);outline-offset:2px}
+.admin-actions{display:grid;grid-template-columns:1fr;gap:5px}
+.table-btn{width:100%;padding:7px 8px;border-radius:8px;font-size:.72rem;line-height:1.15}
+.student-dialog{width:min(720px,94vw);padding:24px}.dialog-profile .admin-avatar{width:72px!important;height:72px!important;cursor:default}
+.photo-dialog{width:min(560px,92vw);border:0;border-radius:20px;padding:18px;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.photo-dialog::backdrop{background:rgba(5,27,50,.7)}
+.photo-dialog img{display:block;width:100%;max-height:75vh;object-fit:contain;border-radius:14px;background:#eef5fb}
+.photo-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.photo-dialog-head h3{margin:0}.photo-dialog-close{border:0;background:#edf4fa;color:var(--navy);width:36px;height:36px;border-radius:50%;font-size:1.4rem;cursor:pointer}
+@media(max-width:900px){.admin-toolbar{grid-template-columns:1fr 1fr}.admin-table{min-width:900px}}
