@@ -1,9 +1,7 @@
 import { supabaseClient } from "./supabase-client.js";
 import { ACL_CONFIG } from "./config.js";
 
-function qs(id) {
-  return document.getElementById(id);
-}
+const qs = (id) => document.getElementById(id);
 
 function normalizeEgyptWhatsapp(value) {
   let raw = String(value || "").replace(/[^0-9+]/g, "");
@@ -13,53 +11,25 @@ function normalizeEgyptWhatsapp(value) {
   return "+20" + raw.slice(1);
 }
 
-async function createOrUpdateProfile(user, profile) {
-  const { data: existing, error: readError } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (readError) throw readError;
-
-  if (existing) {
-    const { data, error } = await supabaseClient
-      .from("profiles")
-      .update({
-        phone_e164: profile.whatsapp,
-        academic_year: profile.academicYear,
-        institution: profile.institution,
-        last_seen_at: new Date().toISOString()
-      })
-      .eq("id", user.id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
+async function updateProfile(user, profile) {
+  const payload = {
+    phone_e164: profile.whatsapp,
+    academic_year: profile.academicYear,
+    institution: profile.institution,
+    last_seen_at: new Date().toISOString()
+  };
   const { data, error } = await supabaseClient
     .from("profiles")
-    .insert({
-      id: user.id,
-      phone_e164: profile.whatsapp,
-      full_name: profile.name,
-      academic_year: profile.academicYear,
-      institution: profile.institution,
-      avatar_url: null,
-      role: "candidate"
-    })
+    .update(payload)
+    .eq("id", user.id)
     .select()
     .single();
-
   if (error) throw error;
   return data;
 }
 
 export async function handleLogin(event) {
   event.preventDefault();
-
   const errorBox = qs("authError");
   const successBox = qs("authSuccess");
   errorBox.textContent = "";
@@ -76,16 +46,12 @@ export async function handleLogin(event) {
     errorBox.textContent = "Please complete all required fields.";
     return;
   }
-
   if (pin.length < 6) {
     errorBox.textContent = "PIN must be at least 6 characters.";
     return;
   }
 
-  let { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password: pin
-  });
+  let { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pin });
 
   if (error) {
     const signup = await supabaseClient.auth.signUp({
@@ -93,41 +59,28 @@ export async function handleLogin(event) {
       password: pin,
       options: {
         emailRedirectTo: `${window.location.origin}${ACL_CONFIG.siteBase}confirm.html`,
-        data: {
-          full_name: name,
-          whatsapp,
-          academic_year: academicYear,
-          institution
-        }
+        data: { full_name: name, whatsapp, academic_year: academicYear, institution }
       }
     });
-
     if (signup.error) {
       errorBox.textContent = signup.error.message;
       return;
     }
-
     if (!signup.data.session) {
-      successBox.textContent = "Confirmation email sent. Confirm your email, then return and sign in.";
+      successBox.textContent = "Confirmation email sent. Open it, confirm your email, then return and sign in.";
       return;
     }
-
     data = signup.data;
   }
 
   const user = data.session?.user || data.user;
   if (!user) {
-    errorBox.textContent = "No active session was returned.";
+    errorBox.textContent = "No active session was returned. Confirm your email first.";
     return;
   }
 
   try {
-    await createOrUpdateProfile(user, {
-      name,
-      whatsapp,
-      academicYear,
-      institution
-    });
+    await updateProfile(user, { whatsapp, academicYear, institution });
     window.location.href = "modules.html";
   } catch (profileError) {
     errorBox.textContent = profileError.message;

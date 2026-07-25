@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Profile | ACL</title>
+<link rel="stylesheet" href="assets/css/main.css"><link rel="stylesheet" href="assets/css/auth.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head><body>
+<header class="topbar"><div class="brand">ACL; <b>THE EXPERT EDITION</b></div><nav>
+<a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a>
+<a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
+<main class="container"><section class="card"><h1>My Profile</h1>
+<div class="profile-layout"><aside class="profile-avatar-card">
+<img id="avatarPreview" class="profile-avatar-large" alt="" style="display:none">
+<div id="avatarPlaceholder" class="avatar-placeholder" style="width:150px;height:150px;margin:auto;font-size:2rem">ACL</div>
+<p><input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></p></aside>
+<form id="profileForm"><div class="form-grid">
+<div class="field full"><label>Name</label><input id="name" class="readonly-field" readonly></div>
+<div class="field full"><label>Email</label><input id="email" class="readonly-field" readonly></div>
+<div class="field full"><label>WhatsApp</label><input id="whatsapp" required></div>
+<div class="field"><label>Academic year</label><input id="academicYear" required></div>
+<div class="field"><label>Institution</label><input id="institution" required></div>
+</div><button class="primary-btn" type="submit" style="margin-top:18px">Save profile</button>
+<div id="profileStatus" class="status-box"></div></form></div></section></main>
+<script type="module" src="assets/js/profile-page.js"></script><script type="module" src="assets/js/session-ui.js"></script>
+</body></html>
