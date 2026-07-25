@@ -1621,7 +1621,7 @@ body.expert-open{overflow:hidden}
       </div>
 
       <div class="field">
-        <label for="personalPin">Personal PIN</label><input id="personalPin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="24" placeholder="Create or enter your personal PIN"><div class="signin-cloud-note">Your WhatsApp number + PIN will securely sync your profile and quiz progress across devices. No email is required.</div><label for="institution">Institution</label>
+        <label for="personalPin">Personal PIN</label><input id="personalPin" type="password" inputmode="numeric" autocomplete="current-password" minlength="6" maxlength="24" placeholder="Create or enter your personal PIN"><div class="signin-cloud-note">Your WhatsApp number + PIN securely syncs your profile and quiz progress across devices. No email or SMS is required.</div><label for="institution">Institution</label>
         <input id="institution" autocomplete="organization" placeholder="University or hospital">
       </div>
     </div>
@@ -2495,13 +2495,21 @@ function setCloudStatus(text,state='offline'){
 
 
 
+function cloudAuthEmail(whatsapp){
+  const normalized=normalizeEgyptWhatsapp(whatsapp);
+  if(!normalized.valid) return '';
+
+  // Internal Supabase Auth identity. Candidates never see or enter it.
+  return `acl${normalized.canonical}@proton.me`;
+}
+
 async function ensureCloudSession(profile,pin){
   if(!supabaseClient){
     throw new Error('Supabase client unavailable.');
   }
 
-  const normalized=normalizeEgyptWhatsapp(profile.whatsapp);
-  if(!normalized.valid){
+  const email=cloudAuthEmail(profile.whatsapp);
+  if(!email){
     throw new Error('Enter a valid Egyptian WhatsApp number.');
   }
 
@@ -2509,16 +2517,13 @@ async function ensureCloudSession(profile,pin){
     throw new Error('PIN must contain at least 6 characters.');
   }
 
-  const phone=normalized.display;
-
   let result=await supabaseClient.auth.signInWithPassword({
-    phone,
+    email,
     password:pin
   });
 
   if(result.error){
     const signInMessage=String(result.error.message||'').toLowerCase();
-
     const mayNeedSignup=
       signInMessage.includes('invalid login credentials')
       || signInMessage.includes('user not found');
@@ -2528,7 +2533,7 @@ async function ensureCloudSession(profile,pin){
     }
 
     const signup=await supabaseClient.auth.signUp({
-      phone,
+      email,
       password:pin,
       options:{
         data:{
@@ -2543,21 +2548,18 @@ async function ensureCloudSession(profile,pin){
     if(signup.error){
       const signupMessage=String(signup.error.message||'').toLowerCase();
 
+      if(signupMessage.includes('rate limit')){
+        throw new Error(
+          'In Supabase, open Authentication → Providers → Email and switch Confirm email OFF. Then try again.'
+        );
+      }
+
       if(
         signupMessage.includes('already registered')
         || signupMessage.includes('already been registered')
       ){
         throw new Error(
           'This WhatsApp number already has an ACL account. Check the personal PIN.'
-        );
-      }
-
-      if(
-        signupMessage.includes('sms')
-        || signupMessage.includes('phone provider')
-      ){
-        throw new Error(
-          'Enable Phone authentication in Supabase and keep phone confirmation disabled during testing.'
         );
       }
 
@@ -2572,7 +2574,7 @@ async function ensureCloudSession(profile,pin){
 
   if(!cloudUser){
     throw new Error(
-      'Account created but no session was returned. In Supabase, enable Phone authentication and disable phone confirmation during testing.'
+      'Open Supabase Authentication → Providers → Email and switch Confirm email OFF, then sign in again.'
     );
   }
 
