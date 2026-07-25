@@ -5,12 +5,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Account Access | ACL Expert Edition</title>
-  <link rel="stylesheet" href="assets/css/main.css?v=1.5">
-  <link rel="stylesheet" href="assets/css/auth.css?v=1.5">
+  <link rel="stylesheet" href="assets/css/main.css?v=1.5.1">
+  <link rel="stylesheet" href="assets/css/auth.css?v=1.5.1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<header class="topbar"><div class="brand">ACL; <b>THE EXPERT EDITION</b></div><nav><a class="nav-btn" href="index.html">Home</a></nav></header>
+<header class="topbar"><a class="brand brand-link" href="index.html" aria-label="ACL Expert Edition home">ACL; <b>THE EXPERT EDITION</b></a><nav><a class="nav-btn" href="index.html">Home</a></nav></header>
 <main class="auth-shell">
   <section class="auth-card">
     <div class="auth-tabs" role="tablist">
@@ -39,7 +39,7 @@
         <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9._]+" required><small>Letters, numbers, dots and underscores only.</small></div>
         <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required></div>
         <div class="field full"><label for="whatsapp">WhatsApp</label><input id="whatsapp" required placeholder="+201XXXXXXXXX"></div>
-        <div class="field"><label for="academicYear">Academic year</label><input id="academicYear" required></div>
+        <div class="field"><label for="academicYear">Position</label><select id="academicYear" required><option value="" disabled selected>Select position</option><option value="Consultant">Consultant</option><option value="Specialist">Specialist</option><option value="Assistant Lecturer">Assistant Lecturer</option><option value="Resident">Resident</option><option value="General Practitioner">General Practitioner</option><option value="Intern">Intern</option><option value="Medical Student">Medical Student</option><option value="Nurse">Nurse</option><option value="Technician">Technician</option></select></div>
         <div class="field"><label for="institution">Institution</label><input id="institution" required></div>
         <div class="field"><label for="registerPassword">Password</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required></div>
         <div class="field"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></div>
@@ -50,6 +50,6 @@
     </form>
   </section>
 </main>
-<script type="module" src="assets/js/auth.js?v=1.5"></script>
+<script type="module" src="assets/js/auth.js?v=1.5.1"></script>
 </body>
 </html>

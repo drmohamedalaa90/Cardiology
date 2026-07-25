@@ -1,0 +1,12 @@
+ACL Expert Edition V2 — Phase 1.5.1
+
+Changes:
+- The ACL Expert Edition brand now links to the home page.
+- Edit profile appears below the signed-in user chip.
+- Contact us opens an email to drmohamedalaa90@gmail.com.
+- Position is now a required dropdown during registration and profile editing.
+- Existing database column academic_year is reused to store Position; no SQL patch is required.
+
+Upload all files to the v2-development branch and replace existing files.
+Suggested commit message:
+ACL V2 Phase 1.5.1 header and position dropdown
