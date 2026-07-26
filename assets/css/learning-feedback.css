@@ -2828,5 +2828,35 @@ body.learning-theme-imaging {
 
   .scientific-lifeline-subtitle {
     font-size: 9px;
+  }.scientific-lifeline-button.is-loading {
+  pointer-events: none;
+
+  opacity: 0.72;
+}
+
+
+.scientific-lifeline-button.is-loading
+.scientific-lifeline-icon {
+  animation:
+    lifeline-icon-pulse
+    0.8s
+    ease-in-out
+    infinite alternate;
+}
+
+
+@keyframes lifeline-icon-pulse {
+  from {
+    transform: scale(0.92);
+
+    opacity: 0.55;
   }
+
+  to {
+    transform: scale(1.08);
+
+    opacity: 1;
+  }
+}
+   
 }
