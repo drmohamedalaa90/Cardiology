@@ -636,6 +636,240 @@ function restoreLifelinesState(
 function lifelineDefinitions() {
   return [
     {
+      id: LIFELINES.expert,
+      icon: "🩺",
+      title: "Ask Dr. Corazón",
+      subtitle: "Expert reasoning clue"
+    },
+    {
+      id: LIFELINES.filter,
+      icon: "✂️",
+      title: "Evidence Filter",
+      subtitle: "Eliminate two options"
+    },
+    {
+      id: LIFELINES.guideline,
+      icon: "📘",
+      title: "ESC Pocket Guideline",
+      subtitle: "Reveal a guideline clue"
+    },
+    {
+      id: LIFELINES.vault,
+      icon: "🧠",
+      title: "Knowledge Vault",
+      subtitle: "Open the review flashcard"
+    }
+  ];
+}
+
+
+function lifelineButtonHtml(
+  question,
+  definition
+) {
+  const used =
+    lifelineIsUsed(
+      question,
+      definition.id
+    );
+
+  return `
+    <button
+      type="button"
+      class="
+        scientific-lifeline-button
+        ${used ? "is-used" : ""}
+      "
+      data-lifeline="${esc(definition.id)}"
+      ${used ? "disabled" : ""}
+      aria-label="${esc(definition.title)}"
+    >
+
+      <span
+        class="scientific-lifeline-icon"
+        aria-hidden="true"
+      >
+        ${esc(definition.icon)}
+      </span>
+
+      <span class="scientific-lifeline-title">
+        ${esc(definition.title)}
+      </span>
+
+      <span class="scientific-lifeline-subtitle">
+        ${esc(definition.subtitle)}
+      </span>
+
+    </button>
+  `;
+}
+
+
+function applyEliminatedOptionStyles(
+  question
+) {
+  if (!question) {
+    return;
+  }
+
+  const eliminatedIds =
+    new Set(
+      eliminatedOptionsFor(
+        question
+      )
+    );
+
+  document
+    .querySelectorAll(
+      '.learning-option input[name="answer"]'
+    )
+    .forEach(
+      (input) => {
+        const optionLabel =
+          input.closest(
+            ".learning-option"
+          );
+
+        if (!optionLabel) {
+          return;
+        }
+
+        const eliminated =
+          eliminatedIds.has(
+            String(
+              input.value
+            )
+          );
+
+        optionLabel.classList.toggle(
+          "is-eliminated",
+          eliminated
+        );
+
+        if (eliminated) {
+          input.checked =
+            false;
+
+          input.disabled =
+            true;
+        }
+      }
+    );
+}
+
+
+function renderScientificLifelines(
+  question,
+  answer
+) {
+  const panel =
+    $("scientificLifelinesPanel");
+
+  const buttons =
+    $("scientificLifelinesButtons");
+
+  const counter =
+    $("lifelinesUsageCounter");
+
+  if (
+    !panel ||
+    !buttons ||
+    !counter
+  ) {
+    console.warn(
+      "Scientific Lifelines HTML elements are missing from learning.html."
+    );
+
+    return;
+  }
+
+  if (
+    !question ||
+    answer
+  ) {
+    panel.hidden =
+      true;
+
+    hideLifelineResponse();
+
+    return;
+  }
+
+  const definitions =
+    lifelineDefinitions();
+
+  buttons.innerHTML =
+    definitions
+      .map(
+        (definition) =>
+          lifelineButtonHtml(
+            question,
+            definition
+          )
+      )
+      .join("");
+
+  const usedCount =
+    lifelineUsedCount(
+      question
+    );
+
+  counter.textContent =
+    `${usedCount} / ${definitions.length} used`;
+
+  panel.hidden =
+    false;
+
+  applyEliminatedOptionStyles(
+    question
+  );
+}
+
+
+function refreshScientificLifelines(
+  question
+) {
+  if (!question) {
+    return;
+  }
+
+  renderScientificLifelines(
+    question,
+    answerFor(
+      question
+    )
+  );
+}
+
+
+function setLifelineButtonLoading(
+  lifeline,
+  loading = true
+) {
+  const button =
+    document.querySelector(
+      `[data-lifeline="${lifeline}"]`
+    );
+
+  if (!button) {
+    return;
+  }
+
+  button.classList.toggle(
+    "is-loading",
+    loading
+  );
+
+  button.disabled =
+    loading;
+}
+/* =========================================================
+   SCIENTIFIC LIFELINES / THE EXPERT PANEL RENDERING
+========================================================= */
+
+function lifelineDefinitions() {
+  return [
+    {
       id:
         LIFELINES.expert,
 
