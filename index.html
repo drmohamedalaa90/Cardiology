@@ -1,23 +1,182 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ACL Expert Edition V2</title>
-  <link rel="stylesheet" href="assets/css/main.css?v=2.7.11">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACL Expert Edition Quiz</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">ALEXANDRIA <b>CARDIOLOGY</b> LEAGUE</div>
-    <nav><a class="nav-btn" href="login.html">Sign In</a></nav>
-  </header>
-  <main class="container">
-    <section class="hero">
-      <h1>THE <span class="expert">EXPERT</span> EDITION</h1>
-      <p>Cloud-based cardiology learning, expert questions, flashcards, lifelines, and progress tracking.</p>
-      <a class="primary-btn" href="login.html" style="display:inline-block;text-decoration:none;margin-top:16px">Enter ACL</a>
-    </section>
-  </main>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">ACL</div>
+        <div>
+          <div class="brand-title">Alexandria Cardiology League</div>
+          <div class="brand-subtitle">Expert Edition</div>
+        </div>
+      </div>
+      <div id="statusPill" class="status-pill">Checking access…</div>
+    </header>
+
+    <main>
+      <!-- 3.1 Candidate Quiz Entry -->
+      <section id="entryScreen" class="screen">
+        <div class="hero-card">
+          <div class="eyebrow">COMPETITION MODULE</div>
+          <h1 id="quizTitle">Loading quiz…</h1>
+          <p id="quizDescription" class="lead"></p>
+
+          <div class="info-grid">
+            <div class="info-card">
+              <span>Opens</span>
+              <strong id="opensAt">—</strong>
+            </div>
+            <div class="info-card">
+              <span>Closes</span>
+              <strong id="closesAt">—</strong>
+            </div>
+            <div class="info-card">
+              <span>Duration</span>
+              <strong id="duration">—</strong>
+            </div>
+            <div class="info-card">
+              <span>Questions</span>
+              <strong id="questionCount">—</strong>
+            </div>
+          </div>
+
+          <div id="entryMessage" class="message-box"></div>
+
+          <button id="startEntryBtn" class="primary-btn" disabled>
+            Continue
+          </button>
+        </div>
+      </section>
+
+      <!-- 3.2 Identity and Eligibility -->
+      <section id="identityScreen" class="screen hidden">
+        <div class="panel">
+          <div class="section-heading">
+            <div class="eyebrow">PARTICIPANT VERIFICATION</div>
+            <h2>Confirm your information</h2>
+            <p>Your progress will be linked to these details.</p>
+          </div>
+
+          <form id="identityForm" class="form-grid">
+            <label>
+              Full name
+              <input id="fullName" name="fullName" required autocomplete="name" />
+            </label>
+
+            <label>
+              Email
+              <input id="email" name="email" type="email" required autocomplete="email" />
+            </label>
+
+            <label>
+              Phone number
+              <input id="phone" name="phone" required autocomplete="tel" />
+            </label>
+
+            <label>
+              Academic level
+              <select id="academicLevel" name="academicLevel" required>
+                <option value="">Select level</option>
+                <option>Medical student</option>
+                <option>Intern</option>
+                <option>General practitioner</option>
+                <option>Resident</option>
+                <option>Specialist</option>
+                <option>Consultant</option>
+              </select>
+            </label>
+
+            <label id="passcodeField" class="full-width hidden">
+              Module passcode
+              <input id="passcode" name="passcode" type="password" autocomplete="off" />
+            </label>
+
+            <label id="aclScoreField" class="full-width hidden">
+              Current ACL score
+              <input id="aclScore" name="aclScore" type="number" min="0" max="100" />
+            </label>
+
+            <div class="full-width consent-row">
+              <input id="consent" type="checkbox" required />
+              <label for="consent">
+                I confirm that the submitted information is accurate.
+              </label>
+            </div>
+
+            <div id="eligibilityMessage" class="message-box full-width hidden"></div>
+
+            <div class="form-actions full-width">
+              <button type="button" id="backToEntryBtn" class="secondary-btn">Back</button>
+              <button type="submit" class="primary-btn">Verify and enter</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- 3.3 Question Presentation -->
+      <section id="quizScreen" class="screen hidden">
+        <div class="quiz-layout">
+          <aside class="quiz-sidebar">
+            <div class="sidebar-card">
+              <span class="sidebar-label">Participant</span>
+              <strong id="participantName">—</strong>
+            </div>
+
+            <div class="sidebar-card">
+              <span class="sidebar-label">Progress</span>
+              <strong id="progressText">Question 1 of 1</strong>
+              <div class="progress-track">
+                <div id="progressBar" class="progress-fill"></div>
+              </div>
+            </div>
+
+            <div class="sidebar-card timer-card">
+              <span class="sidebar-label">Time remaining</span>
+              <strong id="timerText">00:00</strong>
+            </div>
+
+            <button id="saveExitBtn" class="secondary-btn full-btn">Save and exit</button>
+          </aside>
+
+          <section class="question-panel">
+            <div class="question-topline">
+              <span id="questionTypeBadge" class="type-badge">Single best answer</span>
+              <span id="autosaveState" class="autosave-state">Saved</span>
+            </div>
+
+            <h2 id="questionText"></h2>
+            <p id="questionScenario" class="scenario hidden"></p>
+            <img id="questionImage" class="question-image hidden" alt="Question illustration" />
+
+            <div id="optionsContainer" class="options-list"></div>
+
+            <div class="question-actions">
+              <button id="prevBtn" class="secondary-btn">Previous</button>
+              <button id="nextBtn" class="primary-btn">Save and next</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="completionScreen" class="screen hidden">
+        <div class="panel completion-panel">
+          <div class="completion-icon">✓</div>
+          <h2>Quiz section completed</h2>
+          <p>Your responses have been saved successfully.</p>
+          <div id="completionSummary" class="completion-summary"></div>
+          <button id="restartDemoBtn" class="secondary-btn">Reset demo attempt</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

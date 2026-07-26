@@ -1,52 +1,68 @@
-export class QuizEngine {
-  constructor({ questions, count = 5, questionIds = null, currentIndex = 0, answers = [] }) {
-    const byId = new Map(questions.map((q) => [q.id, q]));
-    this.questions = Array.isArray(questionIds) && questionIds.length
-      ? questionIds.map((id) => byId.get(id)).filter(Boolean)
-      : [...questions].sort(() => Math.random() - 0.5).slice(0, count);
-    this.index = Math.min(Math.max(Number(currentIndex) || 0, 0), this.questions.length);
-    this.answers = Array.isArray(answers) ? answers : [];
-  }
+window.ACL_QUIZ_CONFIG = {
+  quizId: "acl-expert-demo-001",
+  title: "ACL Expert Edition Demo",
+  description: "A demonstration package for scheduled entry, participant verification, eligibility rules, and one-question-at-a-time quiz delivery.",
 
-  current() {
-    return this.questions[this.index] || null;
-  }
+  // Use ISO 8601 dates. Change these before deployment.
+  opensAt: "2026-07-01T08:00:00+03:00",
+  closesAt: "2027-07-31T22:00:00+03:00",
 
-  currentAnswer() {
-    const q = this.current();
-    return q ? this.answers.find((a) => a.questionId === q.id) || null : null;
-  }
+  durationMinutes: 15,
 
-  answer(choice) {
-    const question = this.current();
-    if (!question) return false;
-    const existing = this.answers.find((item) => item.questionId === question.id);
-    if (existing) return existing.correct;
-    const correct = Number(choice) === Number(question.answer);
-    this.answers.push({
-      questionId: question.id,
-      choice: Number(choice),
-      correct,
-      answeredAt: new Date().toISOString()
-    });
-    return correct;
-  }
+  access: {
+    type: "public", 
+    // Allowed values: "public", "passcode", "minimumScore"
+    passcode: "mitral2026",
+    minimumAclScore: 70
+  },
 
-  next() {
-    if (this.index < this.questions.length) this.index += 1;
-    return this.current();
-  }
+  behavior: {
+    allowResume: true,
+    oneActiveAttempt: true,
+    randomizeQuestions: false,
+    randomizeOptions: false,
+    requireAnswerBeforeNext: false
+  },
 
-  score() {
-    return this.answers.filter((item) => item.correct).length;
-  }
-
-  state() {
-    return {
-      questionIds: this.questions.map((q) => q.id),
-      currentIndex: this.index,
-      answers: this.answers,
-      score: this.score()
-    };
-  }
-}
+  questions: [
+    {
+      id: "q1",
+      type: "single",
+      text: "Which finding most strongly supports hemodynamically significant left main coronary artery disease?",
+      scenario: "A 64-year-old patient has exertional angina and an angiographically intermediate distal left main lesion.",
+      image: "",
+      options: [
+        "Minimal luminal area of 8.5 mm² on IVUS",
+        "Fractional flow reserve of 0.92",
+        "Minimal luminal area of 4.2 mm² on IVUS",
+        "Normal pressure damping during catheter engagement"
+      ]
+    },
+    {
+      id: "q2",
+      type: "single",
+      text: "Which feature favors a provisional one-stent strategy in a coronary bifurcation?",
+      scenario: "",
+      image: "",
+      options: [
+        "Long, severely diseased side branch",
+        "Large side branch with difficult re-access",
+        "Short side-branch lesion with preserved flow",
+        "Complex distal left main bifurcation with extensive disease in both branches"
+      ]
+    },
+    {
+      id: "q3",
+      type: "single",
+      text: "What is the main purpose of proximal optimization technique after bifurcation stenting?",
+      scenario: "",
+      image: "",
+      options: [
+        "To reduce distal vessel diameter",
+        "To optimize proximal stent expansion and facilitate side-branch access",
+        "To create intentional stent underexpansion",
+        "To replace final kissing balloon inflation in every case"
+      ]
+    }
+  ]
+};
