@@ -2659,4 +2659,130 @@ dialog .danger-btn {
     flex-direction:column;
   }
   .ai-draft-grid{grid-template-columns:1fr}
+  /* =========================================================
+   ACL MODULE CATEGORY THEMES
+========================================================= */
+
+.module-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.module-card:hover {
+  transform: translateY(-3px);
+}
+
+/* ECG — yellow */
+
+.module-card.module-ecg {
+  border-color: #f3c746;
+  background:
+    linear-gradient(
+      145deg,
+      #fffdf4,
+      #fff5c9
+    );
+}
+
+.module-card.module-ecg::before {
+  background: #ffc928;
+}
+
+.module-card.module-ecg .module-category,
+.module-card.module-ecg .module-badge {
+  background: #fff0a8;
+  color: #735400;
+}
+
+/* Guidelines — blue */
+
+.module-card.module-guideline {
+  border-color: #8fc5ef;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #eaf5ff
+    );
+}
+
+.module-card.module-guideline::before {
+  background: #2d80d3;
+}
+
+.module-card.module-guideline .module-category,
+.module-card.module-guideline .module-badge {
+  background: #ddecff;
+  color: #073b78;
+}
+
+/* Intervention — red */
+
+.module-card.module-intervention {
+  border-color: #eba7a7;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #fff0f0
+    );
+}
+
+.module-card.module-intervention::before {
+  background: #d94b4b;
+}
+
+.module-card.module-intervention .module-category,
+.module-card.module-intervention .module-badge {
+  background: #fde0e0;
+  color: #8f2828;
+}
+
+/* Imaging — green */
+
+.module-card.module-imaging {
+  border-color: #9eddbb;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #ebf9f1
+    );
+}
+
+.module-card.module-imaging::before {
+  background: #30bf78;
+}
+
+.module-card.module-imaging .module-category,
+.module-card.module-imaging .module-badge {
+  background: #dff5e9;
+  color: #18734b;
+}
+
+/* Colored upper bar */
+
+.module-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+}
+
+/* Neutral fallback */
+
+.module-card.module-general {
+  border-color: #d7e5f2;
+  background: #ffffff;
+}
+
+.module-card.module-general::before {
+  background: #8298ac;
+}
 }
