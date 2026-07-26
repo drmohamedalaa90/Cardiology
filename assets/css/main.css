@@ -3827,3 +3827,30 @@ body.acl-drawer-open {
   background:
     #8298ac;
 }
+/* Keep rolling ACL name aligned with THE EXPERT EDITION */
+
+.acl-unified-brand {
+  align-items: center !important;
+}
+
+.acl-brand-rolling-window {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  transform: translateY(0.03em);
+}
+
+.acl-brand-rolling-track {
+  line-height: 1.15 !important;
+}
+
+.acl-brand-name {
+  align-items: center !important;
+  line-height: 1.15 !important;
+}
+
+.acl-brand-separator,
+.acl-expert-edition {
+  display: inline-flex !important;
+  align-items: center !important;
+  line-height: 1.15 !important;
+}
