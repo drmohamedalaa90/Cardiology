@@ -6,12 +6,13 @@ const byId = (id) => document.getElementById(id);
 let allProfiles = [];
 let currentAdmin = null;
 let statusTimeout = null;
+let eventsBound = false;
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function esc(value = "") {
+function escapeHtml(value = "") {
   return String(value).replace(
     /[&<>'"]/g,
     (character) =>
@@ -25,7 +26,15 @@ function esc(value = "") {
   );
 }
 
-function show(message, type = "success") {
+function setText(id, value) {
+  const element = byId(id);
+
+  if (element) {
+    element.textContent = String(value);
+  }
+}
+
+function showStatus(message, type = "success") {
   const box = byId("adminStatus");
 
   if (!box) {
@@ -48,7 +57,7 @@ function show(message, type = "success") {
   }, 4500);
 }
 
-function fmtDate(value) {
+function formatDate(value) {
   if (!value) {
     return "—";
   }
@@ -65,7 +74,7 @@ function fmtDate(value) {
   });
 }
 
-function initials(name) {
+function getInitials(name) {
   return String(name || "ACL")
     .trim()
     .split(/\s+/)
@@ -75,15 +84,59 @@ function initials(name) {
     .toUpperCase();
 }
 
-function setText(id, value) {
+function safelyBind(id, eventName, handler) {
   const element = byId(id);
 
-  if (element) {
-    element.textContent = String(value);
+  if (!element) {
+    console.info(
+      `[ACL Admin] Optional element not found: #${id}`
+    );
+
+    return false;
   }
+
+  element.addEventListener(
+    eventName,
+    handler
+  );
+
+  return true;
 }
 
-function accountAvatar(profile, clickable = false) {
+function showTableMessage(
+  message,
+  className = "table-empty"
+) {
+  const body = byId("studentsBody");
+
+  if (!body) {
+    console.error(
+      "[ACL Admin] Missing #studentsBody."
+    );
+
+    return;
+  }
+
+  body.innerHTML = `
+    <tr>
+      <td
+        colspan="7"
+        class="${escapeHtml(className)}"
+      >
+        ${escapeHtml(message)}
+      </td>
+    </tr>
+  `;
+}
+
+/* =========================================================
+   AVATARS
+========================================================= */
+
+function accountAvatar(
+  profile,
+  clickable = false
+) {
   const displayName =
     profile.full_name ||
     profile.username ||
@@ -93,14 +146,16 @@ function accountAvatar(profile, clickable = false) {
     ? `
       <img
         class="admin-avatar"
-        src="${esc(profile.avatar_url)}"
-        alt="${esc(displayName)} profile photo"
+        src="${escapeHtml(profile.avatar_url)}"
+        alt="${escapeHtml(displayName)} profile photo"
         loading="lazy"
       >
     `
     : `
-      <span class="admin-avatar admin-avatar-fallback">
-        ${esc(initials(displayName))}
+      <span
+        class="admin-avatar admin-avatar-fallback"
+      >
+        ${escapeHtml(getInitials(displayName))}
       </span>
     `;
 
@@ -113,7 +168,7 @@ function accountAvatar(profile, clickable = false) {
       type="button"
       class="admin-avatar-button"
       data-action="photo"
-      data-id="${esc(profile.id)}"
+      data-id="${escapeHtml(profile.id)}"
       aria-label="Open profile photo"
     >
       ${avatar}
@@ -122,10 +177,10 @@ function accountAvatar(profile, clickable = false) {
 }
 
 /* =========================================================
-   STATISTICS AND FILTERS
+   STATISTICS
 ========================================================= */
 
-function updateStats() {
+function updateStatistics() {
   setText(
     "totalStudents",
     allProfiles.length
@@ -156,23 +211,27 @@ function updateStats() {
   );
 }
 
-function filteredProfiles() {
-  const query =
+/* =========================================================
+   FILTERING
+========================================================= */
+
+function getFilteredProfiles() {
+  const searchQuery =
     byId("studentSearch")
       ?.value
       ?.trim()
       .toLowerCase() || "";
 
-  const status =
+  const selectedStatus =
     byId("statusFilter")
       ?.value || "all";
 
-  const role =
+  const selectedRole =
     byId("roleFilter")
       ?.value || "all";
 
   return allProfiles.filter((profile) => {
-    const haystack = [
+    const searchableText = [
       profile.full_name,
       profile.username,
       profile.email,
@@ -180,21 +239,26 @@ function filteredProfiles() {
       profile.academic_year,
       profile.institution
     ]
-      .map((value) => String(value || ""))
+      .map((value) =>
+        String(value || "")
+      )
       .join(" ")
       .toLowerCase();
 
     const matchesSearch =
-      !query ||
-      haystack.includes(query);
+      !searchQuery ||
+      searchableText.includes(
+        searchQuery
+      );
 
     const matchesStatus =
-      status === "all" ||
-      profile.account_status === status;
+      selectedStatus === "all" ||
+      profile.account_status ===
+        selectedStatus;
 
     const matchesRole =
-      role === "all" ||
-      profile.role === role;
+      selectedRole === "all" ||
+      profile.role === selectedRole;
 
     return (
       matchesSearch &&
@@ -212,24 +276,20 @@ function renderRows() {
   const body = byId("studentsBody");
 
   if (!body) {
-    console.warn(
-      "[ACL Admin] Missing #studentsBody in HTML."
+    console.error(
+      "[ACL Admin] Missing #studentsBody."
     );
 
     return;
   }
 
   const profiles =
-    filteredProfiles();
+    getFilteredProfiles();
 
   if (!profiles.length) {
-    body.innerHTML = `
-      <tr>
-        <td colspan="7" class="table-empty">
-          No accounts match the current filters.
-        </td>
-      </tr>
-    `;
+    showTableMessage(
+      "No accounts match the current filters."
+    );
 
     return;
   }
@@ -240,7 +300,8 @@ function renderRows() {
         profile.id === currentAdmin?.id;
 
       const isSuspended =
-        profile.account_status === "suspended";
+        profile.account_status ===
+        "suspended";
 
       const statusClass =
         isSuspended
@@ -256,21 +317,35 @@ function renderRows() {
         profile.full_name ||
         "Unnamed user";
 
+      const role =
+        profile.role ||
+        "student";
+
+      const accountStatus =
+        profile.account_status ||
+        "active";
+
       return `
         <tr>
 
           <td>
             <div class="student-cell">
 
-              ${accountAvatar(profile, true)}
+              ${accountAvatar(
+                profile,
+                true
+              )}
 
               <div>
                 <strong>
-                  ${esc(displayName)}
+                  ${escapeHtml(displayName)}
                 </strong>
 
                 <small>
-                  @${esc(profile.username || "not-set")}
+                  @${escapeHtml(
+                    profile.username ||
+                    "not-set"
+                  )}
                 </small>
               </div>
 
@@ -279,31 +354,40 @@ function renderRows() {
 
           <td>
             <div>
-              ${esc(profile.email || "—")}
+              ${escapeHtml(
+                profile.email || "—"
+              )}
             </div>
 
             <small>
-              ${esc(profile.phone_e164 || "—")}
+              ${escapeHtml(
+                profile.phone_e164 || "—"
+              )}
             </small>
           </td>
 
           <td>
             <div>
-              ${esc(profile.academic_year || "—")}
+              ${escapeHtml(
+                profile.academic_year ||
+                "—"
+              )}
             </div>
 
             <small>
-              ${esc(profile.institution || "—")}
+              ${escapeHtml(
+                profile.institution || "—"
+              )}
             </small>
           </td>
 
           <td>
             <span
-              class="role-pill role-${esc(
-                profile.role || "student"
+              class="role-pill role-${escapeHtml(
+                role
               )}"
             >
-              ${esc(profile.role || "student")}
+              ${escapeHtml(role)}
             </span>
           </td>
 
@@ -311,14 +395,14 @@ function renderRows() {
             <span
               class="account-pill ${statusClass}"
             >
-              ${esc(
-                profile.account_status || "active"
-              )}
+              ${escapeHtml(accountStatus)}
             </span>
           </td>
 
           <td>
-            ${fmtDate(profile.created_at)}
+            ${formatDate(
+              profile.created_at
+            )}
           </td>
 
           <td>
@@ -328,7 +412,9 @@ function renderRows() {
                 type="button"
                 class="table-action-icon"
                 data-action="view"
-                data-id="${esc(profile.id)}"
+                data-id="${escapeHtml(
+                  profile.id
+                )}"
                 title="First click shows label; second click opens"
               >
                 <span class="table-action-glyph">
@@ -344,7 +430,9 @@ function renderRows() {
                 type="button"
                 class="table-action-icon"
                 data-action="reset"
-                data-id="${esc(profile.id)}"
+                data-id="${escapeHtml(
+                  profile.id
+                )}"
                 ${
                   profile.email
                     ? ""
@@ -372,7 +460,9 @@ function renderRows() {
                   }
                 "
                 data-action="toggle"
-                data-id="${esc(profile.id)}"
+                data-id="${escapeHtml(
+                  profile.id
+                )}"
                 ${
                   isSelf
                     ? "disabled"
@@ -385,7 +475,11 @@ function renderRows() {
                 }"
               >
                 <span class="table-action-glyph">
-                  ${isSuspended ? "✅" : "⛔"}
+                  ${
+                    isSuspended
+                      ? "✅"
+                      : "⛔"
+                  }
                 </span>
 
                 <span class="table-action-label">
@@ -407,17 +501,9 @@ function renderRows() {
 ========================================================= */
 
 async function loadProfiles() {
-  const body = byId("studentsBody");
-
-  if (body) {
-    body.innerHTML = `
-      <tr>
-        <td colspan="7" class="table-empty">
-          Loading registered accounts…
-        </td>
-      </tr>
-    `;
-  }
+  showTableMessage(
+    "Loading registered accounts…"
+  );
 
   const {
     data,
@@ -447,7 +533,9 @@ async function loadProfiles() {
     );
 
   if (error) {
-    throw error;
+    throw new Error(
+      `Could not load registered accounts: ${error.message}`
+    );
   }
 
   const roleOrder = {
@@ -456,23 +544,35 @@ async function loadProfiles() {
   };
 
   allProfiles = (data || []).sort(
-    (first, second) => {
+    (firstProfile, secondProfile) => {
       const roleDifference =
-        (roleOrder[first.role] ?? 9) -
-        (roleOrder[second.role] ?? 9);
+        (
+          roleOrder[
+            firstProfile.role
+          ] ?? 9
+        ) -
+        (
+          roleOrder[
+            secondProfile.role
+          ] ?? 9
+        );
 
       if (roleDifference !== 0) {
         return roleDifference;
       }
 
       return (
-        new Date(second.created_at || 0) -
-        new Date(first.created_at || 0)
+        new Date(
+          secondProfile.created_at || 0
+        ) -
+        new Date(
+          firstProfile.created_at || 0
+        )
       );
     }
   );
 
-  updateStats();
+  updateStatistics();
   renderRows();
 }
 
@@ -480,7 +580,9 @@ async function loadProfiles() {
    ACCOUNT STATUS
 ========================================================= */
 
-async function toggleStatus(profile) {
+async function toggleAccountStatus(
+  profile
+) {
   if (
     !currentAdmin ||
     profile.id === currentAdmin.id
@@ -491,11 +593,12 @@ async function toggleStatus(profile) {
   }
 
   const nextStatus =
-    profile.account_status === "suspended"
+    profile.account_status ===
+    "suspended"
       ? "active"
       : "suspended";
 
-  const verb =
+  const actionWord =
     nextStatus === "suspended"
       ? "suspend"
       : "restore";
@@ -507,7 +610,7 @@ async function toggleStatus(profile) {
 
   const confirmed =
     window.confirm(
-      `Are you sure you want to ${verb} ${displayName}?`
+      `Are you sure you want to ${actionWord} ${displayName}?`
     );
 
   if (!confirmed) {
@@ -536,10 +639,10 @@ async function toggleStatus(profile) {
   profile.account_status =
     nextStatus;
 
-  updateStats();
+  updateStatistics();
   renderRows();
 
-  show(
+  showStatus(
     `Account ${
       nextStatus === "suspended"
         ? "suspended"
@@ -552,7 +655,9 @@ async function toggleStatus(profile) {
    PASSWORD RESET
 ========================================================= */
 
-async function sendReset(profile) {
+async function sendPasswordReset(
+  profile
+) {
   if (!profile.email) {
     throw new Error(
       "This account has no email address."
@@ -583,7 +688,7 @@ async function sendReset(profile) {
     throw error;
   }
 
-  show(
+  showStatus(
     `Password-reset email sent to ${profile.email}.`
   );
 }
@@ -592,7 +697,7 @@ async function sendReset(profile) {
    STUDENT DETAILS
 ========================================================= */
 
-function openDetails(profile) {
+function openStudentDetails(profile) {
   const content =
     byId("studentDialogContent");
 
@@ -612,11 +717,17 @@ function openDetails(profile) {
 
       <div>
         <h2>
-          ${esc(profile.full_name || "Unnamed user")}
+          ${escapeHtml(
+            profile.full_name ||
+            "Unnamed user"
+          )}
         </h2>
 
         <p class="muted">
-          @${esc(profile.username || "not-set")}
+          @${escapeHtml(
+            profile.username ||
+            "not-set"
+          )}
         </p>
       </div>
 
@@ -626,65 +737,108 @@ function openDetails(profile) {
 
       <div>
         <dt>Email</dt>
-        <dd>${esc(profile.email || "—")}</dd>
+        <dd>
+          ${escapeHtml(
+            profile.email || "—"
+          )}
+        </dd>
       </div>
 
       <div>
         <dt>WhatsApp</dt>
-        <dd>${esc(profile.phone_e164 || "—")}</dd>
+        <dd>
+          ${escapeHtml(
+            profile.phone_e164 || "—"
+          )}
+        </dd>
       </div>
 
       <div>
         <dt>Position</dt>
-        <dd>${esc(profile.academic_year || "—")}</dd>
+        <dd>
+          ${escapeHtml(
+            profile.academic_year || "—"
+          )}
+        </dd>
       </div>
 
       <div>
         <dt>Institution</dt>
-        <dd>${esc(profile.institution || "—")}</dd>
+        <dd>
+          ${escapeHtml(
+            profile.institution || "—"
+          )}
+        </dd>
       </div>
 
       <div>
         <dt>Role</dt>
-        <dd>${esc(profile.role || "student")}</dd>
+        <dd>
+          ${escapeHtml(
+            profile.role || "student"
+          )}
+        </dd>
       </div>
 
       <div>
         <dt>Status</dt>
-        <dd>${esc(profile.account_status || "active")}</dd>
+        <dd>
+          ${escapeHtml(
+            profile.account_status ||
+            "active"
+          )}
+        </dd>
       </div>
 
       <div>
         <dt>Registered</dt>
-        <dd>${fmtDate(profile.created_at)}</dd>
+        <dd>
+          ${formatDate(
+            profile.created_at
+          )}
+        </dd>
       </div>
 
       <div>
         <dt>Last activity</dt>
-        <dd>${fmtDate(profile.last_seen_at)}</dd>
+        <dd>
+          ${formatDate(
+            profile.last_seen_at
+          )}
+        </dd>
       </div>
 
       <div class="detail-full">
         <dt>User ID</dt>
 
         <dd class="mono">
-          ${esc(profile.id)}
+          ${escapeHtml(profile.id)}
         </dd>
       </div>
 
     </dl>
   `;
 
-  dialog.showModal();
+  if (
+    typeof dialog.showModal ===
+    "function"
+  ) {
+    dialog.showModal();
+  } else {
+    dialog.setAttribute(
+      "open",
+      ""
+    );
+  }
 }
 
 /* =========================================================
    PROFILE PHOTO
 ========================================================= */
 
-function openPhoto(profile) {
+function openProfilePhoto(profile) {
   if (!profile.avatar_url) {
-    show(
+    showStatus(
       "This student has not uploaded a profile photo.",
       "error"
     );
@@ -721,16 +875,26 @@ function openPhoto(profile) {
   image.alt =
     `${displayName} profile photo`;
 
-  dialog.showModal();
+  if (
+    typeof dialog.showModal ===
+    "function"
+  ) {
+    dialog.showModal();
+  } else {
+    dialog.setAttribute(
+      "open",
+      ""
+    );
+  }
 }
 
 /* =========================================================
    CSV EXPORT
 ========================================================= */
 
-function exportCsv() {
+function exportProfilesCsv() {
   const rows =
-    filteredProfiles();
+    getFilteredProfiles();
 
   const fields = [
     "full_name",
@@ -745,17 +909,19 @@ function exportCsv() {
     "last_seen_at"
   ];
 
-  const quote = (value) =>
+  const quoteCsvValue = (value) =>
     `"${String(value ?? "")
       .replace(/"/g, '""')}"`;
 
-  const csv = [
+  const csvContent = [
     fields.join(","),
 
     ...rows.map((row) =>
       fields
         .map((field) =>
-          quote(row[field])
+          quoteCsvValue(
+            row[field]
+          )
         )
         .join(",")
     )
@@ -765,7 +931,7 @@ function exportCsv() {
     new Blob(
       [
         "\ufeff",
-        csv
+        csvContent
       ],
       {
         type:
@@ -773,14 +939,14 @@ function exportCsv() {
       }
     );
 
-  const url =
+  const objectUrl =
     URL.createObjectURL(blob);
 
   const link =
     document.createElement("a");
 
   link.href =
-    url;
+    objectUrl;
 
   link.download =
     `acl-registered-students-${
@@ -790,186 +956,208 @@ function exportCsv() {
     }.csv`;
 
   document.body.appendChild(link);
-
   link.click();
   link.remove();
 
   window.setTimeout(() => {
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(
+      objectUrl
+    );
   }, 0);
 }
 
 /* =========================================================
-   EVENTS
+   TABLE ACTIONS
+========================================================= */
+
+async function handleTableClick(event) {
+  if (
+    !(
+      event.target instanceof
+      Element
+    )
+  ) {
+    return;
+  }
+
+  const button =
+    event.target.closest(
+      "button[data-action]"
+    );
+
+  if (!button) {
+    return;
+  }
+
+  const profile =
+    allProfiles.find(
+      (item) =>
+        item.id ===
+        button.dataset.id
+    );
+
+  if (!profile) {
+    return;
+  }
+
+  if (
+    button.classList.contains(
+      "table-action-icon"
+    ) &&
+    !button.classList.contains(
+      "is-expanded"
+    )
+  ) {
+    event.preventDefault();
+
+    document
+      .querySelectorAll(
+        ".table-action-icon.is-expanded"
+      )
+      .forEach((item) => {
+        item.classList.remove(
+          "is-expanded"
+        );
+      });
+
+    button.classList.add(
+      "is-expanded"
+    );
+
+    return;
+  }
+
+  button.disabled = true;
+
+  try {
+    switch (
+      button.dataset.action
+    ) {
+      case "view":
+        openStudentDetails(profile);
+        break;
+
+      case "photo":
+        openProfilePhoto(profile);
+        break;
+
+      case "toggle":
+        await toggleAccountStatus(
+          profile
+        );
+        break;
+
+      case "reset":
+        await sendPasswordReset(
+          profile
+        );
+        break;
+
+      default:
+        break;
+    }
+  } catch (error) {
+    console.error(error);
+
+    showStatus(
+      error.message ||
+      "Admin action failed.",
+      "error"
+    );
+  } finally {
+    button.disabled = false;
+
+    button.classList.remove(
+      "is-expanded"
+    );
+  }
+}
+
+/* =========================================================
+   EVENT BINDING
 ========================================================= */
 
 function bindEvents() {
-  byId("studentSearch")
-    ?.addEventListener(
-      "input",
-      renderRows
-    );
+  if (eventsBound) {
+    return;
+  }
 
-  byId("statusFilter")
-    ?.addEventListener(
-      "change",
-      renderRows
-    );
+  eventsBound = true;
 
-  byId("roleFilter")
-    ?.addEventListener(
-      "change",
-      renderRows
-    );
+  safelyBind(
+    "studentSearch",
+    "input",
+    renderRows
+  );
 
-  byId("refreshStudents")
-    ?.addEventListener(
-      "click",
-      async () => {
-        try {
-          await loadProfiles();
+  safelyBind(
+    "statusFilter",
+    "change",
+    renderRows
+  );
 
-          show(
-            "Student list refreshed."
-          );
-        } catch (error) {
-          console.error(error);
+  safelyBind(
+    "roleFilter",
+    "change",
+    renderRows
+  );
 
-          show(
-            error.message ||
-            "Could not refresh students.",
-            "error"
-          );
-        }
+  safelyBind(
+    "refreshStudents",
+    "click",
+    async () => {
+      try {
+        await loadProfiles();
+
+        showStatus(
+          "Student list refreshed."
+        );
+      } catch (error) {
+        console.error(error);
+
+        showStatus(
+          error.message ||
+          "Could not refresh students.",
+          "error"
+        );
+
+        showTableMessage(
+          error.message ||
+          "Could not refresh students."
+        );
       }
-    );
+    }
+  );
 
   /*
-   * Supports either export-button ID.
-   * Missing buttons no longer crash the page.
+   * Supports both possible export-button IDs.
+   * Missing buttons will no longer crash the application.
    */
 
-  byId("exportCsv")
-    ?.addEventListener(
-      "click",
-      exportCsv
-    );
+  safelyBind(
+    "exportCsv",
+    "click",
+    exportProfilesCsv
+  );
 
-  byId("exportStudentsCsv")
-    ?.addEventListener(
-      "click",
-      exportCsv
-    );
+  safelyBind(
+    "exportStudentsCsv",
+    "click",
+    exportProfilesCsv
+  );
 
-  byId("studentsBody")
-    ?.addEventListener(
-      "click",
-      async (event) => {
-        const button =
-          event.target.closest(
-            "button[data-action]"
-          );
-
-        if (!button) {
-          return;
-        }
-
-        const profile =
-          allProfiles.find(
-            (item) =>
-              item.id ===
-              button.dataset.id
-          );
-
-        if (!profile) {
-          return;
-        }
-
-        /*
-         * First click expands the icon label.
-         * Second click performs the action.
-         */
-
-        if (
-          button.classList.contains(
-            "table-action-icon"
-          ) &&
-          !button.classList.contains(
-            "is-expanded"
-          )
-        ) {
-          event.preventDefault();
-
-          document
-            .querySelectorAll(
-              ".table-action-icon.is-expanded"
-            )
-            .forEach((item) => {
-              item.classList.remove(
-                "is-expanded"
-              );
-            });
-
-          button.classList.add(
-            "is-expanded"
-          );
-
-          return;
-        }
-
-        button.disabled =
-          true;
-
-        try {
-          switch (
-            button.dataset.action
-          ) {
-            case "view":
-              openDetails(profile);
-              break;
-
-            case "photo":
-              openPhoto(profile);
-              break;
-
-            case "toggle":
-              await toggleStatus(
-                profile
-              );
-              break;
-
-            case "reset":
-              await sendReset(
-                profile
-              );
-              break;
-
-            default:
-              break;
-          }
-        } catch (error) {
-          console.error(error);
-
-          show(
-            error.message ||
-            "Admin action failed.",
-            "error"
-          );
-        } finally {
-          button.disabled =
-            false;
-
-          button.classList.remove(
-            "is-expanded"
-          );
-        }
-      }
-    );
+  safelyBind(
+    "studentsBody",
+    "click",
+    handleTableClick
+  );
 
   document.addEventListener(
     "click",
     (event) => {
       if (
+        event.target instanceof
+          Element &&
         event.target.closest(
           ".table-action-icon"
         )
@@ -994,7 +1182,7 @@ function bindEvents() {
    INITIALIZATION
 ========================================================= */
 
-async function init() {
+async function initializeAdminPage() {
   try {
     currentAdmin =
       await protectAndRender(
@@ -1006,8 +1194,7 @@ async function init() {
     }
 
     if (
-      currentAdmin.role !==
-      "admin"
+      currentAdmin.role !== "admin"
     ) {
       window.location.replace(
         "modules.html"
@@ -1025,45 +1212,31 @@ async function init() {
       error
     );
 
-    show(
+    showStatus(
       error.message ||
       "Could not load the admin dashboard.",
       "error"
     );
 
-    const body =
-      byId("studentsBody");
-
-    if (body) {
-      body.innerHTML = `
-        <tr>
-          <td
-            colspan="7"
-            class="table-empty"
-          >
-            Admin data could not be loaded:
-            ${esc(
-              error.message ||
-              "Unknown error"
-            )}
-          </td>
-        </tr>
-      `;
-    }
+    showTableMessage(
+      `Admin data could not be loaded: ${
+        error.message ||
+        "Unknown error"
+      }`
+    );
   }
 }
 
 if (
-  document.readyState ===
-  "loading"
+  document.readyState === "loading"
 ) {
   document.addEventListener(
     "DOMContentLoaded",
-    init,
+    initializeAdminPage,
     {
       once: true
     }
   );
 } else {
-  init();
+  initializeAdminPage();
 }
