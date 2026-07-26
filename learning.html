@@ -18,19 +18,16 @@
     Learning Mode | ACL Expert Edition
   </title>
 
-  <!-- Main ACL website styles -->
   <link
     rel="stylesheet"
     href="assets/css/main.css?v=2.7.12"
   >
 
-  <!-- Learning Mode feedback, Dr. Corazón and flashcard styles -->
   <link
     rel="stylesheet"
-    href="assets/css/learning-feedback.css?v=3.9.1"
+    href="assets/css/learning-feedback.css?v=3.10.0"
   >
 
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
@@ -41,83 +38,199 @@
        TOP HEADER
   ====================================================== -->
 
-  <header class="topbar">
+  <header class="topbar learning-topbar">
 
-    <a
-      class="brand brand-link"
-      href="modules.html"
-      aria-label="Return to ACL modules"
+    <!-- Existing slide-menu button -->
+
+    <button
+      id="sidebarToggle"
+      class="learning-menu-button"
+      type="button"
+      aria-label="Open navigation menu"
     >
-      Alexandria Cardiology League;
-      <b>THE EXPERT EDITION</b>
-    </a>
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
 
 
-    <nav aria-label="Main navigation">
+    <!-- Centered title and icon navigation -->
 
-      <a
-        id="userChip"
-        class="user-chip"
-        href="profile.html"
-        aria-label="Open my profile"
-      ></a>
+    <div class="learning-header-center">
 
       <a
-        class="nav-btn"
+        class="learning-brand"
         href="modules.html"
+        aria-label="Alexandria Cardiology League home"
       >
-        Modules
+
+        <span class="brand-rolling-window">
+
+          <span class="brand-rolling-track">
+
+            <span class="brand-name brand-name-short">
+              ACL
+            </span>
+
+            <span class="brand-name brand-name-full">
+              Alexandria Cardiology League
+            </span>
+
+          </span>
+
+        </span>
+
+        <strong>
+          THE EXPERT EDITION
+        </strong>
+
       </a>
 
-      <a
-        class="nav-btn"
-        href="progress.html"
-      >
-        My Progress
-      </a>
 
-      <button
-        class="nav-btn"
-        type="button"
-        onclick="aclSignOut()"
+      <nav
+        class="learning-icon-nav"
+        aria-label="Quick navigation"
       >
-        Sign Out
-      </button>
 
-    </nav>
+        <a
+          class="learning-header-icon"
+          href="modules.html"
+          title="Modules"
+          aria-label="Open modules"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v7H6.5A2.5 2.5 0 0 0 4 12.5v-7Zm16 0A2.5 2.5 0 0 0 17.5 3H13v7h4.5A2.5 2.5 0 0 1 20 12.5v-7ZM4 14.5A2.5 2.5 0 0 1 6.5 12H11v9H6.5A2.5 2.5 0 0 1 4 18.5v-4Zm16 0A2.5 2.5 0 0 0 17.5 12H13v9h4.5a2.5 2.5 0 0 0 2.5-2.5v-4Z"
+            />
+          </svg>
+        </a>
+
+
+        <a
+          class="learning-header-icon"
+          href="progress.html"
+          title="My Progress"
+          aria-label="Open my progress"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 19h16v2H2V3h2v16Zm3-3 4-4 3 3 5-7 1.6 1.2-6.4 9-3.2-3.2-2.6 2.6L7 16Z"
+            />
+          </svg>
+        </a>
+
+
+        <a
+          id="userChip"
+          class="learning-header-icon"
+          href="profile.html"
+          title="My Profile"
+          aria-label="Open my profile"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5.3 0-9 2.7-9 6v2h18v-2c0-3.3-3.7-6-9-6Z"
+            />
+          </svg>
+        </a>
+
+
+        <button
+          class="learning-header-icon"
+          type="button"
+          title="Sign Out"
+          aria-label="Sign out"
+          onclick="aclSignOut()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M10 3H4v18h6v-2H6V5h4V3Zm5.6 4.6L14.2 9l2 2H9v2h7.2l-2 2 1.4 1.4L20 12l-4.4-4.4Z"
+            />
+          </svg>
+        </button>
+
+      </nav>
+
+    </div>
+
+
+    <div
+      class="learning-header-spacer"
+      aria-hidden="true"
+    ></div>
 
   </header>
 
 
   <!-- =====================================================
-       LEARNING MODE PAGE
+       LEARNING MODE
   ====================================================== -->
 
   <main class="container learning-shell">
 
-    <section class="learning-hero">
+    <section class="learning-stage">
 
-      <span class="admin-kicker">
-        Learning Mode
-      </span>
+      <!-- Module name at the upper-left -->
 
-      <h1 id="moduleTitle">
-        Loading module…
-      </h1>
+      <div class="learning-module-corner">
 
-      <h2 id="quizTitle"></h2>
+        <span>
+          Module
+        </span>
+
+        <strong id="moduleTitle">
+          Loading module…
+        </strong>
+
+      </div>
+
+
+      <!-- Quiz title in an exciting central bordered banner -->
+
+      <div class="learning-quiz-banner">
+
+        <span class="learning-mode-label">
+          Learning Mode
+        </span>
+
+        <h1 id="quizTitle">
+          Loading quiz…
+        </h1>
+
+        <div class="quiz-banner-decoration">
+
+          <span></span>
+          <i></i>
+          <span></span>
+
+        </div>
+
+      </div>
+
+
+      <!-- Kept for JavaScript compatibility, but not displayed -->
 
       <p
         id="quizDescription"
-        class="muted"
+        hidden
       ></p>
 
     </section>
 
 
     <section class="card learning-card">
-
-      <!-- Quiz status -->
 
       <div class="quiz-status">
 
@@ -137,8 +250,6 @@
       </div>
 
 
-      <!-- Progress bar -->
-
       <div
         class="learning-progress"
         aria-label="Quiz progress"
@@ -146,8 +257,6 @@
         <span id="progressFill"></span>
       </div>
 
-
-      <!-- Question content -->
 
       <div
         id="quizArea"
@@ -159,15 +268,11 @@
       </div>
 
 
-      <!-- Dr. Corazón feedback -->
-
       <div
         id="answerFeedbackHost"
         aria-live="polite"
       ></div>
 
-
-      <!-- Learning controls -->
 
       <div class="learning-actions">
 
@@ -269,13 +374,9 @@
   </div>
 
 
-  <!-- =====================================================
-       LEARNING MODE JAVASCRIPT
-  ====================================================== -->
-
   <script
     type="module"
-    src="assets/js/learning-mode.js?v=3.9.6"
+    src="assets/js/learning-mode.js?v=3.9.2"
   ></script>
 
 </body>
