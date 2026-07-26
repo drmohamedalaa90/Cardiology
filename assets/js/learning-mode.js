@@ -629,6 +629,281 @@ function restoreLifelinesState(
       {};
   }
 }
+/* =========================================================
+   SCIENTIFIC LIFELINES / THE EXPERT PANEL RENDERING
+========================================================= */
+
+function lifelineDefinitions() {
+  return [
+    {
+      id:
+        LIFELINES.expert,
+
+      icon:
+        "🩺",
+
+      title:
+        "Ask Dr. Corazón",
+
+      subtitle:
+        "Expert reasoning clue"
+    },
+
+    {
+      id:
+        LIFELINES.filter,
+
+      icon:
+        "✂️",
+
+      title:
+        "Evidence Filter",
+
+      subtitle:
+        "Eliminate two options"
+    },
+
+    {
+      id:
+        LIFELINES.guideline,
+
+      icon:
+        "📘",
+
+      title:
+        "ESC Pocket Guideline",
+
+      subtitle:
+        "Reveal a guideline clue"
+    },
+
+    {
+      id:
+        LIFELINES.vault,
+
+      icon:
+        "🧠",
+
+      title:
+        "Knowledge Vault",
+
+      subtitle:
+        "Open the review flashcard"
+    }
+  ];
+}
+
+
+function lifelineButtonHtml(
+  question,
+  definition
+) {
+  const used =
+    lifelineIsUsed(
+      question,
+      definition.id
+    );
+
+  return `
+    <button
+      type="button"
+      class="
+        scientific-lifeline-button
+        ${
+          used
+            ? "is-used"
+            : ""
+        }
+      "
+      data-lifeline="${esc(
+        definition.id
+      )}"
+      ${
+        used
+          ? "disabled"
+          : ""
+      }
+      aria-label="${esc(
+        definition.title
+      )}"
+    >
+
+      <span
+        class="scientific-lifeline-icon"
+        aria-hidden="true"
+      >
+        ${esc(
+          definition.icon
+        )}
+      </span>
+
+      <span class="scientific-lifeline-title">
+        ${esc(
+          definition.title
+        )}
+      </span>
+
+      <span class="scientific-lifeline-subtitle">
+        ${esc(
+          definition.subtitle
+        )}
+      </span>
+
+    </button>
+  `;
+}
+
+
+function renderScientificLifelines(
+  question,
+  answer
+) {
+  const panel =
+    $("scientificLifelinesPanel");
+
+  const buttons =
+    $("scientificLifelinesButtons");
+
+  const counter =
+    $("lifelinesUsageCounter");
+
+  if (
+    !panel ||
+    !buttons ||
+    !counter
+  ) {
+    return;
+  }
+
+  if (
+    !question ||
+    answer
+  ) {
+    panel.hidden =
+      true;
+
+    hideLifelineResponse();
+
+    return;
+  }
+
+  const definitions =
+    lifelineDefinitions();
+
+  buttons.innerHTML =
+    definitions
+      .map(
+        (definition) =>
+          lifelineButtonHtml(
+            question,
+            definition
+          )
+      )
+      .join("");
+
+  const usedCount =
+    lifelineUsedCount(
+      question
+    );
+
+  counter.textContent =
+    `${usedCount} / ${definitions.length} used`;
+
+  panel.hidden =
+    false;
+
+  applyEliminatedOptionStyles(
+    question
+  );
+}
+
+
+function refreshScientificLifelines(
+  question
+) {
+  const answer =
+    question
+      ? answerFor(
+          question
+        )
+      : null;
+
+  renderScientificLifelines(
+    question,
+    answer
+  );
+}
+
+
+function applyEliminatedOptionStyles(
+  question
+) {
+  if (!question) {
+    return;
+  }
+
+  const eliminatedIds =
+    new Set(
+      eliminatedOptionsFor(
+        question
+      )
+    );
+
+  document
+    .querySelectorAll(
+      '.learning-option input[name="answer"]'
+    )
+    .forEach(
+      (input) => {
+        const optionLabel =
+          input.closest(
+            ".learning-option"
+          );
+
+        const eliminated =
+          eliminatedIds.has(
+            String(
+              input.value
+            )
+          );
+
+        if (!optionLabel) {
+          return;
+        }
+
+        optionLabel.classList.toggle(
+          "is-eliminated",
+          eliminated
+        );
+
+        input.disabled =
+          eliminated;
+      }
+    );
+}
+
+
+function setLifelineButtonLoading(
+  lifeline,
+  loading = true
+) {
+  const button =
+    document.querySelector(
+      `[data-lifeline="${lifeline}"]`
+    );
+
+  if (!button) {
+    return;
+  }
+
+  button.classList.toggle(
+    "is-loading",
+    loading
+  );
+
+  button.disabled =
+    loading;
+}
 
 
 /* =========================================================
@@ -1377,12 +1652,17 @@ function render() {
     }
   `;
 
-  $("answerFeedbackHost").innerHTML =
+    $("answerFeedbackHost").innerHTML =
     answer
       ? feedbackHtml(
           answer
         )
       : "";
+
+  renderScientificLifelines(
+    question,
+    answer
+  );
 
   $("submitAnswer").hidden =
     Boolean(answer);
@@ -1585,8 +1865,18 @@ async function finish() {
   $("progressFill").style.width =
     "100%";
 
-  $("answerFeedbackHost").innerHTML =
+   $("answerFeedbackHost").innerHTML =
     "";
+
+  const lifelinesPanel =
+    $("scientificLifelinesPanel");
+
+  if (lifelinesPanel) {
+    lifelinesPanel.hidden =
+      true;
+  }
+
+  hideLifelineResponse();
 
   $("quizArea").innerHTML = `
     <div class="learning-result">
