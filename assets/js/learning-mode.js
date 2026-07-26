@@ -44,7 +44,22 @@ const SAD_MASCOT =
 
 const ANGRY_MASCOT =
   "assets/images/dr-corazon-angry.webp";
+const MASCOT_IMAGES = [
+  HAPPY_MASCOT,
+  GOOD_JOB_MASCOT,
+  SAD_MASCOT,
+  ANGRY_MASCOT
+];
 
+function preloadMascotImages() {
+  MASCOT_IMAGES.forEach((source) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = source;
+  });
+}
+
+preloadMascotImages();
 let quiz = null;
 let questions = [];
 let index = 0;
