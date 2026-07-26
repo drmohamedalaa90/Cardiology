@@ -772,17 +772,23 @@ const mascot =
 
         ${explanation}
 
-        <div class="learning-feedback-actions">
+        ${
+  answer.flashcard
+    ? `
+      <div class="learning-feedback-actions">
 
-          <button
-            id="reviewCurrentFlashcard"
-            type="button"
-            class="review-flashcard-btn"
-          >
-            Review the flashcard
-          </button>
+        <button
+          id="reviewCurrentFlashcard"
+          type="button"
+          class="review-flashcard-btn"
+        >
+          Review the flashcard
+        </button>
 
-        </div>
+      </div>
+    `
+    : ""
+}
 
       </div>
 
