@@ -2786,3 +2786,1044 @@ dialog .danger-btn {
   background: #8298ac;
 }
 }
+/* =========================================================
+   ACL GLOBAL HEADER — DEFINITIVE VERSION 2.8.1
+
+   Works with session-ui.js v2.8.0.
+   - Centered rolling ACL title
+   - Icon-only single-click navigation
+   - Hamburger drawer retained
+   - Same header across all authenticated pages
+========================================================= */
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+
+/* ---------------------------------------------------------
+   GLOBAL HEADER SHELL
+--------------------------------------------------------- */
+
+header.topbar.acl-unified-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1500 !important;
+
+  display: block !important;
+
+  width: 100% !important;
+  min-height: 68px !important;
+
+  padding: 0 !important;
+
+  overflow: visible !important;
+
+  background:
+    linear-gradient(
+      105deg,
+      #061b3a 0%,
+      #082d58 55%,
+      #0a4d7c 100%
+    ) !important;
+
+  border-bottom:
+    4px solid #ffc400 !important;
+
+  box-shadow:
+    0 8px 24px
+    rgba(3, 27, 59, 0.22) !important;
+}
+
+
+/*
+ * Hide old page-specific header content.
+ * session-ui.js keeps it in the DOM only for compatibility.
+ */
+
+header.topbar.acl-unified-header
+> *:not(.acl-header-layout) {
+  display: none !important;
+}
+
+
+/* ---------------------------------------------------------
+   HEADER GEOMETRY
+--------------------------------------------------------- */
+
+.acl-header-layout {
+  width: 100%;
+
+  min-height: 68px;
+
+  display: grid;
+
+  grid-template-columns:
+    48px
+    minmax(0, 1fr)
+    48px;
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding:
+    9px
+    clamp(14px, 3vw, 48px);
+}
+
+
+.acl-header-left,
+.acl-header-right {
+  width: 48px;
+  min-width: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.acl-header-center {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 15px;
+
+  overflow: visible;
+}
+
+
+/* ---------------------------------------------------------
+   HAMBURGER BUTTON
+--------------------------------------------------------- */
+
+.acl-header-layout .acl-menu-button {
+  display: grid !important;
+  place-items: center !important;
+
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.42) !important;
+
+  border-radius:
+    12px !important;
+
+  background:
+    rgba(255, 255, 255, 0.08) !important;
+
+  color:
+    #ffffff !important;
+
+  cursor: pointer !important;
+
+  box-shadow: none !important;
+
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease !important;
+}
+
+
+.acl-header-layout .acl-menu-button:hover,
+.acl-header-layout .acl-menu-button:focus-visible {
+  transform:
+    translateY(-1px);
+
+  background:
+    rgba(255, 255, 255, 0.17) !important;
+
+  border-color:
+    #ffffff !important;
+
+  outline: none !important;
+}
+
+
+.acl-header-layout .acl-menu-button svg {
+  width: 21px !important;
+  height: 21px !important;
+
+  fill: none !important;
+  stroke: currentColor !important;
+
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+
+/* ---------------------------------------------------------
+   ROLLING BRAND
+--------------------------------------------------------- */
+
+.acl-unified-brand {
+  min-width: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  color:
+    #ffffff !important;
+
+  text-decoration:
+    none !important;
+
+  font-size:
+    clamp(
+      16px,
+      1.55vw,
+      24px
+    );
+
+  font-weight: 950;
+
+  line-height: 1.15;
+
+  white-space: nowrap;
+
+  text-shadow:
+    0 2px 9px
+    rgba(0, 0, 0, 0.2);
+}
+
+
+.acl-brand-rolling-window {
+  position: relative;
+
+  width: 62px;
+  height: 1.25em;
+
+  display: block;
+
+  overflow: hidden;
+
+  animation:
+    acl-brand-window-width
+    10s
+    cubic-bezier(
+      0.7,
+      0,
+      0.3,
+      1
+    )
+    infinite;
+}
+
+
+.acl-brand-rolling-track {
+  position: absolute;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+
+  display: grid;
+
+  grid-template-rows:
+    1.25em
+    1.25em;
+
+  animation:
+    acl-brand-roll
+    10s
+    cubic-bezier(
+      0.7,
+      0,
+      0.3,
+      1
+    )
+    infinite;
+}
+
+
+.acl-brand-name {
+  height: 1.25em;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  line-height: 1.25;
+
+  white-space: nowrap;
+}
+
+
+.acl-brand-short {
+  width: 62px;
+}
+
+
+.acl-brand-full {
+  width: 100%;
+
+  font-size: 0.84em;
+}
+
+
+.acl-brand-separator {
+  color:
+    rgba(255, 255, 255, 0.72);
+}
+
+
+.acl-expert-edition {
+  color:
+    #ffc928;
+
+  font-size:
+    0.91em;
+
+  font-weight: 950;
+
+  letter-spacing:
+    0.01em;
+}
+
+
+@keyframes acl-brand-roll {
+  0%,
+  42% {
+    transform:
+      translateY(0);
+  }
+
+  50%,
+  92% {
+    transform:
+      translateY(-1.25em);
+  }
+
+  100% {
+    transform:
+      translateY(0);
+  }
+}
+
+
+@keyframes acl-brand-window-width {
+  0%,
+  42% {
+    width: 62px;
+  }
+
+  50%,
+  92% {
+    width: 330px;
+  }
+
+  100% {
+    width: 62px;
+  }
+}
+
+
+/* ---------------------------------------------------------
+   ICON-ONLY NAVIGATION
+--------------------------------------------------------- */
+
+.acl-header-icon-nav {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  gap: 7px !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  overflow: visible !important;
+}
+
+
+.acl-header-icon {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.42) !important;
+
+  border-radius:
+    50% !important;
+
+  background:
+    rgba(255, 255, 255, 0.08) !important;
+
+  color:
+    #ffffff !important;
+
+  text-decoration:
+    none !important;
+
+  cursor:
+    pointer !important;
+
+  box-shadow:
+    none !important;
+
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease !important;
+}
+
+
+.acl-header-icon:hover,
+.acl-header-icon:focus-visible {
+  transform:
+    translateY(-2px);
+
+  background:
+    rgba(255, 255, 255, 0.18) !important;
+
+  border-color:
+    #ffffff !important;
+
+  outline:
+    none !important;
+}
+
+
+.acl-header-icon svg {
+  width: 19px !important;
+  height: 19px !important;
+
+  fill: none !important;
+  stroke: currentColor !important;
+
+  stroke-width: 1.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+
+  pointer-events:
+    none !important;
+}
+
+
+/* Admin icon */
+
+.acl-header-admin-icon {
+  color:
+    #ffc928 !important;
+
+  border-color:
+    #ffc928 !important;
+
+  background:
+    rgba(255, 201, 40, 0.09) !important;
+}
+
+
+.acl-header-admin-icon:hover,
+.acl-header-admin-icon:focus-visible {
+  color:
+    #082d58 !important;
+
+  background:
+    #ffc928 !important;
+
+  border-color:
+    #ffc928 !important;
+}
+
+
+/* ---------------------------------------------------------
+   DRAWER SAFETY
+--------------------------------------------------------- */
+
+.acl-drawer-overlay,
+.acl-side-drawer {
+  font-family:
+    Arial,
+    sans-serif;
+}
+
+
+body.acl-drawer-open {
+  overflow:
+    hidden !important;
+}
+
+
+.acl-drawer-overlay {
+  z-index:
+    2998 !important;
+}
+
+
+.acl-side-drawer {
+  z-index:
+    2999 !important;
+}
+
+
+/* =========================================================
+   TABLET HEADER
+========================================================= */
+
+@media (max-width: 960px) {
+  .acl-header-layout {
+    grid-template-columns:
+      44px
+      minmax(0, 1fr)
+      44px;
+
+    padding:
+      8px
+      13px;
+  }
+
+
+  .acl-header-center {
+    gap: 9px;
+  }
+
+
+  .acl-unified-brand {
+    font-size:
+      15px;
+  }
+
+
+  .acl-header-icon-nav {
+    gap:
+      5px !important;
+  }
+
+
+  .acl-header-icon {
+    width:
+      36px !important;
+
+    height:
+      36px !important;
+
+    min-width:
+      36px !important;
+
+    min-height:
+      36px !important;
+  }
+
+
+  .acl-header-icon svg {
+    width:
+      17px !important;
+
+    height:
+      17px !important;
+  }
+
+
+  @keyframes acl-brand-window-width {
+    0%,
+    42% {
+      width: 56px;
+    }
+
+    50%,
+    92% {
+      width: 245px;
+    }
+
+    100% {
+      width: 56px;
+    }
+  }
+}
+
+
+/* =========================================================
+   MOBILE HEADER
+========================================================= */
+
+@media (max-width: 720px) {
+  header.topbar.acl-unified-header {
+    min-height:
+      96px !important;
+  }
+
+
+  .acl-header-layout {
+    min-height:
+      96px;
+
+    grid-template-columns:
+      38px
+      minmax(0, 1fr)
+      38px;
+
+    align-items:
+      start;
+
+    padding:
+      8px
+      7px
+      9px;
+  }
+
+
+  .acl-header-left,
+  .acl-header-right {
+    width:
+      38px;
+
+    min-width:
+      38px;
+  }
+
+
+  .acl-header-layout .acl-menu-button {
+    width:
+      34px !important;
+
+    height:
+      34px !important;
+
+    min-width:
+      34px !important;
+
+    min-height:
+      34px !important;
+
+    border-radius:
+      9px !important;
+  }
+
+
+  .acl-header-layout .acl-menu-button svg {
+    width:
+      17px !important;
+
+    height:
+      17px !important;
+  }
+
+
+  .acl-header-center {
+    min-width:
+      0;
+
+    flex-direction:
+      column;
+
+    gap:
+      7px;
+  }
+
+
+  .acl-unified-brand {
+    width:
+      100%;
+
+    min-height:
+      29px;
+
+    font-size:
+      clamp(
+        11px,
+        3.3vw,
+        14px
+      );
+  }
+
+
+  .acl-brand-separator {
+    display:
+      none;
+  }
+
+
+  .acl-expert-edition {
+    font-size:
+      0.86em;
+  }
+
+
+  .acl-header-icon-nav {
+    width:
+      100%;
+
+    justify-content:
+      center !important;
+
+    gap:
+      5px !important;
+  }
+
+
+  .acl-header-icon {
+    width:
+      31px !important;
+
+    height:
+      31px !important;
+
+    min-width:
+      31px !important;
+
+    min-height:
+      31px !important;
+  }
+
+
+  .acl-header-icon svg {
+    width:
+      15px !important;
+
+    height:
+      15px !important;
+  }
+
+
+  @keyframes acl-brand-window-width {
+    0%,
+    42% {
+      width: 43px;
+    }
+
+    50%,
+    92% {
+      width: 178px;
+    }
+
+    100% {
+      width: 43px;
+    }
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 380px) {
+  .acl-header-layout {
+    grid-template-columns:
+      34px
+      minmax(0, 1fr)
+      34px;
+  }
+
+
+  .acl-header-left,
+  .acl-header-right {
+    width:
+      34px;
+
+    min-width:
+      34px;
+  }
+
+
+  .acl-unified-brand {
+    font-size:
+      10px;
+  }
+
+
+  .acl-header-icon-nav {
+    gap:
+      3px !important;
+  }
+
+
+  .acl-header-icon {
+    width:
+      28px !important;
+
+    height:
+      28px !important;
+
+    min-width:
+      28px !important;
+
+    min-height:
+      28px !important;
+  }
+}
+
+
+/* =========================================================
+   MODULE CATEGORY THEMES — GLOBAL
+
+   ECG          → Yellow
+   Guidelines   → Blue
+   Intervention → Red
+   Imaging      → Green
+========================================================= */
+
+.module-card {
+  position: relative !important;
+
+  overflow:
+    hidden !important;
+
+  border-width:
+    2px !important;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease !important;
+}
+
+
+.module-card:hover {
+  transform:
+    translateY(-4px);
+}
+
+
+.module-card::before {
+  content: "";
+
+  position:
+    absolute;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  z-index: 3;
+
+  height:
+    7px;
+}
+
+
+/* ---------------------------------------------------------
+   ECG — YELLOW
+--------------------------------------------------------- */
+
+.module-card.module-ecg {
+  border-color:
+    #e8bd32 !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #fff8d8
+    ) !important;
+}
+
+
+.module-card.module-ecg::before {
+  background:
+    #ffc928;
+}
+
+
+.module-card.module-ecg
+.module-cover {
+  background:
+    linear-gradient(
+      135deg,
+      #9a7200,
+      #e1a900
+    ) !important;
+}
+
+
+.module-card.module-ecg
+.module-category {
+  background:
+    #fff0a8 !important;
+
+  color:
+    #614700 !important;
+
+  border-color:
+    #ffe16b !important;
+}
+
+
+/* ---------------------------------------------------------
+   GUIDELINES — BLUE
+--------------------------------------------------------- */
+
+.module-card.module-guideline {
+  border-color:
+    #72b4e6 !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #eaf5ff
+    ) !important;
+}
+
+
+.module-card.module-guideline::before {
+  background:
+    #2d80d3;
+}
+
+
+.module-card.module-guideline
+.module-cover {
+  background:
+    linear-gradient(
+      135deg,
+      #073b78,
+      #2d80d3
+    ) !important;
+}
+
+
+.module-card.module-guideline
+.module-category {
+  background:
+    #ddecff !important;
+
+  color:
+    #073b78 !important;
+
+  border-color:
+    #aed4f5 !important;
+}
+
+
+/* ---------------------------------------------------------
+   INTERVENTION — RED
+--------------------------------------------------------- */
+
+.module-card.module-intervention {
+  border-color:
+    #e59a9a !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #fff0f0
+    ) !important;
+}
+
+
+.module-card.module-intervention::before {
+  background:
+    #d94b4b;
+}
+
+
+.module-card.module-intervention
+.module-cover {
+  background:
+    linear-gradient(
+      135deg,
+      #811f2b,
+      #d94b4b
+    ) !important;
+}
+
+
+.module-card.module-intervention
+.module-category {
+  background:
+    #fde0e0 !important;
+
+  color:
+    #84212c !important;
+
+  border-color:
+    #efb0b0 !important;
+}
+
+
+/* ---------------------------------------------------------
+   IMAGING — GREEN
+--------------------------------------------------------- */
+
+.module-card.module-imaging {
+  border-color:
+    #83cfaa !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #ebf9f1
+    ) !important;
+}
+
+
+.module-card.module-imaging::before {
+  background:
+    #30bf78;
+}
+
+
+.module-card.module-imaging
+.module-cover {
+  background:
+    linear-gradient(
+      135deg,
+      #176547,
+      #30bf78
+    ) !important;
+}
+
+
+.module-card.module-imaging
+.module-category {
+  background:
+    #dff5e9 !important;
+
+  color:
+    #176547 !important;
+
+  border-color:
+    #a9dfc3 !important;
+}
+
+
+/* ---------------------------------------------------------
+   GENERAL FALLBACK
+--------------------------------------------------------- */
+
+.module-card.module-general {
+  border-color:
+    #c4d7e8 !important;
+
+  background:
+    #ffffff !important;
+}
+
+
+.module-card.module-general::before {
+  background:
+    #8298ac;
+}
