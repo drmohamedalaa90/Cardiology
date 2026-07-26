@@ -34,16 +34,16 @@ const moduleId =
   params.get("module");
 
 const HAPPY_MASCOT =
-  "assets/images/dr-corazon-happy.png";
+  "assets/images/dr-corazon-happy.webp";
 
 const GOOD_JOB_MASCOT =
-  "assets/images/dr-corazon-good-job.png";
+  "assets/images/dr-corazon-good-job.webp";
 
 const SAD_MASCOT =
-  "assets/images/dr-corazon-sad.png";
+  "assets/images/dr-corazon-sad.webp";
 
 const ANGRY_MASCOT =
-  "assets/images/dr-corazon-angry.png";
+  "assets/images/dr-corazon-angry.webp";
 
 let quiz = null;
 let questions = [];
