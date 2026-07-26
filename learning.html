@@ -18,16 +18,16 @@
     Learning Mode | ACL Expert Edition
   </title>
 
-  <!-- Main ACL stylesheet -->
- <link
-  rel="stylesheet"
-  href="assets/css/learning-feedback.css?v=3.9.1"
-  >
-
-  <!-- Learning feedback, Dr. Corazón and flashcard styles -->
+  <!-- Main ACL website styles -->
   <link
     rel="stylesheet"
-    href="assets/css/learning-feedback.css?v=3.9.0"
+    href="assets/css/main.css?v=2.7.12"
+  >
+
+  <!-- Learning Mode feedback, Dr. Corazón and flashcard styles -->
+  <link
+    rel="stylesheet"
+    href="assets/css/learning-feedback.css?v=3.9.1"
   >
 
   <!-- Supabase -->
@@ -38,7 +38,7 @@
 <body>
 
   <!-- =====================================================
-       FIXED TOP HEADER
+       TOP HEADER
   ====================================================== -->
 
   <header class="topbar">
@@ -90,7 +90,7 @@
 
 
   <!-- =====================================================
-       LEARNING MODE
+       LEARNING MODE PAGE
   ====================================================== -->
 
   <main class="container learning-shell">
@@ -147,7 +147,7 @@
       </div>
 
 
-      <!-- Question and options are rendered here -->
+      <!-- Question content -->
 
       <div
         id="quizArea"
@@ -159,10 +159,7 @@
       </div>
 
 
-      <!--
-        Dr. Corazón correct/incorrect feedback will be
-        rendered here after the candidate checks an answer.
-      -->
+      <!-- Dr. Corazón feedback -->
 
       <div
         id="answerFeedbackHost"
@@ -170,7 +167,7 @@
       ></div>
 
 
-      <!-- Learning actions -->
+      <!-- Learning controls -->
 
       <div class="learning-actions">
 
@@ -207,8 +204,6 @@
     class="learning-flashcard-modal"
     hidden
   >
-
-    <!-- Clicking the backdrop closes the modal -->
 
     <button
       id="learningFlashcardBackdrop"
@@ -255,8 +250,6 @@
       </div>
 
 
-      <!-- Flashcard headings and bullet points -->
-
       <div
         id="learningFlashcardContent"
         class="learning-flashcard-content"
@@ -277,7 +270,7 @@
 
 
   <!-- =====================================================
-       JAVASCRIPT
+       LEARNING MODE JAVASCRIPT
   ====================================================== -->
 
   <script
