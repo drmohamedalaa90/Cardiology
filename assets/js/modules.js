@@ -1,5 +1,6 @@
 import { supabaseClient } from "./supabase-client.js";
-import { protectAndRender } from "./session-ui.js";
+import { protectAndRender } from "./session-ui.js?v=2.8.0";
+
 
 const grid =
   document.getElementById("modulesGrid");
@@ -63,217 +64,100 @@ function setStatus(
 /* =========================================================
    MODULE CATEGORY THEMES
 
-   ECG              → Yellow
-   Guidelines       → Blue
-   Interventions    → Red
-   Imaging          → Green
+   ECG / rhythm                 → Yellow
+   Intervention / PCI           → Red
+   Imaging / echo / CT / MRI    → Green
+   All remaining modules        → Blue
 ========================================================= */
 
-function includesAny(
-  text,
-  keywords
-) {
-  return keywords.some(
-    (keyword) =>
-      text.includes(keyword)
-  );
-}
-
-
 function getModuleTheme(module) {
-  const category =
-    String(
-      module.category || ""
-    )
-      .trim()
-      .toLowerCase();
-
   const searchableText = [
-    module.title,
-    module.name,
-    module.category,
-    module.topic,
-    module.short_description,
-    module.description
+    module?.title,
+    module?.name,
+    module?.category,
+    module?.short_description,
+    module?.description,
+    module?.slug
   ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
 
-  /*
-   * Explicit database categories have priority.
-   */
 
-  if (
-    category.includes("ecg") ||
-    category.includes("electrocard")
-  ) {
-    return "module-ecg";
-  }
-
-  if (
-    category.includes("guideline") ||
-    category.includes("consensus")
-  ) {
-    return "module-guideline";
-  }
-
-  if (
-    category.includes("imaging") ||
-    category.includes("echo")
-  ) {
-    return "module-imaging";
-  }
-
-  if (
-    category.includes("intervention") ||
-    category.includes("pci") ||
-    category.includes("structural")
-  ) {
-    return "module-intervention";
-  }
+  const isECG =
+    searchableText.includes("ecg") ||
+    searchableText.includes("electrocardiograph") ||
+    searchableText.includes("rhythm") ||
+    searchableText.includes("arrhythmia");
 
 
-  /*
-   * ECG-related modules.
-   */
+  const isImaging =
+    searchableText.includes("imaging") ||
+    searchableText.includes("echocardiograph") ||
+    searchableText.includes("echocardiography") ||
+    searchableText.includes("echo") ||
+    searchableText.includes("cardiac ct") ||
+    searchableText.includes("coronary ct") ||
+    searchableText.includes("ct angiography") ||
+    searchableText.includes("ccta") ||
+    searchableText.includes("mri") ||
+    searchableText.includes("cmr") ||
+    searchableText.includes("nuclear imaging") ||
+    searchableText.includes("nuclear cardiology") ||
+    searchableText.includes("ivus") ||
+    searchableText.includes("oct");
 
-  const ecgWords = [
-    "ecg",
-    "electrocardiogram",
-    "electrocardiography",
-    "ecg demystified",
-    "rhythm interpretation",
-    "arrhythmia",
-    "heart block",
-    "av block",
-    "st-segment interpretation",
-    "st segment interpretation"
-  ];
 
-  if (
-    includesAny(
-      searchableText,
-      ecgWords
-    )
-  ) {
-    return "module-ecg";
+  const isIntervention =
+    searchableText.includes("intervention") ||
+    searchableText.includes("interventional") ||
+    searchableText.includes("pci") ||
+    searchableText.includes("angioplasty") ||
+    searchableText.includes("stent") ||
+    searchableText.includes("catheter") ||
+    searchableText.includes("structural") ||
+    searchableText.includes("tavi") ||
+    searchableText.includes("tavr") ||
+    searchableText.includes("mitraclip") ||
+    searchableText.includes("teer") ||
+    searchableText.includes("device closure") ||
+    searchableText.includes("coronary intervention") ||
+    searchableText.includes("bifurcation") ||
+    searchableText.includes("left main") ||
+    searchableText.includes("calcified lesion") ||
+    searchableText.includes("rotablation") ||
+    searchableText.includes("atherectomy") ||
+    searchableText.includes("cto");
+
+
+  if (isECG) {
+    return {
+      className: "module-ecg",
+      categoryLabel: "Electrocardiography"
+    };
   }
 
 
-  /*
-   * Guideline-based modules.
-   * This runs before intervention and imaging so a module
-   * explicitly presented as a guideline review stays blue.
-   */
-
-  const guidelineWords = [
-    "guideline",
-    "guidelines",
-    "esc guideline",
-    "esc 20",
-    "acc guideline",
-    "aha guideline",
-    "eacts guideline",
-    "clinical practice guideline",
-    "consensus document",
-    "expert consensus",
-    "recommendations"
-  ];
-
-  if (
-    includesAny(
-      searchableText,
-      guidelineWords
-    )
-  ) {
-    return "module-guideline";
+  if (isImaging) {
+    return {
+      className: "module-imaging",
+      categoryLabel: "Imaging"
+    };
   }
 
 
-  /*
-   * Cardiac imaging modules.
-   */
-
-  const imagingWords = [
-    "cardiac imaging",
-    "multimodality imaging",
-    "echocardiography",
-    "echocardiogram",
-    "transesophageal echo",
-    "transthoracic echo",
-    "stress echo",
-    "cardiac ultrasound",
-    "cardiac ct",
-    "coronary ct",
-    "ct coronary",
-    "ct angiography",
-    "cardiac mri",
-    "cardiac magnetic resonance",
-    "cmr",
-    "nuclear cardiology",
-    "myocardial perfusion imaging",
-    "intravascular imaging",
-    "ivus",
-    "optical coherence tomography",
-    "oct imaging"
-  ];
-
-  if (
-    includesAny(
-      searchableText,
-      imagingWords
-    )
-  ) {
-    return "module-imaging";
+  if (isIntervention) {
+    return {
+      className: "module-intervention",
+      categoryLabel: "Interventional Cardiology"
+    };
   }
 
 
-  /*
-   * Interventional cardiology modules.
-   */
-
-  const interventionWords = [
-    "intervention",
-    "interventional",
-    "primary pci",
-    "ppci",
-    "coronary pci",
-    "percutaneous coronary",
-    "coronary intervention",
-    "cath lab",
-    "catheterization",
-    "bifurcation pci",
-    "left main pci",
-    "cto pci",
-    "chronic total occlusion",
-    "calcified coronary",
-    "stent",
-    "rotablation",
-    "atherectomy",
-    "intravascular lithotripsy",
-    "tavi",
-    "tavr",
-    "structural heart",
-    "device closure",
-    "asd closure",
-    "vsd closure",
-    "pda closure",
-    "mitral intervention",
-    "aortic intervention",
-    "transcatheter"
-  ];
-
-  if (
-    includesAny(
-      searchableText,
-      interventionWords
-    )
-  ) {
-    return "module-intervention";
-  }
-
-  return "module-general";
+  return {
+    className: "module-general",
+    categoryLabel: "General Cardiology"
+  };
 }
 
 
@@ -285,6 +169,7 @@ function withinSchedule(module) {
   const now =
     Date.now();
 
+
   if (
     module.opens_at &&
     now <
@@ -295,6 +180,7 @@ function withinSchedule(module) {
     return false;
   }
 
+
   if (
     module.closes_at &&
     now >
@@ -304,6 +190,7 @@ function withinSchedule(module) {
   ) {
     return false;
   }
+
 
   return true;
 }
@@ -326,6 +213,7 @@ function accessDecision(
     };
   }
 
+
   if (
     !withinSchedule(module)
   ) {
@@ -335,6 +223,7 @@ function accessDecision(
         new Date(
           module.opens_at
         ).getTime();
+
 
     if (opensLater) {
       return {
@@ -347,6 +236,7 @@ function accessDecision(
       };
     }
 
+
     return {
       state: "locked",
       label: "Closed",
@@ -354,6 +244,7 @@ function accessDecision(
         "The access window has closed."
     };
   }
+
 
   if (
     module.access_type ===
@@ -369,6 +260,7 @@ function accessDecision(
         "This module requires administrator assignment."
     };
   }
+
 
   if (
     module.access_type ===
@@ -390,6 +282,7 @@ function accessDecision(
     };
   }
 
+
   if (
     module.access_type ===
     "passcode"
@@ -402,6 +295,7 @@ function accessDecision(
     };
   }
 
+
   if (
     !module.launch_path
   ) {
@@ -412,6 +306,7 @@ function accessDecision(
         "Educational content will be available soon."
     };
   }
+
 
   return {
     state: "open",
@@ -435,13 +330,16 @@ function moduleCard(
       module.id
     );
 
+
   const completed =
     progress?.status ===
     "completed";
 
+
   const inProgress =
     progress?.status ===
     "in_progress";
+
 
   const actionLabel =
     inProgress
@@ -450,12 +348,18 @@ function moduleCard(
         ? "Review / retry"
         : decision.label;
 
+
   const href =
     decision.state === "open"
       ? escapeHtml(
           module.launch_path
         )
       : "#";
+
+
+  const theme =
+    getModuleTheme(module);
+
 
   const coverStyle =
     module.cover_image_url
@@ -474,14 +378,12 @@ function moduleCard(
       `
       : "";
 
-  const theme =
-    getModuleTheme(module);
 
   return `
     <article
       class="
         module-card
-        ${theme}
+        ${theme.className}
         ${escapeHtml(decision.state)}
         ${
           module.is_featured
@@ -498,10 +400,10 @@ function moduleCard(
 
         <span class="module-category">
           ${escapeHtml(
-            module.category ||
-            "Cardiology"
+            theme.categoryLabel
           )}
         </span>
+
 
         ${
           module.is_featured
@@ -525,6 +427,7 @@ function moduleCard(
               module.title
             )}
           </h2>
+
 
           ${
             module.difficulty
@@ -570,6 +473,7 @@ function moduleCard(
             min
           </span>
 
+
           <span>
             ❓
             ${Number(
@@ -593,6 +497,7 @@ function moduleCard(
               `
               : ""
           }
+
 
           ${
             module.competition_mode_enabled
@@ -619,6 +524,7 @@ function moduleCard(
                       : "Completed"
                   }
                 </span>
+
 
                 <strong>
                   ${Number(
@@ -690,13 +596,16 @@ async function loadCatalogue() {
       "login.html"
     );
 
+
   if (!profile) {
     return;
   }
 
+
   setStatus(
     "Loading your ACL catalogue…"
   );
+
 
   try {
     const [
@@ -704,6 +613,7 @@ async function loadCatalogue() {
       assignmentResult,
       attemptResult
     ] = await Promise.all([
+
       supabaseClient
         .from("modules")
         .select("*")
@@ -720,6 +630,7 @@ async function loadCatalogue() {
           }
         ),
 
+
       supabaseClient
         .from("module_assignments")
         .select(
@@ -729,6 +640,7 @@ async function loadCatalogue() {
           "user_id",
           profile.id
         ),
+
 
       supabaseClient
         .from("quiz_attempts")
@@ -745,7 +657,9 @@ async function loadCatalogue() {
             ascending: false
           }
         )
+
     ]);
+
 
     if (
       moduleResult.error
@@ -753,11 +667,13 @@ async function loadCatalogue() {
       throw moduleResult.error;
     }
 
+
     if (
       assignmentResult.error
     ) {
       throw assignmentResult.error;
     }
+
 
     if (
       attemptResult.error
@@ -765,17 +681,21 @@ async function loadCatalogue() {
       throw attemptResult.error;
     }
 
+
     const modules =
       moduleResult.data ||
       [];
+
 
     const assignments =
       assignmentResult.data ||
       [];
 
+
     const attempts =
       attemptResult.data ||
       [];
+
 
     const assignedIds =
       new Set(
@@ -793,6 +713,7 @@ async function loadCatalogue() {
               assignment.module_id
           )
       );
+
 
     const totalScore =
       attempts
@@ -814,8 +735,10 @@ async function loadCatalogue() {
           0
         );
 
+
     const progressMap =
       new Map();
+
 
     for (
       const attemptItem of
@@ -833,6 +756,7 @@ async function loadCatalogue() {
       }
     }
 
+
     if (
       !modules.length
     ) {
@@ -842,13 +766,18 @@ async function loadCatalogue() {
         </div>
       `;
 
-      summary.textContent =
-        "0 modules";
+
+      if (summary) {
+        summary.textContent =
+          "0 modules";
+      }
+
 
       setStatus("");
 
       return;
     }
+
 
     grid.innerHTML =
       modules
@@ -868,25 +797,32 @@ async function loadCatalogue() {
         )
         .join("");
 
-    summary.textContent =
-      `${modules.length} module${
-        modules.length === 1
-          ? ""
-          : "s"
-      } · ${totalScore} accumulated quiz points`;
+
+    if (summary) {
+      summary.textContent =
+        `${modules.length} module${
+          modules.length === 1
+            ? ""
+            : "s"
+        } · ${totalScore} accumulated quiz points`;
+    }
+
 
     setStatus("");
+
   } catch (error) {
     console.error(
       "Module catalogue failed:",
       error
     );
 
+
     grid.innerHTML = `
       <div class="empty-state">
         The module catalogue could not be loaded.
       </div>
     `;
+
 
     setStatus(
       error.message ||
