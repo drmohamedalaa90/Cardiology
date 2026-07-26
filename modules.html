@@ -1,10 +1,193 @@
-<!doctype html><html lang="en"><head>
-<meta name="referrer" content="strict-origin-when-cross-origin"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Modules | ACL</title>
-<link rel="stylesheet" href="assets/css/main.css?v=2.7.11"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header class="topbar"><a class="brand brand-link" href="modules.html" aria-label="ACL Expert Edition home">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container modules-page">
-<section class="catalogue-hero"><div><span class="admin-kicker">ACL LEARNING CATALOGUE</span><h1>Choose your next challenge</h1><p>Learning and competition modules are now controlled directly from the ACL database.</p></div><div id="catalogueSummary" class="catalogue-summary">Loading…</div></section>
-<div id="modulesStatus" class="status-box" hidden></div>
-<section id="modulesGrid" class="module-catalogue-grid" aria-live="polite"><div class="empty-state">Loading modules…</div></section>
-<section class="card"><h2>Official ACL Competitions</h2><p class="muted">Enter upcoming and live league rounds.</p><a class="primary-btn" href="competitions.html">Open Competitions</a></section></main>
-<script type="module" src="assets/js/modules.js?v=2.7.3"></script><script type="module" src="assets/js/session-ui.js?v=2.7.10"></script></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    Modules | ACL Expert Edition
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=2.7.12"
+  >
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+
+<body>
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <header class="topbar">
+
+    <a
+      class="brand brand-link"
+      href="modules.html"
+      aria-label="ACL Expert Edition home"
+    >
+      Alexandria Cardiology League;
+      <b>THE EXPERT EDITION</b>
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open my profile"
+      ></a>
+
+      <a
+        class="nav-btn"
+        href="modules.html"
+        aria-current="page"
+      >
+        Modules
+      </a>
+
+      <a
+        class="nav-btn"
+        href="progress.html"
+      >
+        My Progress
+      </a>
+
+      <button
+        class="nav-btn"
+        type="button"
+        onclick="aclSignOut()"
+      >
+        Sign Out
+      </button>
+
+    </nav>
+
+  </header>
+
+
+  <!-- =====================================================
+       MODULE CATALOGUE
+  ====================================================== -->
+
+  <main class="container modules-page">
+
+    <section class="catalogue-hero">
+
+      <div>
+
+        <span class="admin-kicker">
+          ACL Learning Catalogue
+        </span>
+
+        <h1>
+          Choose your next challenge
+        </h1>
+
+      </div>
+
+
+      <div
+        id="catalogueSummary"
+        class="catalogue-summary"
+        aria-live="polite"
+      >
+        Loading catalogue…
+      </div>
+
+    </section>
+
+
+    <!-- Status messages -->
+
+    <div
+      id="modulesStatus"
+      class="status-box"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <!-- Modules rendered from Supabase -->
+
+    <section
+      id="modulesGrid"
+      class="module-catalogue-grid"
+      aria-label="Available ACL modules"
+      aria-live="polite"
+    >
+
+      <div class="empty-state">
+        Loading modules…
+      </div>
+
+    </section>
+
+
+    <!-- Official competitions -->
+
+    <section class="card competitions-card">
+
+      <div>
+
+        <span class="admin-kicker">
+          ACL Competitions
+        </span>
+
+        <h2>
+          Official ACL Competitions
+        </h2>
+
+        <p class="muted">
+          Enter upcoming and live Alexandria Cardiology League rounds.
+        </p>
+
+      </div>
+
+
+      <a
+        class="primary-btn"
+        href="competitions.html"
+      >
+        Open Competitions
+      </a>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       JAVASCRIPT
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="assets/js/modules.js?v=2.7.4"
+  ></script>
+
+  <script
+    type="module"
+    src="assets/js/session-ui.js?v=2.7.10"
+  ></script>
+
+</body>
+
+</html>
