@@ -155,7 +155,7 @@ function appState() {
       index,
 
     answers,
-
+    lifelinesState,
     score:
       answers.reduce(
         (
@@ -308,6 +308,326 @@ function optionsFor(
   }
 
   return question._options;
+}
+/* =========================================================
+   SCIENTIFIC LIFELINES / THE EXPERT PANEL HELPERS
+========================================================= */
+
+function defaultQuestionLifelines() {
+  return {
+    expert: false,
+    filter: false,
+    guideline: false,
+    vault: false,
+    eliminatedOptionIds: []
+  };
+}
+
+
+function lifelinesForQuestion(
+  question
+) {
+  if (!question) {
+    return defaultQuestionLifelines();
+  }
+
+  if (
+    !lifelinesState[
+      question.id
+    ]
+  ) {
+    lifelinesState[
+      question.id
+    ] =
+      defaultQuestionLifelines();
+  }
+
+  return lifelinesState[
+    question.id
+  ];
+}
+
+
+function updateQuestionLifelines(
+  question,
+  changes = {}
+) {
+  if (!question) {
+    return;
+  }
+
+  const current =
+    lifelinesForQuestion(
+      question
+    );
+
+  lifelinesState[
+    question.id
+  ] = {
+    ...current,
+    ...changes
+  };
+}
+
+
+function lifelineUsedCount(
+  question
+) {
+  const state =
+    lifelinesForQuestion(
+      question
+    );
+
+  return [
+    state.expert,
+    state.filter,
+    state.guideline,
+    state.vault
+  ].filter(Boolean).length;
+}
+
+
+function lifelineIsUsed(
+  question,
+  lifeline
+) {
+  const state =
+    lifelinesForQuestion(
+      question
+    );
+
+  return Boolean(
+    state[lifeline]
+  );
+}
+
+
+function markLifelineUsed(
+  question,
+  lifeline
+) {
+  if (
+    !question ||
+    !lifeline
+  ) {
+    return;
+  }
+
+  updateQuestionLifelines(
+    question,
+    {
+      [lifeline]: true
+    }
+  );
+}
+
+
+function lifelineResponseElement() {
+  return $(
+    "scientificLifelineResponse"
+  );
+}
+
+
+function hideLifelineResponse() {
+  const response =
+    lifelineResponseElement();
+
+  if (!response) {
+    return;
+  }
+
+  response.hidden =
+    true;
+
+  response.innerHTML =
+    "";
+}
+
+
+function showLifelineResponse({
+  icon = "🩺",
+  title = "Scientific Lifeline",
+  message = ""
+} = {}) {
+  const response =
+    lifelineResponseElement();
+
+  if (!response) {
+    return;
+  }
+
+  response.innerHTML = `
+    <div class="scientific-lifeline-response-head">
+
+      <span
+        class="scientific-lifeline-response-icon"
+        aria-hidden="true"
+      >
+        ${esc(icon)}
+      </span>
+
+      <h4>
+        ${esc(title)}
+      </h4>
+
+    </div>
+
+    <p>
+      ${esc(message)}
+    </p>
+  `;
+
+  response.hidden =
+    false;
+
+  response.scrollIntoView({
+    behavior:
+      "smooth",
+
+    block:
+      "nearest"
+  });
+}
+
+
+function expertHintFor(
+  question
+) {
+  return (
+    question.expert_hint ||
+    question.expertHint ||
+    question.dr_corazon_hint ||
+    question.drCorazonHint ||
+    question.hint ||
+    "Focus on the central clinical decision in the question. Identify the most important finding, then compare each option with the relevant guideline principle."
+  );
+}
+
+
+function guidelineHintFor(
+  question
+) {
+  return (
+    question.guideline_hint ||
+    question.guidelineHint ||
+    question.guideline_clue ||
+    question.guidelineClue ||
+    question.reference_text ||
+    question.referenceText ||
+    "Recall the principal guideline recommendation, including the relevant indication, threshold, timing, contraindication, or treatment priority."
+  );
+}
+
+
+function randomItems(
+  items,
+  count
+) {
+  const pool =
+    [...items];
+
+  const selected =
+    [];
+
+  while (
+    pool.length &&
+    selected.length <
+      count
+  ) {
+    const randomIndex =
+      Math.floor(
+        Math.random() *
+        pool.length
+      );
+
+    selected.push(
+      pool.splice(
+        randomIndex,
+        1
+      )[0]
+    );
+  }
+
+  return selected;
+}
+
+
+function eligibleIncorrectOptions(
+  question,
+  correctOptionIds = []
+) {
+  const selectedCorrectIds =
+    new Set(
+      (
+        correctOptionIds ||
+        []
+      ).map(String)
+    );
+
+  return optionsFor(
+    question
+  ).filter(
+    (option) =>
+      !selectedCorrectIds.has(
+        String(option.id)
+      )
+  );
+}
+
+
+function setEliminatedOptions(
+  question,
+  optionIds
+) {
+  updateQuestionLifelines(
+    question,
+    {
+      eliminatedOptionIds:
+        (
+          optionIds ||
+          []
+        ).map(String)
+    }
+  );
+}
+
+
+function eliminatedOptionsFor(
+  question
+) {
+  return (
+    lifelinesForQuestion(
+      question
+    ).eliminatedOptionIds ||
+    []
+  ).map(String);
+}
+
+
+function resetAllLifelines() {
+  lifelinesState =
+    {};
+}
+
+
+function restoreLifelinesState(
+  storedState
+) {
+  if (
+    storedState &&
+    typeof storedState ===
+      "object" &&
+    !Array.isArray(
+      storedState
+    )
+  ) {
+    lifelinesState =
+      storedState;
+  } else {
+    lifelinesState =
+      {};
+  }
 }
 
 
@@ -1373,6 +1693,7 @@ async function startNewAttempt() {
 
     reviewMode =
       false;
+    resetAllLifelines();
 
     attempt =
       await createAttempt({
@@ -1594,13 +1915,19 @@ document.addEventListener(
           0
         );
 
-      answers =
+           answers =
         attempt.answers ||
         [];
 
+      restoreLifelinesState(
+        attempt.lifelines_state ||
+        attempt.lifelinesState ||
+        {}
+      );
+
       setStatus(
         "Unfinished learning attempt restored"
-      );
+        );
     } else {
       attempt =
         await createAttempt({
