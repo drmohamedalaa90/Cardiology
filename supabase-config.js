@@ -1,3 +1,3 @@
-const SUPABASE_URL = "https://zcuseloltsmzohpwmnvo.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_YJNKDMu-fbyGMLUT46uUkg_IULOVaZH";
+const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE";
 const QUIZ_SLUG = "acl-expert-edition-demo-step-3";
