@@ -68,6 +68,19 @@ let attempt = null;
 let saving = false;
 let reviewMode = false;
 
+/* =========================================================
+   SCIENTIFIC LIFELINES / THE EXPERT PANEL
+========================================================= */
+
+const LIFELINES = {
+  expert: "expert",
+  filter: "filter",
+  guideline: "guideline",
+  vault: "vault"
+};
+
+let lifelinesState = {};
+
 
 /* =========================================================
    GENERAL HELPERS
