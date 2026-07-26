@@ -4127,3 +4127,221 @@ body.acl-drawer-open {
     font-size: 9.5px !important;
   }
 }
+/* =========================================================
+   ACL MODULE CARDS — COMPLETE CATEGORY COLOR CONSISTENCY
+========================================================= */
+
+/* Shared action button */
+
+.module-card .module-action {
+  border: 0 !important;
+
+  color: #ffffff !important;
+
+  font-weight: 900 !important;
+
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease,
+    box-shadow 0.16s ease !important;
+}
+
+.module-card .module-action:hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.06) !important;
+}
+
+
+/* ---------------------------------------------------------
+   INTERVENTIONAL CARDIOLOGY — RED
+--------------------------------------------------------- */
+
+.module-card.module-intervention {
+  border-color: #e48686 !important;
+}
+
+.module-card.module-intervention .module-cover {
+  background:
+    linear-gradient(
+      110deg,
+      #9c2532,
+      #db4c4c
+    ) !important;
+}
+
+.module-card.module-intervention .module-category {
+  background: #ffe1e1 !important;
+  color: #8b202b !important;
+  border-color: #f1b5b5 !important;
+}
+
+.module-card.module-intervention .module-action {
+  background:
+    linear-gradient(
+      105deg,
+      #a92735,
+      #df4b4b
+    ) !important;
+
+  box-shadow:
+    0 9px 20px
+    rgba(180, 42, 53, 0.19) !important;
+}
+
+.module-card.module-intervention .module-action.disabled {
+  background: #c98589 !important;
+  color: #ffffff !important;
+}
+
+
+/* ---------------------------------------------------------
+   ELECTROCARDIOGRAPHY — YELLOW
+--------------------------------------------------------- */
+
+.module-card.module-ecg {
+  border-color: #e7b900 !important;
+}
+
+.module-card.module-ecg .module-cover {
+  background:
+    linear-gradient(
+      110deg,
+      #b48700,
+      #e5b500
+    ) !important;
+}
+
+.module-card.module-ecg .module-category {
+  background: #fff3b7 !important;
+  color: #644900 !important;
+  border-color: #f8dc61 !important;
+}
+
+.module-card.module-ecg .module-action {
+  background:
+    linear-gradient(
+      105deg,
+      #bc8d00,
+      #e9b900
+    ) !important;
+
+  color: #17263a !important;
+
+  box-shadow:
+    0 9px 20px
+    rgba(202, 157, 0, 0.2) !important;
+}
+
+.module-card.module-ecg .module-action.disabled {
+  background: #d7bd69 !important;
+  color: #453600 !important;
+}
+
+
+/* ---------------------------------------------------------
+   GENERAL CARDIOLOGY — BLUE
+--------------------------------------------------------- */
+
+.module-card.module-guideline,
+.module-card.module-general {
+  border-color: #69afe5 !important;
+}
+
+.module-card.module-guideline .module-cover,
+.module-card.module-general .module-cover {
+  background:
+    linear-gradient(
+      110deg,
+      #15599a,
+      #2e86d4
+    ) !important;
+}
+
+.module-card.module-guideline .module-category,
+.module-card.module-general .module-category {
+  background: #ddecff !important;
+  color: #073b78 !important;
+  border-color: #add1f2 !important;
+}
+
+.module-card.module-guideline .module-action,
+.module-card.module-general .module-action {
+  background:
+    linear-gradient(
+      105deg,
+      #075fc5,
+      #1784e5
+    ) !important;
+
+  box-shadow:
+    0 9px 20px
+    rgba(20, 105, 194, 0.19) !important;
+}
+
+.module-card.module-guideline .module-action.disabled,
+.module-card.module-general .module-action.disabled {
+  background: #829bb4 !important;
+  color: #ffffff !important;
+}
+
+
+/* ---------------------------------------------------------
+   IMAGING — GREEN
+--------------------------------------------------------- */
+
+.module-card.module-imaging {
+  border-color: #72c89c !important;
+}
+
+.module-card.module-imaging .module-cover {
+  background:
+    linear-gradient(
+      110deg,
+      #176447,
+      #32b978
+    ) !important;
+}
+
+.module-card.module-imaging .module-category {
+  background: #ddf5e8 !important;
+  color: #176547 !important;
+  border-color: #a6ddbf !important;
+}
+
+.module-card.module-imaging .module-action {
+  background:
+    linear-gradient(
+      105deg,
+      #18714f,
+      #30bc77
+    ) !important;
+
+  box-shadow:
+    0 9px 20px
+    rgba(36, 143, 93, 0.18) !important;
+}
+
+.module-card.module-imaging .module-action.disabled {
+  background: #7eae97 !important;
+  color: #ffffff !important;
+}
+
+
+/* Keep the lower strip consistent with the module theme */
+
+.module-card.module-intervention .module-card-body {
+  border-bottom: 5px solid #d94b4b !important;
+}
+
+.module-card.module-ecg .module-card-body {
+  border-bottom: 5px solid #e5b500 !important;
+}
+
+.module-card.module-guideline .module-card-body,
+.module-card.module-general .module-card-body {
+  border-bottom: 5px solid #2d80d3 !important;
+}
+
+.module-card.module-imaging .module-card-body {
+  border-bottom: 5px solid #30bf78 !important;
+}
