@@ -2,12 +2,12 @@
 <html lang="en">
 
 <head>
+  <meta charset="utf-8">
+
   <meta
     name="referrer"
     content="strict-origin-when-cross-origin"
   >
-
-  <meta charset="utf-8">
 
   <meta
     name="viewport"
@@ -20,7 +20,7 @@
 
   <link
     rel="stylesheet"
-    href="assets/css/main.css?v=2.7.12"
+    href="assets/css/main.css?v=2.8.5"
   >
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -31,6 +31,9 @@
 
   <!-- =====================================================
        HEADER
+
+       session-ui.js transforms this fallback header into the
+       unified rolling ACL header with centered icon navigation.
   ====================================================== -->
 
   <header class="topbar">
@@ -54,6 +57,7 @@
         aria-label="Open my profile"
       ></a>
 
+
       <a
         class="nav-btn"
         href="modules.html"
@@ -62,12 +66,14 @@
         Modules
       </a>
 
+
       <a
         class="nav-btn"
         href="progress.html"
       >
         My Progress
       </a>
+
 
       <button
         class="nav-btn"
@@ -176,16 +182,14 @@
 
   <!-- =====================================================
        JAVASCRIPT
+
+       modules.js imports session-ui.js internally.
+       Do not add a separate session-ui.js script here.
   ====================================================== -->
 
   <script
     type="module"
-    src="assets/js/modules.js?v=2.7.5"
-  ></script>
-
-  <script
-    type="module"
-    src="assets/js/session-ui.js?v=2.7.10"
+    src="assets/js/modules.js?v=2.8.1"
   ></script>
 
 </body>
