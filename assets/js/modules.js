@@ -146,7 +146,7 @@ function moduleCard(module, decision, progressMap) {
   const actionLabel = inProgress ? "Continue module" : completed ? "Review / retry" : decision.label;
   const href = decision.state === "open" ? escapeHtml(module.launch_path) : "#";
   const coverStyle = module.cover_image_url ? `style="background-image:linear-gradient(135deg,rgba(4,26,72,.65),rgba(0,86,128,.25)),url('${escapeHtml(module.cover_image_url)}')"` : "";
-  return `<article class="module-card ${decision.state} ${module.is_featured ? "featured" : ""}">
+  return `<article class="module-card ${getModuleTheme(module)} ${decision.state} ${module.is_featured ? "featured" : ""}">`
     <div class="module-cover" ${coverStyle}>
       <span class="module-category">${escapeHtml(module.category)}</span>
       ${module.is_featured ? '<span class="featured-badge">Featured</span>' : ""}
