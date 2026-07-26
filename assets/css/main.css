@@ -3827,30 +3827,163 @@ body.acl-drawer-open {
   background:
     #8298ac;
 }
-/* Keep rolling ACL name aligned with THE EXPERT EDITION */
+/* =========================================================
+   ACL HEADER — FINAL ROLLING-TITLE ALIGNMENT
+   Keeps ACL / Alexandria Cardiology League and
+   THE EXPERT EDITION on exactly the same visual line.
+========================================================= */
 
 .acl-unified-brand {
-  align-items: center !important;
-}
-
-.acl-brand-rolling-window {
-  display: inline-block !important;
-  vertical-align: middle !important;
-  transform: translateY(0.03em);
-}
-
-.acl-brand-rolling-track {
-  line-height: 1.15 !important;
-}
-
-.acl-brand-name {
-  align-items: center !important;
-  line-height: 1.15 !important;
-}
-
-.acl-brand-separator,
-.acl-expert-edition {
   display: inline-flex !important;
   align-items: center !important;
-  line-height: 1.15 !important;
+  justify-content: center !important;
+
+  gap: 7px !important;
+
+  line-height: 1 !important;
+}
+
+
+/* Fixed shared line box */
+
+.acl-brand-rolling-window,
+.acl-brand-separator,
+.acl-expert-edition {
+  height: 1.2em !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+
+  line-height: 1.2em !important;
+
+  vertical-align: middle !important;
+}
+
+
+/* Rolling viewport */
+
+.acl-brand-rolling-window {
+  position: relative !important;
+
+  overflow: hidden !important;
+
+  transform: none !important;
+}
+
+
+/* Two perfectly equal animation rows */
+
+.acl-brand-rolling-track {
+  position: absolute !important;
+
+  top: 0 !important;
+  left: 0 !important;
+
+  display: grid !important;
+
+  grid-template-rows:
+    1.2em
+    1.2em !important;
+
+  width: 100% !important;
+
+  line-height: 1.2em !important;
+
+  animation:
+    acl-brand-roll-final
+    10s
+    cubic-bezier(
+      0.7,
+      0,
+      0.3,
+      1
+    )
+    infinite !important;
+}
+
+
+/* Both rolling names use identical geometry */
+
+.acl-brand-name {
+  height: 1.2em !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  line-height: 1.2em !important;
+
+  white-space: nowrap !important;
+}
+
+
+/*
+ * Optical correction:
+ * the smaller full title naturally appears slightly higher,
+ * so this moves only that text fractionally downward.
+ */
+
+.acl-brand-full {
+  position: relative !important;
+
+  top: 0.075em !important;
+
+  line-height: 1 !important;
+}
+
+
+/* ACL stays naturally centered */
+
+.acl-brand-short {
+  position: relative !important;
+
+  top: 0 !important;
+}
+
+
+/* Expert Edition shares the same centre line */
+
+.acl-expert-edition,
+.acl-brand-separator {
+  position: relative !important;
+
+  top: 0 !important;
+
+  padding: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+
+  line-height: 1.2em !important;
+}
+
+
+/* Exact one-row rolling distance */
+
+@keyframes acl-brand-roll-final {
+  0%,
+  42% {
+    transform: translateY(0);
+  }
+
+  50%,
+  92% {
+    transform: translateY(-1.2em);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+
+/* Respect reduced-motion preferences */
+
+@media (prefers-reduced-motion: reduce) {
+  .acl-brand-rolling-track {
+    animation: none !important;
+    transform: translateY(0) !important;
+  }
 }
