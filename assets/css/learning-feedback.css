@@ -1608,3 +1608,640 @@ a:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+/* =========================================================
+   ACL LEARNING MODE THEME PACKAGE — VERSION 3.12.0
+
+   General Cardiology        → Blue
+   Interventional Cardiology → Red
+   Electrocardiography       → Yellow
+   Imaging                   → Green
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   DEFAULT THEME VARIABLES
+--------------------------------------------------------- */
+
+body {
+  --learning-theme-main: #2d80d3;
+  --learning-theme-dark: #073b78;
+  --learning-theme-soft: #eaf5ff;
+  --learning-theme-border: #8fc5ef;
+  --learning-theme-contrast: #ffffff;
+  --learning-theme-shadow:
+    rgba(45, 128, 211, 0.18);
+}
+
+
+/* General Cardiology */
+
+body.learning-theme-general {
+  --learning-theme-main: #2d80d3;
+  --learning-theme-dark: #073b78;
+  --learning-theme-soft: #eaf5ff;
+  --learning-theme-border: #8fc5ef;
+  --learning-theme-contrast: #ffffff;
+  --learning-theme-shadow:
+    rgba(45, 128, 211, 0.2);
+}
+
+
+/* Interventional Cardiology */
+
+body.learning-theme-intervention {
+  --learning-theme-main: #d94b4b;
+  --learning-theme-dark: #8d2430;
+  --learning-theme-soft: #fff0f0;
+  --learning-theme-border: #e59a9a;
+  --learning-theme-contrast: #ffffff;
+  --learning-theme-shadow:
+    rgba(199, 55, 66, 0.2);
+}
+
+
+/* Electrocardiography */
+
+body.learning-theme-ecg {
+  --learning-theme-main: #e3ad00;
+  --learning-theme-dark: #725300;
+  --learning-theme-soft: #fff7d2;
+  --learning-theme-border: #e8c34f;
+  --learning-theme-contrast: #17263a;
+  --learning-theme-shadow:
+    rgba(210, 165, 0, 0.22);
+}
+
+
+/* Imaging */
+
+body.learning-theme-imaging {
+  --learning-theme-main: #30ae70;
+  --learning-theme-dark: #176547;
+  --learning-theme-soft: #ebf9f1;
+  --learning-theme-border: #83cfaa;
+  --learning-theme-contrast: #ffffff;
+  --learning-theme-shadow:
+    rgba(37, 157, 98, 0.2);
+}
+
+
+/* =========================================================
+   LEARNING STAGE
+========================================================= */
+
+.learning-stage {
+  position: relative !important;
+
+  min-height: 235px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  margin:
+    22px
+    0
+    25px !important;
+
+  padding:
+    72px
+    28px
+    34px !important;
+
+  overflow: hidden !important;
+
+  border:
+    2px solid
+    var(--learning-theme-border) !important;
+
+  border-radius:
+    25px !important;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      var(--learning-theme-soft),
+      transparent 44%
+    ),
+    linear-gradient(
+      135deg,
+      #ffffff,
+      var(--learning-theme-soft)
+    ) !important;
+
+  box-shadow:
+    0 18px 44px
+    var(--learning-theme-shadow) !important;
+
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease !important;
+}
+
+
+/* Upper themed line */
+
+.learning-stage::before {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: 8px;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--learning-theme-dark),
+      var(--learning-theme-main)
+    );
+}
+
+
+/* Decorative background circle */
+
+.learning-stage::after {
+  content: "";
+
+  position: absolute;
+
+  right: -55px;
+  bottom: -85px;
+
+  width: 220px;
+  height: 220px;
+
+  border-radius: 50%;
+
+  background:
+    var(--learning-theme-soft);
+
+  opacity: 0.85;
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   MODULE NAME — UPPER LEFT
+========================================================= */
+
+.learning-module-corner {
+  position: absolute !important;
+
+  top: 22px !important;
+  left: 24px !important;
+
+  z-index: 2 !important;
+
+  max-width:
+    min(
+      470px,
+      calc(100% - 48px)
+    ) !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 12px !important;
+
+  padding:
+    11px
+    17px !important;
+
+  border:
+    2px solid
+    var(--learning-theme-border) !important;
+
+  border-radius:
+    14px !important;
+
+  background:
+    var(--learning-theme-soft) !important;
+
+  box-shadow:
+    0 8px 22px
+    var(--learning-theme-shadow) !important;
+}
+
+
+.learning-module-corner span {
+  flex: 0 0 auto;
+
+  color:
+    var(--learning-theme-dark) !important;
+
+  font-size:
+    11px !important;
+
+  font-weight:
+    950 !important;
+
+  text-transform:
+    uppercase !important;
+
+  letter-spacing:
+    0.8px !important;
+}
+
+
+.learning-module-corner strong {
+  min-width: 0;
+
+  overflow: hidden;
+
+  color:
+    var(--learning-theme-dark) !important;
+
+  font-size:
+    clamp(
+      16px,
+      2vw,
+      21px
+    ) !important;
+
+  line-height:
+    1.15 !important;
+
+  text-overflow:
+    ellipsis !important;
+
+  white-space:
+    nowrap !important;
+}
+
+
+/* =========================================================
+   QUIZ TITLE BANNER
+========================================================= */
+
+.learning-quiz-banner {
+  position: relative !important;
+
+  z-index: 2 !important;
+
+  width:
+    min(
+      800px,
+      100%
+    ) !important;
+
+  margin:
+    10px
+    auto
+    0 !important;
+
+  padding:
+    28px
+    32px
+    25px !important;
+
+  overflow:
+    hidden !important;
+
+  border:
+    3px solid
+    var(--learning-theme-main) !important;
+
+  border-radius:
+    24px !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.96
+    ) !important;
+
+  text-align:
+    center !important;
+
+  box-shadow:
+    0 17px 40px
+    var(--learning-theme-shadow) !important;
+}
+
+
+/* Colored upper banner line */
+
+.learning-quiz-banner::before {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: 7px;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--learning-theme-dark),
+      var(--learning-theme-main)
+    );
+}
+
+
+/* Decorative corner */
+
+.learning-quiz-banner::after {
+  content: "";
+
+  position: absolute;
+
+  right: -30px;
+  bottom: -40px;
+
+  width: 115px;
+  height: 115px;
+
+  border-radius: 50%;
+
+  background:
+    var(--learning-theme-soft);
+
+  pointer-events: none;
+}
+
+
+.learning-mode-label {
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  display:
+    inline-flex !important;
+
+  align-items:
+    center !important;
+
+  min-height:
+    31px !important;
+
+  margin-bottom:
+    11px !important;
+
+  padding:
+    6px
+    14px !important;
+
+  border-radius:
+    999px !important;
+
+  background:
+    var(--learning-theme-soft) !important;
+
+  color:
+    var(--learning-theme-dark) !important;
+
+  font-size:
+    11px !important;
+
+  font-weight:
+    950 !important;
+
+  text-transform:
+    uppercase !important;
+
+  letter-spacing:
+    1.5px !important;
+}
+
+
+.learning-quiz-banner h1 {
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  margin:
+    0 !important;
+
+  color:
+    var(--learning-theme-dark) !important;
+
+  font-size:
+    clamp(
+      30px,
+      4vw,
+      48px
+    ) !important;
+
+  line-height:
+    1.1 !important;
+}
+
+
+.quiz-banner-decoration {
+  position:
+    relative;
+
+  z-index:
+    2;
+}
+
+
+.quiz-banner-decoration span {
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      var(--learning-theme-main)
+    ) !important;
+}
+
+
+.quiz-banner-decoration span:last-child {
+  background:
+    linear-gradient(
+      90deg,
+      var(--learning-theme-main),
+      transparent
+    ) !important;
+}
+
+
+.quiz-banner-decoration i {
+  background:
+    var(--learning-theme-main) !important;
+
+  box-shadow:
+    0 0 0 5px
+    var(--learning-theme-soft) !important;
+}
+
+
+/* =========================================================
+   QUESTION AREA THEME
+========================================================= */
+
+.learning-progress span {
+  background:
+    linear-gradient(
+      90deg,
+      var(--learning-theme-dark),
+      var(--learning-theme-main)
+    ) !important;
+}
+
+
+.learning-topic {
+  background:
+    var(--learning-theme-soft) !important;
+
+  color:
+    var(--learning-theme-dark) !important;
+}
+
+
+.clinical-scenario {
+  border-left-color:
+    var(--learning-theme-main) !important;
+
+  background:
+    var(--learning-theme-soft) !important;
+}
+
+
+.learning-option:hover,
+.learning-option.selected {
+  border-color:
+    var(--learning-theme-main) !important;
+
+  background:
+    var(--learning-theme-soft) !important;
+}
+
+
+.option-key {
+  background:
+    var(--learning-theme-dark) !important;
+}
+
+
+/* Main question button */
+
+.learning-actions .primary-btn {
+  border-color:
+    var(--learning-theme-main) !important;
+
+  background:
+    linear-gradient(
+      105deg,
+      var(--learning-theme-dark),
+      var(--learning-theme-main)
+    ) !important;
+
+  color:
+    var(--learning-theme-contrast) !important;
+
+  box-shadow:
+    0 10px 22px
+    var(--learning-theme-shadow) !important;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 620px) {
+  .learning-stage {
+    min-height:
+      250px !important;
+
+    margin-top:
+      14px !important;
+
+    padding:
+      82px
+      12px
+      22px !important;
+
+    border-radius:
+      19px !important;
+  }
+
+
+  .learning-module-corner {
+    top:
+      17px !important;
+
+    left:
+      12px !important;
+
+    right:
+      12px !important;
+
+    max-width:
+      none !important;
+
+    padding:
+      10px
+      12px !important;
+  }
+
+
+  .learning-module-corner span {
+    font-size:
+      9px !important;
+
+    letter-spacing:
+      0.45px !important;
+  }
+
+
+  .learning-module-corner strong {
+    font-size:
+      15px !important;
+  }
+
+
+  .learning-quiz-banner {
+    width:
+      100% !important;
+
+    padding:
+      23px
+      14px
+      21px !important;
+
+    border-width:
+      2px !important;
+
+    border-radius:
+      18px !important;
+  }
+
+
+  .learning-quiz-banner h1 {
+    font-size:
+      clamp(
+        25px,
+        7vw,
+        33px
+      ) !important;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .learning-stage,
+  .learning-quiz-banner {
+    transition: none !important;
+  }
+}
