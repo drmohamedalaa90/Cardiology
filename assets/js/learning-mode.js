@@ -36,8 +36,14 @@ const moduleId =
 const HAPPY_MASCOT =
   "assets/images/dr-corazon-happy.png";
 
+const GOOD_JOB_MASCOT =
+  "assets/images/dr-corazon-good-job.png";
+
 const SAD_MASCOT =
   "assets/images/dr-corazon-sad.png";
+
+const ANGRY_MASCOT =
+  "assets/images/dr-corazon-angry.png";
 
 let quiz = null;
 let questions = [];
@@ -612,11 +618,10 @@ function feedbackHtml(
         ? ""
         : "s"
     }`;
-
-  const mascot =
-    correct
-      ? HAPPY_MASCOT
-      : SAD_MASCOT;
+const mascot =
+  correct
+    ? GOOD_JOB_MASCOT
+    : SAD_MASCOT;
 
   const mascotAlt =
     correct
