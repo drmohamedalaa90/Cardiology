@@ -7,7 +7,111 @@ const summary = document.getElementById("catalogueSummary");
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]));
 const titleCase = value => String(value || "").replaceAll("_", " ").replace(/\b\w/g, x => x.toUpperCase());
+function getModuleTheme(module) {
+  const searchableText = [
+    module.title,
+    module.name,
+    module.description,
+    module.category,
+    module.topic
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
 
+  const imagingWords = [
+    "imaging",
+    "echocardiography",
+    "echocardiogram",
+    "echo",
+    "ultrasound",
+    "cardiac ct",
+    "ct coronary",
+    "cardiac mri",
+    "cmr",
+    "ivus",
+    "oct",
+    "intravascular imaging",
+    "nuclear cardiology"
+  ];
+
+  const interventionWords = [
+    "intervention",
+    "interventional",
+    "pci",
+    "primary pci",
+    "ppci",
+    "coronary intervention",
+    "cath lab",
+    "catheterization",
+    "bifurcation",
+    "left main",
+    "cto",
+    "calcified",
+    "stent",
+    "tavi",
+    "tavr",
+    "structural",
+    "device closure",
+    "mitral intervention",
+    "aortic intervention"
+  ];
+
+  const ecgWords = [
+    "ecg",
+    "electrocardiogram",
+    "electrocardiography",
+    "rhythm",
+    "arrhythmia",
+    "st segment",
+    "heart block"
+  ];
+
+  const guidelineWords = [
+    "guideline",
+    "guidelines",
+    "esc",
+    "acc",
+    "aha",
+    "eacts",
+    "consensus",
+    "recommendation"
+  ];
+
+  if (
+    imagingWords.some((word) =>
+      searchableText.includes(word)
+    )
+  ) {
+    return "module-imaging";
+  }
+
+  if (
+    interventionWords.some((word) =>
+      searchableText.includes(word)
+    )
+  ) {
+    return "module-intervention";
+  }
+
+  if (
+    ecgWords.some((word) =>
+      searchableText.includes(word)
+    )
+  ) {
+    return "module-ecg";
+  }
+
+  if (
+    guidelineWords.some((word) =>
+      searchableText.includes(word)
+    )
+  ) {
+    return "module-guideline";
+  }
+
+  return "module-general";
+}
 function setStatus(message, kind = "") {
   if (!stateBox) return;
   stateBox.textContent = message;
