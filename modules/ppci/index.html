@@ -743,6 +743,227 @@
     body.ppci-modal-open {
       overflow: hidden;
     }
+        /* =====================================================
+       ACL SETTINGS MODAL
+    ===================================================== */
+
+    .acl-settings-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 11000;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+    }
+
+    .acl-settings-modal[hidden] {
+      display: none;
+    }
+
+    .acl-settings-backdrop {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: rgba(6, 24, 42, 0.74);
+      backdrop-filter: blur(5px);
+      cursor: pointer;
+    }
+
+    .acl-settings-panel {
+      position: relative;
+      z-index: 1;
+      width: min(620px, 100%);
+      max-height: 90vh;
+      overflow: hidden;
+      border: 1px solid #d7e2ec;
+      border-radius: 24px;
+      background: #ffffff;
+      box-shadow:
+        0 28px 80px
+        rgba(0, 20, 40, 0.34);
+    }
+
+    .acl-settings-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 24px;
+      background:
+        linear-gradient(
+          120deg,
+          #8f2030,
+          #c74655
+        );
+      color: #ffffff;
+    }
+
+    .acl-settings-kicker {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.7rem;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      opacity: 0.84;
+    }
+
+    .acl-settings-head h2 {
+      margin: 0;
+      color: #ffffff;
+    }
+
+    .acl-settings-close {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      min-width: 40px;
+      height: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      font-size: 1.8rem;
+      cursor: pointer;
+    }
+
+    .acl-settings-body {
+      max-height: calc(90vh - 175px);
+      overflow-y: auto;
+      padding: 22px 24px;
+    }
+
+    .acl-settings-group + .acl-settings-group {
+      margin-top: 25px;
+      padding-top: 22px;
+      border-top: 1px solid #e3ebf1;
+    }
+
+    .acl-settings-group h3 {
+      margin: 0 0 6px;
+      color: #102f4d;
+    }
+
+    .acl-settings-description {
+      margin: 0 0 15px;
+      color: #61778a;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .acl-setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 58px;
+      padding: 10px 0;
+    }
+
+    .acl-setting-row + .acl-setting-row {
+      border-top: 1px solid #edf2f6;
+    }
+
+    .acl-setting-copy {
+      min-width: 0;
+    }
+
+    .acl-setting-copy strong {
+      display: block;
+      color: #173f67;
+    }
+
+    .acl-setting-copy small {
+      display: block;
+      margin-top: 3px;
+      color: #718496;
+      line-height: 1.35;
+    }
+
+    .acl-switch {
+      position: relative;
+      display: inline-flex;
+      width: 50px;
+      min-width: 50px;
+      height: 28px;
+      cursor: pointer;
+    }
+
+    .acl-switch input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .acl-switch-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #bac7d1;
+      transition:
+        background 0.18s ease;
+    }
+
+    .acl-switch-track::after {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow:
+        0 2px 6px
+        rgba(20, 39, 58, 0.2);
+      transition:
+        transform 0.18s ease;
+    }
+
+    .acl-switch input:checked +
+    .acl-switch-track {
+      background: #8f2030;
+    }
+
+    .acl-switch input:checked +
+    .acl-switch-track::after {
+      transform: translateX(22px);
+    }
+
+    .acl-switch input:disabled +
+    .acl-switch-track {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .acl-settings-status {
+      min-height: 22px;
+      margin-top: 14px;
+      color: #26764b;
+      font-size: 0.83rem;
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .acl-settings-status.error {
+      color: #a32635;
+    }
+
+    .acl-settings-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 16px 24px 22px;
+      border-top: 1px solid #e2eaf0;
+      background: #f8fbfd;
+    }
+
+    body.acl-settings-open {
+      overflow: hidden;
+    }
     @media (max-width: 760px) {
       .ppci-learning-shell {
         width: min(100% - 20px, 1050px);
@@ -814,6 +1035,31 @@
       }
 
       .ppci-flashcard-footer .primary-btn {
+        width: 100%;
+      }
+            .acl-settings-modal {
+        padding: 10px;
+      }
+
+      .acl-settings-panel {
+        max-height: 95vh;
+        border-radius: 18px;
+      }
+
+      .acl-settings-head {
+        padding: 18px;
+      }
+
+      .acl-settings-body {
+        max-height: calc(95vh - 170px);
+        padding: 18px;
+      }
+
+      .acl-settings-footer {
+        padding: 14px 18px 18px;
+      }
+
+      .acl-settings-footer .primary-btn {
         width: 100%;
       }
     }
@@ -1126,7 +1372,284 @@
     </section>
 
   </div>
+  <!-- =====================================================
+       ACL SETTINGS
+  ====================================================== -->
 
+  <div
+    id="aclSettingsModal"
+    class="acl-settings-modal"
+    hidden
+  >
+
+    <button
+      id="aclSettingsBackdrop"
+      class="acl-settings-backdrop"
+      type="button"
+      aria-label="Close settings"
+    ></button>
+
+
+    <section
+      class="acl-settings-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="aclSettingsTitle"
+    >
+
+      <div class="acl-settings-head">
+
+        <div>
+
+          <span class="acl-settings-kicker">
+            ACL EXPERT EDITION
+          </span>
+
+          <h2 id="aclSettingsTitle">
+            Settings
+          </h2>
+
+        </div>
+
+
+        <button
+          id="closeAclSettings"
+          class="acl-settings-close"
+          type="button"
+          aria-label="Close settings"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="acl-settings-body">
+
+        <section class="acl-settings-group">
+
+          <h3>
+            Confidence Answering
+          </h3>
+
+          <p class="acl-settings-description">
+            Choose whether confidence is requested after selecting an answer.
+          </p>
+
+
+          <div class="acl-setting-row">
+
+            <div class="acl-setting-copy">
+
+              <strong>
+                Enable Confidence Answering
+              </strong>
+
+              <small>
+                High and low confidence choices will affect the question score.
+              </small>
+
+            </div>
+
+
+            <label class="acl-switch">
+
+              <input
+                id="settingConfidence"
+                type="checkbox"
+              >
+
+              <span class="acl-switch-track"></span>
+
+            </label>
+
+          </div>
+
+        </section>
+
+
+        <section class="acl-settings-group">
+
+          <h3>
+            Scientific Lifelines
+          </h3>
+
+          <p class="acl-settings-description">
+            Control which scientific help methods appear during questions.
+          </p>
+
+
+          <div class="acl-setting-row">
+
+            <div class="acl-setting-copy">
+
+              <strong>
+                Enable all Scientific Lifelines
+              </strong>
+
+              <small>
+                The master switch hides or shows the complete Expert Panel.
+              </small>
+
+            </div>
+
+
+            <label class="acl-switch">
+
+              <input
+                id="settingLifelines"
+                type="checkbox"
+              >
+
+              <span class="acl-switch-track"></span>
+
+            </label>
+
+          </div>
+
+
+          <div class="acl-setting-row">
+
+            <div class="acl-setting-copy">
+
+              <strong>
+                Dr. Corazón
+              </strong>
+
+              <small>
+                Question-specific expert reasoning.
+              </small>
+
+            </div>
+
+
+            <label class="acl-switch">
+
+              <input
+                id="settingExpert"
+                type="checkbox"
+              >
+
+              <span class="acl-switch-track"></span>
+
+            </label>
+
+          </div>
+
+
+          <div class="acl-setting-row">
+
+            <div class="acl-setting-copy">
+
+              <strong>
+                Evidence Filter
+              </strong>
+
+              <small>
+                Removes two incorrect options.
+              </small>
+
+            </div>
+
+
+            <label class="acl-switch">
+
+              <input
+                id="settingFilter"
+                type="checkbox"
+              >
+
+              <span class="acl-switch-track"></span>
+
+            </label>
+
+          </div>
+
+
+          <div class="acl-setting-row">
+
+            <div class="acl-setting-copy">
+
+              <strong>
+                ESC Guideline
+              </strong>
+
+              <small>
+                Displays focused guideline guidance.
+              </small>
+
+            </div>
+
+
+            <label class="acl-switch">
+
+              <input
+                id="settingGuideline"
+                type="checkbox"
+              >
+
+              <span class="acl-switch-track"></span>
+
+            </label>
+
+          </div>
+
+
+          <div class="acl-setting-row">
+
+            <div class="acl-setting-copy">
+
+              <strong>
+                Knowledge Vault
+              </strong>
+
+              <small>
+                Opens the complete review flashcard.
+              </small>
+
+            </div>
+
+
+            <label class="acl-switch">
+
+              <input
+                id="settingVault"
+                type="checkbox"
+              >
+
+              <span class="acl-switch-track"></span>
+
+            </label>
+
+          </div>
+
+        </section>
+
+
+        <div
+          id="aclSettingsStatus"
+          class="acl-settings-status"
+          aria-live="polite"
+        ></div>
+
+      </div>
+
+
+      <div class="acl-settings-footer">
+
+        <button
+          id="saveAclSettings"
+          class="primary-btn"
+          type="button"
+        >
+          Save settings
+        </button>
+
+      </div>
+
+    </section>
+
+  </div>
   <script type="module">
 
     import {
@@ -1150,7 +1673,12 @@
     import {
       PPCI_QUESTIONS
     } from "./questions.js";
-
+import {
+  DEFAULT_ACL_SETTINGS,
+  getAclSettings,
+  saveAclSettings,
+  normalizeAclSettings
+} from "../../assets/js/user-settings.js";
 
     const MODULE_ID =
       "ppci-fundamentals";
@@ -1242,13 +1770,70 @@
       document.getElementById(
         "closePpciFlashcardBottom"
       );
+    const settingsModal =
+  document.getElementById(
+    "aclSettingsModal"
+  );
+
+const settingsBackdrop =
+  document.getElementById(
+    "aclSettingsBackdrop"
+  );
+
+const closeSettingsButton =
+  document.getElementById(
+    "closeAclSettings"
+  );
+
+const saveSettingsButton =
+  document.getElementById(
+    "saveAclSettings"
+  );
+
+const settingsStatus =
+  document.getElementById(
+    "aclSettingsStatus"
+  );
+
+const settingConfidence =
+  document.getElementById(
+    "settingConfidence"
+  );
+
+const settingLifelines =
+  document.getElementById(
+    "settingLifelines"
+  );
+
+const settingExpert =
+  document.getElementById(
+    "settingExpert"
+  );
+
+const settingFilter =
+  document.getElementById(
+    "settingFilter"
+  );
+
+const settingGuideline =
+  document.getElementById(
+    "settingGuideline"
+  );
+
+const settingVault =
+  document.getElementById(
+    "settingVault"
+  );
     let attempt = null;
     let engine = null;
     let saving = false;
     let expandedLifeline = null;
 
     let lifelinesState = {};
-
+let aclSettings =
+  normalizeAclSettings(
+    DEFAULT_ACL_SETTINGS
+  );
 
     function escapeHtml(
       value = ""
@@ -1279,7 +1864,192 @@
         isError
       );
     }
+function syncSettingsControls() {
+  settingConfidence.checked =
+    aclSettings
+      .confidenceEnabled;
 
+  settingLifelines.checked =
+    aclSettings
+      .lifelinesEnabled;
+
+  settingExpert.checked =
+    aclSettings
+      .enabledLifelines
+      .expert;
+
+  settingFilter.checked =
+    aclSettings
+      .enabledLifelines
+      .filter;
+
+  settingGuideline.checked =
+    aclSettings
+      .enabledLifelines
+      .guideline;
+
+  settingVault.checked =
+    aclSettings
+      .enabledLifelines
+      .vault;
+
+  const lifelinesDisabled =
+    !settingLifelines.checked;
+
+  settingExpert.disabled =
+    lifelinesDisabled;
+
+  settingFilter.disabled =
+    lifelinesDisabled;
+
+  settingGuideline.disabled =
+    lifelinesDisabled;
+
+  settingVault.disabled =
+    lifelinesDisabled;
+}
+
+
+function openSettings() {
+  syncSettingsControls();
+
+  settingsStatus.textContent =
+    "";
+
+  settingsStatus.classList.remove(
+    "error"
+  );
+
+  settingsModal.hidden =
+    false;
+
+  document.body.classList.add(
+    "acl-settings-open"
+  );
+
+  closeSettingsButton.focus();
+}
+
+
+function closeSettings() {
+  settingsModal.hidden =
+    true;
+
+  document.body.classList.remove(
+    "acl-settings-open"
+  );
+}
+
+
+function settingsFromControls() {
+  return normalizeAclSettings({
+    confidenceEnabled:
+      settingConfidence.checked,
+
+    lifelinesEnabled:
+      settingLifelines.checked,
+
+    enabledLifelines: {
+      expert:
+        settingExpert.checked,
+
+      filter:
+        settingFilter.checked,
+
+      guideline:
+        settingGuideline.checked,
+
+      vault:
+        settingVault.checked
+    }
+  });
+}
+
+
+settingLifelines.addEventListener(
+  "change",
+  syncSettingsControls
+);
+
+
+settingsBackdrop.addEventListener(
+  "click",
+  closeSettings
+);
+
+
+closeSettingsButton.addEventListener(
+  "click",
+  closeSettings
+);
+
+
+window.addEventListener(
+  "acl:open-settings",
+  openSettings
+);
+
+
+window.addEventListener(
+  "acl:settings-changed",
+  (event) => {
+    aclSettings =
+      normalizeAclSettings(
+        event.detail
+      );
+
+    syncSettingsControls();
+
+    if (engine) {
+      render();
+    }
+  }
+);
+
+
+saveSettingsButton.addEventListener(
+  "click",
+  async () => {
+    saveSettingsButton.disabled =
+      true;
+
+    settingsStatus.textContent =
+      "Saving settings…";
+
+    settingsStatus.classList.remove(
+      "error"
+    );
+
+    try {
+      aclSettings =
+        await saveAclSettings(
+          settingsFromControls()
+        );
+
+      settingsStatus.textContent =
+        "Settings saved successfully.";
+
+      render();
+
+      window.setTimeout(
+        closeSettings,
+        550
+      );
+    } catch (error) {
+      console.error(error);
+
+      settingsStatus.textContent =
+        "Could not save settings.";
+
+      settingsStatus.classList.add(
+        "error"
+      );
+    } finally {
+      saveSettingsButton.disabled =
+        false;
+    }
+  }
+);
 
     function defaultLifelineState() {
       return {
@@ -1500,17 +2270,23 @@
 
 
     document.addEventListener(
-      "keydown",
-      (event) => {
-        if (
-          event.key === "Escape" &&
-          !flashcardModal.hidden
-        ) {
-          closeFlashcard();
-        }
-      }
-    );
+  "keydown",
+  (event) => {
+    if (
+      event.key === "Escape" &&
+      !flashcardModal.hidden
+    ) {
+      closeFlashcard();
+    }
 
+    if (
+      event.key === "Escape" &&
+      !settingsModal.hidden
+    ) {
+      closeSettings();
+    }
+  }
+);
     function eligibleWrongIndexes(
       question
     ) {
@@ -1560,34 +2336,49 @@
     }
 
 
-    function lifelineDefinitions() {
-      return [
-        {
-          id: "expert",
-          name: "Dr. Corazón",
-          image: HAPPY_MASCOT,
-          icon: ""
-        },
-        {
-          id: "filter",
-          name: "Evidence Filter",
-          image: "",
-          icon: "✂️"
-        },
-        {
-          id: "guideline",
-          name: "ESC Guideline",
-          image: "",
-          icon: "📘"
-        },
-        {
-          id: "vault",
-          name: "Knowledge Vault",
-          image: "",
-          icon: "🧠"
-        }
-      ];
+  function lifelineDefinitions() {
+  if (
+    !aclSettings
+      .lifelinesEnabled
+  ) {
+    return [];
+  }
+
+  const definitions = [
+    {
+      id: "expert",
+      name: "Dr. Corazón",
+      image: HAPPY_MASCOT,
+      icon: ""
+    },
+    {
+      id: "filter",
+      name: "Evidence Filter",
+      image: "",
+      icon: "✂️"
+    },
+    {
+      id: "guideline",
+      name: "ESC Guideline",
+      image: "",
+      icon: "📘"
+    },
+    {
+      id: "vault",
+      name: "Knowledge Vault",
+      image: "",
+      icon: "🧠"
     }
+  ];
+
+  return definitions.filter(
+    (definition) =>
+      aclSettings
+        .enabledLifelines[
+          definition.id
+        ] !== false
+  );
+}
 
 
     function lifelineButtonHtml(
@@ -1677,37 +2468,63 @@
 
 
     function lifelinesHtml(
-      question,
-      answered
-    ) {
-      if (answered) {
-        return "";
-      }
+  question,
+  answered
+) {
+  if (
+    answered ||
+    !aclSettings
+      .lifelinesEnabled
+  ) {
+    return "";
+  }
 
-      return `
-        <div class="ppci-lifelines">
+  const definitions =
+    lifelineDefinitions();
 
-          <span class="ppci-lifelines-label">
-            Expert Panel
-          </span>
+  if (!definitions.length) {
+    return "";
+  }
 
-          ${lifelineDefinitions()
-            .map(
-              (definition) =>
-                lifelineButtonHtml(
-                  question,
-                  definition
-                )
+  const state =
+    lifelinesForQuestion(
+      question
+    );
+
+  const visibleUsedCount =
+    definitions.filter(
+      (definition) =>
+        Boolean(
+          state[
+            definition.id
+          ]
+        )
+    ).length;
+
+  return `
+    <div class="ppci-lifelines">
+
+      <span class="ppci-lifelines-label">
+        Expert Panel
+      </span>
+
+      ${definitions
+        .map(
+          (definition) =>
+            lifelineButtonHtml(
+              question,
+              definition
             )
-            .join("")}
+        )
+        .join("")}
 
-          <span class="ppci-lifeline-counter">
-            ${lifelineUsedCount(question)}/4
-          </span>
+      <span class="ppci-lifeline-counter">
+        ${visibleUsedCount}/${definitions.length}
+      </span>
 
-        </div>
-      `;
-    }
+    </div>
+  `;
+}
 
 
     function showLifelineResponse(
@@ -2341,8 +3158,22 @@
         throw new Error(
           "Authentication is required."
         );
-      }
+      }try {
+  aclSettings =
+    await getAclSettings();
+} catch (settingsError) {
+  console.warn(
+    "Could not load ACL settings:",
+    settingsError
+  );
 
+  aclSettings =
+    normalizeAclSettings(
+      DEFAULT_ACL_SETTINGS
+    );
+}
+
+syncSettingsControls();
       attempt =
         await getOpenAttempt(
           MODULE_ID
