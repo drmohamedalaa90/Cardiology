@@ -1942,7 +1942,7 @@ function confidencePanelHtml(
       );
 
   return `
-  <section class="learning-confidence-panel confidence-dock">
+<section class="learning-confidence-panel contextual-confidence-card">
 
     <div class="learning-confidence-heading">
 
@@ -2617,13 +2617,34 @@ function render() {
                 );
 
               const eliminated =
-                !answer &&
-                eliminatedIds.has(
-                  optionId
-                );
+  !answer &&
+  eliminatedIds.has(
+    optionId
+  );
 
-              return `
-                <label
+const showConfidenceHere =
+  !answer &&
+  !reviewMode &&
+  confidenceEnabled() &&
+  pendingSelectedIds.length > 0 &&
+  optionId ===
+    pendingSelectedIds[
+      pendingSelectedIds.length - 1
+    ];
+
+return `
+  <div
+    class="
+      learning-option-context-row
+      ${
+        showConfidenceHere
+          ? "has-confidence-card"
+          : ""
+      }
+    "
+  >
+
+    <label
                   class="
                     learning-option
                     ${
@@ -2684,8 +2705,19 @@ function render() {
                     )}
                   </span>
 
-                </label>
-              `;
+                   </label>
+
+    ${
+      showConfidenceHere
+        ? confidencePanelHtml(
+            question,
+            answer
+          )
+        : ""
+    }
+
+  </div>
+`;
             }
           )
           .join("")}
@@ -2703,12 +2735,6 @@ function render() {
           `
           : ""
       }
-
-
-      ${confidencePanelHtml(
-        question,
-        answer
-      )}
 
     </article>
   `;
