@@ -1738,75 +1738,60 @@
 
 
     async function activateLifeline(
-      question,
-      lifeline
-    ) {
-      const state =
-        lifelinesForQuestion(
-          question
-        );
-
-      if (state[lifeline]) {
-        return;
-      }
-
-      state[lifeline] = true;
-      expandedLifeline = null;
-
-      if (
-        lifeline === "filter"
-      ) {
-        state.eliminatedIndexes =
-          randomWrongIndexes(
-            question,
-            2
-          );
-      }
-
-      render();
-
-      if (
-        lifeline === "expert"
-      ) {
-     showLifelineResponse(
-  "Dr. Corazón says",
-  question.expertHint ||
-    "Identify the central clinical decision and eliminate unrelated procedural details."
-);
-
-      if (
-        lifeline === "guideline"
-      ) {
-       showLifelineResponse(
-  "ESC Pocket Guideline",
-  question.guidelineHint ||
-    "Recall the relevant recommendation, timing threshold and whether the intervention is routine or selective."
-);
-      }
-
-      if (
-        lifeline === "filter"
-      ) {
-        showLifelineResponse(
-          "Evidence Filter",
-          "Two incorrect options have been removed. Reassess the remaining choices carefully."
-        );
-      }
-
-      if (
-      if (
-  lifeline === "vault"
+  question,
+  lifeline
 ) {
-  openFlashcard(
-    question
-  );
-}
+  const state =
+    lifelinesForQuestion(
+      question
+    );
 
-      await persist(false);
-    }
+  if (state[lifeline]) {
+    return;
+  }
 
+  state[lifeline] = true;
+  expandedLifeline = null;
 
-    function bindLifelines(
+  if (lifeline === "filter") {
+    state.eliminatedIndexes =
+      randomWrongIndexes(
+        question,
+        2
+      );
+  }
+
+  render();
+
+  if (lifeline === "expert") {
+    showLifelineResponse(
+      "Dr. Corazón says",
+      question.expertHint ||
+        "Identify the central clinical decision and eliminate unrelated procedural details."
+    );
+  }
+
+  if (lifeline === "guideline") {
+    showLifelineResponse(
+      "ESC Pocket Guideline",
+      question.guidelineHint ||
+        "Recall the relevant recommendation, timing threshold and whether the intervention is routine or selective."
+    );
+  }
+
+  if (lifeline === "filter") {
+    showLifelineResponse(
+      "Evidence Filter",
+      "Two incorrect options have been removed. Reassess the remaining choices carefully."
+    );
+  }
+
+  if (lifeline === "vault") {
+    openFlashcard(question);
+  }
+
+  await persist(false);
+}    function bindLifelines(
       question
     ) {
       document
