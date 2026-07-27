@@ -88,6 +88,7 @@ const LIFELINES = {
 };
 
 let lifelinesState = {};
+let expandedLifeline = null;
 
 
 /* =========================================================
@@ -571,45 +572,48 @@ function restoreLifelinesState(
   }
 }
 
-
 /* =========================================================
-   SCIENTIFIC LIFELINES RENDERING
+   SCIENTIFIC LIFELINES — COMPACT TOOLBAR
 ========================================================= */
 
 function lifelineDefinitions() {
   return [
     {
       id: LIFELINES.expert,
-      icon: "🩺",
+      icon: "",
+      image: HAPPY_MASCOT,
       title: "Ask Dr. Corazón",
-      subtitle: "Expert reasoning clue"
+      shortTitle: "Dr. Corazón"
     },
 
     {
       id: LIFELINES.filter,
       icon: "✂️",
+      image: "",
       title: "Evidence Filter",
-      subtitle: "Eliminate two options"
+      shortTitle: "Evidence Filter"
     },
 
     {
       id: LIFELINES.guideline,
       icon: "📘",
+      image: "",
       title: "ESC Pocket Guideline",
-      subtitle: "Reveal a guideline clue"
+      shortTitle: "ESC Guideline"
     },
 
     {
       id: LIFELINES.vault,
       icon: "🧠",
+      image: "",
       title: "Knowledge Vault",
-      subtitle: "Open the review flashcard"
+      shortTitle: "Knowledge Vault"
     }
   ];
 }
 
 
-function lifelineButtonHtml(
+function compactLifelineButtonHtml(
   question,
   definition
 ) {
@@ -619,46 +623,136 @@ function lifelineButtonHtml(
       definition.id
     );
 
+  const expanded =
+    expandedLifeline ===
+    definition.id;
+
   return `
     <button
       type="button"
       class="
-        scientific-lifeline-button
+        compact-lifeline-button
+        ${expanded ? "is-expanded" : ""}
         ${used ? "is-used" : ""}
       "
       data-lifeline="${esc(
         definition.id
       )}"
-      ${used ? "disabled" : ""}
       aria-label="${esc(
         definition.title
       )}"
+      aria-expanded="${
+        expanded
+          ? "true"
+          : "false"
+      }"
+      ${used ? "disabled" : ""}
     >
 
-      <span
-        class="scientific-lifeline-icon"
-        aria-hidden="true"
-      >
+      <span class="compact-lifeline-icon">
+
+        ${
+          definition.image
+            ? `
+              <img
+                class="dr-corazon-lifeline-avatar"
+                src="${esc(
+                  definition.image
+                )}"
+                alt=""
+                aria-hidden="true"
+              >
+            `
+            : `
+              <span aria-hidden="true">
+                ${esc(
+                  definition.icon
+                )}
+              </span>
+            `
+        }
+
+      </span>
+
+      <span class="compact-lifeline-name">
         ${esc(
-          definition.icon
+          definition.shortTitle
         )}
       </span>
 
-      <span class="scientific-lifeline-title">
-        ${esc(
-          definition.title
-        )}
-      </span>
-
-      <span class="scientific-lifeline-subtitle">
-        ${esc(
-          used
-            ? "Used"
-            : definition.subtitle
-        )}
-      </span>
+      ${
+        used
+          ? `
+            <span
+              class="compact-lifeline-used-mark"
+              aria-label="Used"
+            >
+              ✓
+            </span>
+          `
+          : ""
+      }
 
     </button>
+  `;
+}
+
+
+function scientificLifelinesToolbarHtml(
+  question,
+  answer
+) {
+  if (
+    !question ||
+    answer ||
+    reviewMode
+  ) {
+    return "";
+  }
+
+  const definitions =
+    lifelineDefinitions();
+
+  return `
+    <div class="question-topic-tools">
+
+      <div
+        class="compact-lifelines-toolbar"
+        aria-label="Scientific Lifelines — The Expert Panel"
+      >
+
+        <span class="compact-lifelines-label">
+          Expert Panel
+        </span>
+
+        <div class="compact-lifelines-buttons">
+
+          ${definitions
+            .map(
+              (definition) =>
+                compactLifelineButtonHtml(
+                  question,
+                  definition
+                )
+            )
+            .join("")}
+
+        </div>
+
+        <span class="compact-lifelines-counter">
+          ${lifelineUsedCount(question)}/4
+        </span>
+
+      </div>
+
+    </div>
+
+    <div
+      id="scientificLifelineResponse"
+      class="scientific-lifeline-response compact"
+      aria-live="polite"
+      hidden
+    ></div>
   `;
 }
 
@@ -711,78 +805,14 @@ function applyEliminatedOptionStyles(
 }
 
 
-function renderScientificLifelines(
-  question,
-  answer
-) {
-  const panel =
-    $("scientificLifelinesPanel");
-
-  const buttons =
-    $("scientificLifelinesButtons");
-
-  const counter =
-    $("lifelinesUsageCounter");
-
-  if (
-    !panel ||
-    !buttons ||
-    !counter
-  ) {
-    console.warn(
-      "Scientific Lifelines elements are missing from learning.html."
-    );
-
-    return;
-  }
-
-  if (
-    !question ||
-    answer ||
-    reviewMode
-  ) {
-    panel.hidden = true;
-    hideLifelineResponse();
-
-    return;
-  }
-
-  const definitions =
-    lifelineDefinitions();
-
-  buttons.innerHTML =
-    definitions
-      .map(
-        (definition) =>
-          lifelineButtonHtml(
-            question,
-            definition
-          )
-      )
-      .join("");
-
-  counter.textContent =
-    `${lifelineUsedCount(question)} / ${definitions.length} used`;
-
-  panel.hidden = false;
-
-  applyEliminatedOptionStyles(
-    question
-  );
-}
-
-
-function refreshScientificLifelines(
+function refreshCompactLifelines(
   question
 ) {
   if (!question) {
     return;
   }
 
-  renderScientificLifelines(
-    question,
-    answerFor(question)
-  );
+  render();
 }
 
 
@@ -805,6 +835,173 @@ function setLifelineButtonLoading(
   );
 
   button.disabled = loading;
+}
+
+
+function questionFlashcard(question) {
+  return normaliseFlashcard(
+    question
+  );
+}
+
+
+async function activateLifeline(
+  question,
+  lifeline
+) {
+  if (
+    !question ||
+    lifelineIsUsed(
+      question,
+      lifeline
+    )
+  ) {
+    return;
+  }
+
+  markLifelineUsed(
+    question,
+    lifeline
+  );
+
+  expandedLifeline = null;
+
+  if (
+    lifeline ===
+    LIFELINES.expert
+  ) {
+    render();
+
+    showLifelineResponse({
+      icon: "🩺",
+      title: "Dr. Corazón says",
+      message:
+        expertHintFor(
+          question
+        )
+    });
+
+    await persist(false);
+
+    return;
+  }
+
+
+  if (
+    lifeline ===
+    LIFELINES.guideline
+  ) {
+    render();
+
+    showLifelineResponse({
+      icon: "📘",
+      title: "ESC Pocket Guideline",
+      message:
+        guidelineHintFor(
+          question
+        )
+    });
+
+    await persist(false);
+
+    return;
+  }
+
+
+  if (
+    lifeline ===
+    LIFELINES.vault
+  ) {
+    const flashcard =
+      questionFlashcard(
+        question
+      );
+
+    render();
+
+    if (flashcard) {
+      openFlashcard(
+        flashcard
+      );
+    } else {
+      showLifelineResponse({
+        icon: "🧠",
+        title: "Knowledge Vault",
+        message:
+          "A review flashcard has not yet been added for this question."
+      });
+    }
+
+    await persist(false);
+
+    return;
+  }
+
+
+  if (
+    lifeline ===
+    LIFELINES.filter
+  ) {
+    render();
+
+    showLifelineResponse({
+      icon: "✂️",
+      title: "Evidence Filter",
+      message:
+        "The secure option-elimination service will be connected in the next update."
+    });
+
+    await persist(false);
+  }
+}
+
+
+function bindCompactLifelines(
+  question
+) {
+  document
+    .querySelectorAll(
+      ".compact-lifeline-button"
+    )
+    .forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          async () => {
+            const lifeline =
+              button.dataset
+                .lifeline;
+
+            if (
+              !lifeline ||
+              lifelineIsUsed(
+                question,
+                lifeline
+              )
+            ) {
+              return;
+            }
+
+            if (
+              expandedLifeline !==
+              lifeline
+            ) {
+              expandedLifeline =
+                lifeline;
+
+              render();
+
+              return;
+            }
+
+            await activateLifeline(
+              question,
+              lifeline
+            );
+          }
+        );
+      }
+    );
 }
 
 
@@ -1393,15 +1590,28 @@ function render() {
   }
 
   quizArea.innerHTML = `
-    ${
-      question.topic
-        ? `
-          <span class="learning-topic">
-            ${esc(question.topic)}
-          </span>
-        `
-        : ""
-    }
+        <div class="question-topic-row">
+
+      ${
+        question.topic
+          ? `
+            <span class="learning-topic">
+              ${esc(question.topic)}
+            </span>
+          `
+          : `
+            <span class="learning-topic">
+              Clinical question
+            </span>
+          `
+      }
+
+      ${scientificLifelinesToolbarHtml(
+        question,
+        answer
+      )}
+
+    </div>
 
     ${
       question.clinical_scenario
@@ -1593,12 +1803,7 @@ function render() {
         : "";
   }
 
-  renderScientificLifelines(
-    question,
-    answer
-  );
-
-  const submitButton =
+   const submitButton =
     $("submitAnswer");
 
   const nextButton =
@@ -1619,6 +1824,14 @@ function render() {
 
   if (answer) {
     bindFeedback(answer);
+  } else {
+    applyEliminatedOptionStyles(
+      question
+    );
+
+    bindCompactLifelines(
+      question
+    );
   }
 }
 
@@ -1934,6 +2147,7 @@ async function startNewAttempt() {
     answers = [];
     index = 0;
     reviewMode = false;
+    expandedLifeline = null;
 
     resetAllLifelines();
 
@@ -1993,6 +2207,8 @@ $("nextQuestion")
   ?.addEventListener(
     "click",
     async () => {
+      expandedLifeline = null;
+
       index += 1;
 
       if (!reviewMode) {
