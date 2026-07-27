@@ -2773,9 +2773,8 @@ body.learning-theme-imaging {
   }
 }
 
-
 /* =========================================================
-   MOBILE
+   MOBILE SCIENTIFIC LIFELINES
 ========================================================= */
 
 @media (max-width: 520px) {
@@ -2783,60 +2782,56 @@ body.learning-theme-imaging {
     padding: 17px 13px;
   }
 
-
   .lifelines-panel-heading {
     align-items: flex-start;
   }
-
 
   .lifelines-panel-heading h3 {
     font-size: 19px;
   }
 
-
   .lifelines-usage-counter {
     min-height: 30px;
-
     padding: 6px 9px;
-
     font-size: 10px;
   }
 
-
   .scientific-lifelines-buttons {
     grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
+      repeat(2, minmax(0, 1fr));
 
     gap: 8px;
   }
 
-
   .scientific-lifeline-button {
     min-height: 84px;
-
     padding: 10px 6px;
   }
-
 
   .scientific-lifeline-title {
     font-size: 11px;
   }
 
-
   .scientific-lifeline-subtitle {
     font-size: 9px;
-  }.scientific-lifeline-button.is-loading {
-  pointer-events: none;
-
-  opacity: 0.72;
+  }
 }
 
 
+/* =========================================================
+   LIFELINE LOADING STATE
+========================================================= */
+
+.scientific-lifeline-button.is-loading,
+.compact-lifeline-button.is-loading {
+  pointer-events: none;
+  opacity: 0.72;
+}
+
 .scientific-lifeline-button.is-loading
-.scientific-lifeline-icon {
+.scientific-lifeline-icon,
+.compact-lifeline-button.is-loading
+.compact-lifeline-icon {
   animation:
     lifeline-icon-pulse
     0.8s
@@ -2844,21 +2839,16 @@ body.learning-theme-imaging {
     infinite alternate;
 }
 
-
 @keyframes lifeline-icon-pulse {
   from {
     transform: scale(0.92);
-
     opacity: 0.55;
   }
 
   to {
     transform: scale(1.08);
-
     opacity: 1;
   }
-}
-   
 }
 /* =========================================================
    COMPACT SCIENTIFIC LIFELINES
