@@ -695,9 +695,9 @@ function createRollingBrand() {
 function openAclSettings() {
   closeAclDrawer();
 
-  window.dispatchEvent(
-    new CustomEvent(
-      "acl:open-settings"
+  window.location.assign(
+    nestedPath(
+      "settings.html"
     )
   );
 }
