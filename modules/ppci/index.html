@@ -2134,13 +2134,14 @@
         </article>
       `;
 
-      feedbackHost.innerHTML =
+           feedbackHost.innerHTML =
         answered
           ? feedbackHtml(
               question,
               answered
             )
           : "";
+
       if (answered) {
         document
           .querySelector(
@@ -2155,6 +2156,7 @@
             }
           );
       }
+
       nextBtn.hidden =
         !answered;
 
