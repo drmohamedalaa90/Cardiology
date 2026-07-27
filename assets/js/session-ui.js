@@ -864,9 +864,7 @@ function buildUnifiedHeader() {
         className:
           "acl-header-admin-icon"
       })
-    );
-);
-     
+    );     
   }
 
 
