@@ -4745,3 +4745,116 @@ body.acl-expert-learning-mode
   padding: 6px 10px;
   font-size: 12px;
 }
+/* =========================================================
+   ONE-LINE COMPACT CONFIDENCE CHOICES
+========================================================= */
+
+.learning-confidence-panel.contextual-confidence-card {
+  padding: 14px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-heading {
+  display: flex;
+  margin-bottom: 12px;
+  gap: 10px;
+  align-items: center;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-heading h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: #ffffff;
+  font-size: 20px;
+  box-shadow:
+    0 6px 14px
+    rgba(15, 72, 126, 0.09);
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-options.compact-row {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 10px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.compact-confidence-choice {
+  display: flex;
+  min-height: 58px;
+  padding: 10px 12px;
+  gap: 9px;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 15px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.compact-confidence-choice
+.learning-confidence-symbol {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: 11px;
+  font-size: 19px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.compact-confidence-choice
+.confidence-choice-copy {
+  min-width: 0;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.compact-confidence-choice
+.confidence-choice-copy strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-points,
+.learning-confidence-panel.contextual-confidence-card
+.learning-selected-answer {
+  display: none;
+}
+
+@media (max-width: 520px) {
+  .learning-confidence-panel.contextual-confidence-card
+  .learning-confidence-options.compact-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card
+  .compact-confidence-choice {
+    min-height: 54px;
+    padding: 9px;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card
+  .compact-confidence-choice
+  .confidence-choice-copy strong {
+    font-size: 12px;
+    white-space: normal;
+  }
+}
