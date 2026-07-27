@@ -3143,3 +3143,490 @@ body.learning-theme-imaging {
     padding: 0 6px;
   }
 }
+/* =========================================================
+   ACL EXPERT LEARNING MODE — DEFINITIVE QUESTION LAYOUT
+   VERSION 4.1.1
+========================================================= */
+
+body.acl-expert-learning-mode .expert-question-layout {
+  display: block;
+  width: 100%;
+}
+
+
+/* ---------------------------------------------------------
+   TOPIC + SCIENTIFIC LIFELINES
+--------------------------------------------------------- */
+
+body.acl-expert-learning-mode .question-topic-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+
+  width: 100% !important;
+  margin: 0 0 22px !important;
+}
+
+
+body.acl-expert-learning-mode .learning-topic {
+  display: inline-flex !important;
+  align-items: center !important;
+
+  margin: 0 !important;
+  padding: 7px 12px !important;
+
+  border: 1px solid #d99aa2 !important;
+  border-radius: 999px !important;
+
+  background: #fff2f3 !important;
+  color: #8c2130 !important;
+
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+
+body.acl-expert-learning-mode .question-topic-tools {
+  display: flex !important;
+  align-items: center !important;
+
+  margin-left: auto !important;
+}
+
+
+body.acl-expert-learning-mode .compact-lifelines-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+
+  padding: 5px 7px !important;
+
+  border: 1px solid rgba(183, 45, 61, 0.28) !important;
+  border-radius: 999px !important;
+
+  background: #fff8f8 !important;
+
+  box-shadow:
+    0 7px 18px
+    rgba(119, 24, 36, 0.08) !important;
+}
+
+
+body.acl-expert-learning-mode .compact-lifelines-label {
+  display: inline-block !important;
+
+  padding: 0 4px 0 7px !important;
+
+  color: #8f2030 !important;
+
+  font-size: 0.66rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+
+  white-space: nowrap !important;
+}
+
+
+body.acl-expert-learning-mode .compact-lifelines-buttons {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+
+body.acl-expert-learning-mode .compact-lifeline-button {
+  position: relative !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 40px !important;
+
+  padding: 3px !important;
+
+  overflow: hidden !important;
+
+  border: 1px solid rgba(183, 45, 61, 0.26) !important;
+  border-radius: 999px !important;
+
+  background: #ffffff !important;
+  color: #8f2030 !important;
+
+  cursor: pointer !important;
+
+  transition:
+    width 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease !important;
+}
+
+
+body.acl-expert-learning-mode
+.compact-lifeline-button:hover {
+  transform: translateY(-2px) !important;
+
+  border-color: #c43f4e !important;
+
+  box-shadow:
+    0 7px 16px
+    rgba(111, 20, 32, 0.14) !important;
+}
+
+
+body.acl-expert-learning-mode
+.compact-lifeline-button.is-expanded {
+  width: 150px !important;
+
+  border-color: #c43f4e !important;
+
+  background: #fff2f3 !important;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(196, 63, 78, 0.1) !important;
+}
+
+
+body.acl-expert-learning-mode .compact-lifeline-icon {
+  display: grid !important;
+  place-items: center !important;
+
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+
+  border-radius: 50% !important;
+
+  background: #fff0f1 !important;
+
+  font-size: 1rem !important;
+}
+
+
+body.acl-expert-learning-mode .dr-corazon-lifeline-avatar {
+  display: block !important;
+
+  width: 32px !important;
+  height: 32px !important;
+
+  border: 2px solid #ffffff !important;
+  border-radius: 50% !important;
+
+  object-fit: cover !important;
+  object-position: center top !important;
+
+  box-shadow:
+    0 2px 7px
+    rgba(82, 13, 24, 0.2) !important;
+}
+
+
+body.acl-expert-learning-mode .compact-lifeline-name {
+  display: block !important;
+
+  max-width: 0 !important;
+  margin-left: 0 !important;
+
+  overflow: hidden !important;
+
+  opacity: 0 !important;
+
+  color: #87202d !important;
+
+  font-size: 0.73rem !important;
+  font-weight: 900 !important;
+
+  white-space: nowrap !important;
+
+  transition:
+    max-width 0.2s ease,
+    margin-left 0.2s ease,
+    opacity 0.16s ease !important;
+}
+
+
+body.acl-expert-learning-mode
+.compact-lifeline-button.is-expanded
+.compact-lifeline-name {
+  max-width: 105px !important;
+  margin-left: 7px !important;
+  opacity: 1 !important;
+}
+
+
+body.acl-expert-learning-mode .compact-lifelines-counter {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  min-width: 42px !important;
+  height: 30px !important;
+
+  padding: 0 8px !important;
+
+  border-radius: 999px !important;
+
+  background: #8f2030 !important;
+  color: #ffffff !important;
+
+  font-size: 0.7rem !important;
+  font-weight: 900 !important;
+
+  white-space: nowrap !important;
+}
+
+
+/* ---------------------------------------------------------
+   QUESTION TYPOGRAPHY
+--------------------------------------------------------- */
+
+body.acl-expert-learning-mode
+.expert-question-layout > h2 {
+  margin: 18px 0 22px !important;
+
+  color: #082747 !important;
+
+  font-size: clamp(1.2rem, 2vw, 1.65rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.28 !important;
+}
+
+
+body.acl-expert-learning-mode .clinical-scenario {
+  margin: 14px 0 18px !important;
+  padding: 15px 17px !important;
+
+  border: 1px solid #e4c85f !important;
+  border-left: 5px solid #e5b716 !important;
+  border-radius: 12px !important;
+
+  background: #fffbed !important;
+  color: #263c53 !important;
+
+  line-height: 1.55 !important;
+}
+
+
+/* ---------------------------------------------------------
+   ANSWER OPTIONS
+
+   Force vertical Expert Edition cards.
+   This overrides the old horizontal pill grid.
+--------------------------------------------------------- */
+
+body.acl-expert-learning-mode .learning-options {
+  display: grid !important;
+
+  grid-template-columns: 1fr !important;
+
+  gap: 12px !important;
+
+  width: 100% !important;
+
+  margin: 20px 0 !important;
+}
+
+
+body.acl-expert-learning-mode .learning-option {
+  display: grid !important;
+
+  grid-template-columns:
+    auto
+    auto
+    minmax(0, 1fr) !important;
+
+  align-items: center !important;
+
+  gap: 13px !important;
+
+  width: 100% !important;
+  min-height: 62px !important;
+
+  margin: 0 !important;
+  padding: 14px 17px !important;
+
+  border: 1px solid #b9cee1 !important;
+  border-radius: 14px !important;
+
+  background: #ffffff !important;
+  color: #102f4d !important;
+
+  cursor: pointer !important;
+
+  box-shadow:
+    0 4px 12px
+    rgba(14, 63, 113, 0.035) !important;
+
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease !important;
+}
+
+
+body.acl-expert-learning-mode .learning-option:hover {
+  transform: translateY(-1px) !important;
+
+  border-color: #538cb7 !important;
+
+  background: #f5fbff !important;
+
+  box-shadow:
+    0 7px 17px
+    rgba(14, 63, 113, 0.08) !important;
+}
+
+
+body.acl-expert-learning-mode
+.learning-option input {
+  width: 18px !important;
+  height: 18px !important;
+
+  margin: 0 !important;
+
+  accent-color: #9d2635 !important;
+}
+
+
+body.acl-expert-learning-mode .option-key {
+  display: grid !important;
+  place-items: center !important;
+
+  width: 34px !important;
+  height: 34px !important;
+
+  border-radius: 50% !important;
+
+  background: #8f2030 !important;
+  color: #ffffff !important;
+
+  font-size: 0.86rem !important;
+  font-weight: 900 !important;
+}
+
+
+body.acl-expert-learning-mode
+.learning-option > span:last-child {
+  color: #102f4d !important;
+
+  font-size: 1rem !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+}
+
+
+body.acl-expert-learning-mode
+.learning-option.selected {
+  border-color: #8f2030 !important;
+  background: #fff5f6 !important;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(143, 32, 48, 0.09) !important;
+}
+
+
+body.acl-expert-learning-mode
+.learning-option.is-eliminated {
+  opacity: 0.42 !important;
+
+  filter: grayscale(0.8) !important;
+
+  text-decoration: line-through !important;
+
+  pointer-events: none !important;
+}
+
+
+/* ---------------------------------------------------------
+   LIFELINE RESPONSE
+--------------------------------------------------------- */
+
+body.acl-expert-learning-mode
+.scientific-lifeline-response.compact {
+  display: block;
+
+  width: 100% !important;
+
+  margin: -8px 0 19px !important;
+  padding: 14px 17px !important;
+
+  border: 1px solid rgba(188, 52, 68, 0.3) !important;
+  border-left: 5px solid #bc3444 !important;
+  border-radius: 14px !important;
+
+  background: #fff6f7 !important;
+
+  box-shadow:
+    0 7px 20px
+    rgba(111, 20, 32, 0.07) !important;
+}
+
+
+body.acl-expert-learning-mode
+.scientific-lifeline-response.compact[hidden] {
+  display: none !important;
+}
+
+
+/* ---------------------------------------------------------
+   MOBILE
+--------------------------------------------------------- */
+
+@media (max-width: 760px) {
+  body.acl-expert-learning-mode .question-topic-row {
+    align-items: flex-start !important;
+  }
+
+
+  body.acl-expert-learning-mode .question-topic-tools {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+
+  body.acl-expert-learning-mode .compact-lifelines-toolbar {
+    width: 100% !important;
+
+    border-radius: 16px !important;
+  }
+
+
+  body.acl-expert-learning-mode .compact-lifelines-label {
+    display: none !important;
+  }
+
+
+  body.acl-expert-learning-mode .compact-lifelines-buttons {
+    flex: 1 1 auto !important;
+  }
+
+
+  body.acl-expert-learning-mode
+  .compact-lifeline-button.is-expanded {
+    width: 137px !important;
+  }
+
+
+  body.acl-expert-learning-mode .learning-option {
+    min-height: 58px !important;
+
+    padding: 12px 13px !important;
+  }
+
+
+  body.acl-expert-learning-mode
+  .learning-option > span:last-child {
+    font-size: 0.92rem !important;
+  }
+}
