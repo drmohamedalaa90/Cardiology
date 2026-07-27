@@ -2862,61 +2862,51 @@
     }
 
 
-    function bindLifelines(
-      question
-    ) {
-      document
-        .querySelectorAll(
-          ".ppci-lifeline-button"
-        )
-        .forEach(
-          (button) => {
-            button.addEventListener(
-              "click",
-              async () => {
-                const lifeline =
-                  button.dataset
-                    .lifeline;
+   function bindLifelines(
+  question
+) {
+  document
+    .querySelectorAll(
+      ".ppci-lifeline-button"
+    )
+    .forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          async () => {
+            const lifeline =
+              button.dataset
+                .lifeline;
 
-                if (!lifeline) {
-                  return;
-                }
+            if (!lifeline) {
+              return;
+            }
 
-                const state =
-                  lifelinesForQuestion(
-                    question
-                  );
+            const state =
+              lifelinesForQuestion(
+                question
+              );
 
-                if (
-                  state[
-                    lifeline
-                  ]
-                ) {
-                  return;
-                }
+            if (
+              state[
+                lifeline
+              ]
+            ) {
+              return;
+            }
 
-                if (
-                  expandedLifeline !==
-                  lifeline
-                ) {
-                  expandedLifeline =
-                    lifeline;
+            button.disabled =
+              true;
 
-                  render();
-
-                  return;
-                }
-
-                await activateLifeline(
-                  question,
-                  lifeline
-                );
-              }
+            await activateLifeline(
+              question,
+              lifeline
             );
           }
         );
-    }
-
+      }
+    );
+}
 
     /* =====================================================
        CONFIDENCE
