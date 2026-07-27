@@ -4375,3 +4375,92 @@ body.acl-expert-learning-mode
     max-width: 270px;
   }
 }
+/* =========================================================
+   PERSONALIZED RESULT INSIGHT
+========================================================= */
+
+.learning-result-insight {
+  display: flex;
+  max-width: 760px;
+  margin:
+    10px
+    auto
+    24px;
+  padding:
+    18px
+    20px;
+  gap: 15px;
+  align-items: flex-start;
+  border:
+    1px solid
+    #bcd9f3;
+  border-radius: 20px;
+  background:
+    linear-gradient(
+      135deg,
+      #f7fbff,
+      #edf6ff
+    );
+  text-align: left;
+  box-shadow:
+    0 10px 24px
+    rgba(
+      21,
+      77,
+      128,
+      0.08
+    );
+}
+
+.learning-result-insight-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex:
+    0
+    0
+    48px;
+  place-items: center;
+  border-radius: 14px;
+  background: #ffffff;
+  font-size: 25px;
+  box-shadow:
+    0 7px 16px
+    rgba(
+      20,
+      80,
+      135,
+      0.1
+    );
+}
+
+.learning-result-insight strong {
+  display: block;
+  color: #063d73;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.learning-result-insight p {
+  margin:
+    6px
+    0
+    0;
+  color: #42617d;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+@media (max-width: 520px) {
+  .learning-result-insight {
+    padding:
+      16px;
+  }
+
+  .learning-result-insight-icon {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    font-size: 22px;
+  }
+}
