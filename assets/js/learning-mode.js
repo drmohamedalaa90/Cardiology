@@ -1,11 +1,13 @@
 import { supabaseClient } from "./supabase-client.js";
 import { protectAndRender } from "./session-ui.js?v=2.8.0";
+
 import {
   getOpenAttempt,
   createAttempt,
   saveAttempt,
   completeAttempt
 } from "./cloud-progress.js";
+
 
 const $ = (id) => document.getElementById(id);
 
@@ -22,16 +24,14 @@ const esc = (value = "") =>
       })[character]
   );
 
-const params =
-  new URLSearchParams(
-    window.location.search
-  );
 
-const quizSlug =
-  params.get("quiz");
+const params = new URLSearchParams(
+  window.location.search
+);
 
-const moduleId =
-  params.get("module");
+const quizSlug = params.get("quiz");
+const moduleId = params.get("module");
+
 
 const HAPPY_MASCOT =
   "assets/images/dr-corazon-happy.webp";
@@ -44,6 +44,8 @@ const SAD_MASCOT =
 
 const ANGRY_MASCOT =
   "assets/images/dr-corazon-angry.webp";
+
+
 const MASCOT_IMAGES = [
   HAPPY_MASCOT,
   GOOD_JOB_MASCOT,
@@ -51,15 +53,20 @@ const MASCOT_IMAGES = [
   ANGRY_MASCOT
 ];
 
+
 function preloadMascotImages() {
   MASCOT_IMAGES.forEach((source) => {
     const image = new Image();
+
     image.decoding = "async";
     image.src = source;
   });
 }
 
+
 preloadMascotImages();
+
+
 let quiz = null;
 let questions = [];
 let index = 0;
@@ -67,6 +74,7 @@ let answers = [];
 let attempt = null;
 let saving = false;
 let reviewMode = false;
+
 
 /* =========================================================
    SCIENTIFIC LIFELINES / THE EXPERT PANEL
@@ -90,15 +98,13 @@ function setStatus(
   text,
   error = false
 ) {
-  const element =
-    $("saveStatus");
+  const element = $("saveStatus");
 
   if (!element) {
     return;
   }
 
-  element.textContent =
-    text;
+  element.textContent = text;
 
   element.classList.toggle(
     "error",
@@ -113,22 +119,17 @@ function setStatus(
 
 
 function shuffle(items) {
-  const result =
-    [...items];
+  const result = [...items];
 
   for (
-    let currentIndex =
-      result.length - 1;
-
+    let currentIndex = result.length - 1;
     currentIndex > 0;
-
     currentIndex -= 1
   ) {
-    const randomIndex =
-      Math.floor(
-        Math.random() *
-        (currentIndex + 1)
-      );
+    const randomIndex = Math.floor(
+      Math.random() *
+      (currentIndex + 1)
+    );
 
     [
       result[currentIndex],
@@ -145,30 +146,24 @@ function shuffle(items) {
 
 function appState() {
   return {
-    questionIds:
-      questions.map(
-        (question) =>
-          question.id
-      ),
+    questionIds: questions.map(
+      (question) => question.id
+    ),
 
-    currentIndex:
-      index,
+    currentIndex: index,
 
     answers,
+
     lifelinesState,
-    score:
-      answers.reduce(
-        (
-          total,
-          answer
-        ) =>
-          total +
-          Number(
-            answer.points ||
-            0
-          ),
-        0
-      )
+
+    score: answers.reduce(
+      (total, answer) =>
+        total +
+        Number(
+          answer.points || 0
+        ),
+      0
+    )
   };
 }
 
@@ -184,24 +179,20 @@ async function persist(
     return;
   }
 
-  saving =
-    true;
+  saving = true;
 
-  setStatus(
-    "Saving…"
-  );
+  setStatus("Saving…");
 
   try {
-    attempt =
-      done
-        ? await completeAttempt(
-            attempt.id,
-            appState()
-          )
-        : await saveAttempt(
-            attempt.id,
-            appState()
-          );
+    attempt = done
+      ? await completeAttempt(
+          attempt.id,
+          appState()
+        )
+      : await saveAttempt(
+          attempt.id,
+          appState()
+        );
 
     setStatus(
       done
@@ -216,101 +207,79 @@ async function persist(
       true
     );
   } finally {
-    saving =
-      false;
+    saving = false;
   }
 }
 
 
 function currentQuestion() {
-  return (
-    questions[index] ||
-    null
-  );
+  return questions[index] || null;
 }
 
 
-function answerFor(
-  question
-) {
+function answerFor(question) {
+  if (!question) {
+    return null;
+  }
+
   return answers.find(
     (answer) =>
-      answer.questionId ===
-      question.id
-  );
+      String(answer.questionId) ===
+      String(question.id)
+  ) || null;
 }
 
 
-function setAnswer(
-  answer
-) {
+function setAnswer(answer) {
   const answerIndex =
     answers.findIndex(
       (item) =>
-        item.questionId ===
-        answer.questionId
+        String(item.questionId) ===
+        String(answer.questionId)
     );
 
-  if (
-    answerIndex >= 0
-  ) {
-    answers[answerIndex] =
-      answer;
+  if (answerIndex >= 0) {
+    answers[answerIndex] = answer;
   } else {
-    answers.push(
-      answer
-    );
+    answers.push(answer);
   }
 }
 
 
-function optionsFor(
-  question
-) {
-  if (
-    !question._options
-  ) {
-    question._options =
-      [
-        ...(
-          question.options ||
-          []
-        )
-      ].sort(
-        (
-          first,
-          second
-        ) => {
-          const orderDifference =
-            Number(
-              first.display_order ??
-              999
-            ) -
-            Number(
-              second.display_order ??
-              999
-            );
-
-          return (
-            orderDifference ||
-            String(
-              first.key ||
-              ""
-            ).localeCompare(
-              String(
-                second.key ||
-                ""
-              )
-            )
+function optionsFor(question) {
+  if (!question._options) {
+    question._options = [
+      ...(question.options || [])
+    ].sort(
+      (first, second) => {
+        const orderDifference =
+          Number(
+            first.display_order ?? 999
+          ) -
+          Number(
+            second.display_order ?? 999
           );
-        }
-      );
+
+        return (
+          orderDifference ||
+          String(
+            first.key || ""
+          ).localeCompare(
+            String(
+              second.key || ""
+            )
+          )
+        );
+      }
+    );
   }
 
   return question._options;
 }
+
+
 /* =========================================================
-   SCIENTIFIC LIFELINES / THE EXPERT PANEL HELPERS
+   SCIENTIFIC LIFELINES STATE HELPERS
 ========================================================= */
 
 function defaultQuestionLifelines() {
@@ -324,27 +293,21 @@ function defaultQuestionLifelines() {
 }
 
 
-function lifelinesForQuestion(
-  question
-) {
+function lifelinesForQuestion(question) {
   if (!question) {
     return defaultQuestionLifelines();
   }
 
-  if (
-    !lifelinesState[
-      question.id
-    ]
-  ) {
-    lifelinesState[
-      question.id
-    ] =
+  const questionId = String(
+    question.id
+  );
+
+  if (!lifelinesState[questionId]) {
+    lifelinesState[questionId] =
       defaultQuestionLifelines();
   }
 
-  return lifelinesState[
-    question.id
-  ];
+  return lifelinesState[questionId];
 }
 
 
@@ -356,23 +319,23 @@ function updateQuestionLifelines(
     return;
   }
 
+  const questionId = String(
+    question.id
+  );
+
   const current =
     lifelinesForQuestion(
       question
     );
 
-  lifelinesState[
-    question.id
-  ] = {
+  lifelinesState[questionId] = {
     ...current,
     ...changes
   };
 }
 
 
-function lifelineUsedCount(
-  question
-) {
+function lifelineUsedCount(question) {
   const state =
     lifelinesForQuestion(
       question
@@ -437,11 +400,8 @@ function hideLifelineResponse() {
     return;
   }
 
-  response.hidden =
-    true;
-
-  response.innerHTML =
-    "";
+  response.hidden = true;
+  response.innerHTML = "";
 }
 
 
@@ -478,22 +438,16 @@ function showLifelineResponse({
     </p>
   `;
 
-  response.hidden =
-    false;
+  response.hidden = false;
 
   response.scrollIntoView({
-    behavior:
-      "smooth",
-
-    block:
-      "nearest"
+    behavior: "smooth",
+    block: "nearest"
   });
 }
 
 
-function expertHintFor(
-  question
-) {
+function expertHintFor(question) {
   return (
     question.expert_hint ||
     question.expertHint ||
@@ -505,9 +459,7 @@ function expertHintFor(
 }
 
 
-function guidelineHintFor(
-  question
-) {
+function guidelineHintFor(question) {
   return (
     question.guideline_hint ||
     question.guidelineHint ||
@@ -524,16 +476,12 @@ function randomItems(
   items,
   count
 ) {
-  const pool =
-    [...items];
-
-  const selected =
-    [];
+  const pool = [...items];
+  const selected = [];
 
   while (
     pool.length &&
-    selected.length <
-      count
+    selected.length < count
   ) {
     const randomIndex =
       Math.floor(
@@ -557,19 +505,18 @@ function eligibleIncorrectOptions(
   question,
   correctOptionIds = []
 ) {
-  const selectedCorrectIds =
+  const correctIds =
     new Set(
-      (
-        correctOptionIds ||
-        []
-      ).map(String)
+      correctOptionIds.map(
+        String
+      )
     );
 
   return optionsFor(
     question
   ).filter(
     (option) =>
-      !selectedCorrectIds.has(
+      !correctIds.has(
         String(option.id)
       )
   );
@@ -584,10 +531,9 @@ function setEliminatedOptions(
     question,
     {
       eliminatedOptionIds:
-        (
-          optionIds ||
-          []
-        ).map(String)
+        (optionIds || []).map(
+          String
+        )
     }
   );
 }
@@ -606,8 +552,7 @@ function eliminatedOptionsFor(
 
 
 function resetAllLifelines() {
-  lifelinesState =
-    {};
+  lifelinesState = {};
 }
 
 
@@ -616,21 +561,19 @@ function restoreLifelinesState(
 ) {
   if (
     storedState &&
-    typeof storedState ===
-      "object" &&
-    !Array.isArray(
-      storedState
-    )
+    typeof storedState === "object" &&
+    !Array.isArray(storedState)
   ) {
     lifelinesState =
       storedState;
   } else {
-    lifelinesState =
-      {};
+    lifelinesState = {};
   }
 }
+
+
 /* =========================================================
-   SCIENTIFIC LIFELINES / THE EXPERT PANEL RENDERING
+   SCIENTIFIC LIFELINES RENDERING
 ========================================================= */
 
 function lifelineDefinitions() {
@@ -641,18 +584,21 @@ function lifelineDefinitions() {
       title: "Ask Dr. Corazón",
       subtitle: "Expert reasoning clue"
     },
+
     {
       id: LIFELINES.filter,
       icon: "✂️",
       title: "Evidence Filter",
       subtitle: "Eliminate two options"
     },
+
     {
       id: LIFELINES.guideline,
       icon: "📘",
       title: "ESC Pocket Guideline",
       subtitle: "Reveal a guideline clue"
     },
+
     {
       id: LIFELINES.vault,
       icon: "🧠",
@@ -680,24 +626,36 @@ function lifelineButtonHtml(
         scientific-lifeline-button
         ${used ? "is-used" : ""}
       "
-      data-lifeline="${esc(definition.id)}"
+      data-lifeline="${esc(
+        definition.id
+      )}"
       ${used ? "disabled" : ""}
-      aria-label="${esc(definition.title)}"
+      aria-label="${esc(
+        definition.title
+      )}"
     >
 
       <span
         class="scientific-lifeline-icon"
         aria-hidden="true"
       >
-        ${esc(definition.icon)}
+        ${esc(
+          definition.icon
+        )}
       </span>
 
       <span class="scientific-lifeline-title">
-        ${esc(definition.title)}
+        ${esc(
+          definition.title
+        )}
       </span>
 
       <span class="scientific-lifeline-subtitle">
-        ${esc(definition.subtitle)}
+        ${esc(
+          used
+            ? "Used"
+            : definition.subtitle
+        )}
       </span>
 
     </button>
@@ -736,9 +694,7 @@ function applyEliminatedOptionStyles(
 
         const eliminated =
           eliminatedIds.has(
-            String(
-              input.value
-            )
+            String(input.value)
           );
 
         optionLabel.classList.toggle(
@@ -747,11 +703,8 @@ function applyEliminatedOptionStyles(
         );
 
         if (eliminated) {
-          input.checked =
-            false;
-
-          input.disabled =
-            true;
+          input.checked = false;
+          input.disabled = true;
         }
       }
     );
@@ -777,7 +730,7 @@ function renderScientificLifelines(
     !counter
   ) {
     console.warn(
-      "Scientific Lifelines HTML elements are missing from learning.html."
+      "Scientific Lifelines elements are missing from learning.html."
     );
 
     return;
@@ -785,11 +738,10 @@ function renderScientificLifelines(
 
   if (
     !question ||
-    answer
+    answer ||
+    reviewMode
   ) {
-    panel.hidden =
-      true;
-
+    panel.hidden = true;
     hideLifelineResponse();
 
     return;
@@ -809,16 +761,10 @@ function renderScientificLifelines(
       )
       .join("");
 
-  const usedCount =
-    lifelineUsedCount(
-      question
-    );
-
   counter.textContent =
-    `${usedCount} / ${definitions.length} used`;
+    `${lifelineUsedCount(question)} / ${definitions.length} used`;
 
-  panel.hidden =
-    false;
+  panel.hidden = false;
 
   applyEliminatedOptionStyles(
     question
@@ -835,9 +781,7 @@ function refreshScientificLifelines(
 
   renderScientificLifelines(
     question,
-    answerFor(
-      question
-    )
+    answerFor(question)
   );
 }
 
@@ -860,283 +804,7 @@ function setLifelineButtonLoading(
     loading
   );
 
-  button.disabled =
-    loading;
-}
-/* =========================================================
-   SCIENTIFIC LIFELINES / THE EXPERT PANEL RENDERING
-========================================================= */
-
-function lifelineDefinitions() {
-  return [
-    {
-      id:
-        LIFELINES.expert,
-
-      icon:
-        "🩺",
-
-      title:
-        "Ask Dr. Corazón",
-
-      subtitle:
-        "Expert reasoning clue"
-    },
-
-    {
-      id:
-        LIFELINES.filter,
-
-      icon:
-        "✂️",
-
-      title:
-        "Evidence Filter",
-
-      subtitle:
-        "Eliminate two options"
-    },
-
-    {
-      id:
-        LIFELINES.guideline,
-
-      icon:
-        "📘",
-
-      title:
-        "ESC Pocket Guideline",
-
-      subtitle:
-        "Reveal a guideline clue"
-    },
-
-    {
-      id:
-        LIFELINES.vault,
-
-      icon:
-        "🧠",
-
-      title:
-        "Knowledge Vault",
-
-      subtitle:
-        "Open the review flashcard"
-    }
-  ];
-}
-
-
-function lifelineButtonHtml(
-  question,
-  definition
-) {
-  const used =
-    lifelineIsUsed(
-      question,
-      definition.id
-    );
-
-  return `
-    <button
-      type="button"
-      class="
-        scientific-lifeline-button
-        ${
-          used
-            ? "is-used"
-            : ""
-        }
-      "
-      data-lifeline="${esc(
-        definition.id
-      )}"
-      ${
-        used
-          ? "disabled"
-          : ""
-      }
-      aria-label="${esc(
-        definition.title
-      )}"
-    >
-
-      <span
-        class="scientific-lifeline-icon"
-        aria-hidden="true"
-      >
-        ${esc(
-          definition.icon
-        )}
-      </span>
-
-      <span class="scientific-lifeline-title">
-        ${esc(
-          definition.title
-        )}
-      </span>
-
-      <span class="scientific-lifeline-subtitle">
-        ${esc(
-          definition.subtitle
-        )}
-      </span>
-
-    </button>
-  `;
-}
-
-
-function renderScientificLifelines(
-  question,
-  answer
-) {
-  const panel =
-    $("scientificLifelinesPanel");
-
-  const buttons =
-    $("scientificLifelinesButtons");
-
-  const counter =
-    $("lifelinesUsageCounter");
-
-  if (
-    !panel ||
-    !buttons ||
-    !counter
-  ) {
-    return;
-  }
-
-  if (
-    !question ||
-    answer
-  ) {
-    panel.hidden =
-      true;
-
-    hideLifelineResponse();
-
-    return;
-  }
-
-  const definitions =
-    lifelineDefinitions();
-
-  buttons.innerHTML =
-    definitions
-      .map(
-        (definition) =>
-          lifelineButtonHtml(
-            question,
-            definition
-          )
-      )
-      .join("");
-
-  const usedCount =
-    lifelineUsedCount(
-      question
-    );
-
-  counter.textContent =
-    `${usedCount} / ${definitions.length} used`;
-
-  panel.hidden =
-    false;
-
-  applyEliminatedOptionStyles(
-    question
-  );
-}
-
-
-function refreshScientificLifelines(
-  question
-) {
-  const answer =
-    question
-      ? answerFor(
-          question
-        )
-      : null;
-
-  renderScientificLifelines(
-    question,
-    answer
-  );
-}
-
-
-function applyEliminatedOptionStyles(
-  question
-) {
-  if (!question) {
-    return;
-  }
-
-  const eliminatedIds =
-    new Set(
-      eliminatedOptionsFor(
-        question
-      )
-    );
-
-  document
-    .querySelectorAll(
-      '.learning-option input[name="answer"]'
-    )
-    .forEach(
-      (input) => {
-        const optionLabel =
-          input.closest(
-            ".learning-option"
-          );
-
-        const eliminated =
-          eliminatedIds.has(
-            String(
-              input.value
-            )
-          );
-
-        if (!optionLabel) {
-          return;
-        }
-
-        optionLabel.classList.toggle(
-          "is-eliminated",
-          eliminated
-        );
-
-        input.disabled =
-          eliminated;
-      }
-    );
-}
-
-
-function setLifelineButtonLoading(
-  lifeline,
-  loading = true
-) {
-  const button =
-    document.querySelector(
-      `[data-lifeline="${lifeline}"]`
-    );
-
-  if (!button) {
-    return;
-  }
-
-  button.classList.toggle(
-    "is-loading",
-    loading
-  );
-
-  button.disabled =
-    loading;
+  button.disabled = loading;
 }
 
 
@@ -1147,14 +815,10 @@ function setLifelineButtonLoading(
 function normaliseFlashcard(
   ...sources
 ) {
-  for (
-    const source of
-    sources
-  ) {
+  for (const source of sources) {
     if (
       !source ||
-      typeof source !==
-        "object"
+      typeof source !== "object"
     ) {
       continue;
     }
@@ -1188,7 +852,6 @@ function normaliseFlashcard(
     ) {
       return {
         title,
-
         content,
 
         type:
@@ -1260,68 +923,50 @@ async function loadFlashcard(
 }
 
 
-function flashcardSections(
-  content
-) {
+function flashcardSections(content) {
   if (!content) {
     return [];
   }
 
+  if (Array.isArray(content)) {
+    return [
+      {
+        heading:
+          "High-yield review",
+
+        lines: content
+      }
+    ];
+  }
+
   if (
-    Array.isArray(
-      content
-    )
+    typeof content === "string"
   ) {
     return [
       {
         heading:
           "High-yield review",
 
-        lines:
-          content
+        lines: [content]
       }
     ];
   }
 
   if (
-    typeof content ===
-    "string"
-  ) {
-    return [
-      {
-        heading:
-          "High-yield review",
-
-        lines:
-          [content]
-      }
-    ];
-  }
-
-  if (
-    typeof content ===
-    "object"
+    typeof content === "object"
   ) {
     return Object.entries(
       content
     ).map(
-      (
-        [
-          heading,
-          value
-        ]
-      ) => ({
+      ([heading, value]) => ({
         heading,
 
         lines:
-          Array.isArray(
-            value
-          )
+          Array.isArray(value)
             ? value
             : [
                 String(
-                  value ||
-                  ""
+                  value || ""
                 )
               ]
       })
@@ -1332,9 +977,7 @@ function flashcardSections(
 }
 
 
-function openFlashcard(
-  flashcard
-) {
+function openFlashcard(flashcard) {
   if (!flashcard) {
     window.alert(
       "A flashcard has not yet been added for this question."
@@ -1395,7 +1038,9 @@ function openFlashcard(
               <section class="learning-flashcard-section">
 
                 <h3>
-                  ${esc(section.heading)}
+                  ${esc(
+                    section.heading
+                  )}
                 </h3>
 
                 <ul>
@@ -1423,8 +1068,7 @@ function openFlashcard(
         </section>
       `;
 
-  modal.hidden =
-    false;
+  modal.hidden = false;
 
   document.body.classList.add(
     "learning-modal-open"
@@ -1437,8 +1081,7 @@ function closeFlashcard() {
     $("learningFlashcardModal");
 
   if (modal) {
-    modal.hidden =
-      true;
+    modal.hidden = true;
   }
 
   document.body.classList.remove(
@@ -1451,34 +1094,28 @@ function closeFlashcard() {
    DR. CORAZÓN FEEDBACK
 ========================================================= */
 
-function feedbackHtml(
-  answer
-) {
+function feedbackHtml(answer) {
   const correct =
-    Boolean(
-      answer.correct
-    );
+    Boolean(answer.correct);
 
   const points =
     Number(
-      answer.points ||
-      0
+      answer.points || 0
     );
 
   const pointText =
     `${
-      points >= 0
-        ? "+"
-        : ""
+      points >= 0 ? "+" : ""
     }${points} point${
       Math.abs(points) === 1
         ? ""
         : "s"
     }`;
-const mascot =
-  correct
-    ? GOOD_JOB_MASCOT
-    : SAD_MASCOT;
+
+  const mascot =
+    correct
+      ? GOOD_JOB_MASCOT
+      : SAD_MASCOT;
 
   const mascotAlt =
     correct
@@ -1496,7 +1133,9 @@ const mascot =
           </h3>
 
           <p>
-            ${esc(answer.explanation)}
+            ${esc(
+              answer.explanation
+            )}
           </p>
 
           ${
@@ -1630,22 +1269,22 @@ const mascot =
         ${explanation}
 
         ${
-  answer.flashcard
-    ? `
-      <div class="learning-feedback-actions">
+          answer.flashcard
+            ? `
+              <div class="learning-feedback-actions">
 
-        <button
-          id="reviewCurrentFlashcard"
-          type="button"
-          class="review-flashcard-btn"
-        >
-          Review the flashcard
-        </button>
+                <button
+                  id="reviewCurrentFlashcard"
+                  type="button"
+                  class="review-flashcard-btn"
+                >
+                  Review the flashcard
+                </button>
 
-      </div>
-    `
-    : ""
-}
+              </div>
+            `
+            : ""
+        }
 
       </div>
 
@@ -1654,9 +1293,7 @@ const mascot =
 }
 
 
-function bindFeedback(
-  answer
-) {
+function bindFeedback(answer) {
   const image =
     document.querySelector(
       ".dr-corazon-image"
@@ -1670,12 +1307,10 @@ function bindFeedback(
   image?.addEventListener(
     "error",
     () => {
-      image.hidden =
-        true;
+      image.hidden = true;
 
       if (fallback) {
-        fallback.hidden =
-          false;
+        fallback.hidden = false;
       }
     },
     {
@@ -1694,11 +1329,8 @@ function bindFeedback(
 
   $("answerFeedbackHost")
     ?.scrollIntoView({
-      behavior:
-        "smooth",
-
-      block:
-        "nearest"
+      behavior: "smooth",
+      block: "nearest"
     });
 }
 
@@ -1720,9 +1352,7 @@ function render() {
   }
 
   const answer =
-    answerFor(
-      question
-    );
+    answerFor(question);
 
   const multipleResponse =
     question.question_type ===
@@ -1732,22 +1362,37 @@ function render() {
     questions.length
       ? Math.round(
           (
-            (
-              index + 1
-            ) /
+            (index + 1) /
             questions.length
           ) *
           100
         )
       : 0;
 
-  $("progressFill").style.width =
-    `${progress}%`;
+  const progressFill =
+    $("progressFill");
 
-  $("questionCount").textContent =
-    `Question ${index + 1} of ${questions.length}`;
+  const questionCount =
+    $("questionCount");
 
-  $("quizArea").innerHTML = `
+  const quizArea =
+    $("quizArea");
+
+  if (progressFill) {
+    progressFill.style.width =
+      `${progress}%`;
+  }
+
+  if (questionCount) {
+    questionCount.textContent =
+      `Question ${index + 1} of ${questions.length}`;
+  }
+
+  if (!quizArea) {
+    return;
+  }
+
+  quizArea.innerHTML = `
     ${
       question.topic
         ? `
@@ -1796,18 +1441,25 @@ function render() {
       ${optionsFor(question)
         .map(
           (option) => {
+            const selectedIds =
+              (answer?.selectedIds || [])
+                .map(String);
+
+            const correctIds =
+              (
+                answer?.correctOptionIds ||
+                []
+              ).map(String);
+
             const selected =
-              answer?.selectedIds
-                ?.includes(
-                  option.id
-                );
+              selectedIds.includes(
+                String(option.id)
+              );
 
             const correct =
-              answer
-                ?.correctOptionIds
-                ?.includes(
-                  option.id
-                );
+              correctIds.includes(
+                String(option.id)
+              );
 
             const incorrect =
               Boolean(
@@ -1886,28 +1538,42 @@ function render() {
     }
   `;
 
-    $("answerFeedbackHost").innerHTML =
-    answer
-      ? feedbackHtml(
-          answer
-        )
-      : "";
+  const feedbackHost =
+    $("answerFeedbackHost");
+
+  if (feedbackHost) {
+    feedbackHost.innerHTML =
+      answer
+        ? feedbackHtml(answer)
+        : "";
+  }
 
   renderScientificLifelines(
     question,
     answer
   );
 
-  $("submitAnswer").hidden =
-    Boolean(answer);
+  const submitButton =
+    $("submitAnswer");
 
-  $("nextQuestion").hidden =
-    !answer;
+  const nextButton =
+    $("nextQuestion");
+
+  if (submitButton) {
+    submitButton.hidden =
+      Boolean(answer);
+
+    submitButton.disabled =
+      false;
+  }
+
+  if (nextButton) {
+    nextButton.hidden =
+      !answer;
+  }
 
   if (answer) {
-    bindFeedback(
-      answer
-    );
+    bindFeedback(answer);
   }
 }
 
@@ -1924,30 +1590,36 @@ async function submit() {
     return;
   }
 
-  const selectedIds =
-    [
-      ...document.querySelectorAll(
-        'input[name="answer"]:checked'
-      )
-    ].map(
-      (input) =>
-        input.value
-    );
+  const selectedIds = [
+    ...document.querySelectorAll(
+      'input[name="answer"]:checked'
+    )
+  ].map(
+    (input) =>
+      input.value
+  );
 
-  if (
-    !selectedIds.length
-  ) {
-    $("answerFeedbackHost").innerHTML = `
-      <div class="answer-feedback warning">
-        Choose an answer first.
-      </div>
-    `;
+  if (!selectedIds.length) {
+    const feedbackHost =
+      $("answerFeedbackHost");
+
+    if (feedbackHost) {
+      feedbackHost.innerHTML = `
+        <div class="answer-feedback warning">
+          Choose an answer first.
+        </div>
+      `;
+    }
 
     return;
   }
 
-  $("submitAnswer").disabled =
-    true;
+  const submitButton =
+    $("submitAnswer");
+
+  if (submitButton) {
+    submitButton.disabled = true;
+  }
 
   try {
     const {
@@ -1956,12 +1628,9 @@ async function submit() {
     } = await supabaseClient.rpc(
       "acl_check_learning_answer",
       {
-        p_quiz_id:
-          quiz.id,
-
+        p_quiz_id: quiz.id,
         p_question_id:
           question.id,
-
         p_option_ids:
           selectedIds
       }
@@ -2019,33 +1688,34 @@ async function submit() {
       flashcard,
 
       answeredAt:
-        new Date()
-          .toISOString()
+        new Date().toISOString()
     };
 
-    setAnswer(
-      answer
-    );
+    setAnswer(answer);
 
-    await persist(
-      false
-    );
+    await persist(false);
 
     render();
   } catch (error) {
     console.error(error);
 
-    $("answerFeedbackHost").innerHTML = `
-      <div class="answer-feedback incorrect">
-        ${esc(
-          error.message ||
-          "Answer could not be checked."
-        )}
-      </div>
-    `;
+    const feedbackHost =
+      $("answerFeedbackHost");
+
+    if (feedbackHost) {
+      feedbackHost.innerHTML = `
+        <div class="answer-feedback incorrect">
+          ${esc(
+            error.message ||
+            "Answer could not be checked."
+          )}
+        </div>
+      `;
+    }
   } finally {
-    $("submitAnswer").disabled =
-      false;
+    if (submitButton) {
+      submitButton.disabled = false;
+    }
   }
 }
 
@@ -2056,9 +1726,7 @@ async function submit() {
 
 async function finish() {
   if (!reviewMode) {
-    await persist(
-      true
-    );
+    await persist(true);
   }
 
   const score =
@@ -2066,14 +1734,10 @@ async function finish() {
 
   const maximum =
     questions.reduce(
-      (
-        total,
-        question
-      ) =>
+      (total, question) =>
         total +
         Number(
-          question.points ||
-          1
+          question.points || 1
         ),
       0
     );
@@ -2081,10 +1745,7 @@ async function finish() {
   const percentage =
     maximum
       ? Math.round(
-          (
-            score /
-            maximum
-          ) *
+          (score / maximum) *
           100
         )
       : 0;
@@ -2096,31 +1757,42 @@ async function finish() {
       0
     );
 
-  $("progressFill").style.width =
-    "100%";
+  const progressFill =
+    $("progressFill");
 
-   $("answerFeedbackHost").innerHTML =
-    "";
+  const feedbackHost =
+    $("answerFeedbackHost");
+
+  const quizArea =
+    $("quizArea");
+
+  if (progressFill) {
+    progressFill.style.width =
+      "100%";
+  }
+
+  if (feedbackHost) {
+    feedbackHost.innerHTML = "";
+  }
 
   const lifelinesPanel =
     $("scientificLifelinesPanel");
 
   if (lifelinesPanel) {
-    lifelinesPanel.hidden =
-      true;
+    lifelinesPanel.hidden = true;
   }
 
   hideLifelineResponse();
 
-  $("quizArea").innerHTML = `
+  if (!quizArea) {
+    return;
+  }
+
+  quizArea.innerHTML = `
     <div class="learning-result">
 
       <span class="result-icon">
-        ${
-          passed
-            ? "✓"
-            : "↻"
-        }
+        ${passed ? "✓" : "↻"}
       </span>
 
       <h2>
@@ -2179,21 +1851,26 @@ async function finish() {
     </div>
   `;
 
-  $("submitAnswer").hidden =
-    true;
+  const submitButton =
+    $("submitAnswer");
 
-  $("nextQuestion").hidden =
-    true;
+  const nextButton =
+    $("nextQuestion");
+
+  if (submitButton) {
+    submitButton.hidden = true;
+  }
+
+  if (nextButton) {
+    nextButton.hidden = true;
+  }
 
   $("reviewAttempt")
     ?.addEventListener(
       "click",
       () => {
-        reviewMode =
-          true;
-
-        index =
-          0;
+        reviewMode = true;
+        index = 0;
 
         render();
       }
@@ -2209,14 +1886,10 @@ async function finish() {
 
 async function startNewAttempt() {
   try {
-    answers =
-      [];
+    answers = [];
+    index = 0;
+    reviewMode = false;
 
-    index =
-      0;
-
-    reviewMode =
-      false;
     resetAllLifelines();
 
     attempt =
@@ -2278,9 +1951,7 @@ $("nextQuestion")
       index += 1;
 
       if (!reviewMode) {
-        await persist(
-          false
-        );
+        await persist(false);
       }
 
       render();
@@ -2312,10 +1983,7 @@ $("learningFlashcardBackdrop")
 document.addEventListener(
   "keydown",
   (event) => {
-    if (
-      event.key ===
-      "Escape"
-    ) {
+    if (event.key === "Escape") {
       closeFlashcard();
     }
   }
@@ -2336,9 +2004,14 @@ document.addEventListener(
     return;
   }
 
+  const quizArea =
+    $("quizArea");
+
   if (!quizSlug) {
-    $("quizArea").innerHTML =
-      "<p>No quiz was selected.</p>";
+    if (quizArea) {
+      quizArea.innerHTML =
+        "<p>No quiz was selected.</p>";
+    }
 
     return;
   }
@@ -2358,8 +2031,7 @@ document.addEventListener(
           quizSlug,
 
         p_module_id:
-          moduleId ||
-          null
+          moduleId || null
       }
     );
 
@@ -2367,30 +2039,50 @@ document.addEventListener(
       throw error;
     }
 
-    quiz =
-      data;
+    if (!data) {
+      throw new Error(
+        "Quiz data was not returned."
+      );
+    }
 
-    $("moduleTitle").textContent =
-      quiz.module_title;
+    quiz = data;
 
-    $("quizTitle").textContent =
-      quiz.title;
+    const moduleTitle =
+      $("moduleTitle");
 
-    $("quizDescription").textContent =
-      quiz.description ||
-      "Immediate feedback, Dr. Corazón reactions, explanations and flashcards after every answer.";
+    const quizTitle =
+      $("quizTitle");
+
+    const quizDescription =
+      $("quizDescription");
+
+    if (moduleTitle) {
+      moduleTitle.textContent =
+        quiz.module_title ||
+        "Learning module";
+    }
+
+    if (quizTitle) {
+      quizTitle.textContent =
+        quiz.title ||
+        "Learning quiz";
+    }
+
+    if (quizDescription) {
+      quizDescription.textContent =
+        quiz.description ||
+        "Immediate feedback, Dr. Corazón reactions, explanations and flashcards after every answer.";
+    }
 
     let pool =
-      quiz.questions ||
-      [];
+      quiz.questions || [];
 
     if (
       quiz.randomize_questions ||
       quiz.selection_mode ===
         "random"
     ) {
-      pool =
-        shuffle(pool);
+      pool = shuffle(pool);
     }
 
     questions =
@@ -2405,6 +2097,12 @@ document.addEventListener(
         )
       );
 
+    if (!questions.length) {
+      throw new Error(
+        "No questions are available in this quiz."
+      );
+    }
+
     attempt =
       await getOpenAttempt(
         quiz.module_id,
@@ -2416,32 +2114,54 @@ document.addEventListener(
         new Map(
           questions.map(
             (question) => [
-              question.id,
+              String(question.id),
               question
             ]
           )
         );
 
-      questions =
-        (
-          attempt.question_ids ||
-          []
-        )
+      const savedQuestionIds =
+        attempt.question_ids ||
+        attempt.questionIds ||
+        [];
+
+      const restoredQuestions =
+        savedQuestionIds
           .map(
             (id) =>
-              questionMap.get(id)
+              questionMap.get(
+                String(id)
+              )
           )
           .filter(Boolean);
 
+      if (
+        restoredQuestions.length
+      ) {
+        questions =
+          restoredQuestions;
+      }
+
       index =
         Number(
-          attempt.current_question_index ||
+          attempt.current_question_index ??
+          attempt.currentIndex ??
           0
         );
 
-           answers =
-        attempt.answers ||
-        [];
+      if (
+        index < 0 ||
+        index >= questions.length
+      ) {
+        index = 0;
+      }
+
+      answers =
+        Array.isArray(
+          attempt.answers
+        )
+          ? attempt.answers
+          : [];
 
       restoreLifelinesState(
         attempt.lifelines_state ||
@@ -2451,8 +2171,10 @@ document.addEventListener(
 
       setStatus(
         "Unfinished learning attempt restored"
-        );
+      );
     } else {
+      resetAllLifelines();
+
       attempt =
         await createAttempt({
           moduleId:
@@ -2491,13 +2213,15 @@ document.addEventListener(
       true
     );
 
-    $("quizArea").innerHTML = `
-      <div class="empty-state">
-        ${esc(
-          error.message ||
-          "Quiz unavailable"
-        )}
-      </div>
-    `;
+    if (quizArea) {
+      quizArea.innerHTML = `
+        <div class="empty-state">
+          ${esc(
+            error.message ||
+            "Quiz unavailable"
+          )}
+        </div>
+      `;
+    }
   }
 })();
