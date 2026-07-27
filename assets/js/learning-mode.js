@@ -2064,6 +2064,7 @@ function confidencePanelHtml(
 
   </section>
 `;
+  }
 function bindAnswerInputs(
   question
 ) {
@@ -2843,18 +2844,7 @@ async function submit(
   const submitButton =
     $("submitAnswer");
 
-  document
-    .querySelectorAll(
-      "[data-confidence]"
-    )
-    .forEach(
-      (button) => {
-        button.disabled =
-          true;
-      }
-    );
-
-  if (submitButton) {
+   if (submitButton) {
     submitButton.disabled =
       true;
   }
@@ -2983,6 +2973,7 @@ async function submit(
       submitButton.disabled =
         false;
     }
+  }
 }
 
 
