@@ -4858,3 +4858,120 @@ body.acl-expert-learning-mode
     white-space: normal;
   }
 }
+/* =========================================================
+   FINAL COMPACT CONFIDENCE TUNING
+========================================================= */
+
+.learning-confidence-panel.contextual-confidence-card {
+  max-width: 410px;
+  padding: 12px;
+  border-radius: 18px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-heading {
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-heading h3 {
+  font-size: 16px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-icon {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border-radius: 10px;
+  font-size: 18px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-options.compact-row {
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 8px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.compact-confidence-choice {
+  min-width: 0;
+  min-height: 54px;
+  padding: 8px 10px;
+  gap: 7px;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.compact-confidence-choice
+.learning-confidence-symbol {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
+  border-radius: 10px;
+  font-size: 17px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.compact-confidence-choice
+.confidence-choice-copy {
+  min-width: 0;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.compact-confidence-choice
+.confidence-choice-copy strong {
+  font-size: 12px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.learning-option-context-row.has-confidence-card {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(270px, 410px);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .learning-confidence-panel.contextual-confidence-card {
+    max-width: none;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card
+  .learning-confidence-heading h3 {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 520px) {
+  .learning-confidence-panel.contextual-confidence-card {
+    padding: 10px;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card
+  .learning-confidence-options.compact-row {
+    gap: 6px;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card
+  .compact-confidence-choice {
+    min-height: 50px;
+    padding: 7px 8px;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card
+  .compact-confidence-choice
+  .confidence-choice-copy strong {
+    font-size: 11px;
+    white-space: normal;
+  }
+}
