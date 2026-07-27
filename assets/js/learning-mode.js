@@ -2499,7 +2499,20 @@ function render() {
     );
 
   quizArea.innerHTML = `
-    <article class="expert-question-layout">
+  <article
+  class="
+    expert-question-layout
+    ${
+      answer
+        ? (
+            answer.correct
+              ? "question-result-correct"
+              : "question-result-incorrect"
+          )
+        : ""
+    }
+  "
+>
 
       <div class="question-topic-row">
 
