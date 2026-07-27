@@ -56,14 +56,49 @@ byId("signInForm")?.addEventListener("submit", async (event) => {
 byId("registerForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   setMessage("registerError"); setMessage("registerSuccess");
-  const fullName = byId("name").value.trim();
-  const username = normalizeUsername(byId("username").value);
-  const email = byId("email").value.trim().toLowerCase();
-  const whatsapp = normalizeEgyptWhatsapp(byId("whatsapp").value);
-  const position = byId("position").value.trim();
-  const institution = byId("institution").value.trim();
-  const password = byId("registerPassword").value;
-  const confirmation = byId("confirmPassword").value;
+  const fullName =
+  byId("name")
+    ?.value
+    ?.trim() || "";
+
+const username =
+  normalizeUsername(
+    byId("username")
+      ?.value
+  );
+
+const email =
+  byId("email")
+    ?.value
+    ?.trim()
+    ?.toLowerCase() || "";
+
+const whatsapp =
+  normalizeEgyptWhatsapp(
+    byId("whatsapp")
+      ?.value
+  );
+
+const position =
+  (
+    byId("position") ||
+    byId("academicYear")
+  )
+    ?.value
+    ?.trim() || "";
+
+const institution =
+  byId("institution")
+    ?.value
+    ?.trim() || "";
+
+const password =
+  byId("registerPassword")
+    ?.value || "";
+
+const confirmation =
+  byId("confirmPassword")
+    ?.value || "";
   if (!fullName || !email || !whatsapp || !position || !institution) return setMessage("registerError", "Please complete all required fields.");
   if (!validUsername(username)) return setMessage("registerError", "Username must be 3–30 characters using letters, numbers, dots or underscores.");
   if (password.length < 8) return setMessage("registerError", "Password must contain at least 8 characters.");
