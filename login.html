@@ -1,55 +1,424 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Account Access | ACL Expert Edition</title>
-  <link rel="stylesheet" href="assets/css/main.css?v=2.8.0">
-  <link rel="stylesheet" href="assets/css/auth.css?v=1.5.1">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    Account Access | ACL Expert Edition
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=2.8.1"
+  >
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=1.5.2"
+  >
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
+
 <body>
-<header class="topbar"><a class="brand brand-link" href="modules.html" aria-label="ACL Expert Edition home">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a class="nav-btn" href="index.html">Home</a></nav></header>
-<main class="auth-shell">
-  <section class="auth-card">
-    <div class="auth-tabs" role="tablist">
-      <button id="signInTab" class="auth-tab active" type="button">Sign in</button>
-      <button id="registerTab" class="auth-tab" type="button">Create account</button>
-    </div>
 
-    <form id="signInForm">
-      <h1>Welcome back</h1>
-      <p class="muted">Use your username or verified email and password.</p>
-      <div class="form-grid">
-        <div class="field full"><label for="identifier">Username or email</label><input id="identifier" autocomplete="username" required></div>
-        <div class="field full"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" minlength="6" required></div>
-      </div>
-      <button class="primary-btn" type="submit" style="margin-top:18px">Sign in</button>
-      <p><a href="forgot-password.html">Forgot password?</a></p>
-      <div id="signInError" class="message error"></div>
-      <div id="signInSuccess" class="message success"></div>
-    </form>
+  <header class="topbar">
 
-    <form id="registerForm" hidden>
-      <h1>Create your account</h1>
-      <p class="muted">Email confirmation is required once. Afterwards, sign in using username or email.</p>
-      <div class="form-grid">
-        <div class="field full"><label for="name">Full name</label><input id="name" autocomplete="name" required></div>
-        <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9._]+" required><small>Letters, numbers, dots and underscores only.</small></div>
-        <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required></div>
-        <div class="field full"><label for="whatsapp">WhatsApp</label><input id="whatsapp" required placeholder="+201XXXXXXXXX"></div>
-        <div class="field"><label for="academicYear">Position</label><select id="academicYear" required><option value="" disabled selected>Select position</option><option value="Consultant">Consultant</option><option value="Specialist">Specialist</option><option value="Assistant Lecturer">Assistant Lecturer</option><option value="Resident">Resident</option><option value="General Practitioner">General Practitioner</option><option value="Intern">Intern</option><option value="Medical Student">Medical Student</option><option value="Nurse">Nurse</option><option value="Technician">Technician</option></select></div>
-        <div class="field"><label for="institution">Institution</label><input id="institution" required></div>
-        <div class="field"><label for="registerPassword">Password</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required></div>
-        <div class="field"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></div>
+    <a
+      class="brand brand-link"
+      href="modules.html"
+      aria-label="ACL Expert Edition home"
+    >
+      Alexandria Cardiology League;
+      <b>THE EXPERT EDITION</b>
+    </a>
+
+
+    <nav>
+
+      <a
+        class="nav-btn"
+        href="index.html"
+      >
+        Home
+      </a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="auth-shell">
+
+    <section class="auth-card">
+
+      <div
+        class="auth-tabs"
+        role="tablist"
+      >
+
+        <button
+          id="signInTab"
+          class="auth-tab active"
+          type="button"
+        >
+          Sign in
+        </button>
+
+
+        <button
+          id="registerTab"
+          class="auth-tab"
+          type="button"
+        >
+          Create account
+        </button>
+
       </div>
-      <button class="primary-btn" type="submit" style="margin-top:18px">Create account</button>
-      <div id="registerError" class="message error"></div>
-      <div id="registerSuccess" class="message success"></div>
-    </form>
-  </section>
-</main>
-<script type="module" src="assets/js/auth.js?v=2.8.0"></script>
+
+
+      <!-- =================================================
+           SIGN IN
+      ================================================== -->
+
+      <form id="signInForm">
+
+        <h1>
+          Welcome back
+        </h1>
+
+        <p class="muted">
+          Use your username or verified email and password.
+        </p>
+
+
+        <div class="form-grid">
+
+          <div class="field full">
+
+            <label for="identifier">
+              Username or email
+            </label>
+
+            <input
+              id="identifier"
+              autocomplete="username"
+              required
+            >
+
+          </div>
+
+
+          <div class="field full">
+
+            <label for="loginPassword">
+              Password
+            </label>
+
+            <input
+              id="loginPassword"
+              type="password"
+              autocomplete="current-password"
+              minlength="6"
+              required
+            >
+
+          </div>
+
+        </div>
+
+
+        <button
+          class="primary-btn"
+          type="submit"
+          style="margin-top:18px"
+        >
+          Sign in
+        </button>
+
+
+        <p>
+          <a href="forgot-password.html">
+            Forgot password?
+          </a>
+        </p>
+
+
+        <div
+          id="signInError"
+          class="message error"
+          role="alert"
+          aria-live="assertive"
+        ></div>
+
+
+        <div
+          id="signInSuccess"
+          class="message success"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+      </form>
+
+
+      <!-- =================================================
+           CREATE ACCOUNT
+      ================================================== -->
+
+      <form
+        id="registerForm"
+        hidden
+      >
+
+        <h1>
+          Create your account
+        </h1>
+
+        <p class="muted">
+          Email confirmation is required once. Afterwards,
+          sign in using username or email.
+        </p>
+
+
+        <div class="form-grid">
+
+          <div class="field full">
+
+            <label for="name">
+              Full name
+            </label>
+
+            <input
+              id="name"
+              name="name"
+              autocomplete="name"
+              required
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="username">
+              Username
+            </label>
+
+            <input
+              id="username"
+              name="username"
+              autocomplete="username"
+              minlength="3"
+              maxlength="30"
+              pattern="[A-Za-z0-9._]+"
+              required
+            >
+
+            <small>
+              Letters, numbers, dots and underscores only.
+            </small>
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="email">
+              Email
+            </label>
+
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+            >
+
+          </div>
+
+
+          <div class="field full">
+
+            <label for="whatsapp">
+              WhatsApp
+            </label>
+
+            <input
+              id="whatsapp"
+              name="whatsapp"
+              inputmode="tel"
+              autocomplete="tel"
+              required
+              placeholder="+201XXXXXXXXX"
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="position">
+              Position
+            </label>
+
+            <select
+              id="position"
+              name="position"
+              required
+            >
+
+              <option
+                value=""
+                disabled
+                selected
+              >
+                Select position
+              </option>
+
+              <option value="Consultant">
+                Consultant
+              </option>
+
+              <option value="Specialist">
+                Specialist
+              </option>
+
+              <option value="Assistant Lecturer">
+                Assistant Lecturer
+              </option>
+
+              <option value="Resident">
+                Resident
+              </option>
+
+              <option value="General Practitioner">
+                General Practitioner
+              </option>
+
+              <option value="Intern">
+                Intern
+              </option>
+
+              <option value="Medical Student">
+                Medical Student
+              </option>
+
+              <option value="Nurse">
+                Nurse
+              </option>
+
+              <option value="Technician">
+                Technician
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="institution">
+              Institution
+            </label>
+
+            <input
+              id="institution"
+              name="institution"
+              required
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="registerPassword">
+              Password
+            </label>
+
+            <input
+              id="registerPassword"
+              name="registerPassword"
+              type="password"
+              autocomplete="new-password"
+              minlength="8"
+              required
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="confirmPassword">
+              Confirm password
+            </label>
+
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autocomplete="new-password"
+              minlength="8"
+              required
+            >
+
+          </div>
+
+        </div>
+
+
+        <button
+          class="primary-btn"
+          type="submit"
+          style="margin-top:18px"
+        >
+          Create account
+        </button>
+
+
+        <div
+          id="registerError"
+          class="message error"
+          role="alert"
+          aria-live="assertive"
+        ></div>
+
+
+        <div
+          id="registerSuccess"
+          class="message success"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+      </form>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="assets/js/auth.js?v=2.8.1"
+  ></script>
+
 </body>
+
 </html>
