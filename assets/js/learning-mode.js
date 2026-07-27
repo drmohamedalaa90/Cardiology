@@ -1,15 +1,35 @@
-import { supabaseClient } from "./supabase-client.js";
-import { protectAndRender } from "./session-ui.js?v=2.8.8";
+import {
+  supabaseClient
+} from "./supabase-client.js";
+
+
+import {
+  protectAndRender
+} from "./session-ui.js?v=5.3.0";
+
 
 import {
   getOpenAttempt,
   createAttempt,
   saveAttempt,
   completeAttempt
-} from "./cloud-progress.js";
+} from "./cloud-progress.js?v=5.3.0";
 
 
-const $ = (id) => document.getElementById(id);
+import {
+  DEFAULT_ACL_SETTINGS,
+  getAclSettings,
+  normalizeAclSettings
+} from "./user-settings.js?v=5.3.0";
+
+
+/* =========================================================
+   DOM HELPERS
+========================================================= */
+
+const $ = (id) =>
+  document.getElementById(id);
+
 
 const esc = (value = "") =>
   String(value).replace(
@@ -25,59 +45,115 @@ const esc = (value = "") =>
   );
 
 
-const params = new URLSearchParams(
-  window.location.search
-);
+/* =========================================================
+   URL PARAMETERS
+========================================================= */
 
-const quizSlug = params.get("quiz");
-const moduleId = params.get("module");
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
 
+
+const quizSlug =
+  params.get("quiz");
+
+
+const requestedModuleId =
+  params.get("module");
+
+
+/* =========================================================
+   MASCOT ASSETS
+========================================================= */
 
 const HAPPY_MASCOT =
   "assets/images/dr-corazon-happy.webp";
 
+
 const GOOD_JOB_MASCOT =
   "assets/images/dr-corazon-good-job.webp";
 
+
 const SAD_MASCOT =
   "assets/images/dr-corazon-sad.webp";
+
 
 const ANGRY_MASCOT =
   "assets/images/dr-corazon-angry.webp";
 
 
-const MASCOT_IMAGES = [
+[
   HAPPY_MASCOT,
   GOOD_JOB_MASCOT,
   SAD_MASCOT,
   ANGRY_MASCOT
-];
+].forEach(
+  (source) => {
+    const image =
+      new Image();
 
+    image.decoding =
+      "async";
 
-function preloadMascotImages() {
-  MASCOT_IMAGES.forEach((source) => {
-    const image = new Image();
-
-    image.decoding = "async";
-    image.src = source;
-  });
-}
-
-
-preloadMascotImages();
-
-
-let quiz = null;
-let questions = [];
-let index = 0;
-let answers = [];
-let attempt = null;
-let saving = false;
-let reviewMode = false;
+    image.src =
+      source;
+  }
+);
 
 
 /* =========================================================
-   SCIENTIFIC LIFELINES / THE EXPERT PANEL
+   APPLICATION STATE
+========================================================= */
+
+let quiz =
+  null;
+
+
+let questions =
+  [];
+
+
+let index =
+  0;
+
+
+let answers =
+  [];
+
+
+let attempt =
+  null;
+
+
+let saving =
+  false;
+
+
+let finishing =
+  false;
+
+
+let reviewMode =
+  false;
+
+
+let lifelinesState =
+  {};
+
+
+let pendingSelectedIds =
+  [];
+
+
+let aclSettings =
+  normalizeAclSettings(
+    DEFAULT_ACL_SETTINGS
+  );
+
+
+/* =========================================================
+   SCIENTIFIC LIFELINES
 ========================================================= */
 
 const LIFELINES = {
@@ -87,25 +163,24 @@ const LIFELINES = {
   vault: "vault"
 };
 
-let lifelinesState = {};
-let expandedLifeline = null;
-
 
 /* =========================================================
-   GENERAL HELPERS
+   STATUS
 ========================================================= */
 
 function setStatus(
   text,
   error = false
 ) {
-  const element = $("saveStatus");
+  const element =
+    $("saveStatus");
 
   if (!element) {
     return;
   }
 
-  element.textContent = text;
+  element.textContent =
+    text;
 
   element.classList.toggle(
     "error",
@@ -119,18 +194,27 @@ function setStatus(
 }
 
 
+/* =========================================================
+   GENERAL HELPERS
+========================================================= */
+
 function shuffle(items) {
-  const result = [...items];
+  const result =
+    [...items];
 
   for (
-    let currentIndex = result.length - 1;
+    let currentIndex =
+      result.length - 1;
+
     currentIndex > 0;
+
     currentIndex -= 1
   ) {
-    const randomIndex = Math.floor(
-      Math.random() *
-      (currentIndex + 1)
-    );
+    const randomIndex =
+      Math.floor(
+        Math.random() *
+        (currentIndex + 1)
+      );
 
     [
       result[currentIndex],
@@ -145,26 +229,291 @@ function shuffle(items) {
 }
 
 
+function currentQuestion() {
+  return (
+    questions[index] ||
+    null
+  );
+}
+
+
+function answerFor(question) {
+  if (!question) {
+    return null;
+  }
+
+  return (
+    answers.find(
+      (answer) =>
+        String(
+          answer.questionId
+        ) ===
+        String(
+          question.id
+        )
+    ) ||
+    null
+  );
+}
+
+
+function setAnswer(answer) {
+  const answerIndex =
+    answers.findIndex(
+      (item) =>
+        String(
+          item.questionId
+        ) ===
+        String(
+          answer.questionId
+        )
+    );
+
+  if (
+    answerIndex >= 0
+  ) {
+    answers[
+      answerIndex
+    ] =
+      answer;
+  } else {
+    answers.push(
+      answer
+    );
+  }
+}
+
+
+function optionsFor(question) {
+  if (
+    !Array.isArray(
+      question?._options
+    )
+  ) {
+    question._options =
+      [
+        ...(
+          question?.options ||
+          []
+        )
+      ].sort(
+        (
+          first,
+          second
+        ) => {
+          const orderDifference =
+            Number(
+              first.display_order ??
+              999
+            ) -
+            Number(
+              second.display_order ??
+              999
+            );
+
+          return (
+            orderDifference ||
+            String(
+              first.key ||
+              ""
+            ).localeCompare(
+              String(
+                second.key ||
+                ""
+              )
+            )
+          );
+        }
+      );
+  }
+
+  return question._options;
+}
+
+
+function randomItems(
+  items,
+  count
+) {
+  const pool =
+    [...items];
+
+  const selected =
+    [];
+
+  while (
+    pool.length &&
+    selected.length <
+      count
+  ) {
+    const randomIndex =
+      Math.floor(
+        Math.random() *
+        pool.length
+      );
+
+    selected.push(
+      pool.splice(
+        randomIndex,
+        1
+      )[0]
+    );
+  }
+
+  return selected;
+}
+
+
+/* =========================================================
+   CONFIDENCE SCORING
+========================================================= */
+
+function confidenceEnabled() {
+  return Boolean(
+    aclSettings
+      .confidenceEnabled
+  );
+}
+
+
+function normalizeConfidence(
+  confidence
+) {
+  const value =
+    String(
+      confidence ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    value === "high"
+  ) {
+    return "high";
+  }
+
+  if (
+    value === "low"
+  ) {
+    return "low";
+  }
+
+  return null;
+}
+
+
+function confidencePoints({
+  correct,
+  confidence
+}) {
+  /*
+   * Confidence scoring:
+   *
+   * Correct + High = +2
+   * Correct + Low  = +1
+   * Wrong + Low    =  0
+   * Wrong + High   = -1
+   */
+
+  if (
+    !confidenceEnabled()
+  ) {
+    return correct
+      ? 1
+      : 0;
+  }
+
+  const normalized =
+    normalizeConfidence(
+      confidence
+    );
+
+  if (
+    correct &&
+    normalized ===
+      "high"
+  ) {
+    return 2;
+  }
+
+  if (
+    correct &&
+    normalized ===
+      "low"
+  ) {
+    return 1;
+  }
+
+  if (
+    !correct &&
+    normalized ===
+      "low"
+  ) {
+    return 0;
+  }
+
+  if (
+    !correct &&
+    normalized ===
+      "high"
+  ) {
+    return -1;
+  }
+
+  return correct
+    ? 1
+    : 0;
+}
+
+
+function maximumPossibleScore() {
+  return (
+    questions.length *
+    (
+      confidenceEnabled()
+        ? 2
+        : 1
+    )
+  );
+}
+
+
+/* =========================================================
+   APPLICATION STATE AND CLOUD SAVE
+========================================================= */
+
 function appState() {
   return {
-    questionIds: questions.map(
-      (question) => question.id
-    ),
+    questionIds:
+      questions.map(
+        (question) =>
+          question.id
+      ),
 
-    currentIndex: index,
+    currentIndex:
+      index,
 
     answers,
 
     lifelinesState,
 
-    score: answers.reduce(
-      (total, answer) =>
-        total +
-        Number(
-          answer.points || 0
-        ),
-      0
-    )
+    confidenceEnabled:
+      confidenceEnabled(),
+
+    score:
+      answers.reduce(
+        (
+          total,
+          answer
+        ) =>
+          total +
+          Number(
+            answer.points ||
+            0
+          ),
+        0
+      )
   };
 }
 
@@ -180,20 +529,29 @@ async function persist(
     return;
   }
 
-  saving = true;
+  saving =
+    true;
 
-  setStatus("Saving…");
+  setStatus(
+    "Saving…"
+  );
 
   try {
-    attempt = done
-      ? await completeAttempt(
-          attempt.id,
-          appState()
-        )
-      : await saveAttempt(
-          attempt.id,
-          appState()
-        );
+    const state =
+      appState();
+
+    attempt =
+      done
+        ? await completeAttempt(
+            attempt.id,
+            state,
+            lifelinesState
+          )
+        : await saveAttempt(
+            attempt.id,
+            state,
+            lifelinesState
+          );
 
     setStatus(
       done
@@ -201,86 +559,50 @@ async function persist(
         : "Saved to cloud"
     );
   } catch (error) {
-    console.error(error);
+    console.error(
+      "LEARNING SAVE ERROR:",
+      error
+    );
 
     setStatus(
+      error.message ||
       "Save failed — check connection",
       true
     );
   } finally {
-    saving = false;
+    saving =
+      false;
   }
-}
-
-
-function currentQuestion() {
-  return questions[index] || null;
-}
-
-
-function answerFor(question) {
-  if (!question) {
-    return null;
-  }
-
-  return answers.find(
-    (answer) =>
-      String(answer.questionId) ===
-      String(question.id)
-  ) || null;
-}
-
-
-function setAnswer(answer) {
-  const answerIndex =
-    answers.findIndex(
-      (item) =>
-        String(item.questionId) ===
-        String(answer.questionId)
-    );
-
-  if (answerIndex >= 0) {
-    answers[answerIndex] = answer;
-  } else {
-    answers.push(answer);
-  }
-}
-
-
-function optionsFor(question) {
-  if (!question._options) {
-    question._options = [
-      ...(question.options || [])
-    ].sort(
-      (first, second) => {
-        const orderDifference =
-          Number(
-            first.display_order ?? 999
-          ) -
-          Number(
-            second.display_order ?? 999
-          );
-
-        return (
-          orderDifference ||
-          String(
-            first.key || ""
-          ).localeCompare(
-            String(
-              second.key || ""
-            )
-          )
-        );
-      }
-    );
-  }
-
-  return question._options;
 }
 
 
 /* =========================================================
-   SCIENTIFIC LIFELINES STATE HELPERS
+   LIFELINE SETTINGS
+========================================================= */
+
+function lifelinesEnabled() {
+  return Boolean(
+    aclSettings
+      .lifelinesEnabled
+  );
+}
+
+
+function enabledLifeline(
+  lifeline
+) {
+  return (
+    lifelinesEnabled() &&
+    aclSettings
+      .enabledLifelines[
+        lifeline
+      ] !== false
+  );
+}
+
+
+/* =========================================================
+   LIFELINE STATE
 ========================================================= */
 
 function defaultQuestionLifelines() {
@@ -289,26 +611,54 @@ function defaultQuestionLifelines() {
     filter: false,
     guideline: false,
     vault: false,
-    eliminatedOptionIds: []
+
+    eliminatedOptionIds:
+      []
   };
 }
 
 
-function lifelinesForQuestion(question) {
+function lifelinesForQuestion(
+  question
+) {
   if (!question) {
-    return defaultQuestionLifelines();
+    return (
+      defaultQuestionLifelines()
+    );
   }
 
-  const questionId = String(
-    question.id
-  );
+  const questionId =
+    String(
+      question.id
+    );
 
-  if (!lifelinesState[questionId]) {
-    lifelinesState[questionId] =
+  if (
+    !lifelinesState[
+      questionId
+    ]
+  ) {
+    lifelinesState[
+      questionId
+    ] =
       defaultQuestionLifelines();
   }
 
-  return lifelinesState[questionId];
+  const state =
+    lifelinesState[
+      questionId
+    ];
+
+  if (
+    !Array.isArray(
+      state
+        .eliminatedOptionIds
+    )
+  ) {
+    state.eliminatedOptionIds =
+      [];
+  }
+
+  return state;
 }
 
 
@@ -320,34 +670,20 @@ function updateQuestionLifelines(
     return;
   }
 
-  const questionId = String(
-    question.id
-  );
-
-  const current =
-    lifelinesForQuestion(
-      question
+  const questionId =
+    String(
+      question.id
     );
 
-  lifelinesState[questionId] = {
-    ...current,
+  lifelinesState[
+    questionId
+  ] = {
+    ...lifelinesForQuestion(
+      question
+    ),
+
     ...changes
   };
-}
-
-
-function lifelineUsedCount(question) {
-  const state =
-    lifelinesForQuestion(
-      question
-    );
-
-  return [
-    state.expert,
-    state.filter,
-    state.guideline,
-    state.vault
-  ].filter(Boolean).length;
 }
 
 
@@ -355,13 +691,12 @@ function lifelineIsUsed(
   question,
   lifeline
 ) {
-  const state =
+  return Boolean(
     lifelinesForQuestion(
       question
-    );
-
-  return Boolean(
-    state[lifeline]
+    )[
+      lifeline
+    ]
   );
 }
 
@@ -370,21 +705,128 @@ function markLifelineUsed(
   question,
   lifeline
 ) {
-  if (
-    !question ||
-    !lifeline
-  ) {
-    return;
-  }
-
   updateQuestionLifelines(
     question,
     {
-      [lifeline]: true
+      [lifeline]:
+        true
     }
   );
 }
 
+
+function lifelineUsedCount(
+  question
+) {
+  const state =
+    lifelinesForQuestion(
+      question
+    );
+
+  return [
+    LIFELINES.expert,
+    LIFELINES.filter,
+    LIFELINES.guideline,
+    LIFELINES.vault
+  ]
+    .filter(
+      (lifeline) =>
+        enabledLifeline(
+          lifeline
+        )
+    )
+    .filter(
+      (lifeline) =>
+        Boolean(
+          state[
+            lifeline
+          ]
+        )
+    )
+    .length;
+}
+
+
+function enabledLifelineCount() {
+  return [
+    LIFELINES.expert,
+    LIFELINES.filter,
+    LIFELINES.guideline,
+    LIFELINES.vault
+  ].filter(
+    (lifeline) =>
+      enabledLifeline(
+        lifeline
+      )
+  ).length;
+}
+
+
+function eliminatedOptionsFor(
+  question
+) {
+  return (
+    lifelinesForQuestion(
+      question
+    )
+      .eliminatedOptionIds ||
+    []
+  ).map(
+    String
+  );
+}
+
+
+function setEliminatedOptions(
+  question,
+  optionIds
+) {
+  updateQuestionLifelines(
+    question,
+    {
+      eliminatedOptionIds:
+        (
+          optionIds ||
+          []
+        ).map(
+          String
+        )
+    }
+  );
+}
+
+
+function restoreLifelinesState(
+  storedState
+) {
+  if (
+    storedState &&
+    typeof storedState ===
+      "object" &&
+    !Array.isArray(
+      storedState
+    )
+  ) {
+    lifelinesState =
+      storedState;
+
+    return;
+  }
+
+  lifelinesState =
+    {};
+}
+
+
+function resetAllLifelines() {
+  lifelinesState =
+    {};
+}
+
+
+/* =========================================================
+   LIFELINE RESPONSE
+========================================================= */
 
 function lifelineResponseElement() {
   return $(
@@ -393,22 +835,10 @@ function lifelineResponseElement() {
 }
 
 
-function hideLifelineResponse() {
-  const response =
-    lifelineResponseElement();
-
-  if (!response) {
-    return;
-  }
-
-  response.hidden = true;
-  response.innerHTML = "";
-}
-
-
 function showLifelineResponse({
   icon = "🩺",
-  title = "Scientific Lifeline",
+  title =
+    "Scientific Lifeline",
   message = ""
 } = {}) {
   const response =
@@ -439,7 +869,8 @@ function showLifelineResponse({
     </p>
   `;
 
-  response.hidden = false;
+  response.hidden =
+    false;
 
   response.scrollIntoView({
     behavior: "smooth",
@@ -448,19 +879,27 @@ function showLifelineResponse({
 }
 
 
-function expertHintFor(question) {
+/* =========================================================
+   LIFELINE CONTENT
+========================================================= */
+
+function expertHintFor(
+  question
+) {
   return (
     question.expert_hint ||
     question.expertHint ||
     question.dr_corazon_hint ||
     question.drCorazonHint ||
     question.hint ||
-    "Focus on the central clinical decision in the question. Identify the most important finding, then compare each option with the relevant guideline principle."
+    "Focus on the central clinical decision. Identify the decisive clinical detail and compare each option with the relevant evidence or guideline principle."
   );
 }
 
 
-function guidelineHintFor(question) {
+function guidelineHintFor(
+  question
+) {
   return (
     question.guideline_hint ||
     question.guidelineHint ||
@@ -468,148 +907,92 @@ function guidelineHintFor(question) {
     question.guidelineClue ||
     question.reference_text ||
     question.referenceText ||
-    "Recall the principal guideline recommendation, including the relevant indication, threshold, timing, contraindication, or treatment priority."
+    "Recall the main guideline recommendation, including its indication, threshold, timing, contraindication or treatment priority."
   );
 }
 
-
-function randomItems(
-  items,
-  count
-) {
-  const pool = [...items];
-  const selected = [];
-
-  while (
-    pool.length &&
-    selected.length < count
-  ) {
-    const randomIndex =
-      Math.floor(
-        Math.random() *
-        pool.length
-      );
-
-    selected.push(
-      pool.splice(
-        randomIndex,
-        1
-      )[0]
-    );
-  }
-
-  return selected;
-}
-
-
-function eligibleIncorrectOptions(
-  question,
-  correctOptionIds = []
-) {
-  const correctIds =
-    new Set(
-      correctOptionIds.map(
-        String
-      )
-    );
-
-  return optionsFor(
-    question
-  ).filter(
-    (option) =>
-      !correctIds.has(
-        String(option.id)
-      )
-  );
-}
-
-
-function setEliminatedOptions(
-  question,
-  optionIds
-) {
-  updateQuestionLifelines(
-    question,
-    {
-      eliminatedOptionIds:
-        (optionIds || []).map(
-          String
-        )
-    }
-  );
-}
-
-
-function eliminatedOptionsFor(
-  question
-) {
-  return (
-    lifelinesForQuestion(
-      question
-    ).eliminatedOptionIds ||
-    []
-  ).map(String);
-}
-
-
-function resetAllLifelines() {
-  lifelinesState = {};
-}
-
-
-function restoreLifelinesState(
-  storedState
-) {
-  if (
-    storedState &&
-    typeof storedState === "object" &&
-    !Array.isArray(storedState)
-  ) {
-    lifelinesState =
-      storedState;
-  } else {
-    lifelinesState = {};
-  }
-}
 
 /* =========================================================
-   SCIENTIFIC LIFELINES — COMPACT TOOLBAR
+   LIFELINE TOOLBAR
 ========================================================= */
 
 function lifelineDefinitions() {
-  return [
+  const definitions = [
     {
-      id: LIFELINES.expert,
-      icon: "",
-      image: HAPPY_MASCOT,
-      title: "Ask Dr. Corazón",
-      shortTitle: "Dr. Corazón"
+      id:
+        LIFELINES.expert,
+
+      icon:
+        "",
+
+      image:
+        HAPPY_MASCOT,
+
+      title:
+        "Ask Dr. Corazón",
+
+      shortTitle:
+        "Dr. Corazón"
     },
 
     {
-      id: LIFELINES.filter,
-      icon: "✂️",
-      image: "",
-      title: "Evidence Filter",
-      shortTitle: "Evidence Filter"
+      id:
+        LIFELINES.filter,
+
+      icon:
+        "✂️",
+
+      image:
+        "",
+
+      title:
+        "Evidence Filter",
+
+      shortTitle:
+        "Evidence Filter"
     },
 
     {
-      id: LIFELINES.guideline,
-      icon: "📘",
-      image: "",
-      title: "ESC Pocket Guideline",
-      shortTitle: "ESC Guideline"
+      id:
+        LIFELINES.guideline,
+
+      icon:
+        "📘",
+
+      image:
+        "",
+
+      title:
+        "ESC Pocket Guideline",
+
+      shortTitle:
+        "ESC Guideline"
     },
 
     {
-      id: LIFELINES.vault,
-      icon: "🧠",
-      image: "",
-      title: "Knowledge Vault",
-      shortTitle: "Knowledge Vault"
+      id:
+        LIFELINES.vault,
+
+      icon:
+        "🧠",
+
+      image:
+        "",
+
+      title:
+        "Knowledge Vault",
+
+      shortTitle:
+        "Knowledge Vault"
     }
   ];
+
+  return definitions.filter(
+    (definition) =>
+      enabledLifeline(
+        definition.id
+      )
+  );
 }
 
 
@@ -623,16 +1006,11 @@ function compactLifelineButtonHtml(
       definition.id
     );
 
-  const expanded =
-    expandedLifeline ===
-    definition.id;
-
   return `
     <button
       type="button"
       class="
         compact-lifeline-button
-        ${expanded ? "is-expanded" : ""}
         ${used ? "is-used" : ""}
       "
       data-lifeline="${esc(
@@ -641,11 +1019,6 @@ function compactLifelineButtonHtml(
       aria-label="${esc(
         definition.title
       )}"
-      aria-expanded="${
-        expanded
-          ? "true"
-          : "false"
-      }"
       ${used ? "disabled" : ""}
     >
 
@@ -705,13 +1078,20 @@ function scientificLifelinesToolbarHtml(
   if (
     !question ||
     answer ||
-    reviewMode
+    reviewMode ||
+    !lifelinesEnabled()
   ) {
     return "";
   }
 
   const definitions =
     lifelineDefinitions();
+
+  if (
+    !definitions.length
+  ) {
+    return "";
+  }
 
   return `
     <div class="question-topic-tools">
@@ -740,7 +1120,9 @@ function scientificLifelinesToolbarHtml(
         </div>
 
         <span class="compact-lifelines-counter">
-          ${lifelineUsedCount(question)}/4
+          ${lifelineUsedCount(
+            question
+          )}/${enabledLifelineCount()}
         </span>
 
       </div>
@@ -756,6 +1138,380 @@ function scientificLifelinesToolbarHtml(
   `;
 }
 
+
+/* =========================================================
+   EVIDENCE FILTER
+========================================================= */
+
+function explicitCorrectOptionIds(
+  question
+) {
+  const direct =
+    question.correct_option_ids ||
+    question.correctOptionIds ||
+    [];
+
+  if (
+    Array.isArray(
+      direct
+    ) &&
+    direct.length
+  ) {
+    return direct.map(
+      String
+    );
+  }
+
+  return optionsFor(
+    question
+  )
+    .filter(
+      (option) =>
+        option.is_correct ===
+          true ||
+        option.correct ===
+          true
+    )
+    .map(
+      (option) =>
+        String(
+          option.id
+        )
+    );
+}
+
+
+async function secureCorrectOptionIds(
+  question
+) {
+  const explicit =
+    explicitCorrectOptionIds(
+      question
+    );
+
+  if (
+    explicit.length
+  ) {
+    return explicit;
+  }
+
+  /*
+   * Use the existing secure answer-check RPC with all options
+   * to retrieve the correct option IDs without storing an answer.
+   */
+
+  const allOptionIds =
+    optionsFor(
+      question
+    ).map(
+      (option) =>
+        String(
+          option.id
+        )
+    );
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient.rpc(
+      "acl_check_learning_answer",
+      {
+        p_quiz_id:
+          quiz.id,
+
+        p_question_id:
+          question.id,
+
+        p_option_ids:
+          allOptionIds
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  const correctIds =
+    data?.correct_option_ids ||
+    data?.correctOptionIds ||
+    [];
+
+  if (
+    !Array.isArray(
+      correctIds
+    ) ||
+    !correctIds.length
+  ) {
+    throw new Error(
+      "The Evidence Filter could not identify the incorrect options."
+    );
+  }
+
+  return correctIds.map(
+    String
+  );
+}
+
+
+async function activateEvidenceFilter(
+  question
+) {
+  const correctIds =
+    await secureCorrectOptionIds(
+      question
+    );
+
+  const correctSet =
+    new Set(
+      correctIds
+    );
+
+  const incorrectOptions =
+    optionsFor(
+      question
+    ).filter(
+      (option) =>
+        !correctSet.has(
+          String(
+            option.id
+          )
+        )
+    );
+
+  const removableCount =
+    Math.min(
+      2,
+      Math.max(
+        incorrectOptions.length -
+        1,
+        1
+      )
+    );
+
+  const removed =
+    randomItems(
+      incorrectOptions,
+      removableCount
+    ).map(
+      (option) =>
+        String(
+          option.id
+        )
+    );
+
+  setEliminatedOptions(
+    question,
+    removed
+  );
+
+  pendingSelectedIds =
+    pendingSelectedIds.filter(
+      (optionId) =>
+        !removed.includes(
+          String(
+            optionId
+          )
+        )
+    );
+}
+
+
+/* =========================================================
+   LIFELINE ACTIVATION
+========================================================= */
+
+async function activateLifeline(
+  question,
+  lifeline
+) {
+  if (
+    !question ||
+    !enabledLifeline(
+      lifeline
+    ) ||
+    lifelineIsUsed(
+      question,
+      lifeline
+    )
+  ) {
+    return;
+  }
+
+  const button =
+    document.querySelector(
+      `[data-lifeline="${lifeline}"]`
+    );
+
+  if (button) {
+    button.disabled =
+      true;
+
+    button.classList.add(
+      "is-loading"
+    );
+  }
+
+  try {
+    if (
+      lifeline ===
+      LIFELINES.filter
+    ) {
+      await activateEvidenceFilter(
+        question
+      );
+    }
+
+    markLifelineUsed(
+      question,
+      lifeline
+    );
+
+    render();
+
+    if (
+      lifeline ===
+      LIFELINES.expert
+    ) {
+      showLifelineResponse({
+        icon:
+          "🩺",
+
+        title:
+          "Dr. Corazón says",
+
+        message:
+          expertHintFor(
+            question
+          )
+      });
+    }
+
+
+    if (
+      lifeline ===
+      LIFELINES.guideline
+    ) {
+      showLifelineResponse({
+        icon:
+          "📘",
+
+        title:
+          "ESC Pocket Guideline",
+
+        message:
+          guidelineHintFor(
+            question
+          )
+      });
+    }
+
+
+    if (
+      lifeline ===
+      LIFELINES.filter
+    ) {
+      showLifelineResponse({
+        icon:
+          "✂️",
+
+        title:
+          "Evidence Filter",
+
+        message:
+          "Two incorrect options have been removed. Reassess the remaining choices carefully."
+      });
+    }
+
+
+    if (
+      lifeline ===
+      LIFELINES.vault
+    ) {
+      const flashcard =
+        await loadFlashcard(
+          question,
+          null
+        );
+
+      if (flashcard) {
+        openFlashcard(
+          flashcard
+        );
+      } else {
+        showLifelineResponse({
+          icon:
+            "🧠",
+
+          title:
+            "Knowledge Vault",
+
+          message:
+            "A review flashcard has not yet been added for this question."
+        });
+      }
+    }
+
+    await persist(
+      false
+    );
+  } catch (error) {
+    console.error(
+      "LIFELINE ERROR:",
+      error
+    );
+
+    showLifelineResponse({
+      icon:
+        "⚠️",
+
+      title:
+        "Lifeline unavailable",
+
+      message:
+        error.message ||
+        "This lifeline could not be used."
+    });
+
+    render();
+  }
+}
+
+
+function bindCompactLifelines(
+  question
+) {
+  document
+    .querySelectorAll(
+      ".compact-lifeline-button"
+    )
+    .forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          async () => {
+            const lifeline =
+              button.dataset
+                .lifeline;
+
+            if (!lifeline) {
+              return;
+            }
+
+            await activateLifeline(
+              question,
+              lifeline
+            );
+          }
+        );
+      }
+    );
+}
+
+
+/* =========================================================
+   ELIMINATED OPTIONS
+========================================================= */
 
 function applyEliminatedOptionStyles(
   question
@@ -777,245 +1533,54 @@ function applyEliminatedOptionStyles(
     )
     .forEach(
       (input) => {
-        const optionLabel =
+        const label =
           input.closest(
             ".learning-option"
           );
 
-        if (!optionLabel) {
+        if (!label) {
           return;
         }
 
         const eliminated =
           eliminatedIds.has(
-            String(input.value)
+            String(
+              input.value
+            )
           );
 
-        optionLabel.classList.toggle(
+        label.classList.toggle(
           "is-eliminated",
           eliminated
         );
 
         if (eliminated) {
-          input.checked = false;
-          input.disabled = true;
+          input.checked =
+            false;
+
+          input.disabled =
+            true;
         }
-      }
-    );
-}
-
-
-function refreshCompactLifelines(
-  question
-) {
-  if (!question) {
-    return;
-  }
-
-  render();
-}
-
-
-function setLifelineButtonLoading(
-  lifeline,
-  loading = true
-) {
-  const button =
-    document.querySelector(
-      `[data-lifeline="${lifeline}"]`
-    );
-
-  if (!button) {
-    return;
-  }
-
-  button.classList.toggle(
-    "is-loading",
-    loading
-  );
-
-  button.disabled = loading;
-}
-
-
-function questionFlashcard(question) {
-  return normaliseFlashcard(
-    question
-  );
-}
-
-
-async function activateLifeline(
-  question,
-  lifeline
-) {
-  if (
-    !question ||
-    lifelineIsUsed(
-      question,
-      lifeline
-    )
-  ) {
-    return;
-  }
-
-  markLifelineUsed(
-    question,
-    lifeline
-  );
-
-  expandedLifeline = null;
-
-  if (
-    lifeline ===
-    LIFELINES.expert
-  ) {
-    render();
-
-    showLifelineResponse({
-      icon: "🩺",
-      title: "Dr. Corazón says",
-      message:
-        expertHintFor(
-          question
-        )
-    });
-
-    await persist(false);
-
-    return;
-  }
-
-
-  if (
-    lifeline ===
-    LIFELINES.guideline
-  ) {
-    render();
-
-    showLifelineResponse({
-      icon: "📘",
-      title: "ESC Pocket Guideline",
-      message:
-        guidelineHintFor(
-          question
-        )
-    });
-
-    await persist(false);
-
-    return;
-  }
-
-
-  if (
-    lifeline ===
-    LIFELINES.vault
-  ) {
-    const flashcard =
-      questionFlashcard(
-        question
-      );
-
-    render();
-
-    if (flashcard) {
-      openFlashcard(
-        flashcard
-      );
-    } else {
-      showLifelineResponse({
-        icon: "🧠",
-        title: "Knowledge Vault",
-        message:
-          "A review flashcard has not yet been added for this question."
-      });
-    }
-
-    await persist(false);
-
-    return;
-  }
-
-
-  if (
-    lifeline ===
-    LIFELINES.filter
-  ) {
-    render();
-
-    showLifelineResponse({
-      icon: "✂️",
-      title: "Evidence Filter",
-      message:
-        "The secure option-elimination service will be connected in the next update."
-    });
-
-    await persist(false);
-  }
-}
-
-
-function bindCompactLifelines(
-  question
-) {
-  document
-    .querySelectorAll(
-      ".compact-lifeline-button"
-    )
-    .forEach(
-      (button) => {
-        button.addEventListener(
-          "click",
-          async () => {
-            const lifeline =
-              button.dataset
-                .lifeline;
-
-            if (
-              !lifeline ||
-              lifelineIsUsed(
-                question,
-                lifeline
-              )
-            ) {
-              return;
-            }
-
-            if (
-              expandedLifeline !==
-              lifeline
-            ) {
-              expandedLifeline =
-                lifeline;
-
-              render();
-
-              return;
-            }
-
-            await activateLifeline(
-              question,
-              lifeline
-            );
-          }
-        );
       }
     );
 }
 
 
 /* =========================================================
-   FLASHCARD DATA
+   FLASHCARDS
 ========================================================= */
 
 function normaliseFlashcard(
   ...sources
 ) {
-  for (const source of sources) {
+  for (
+    const source
+    of sources
+  ) {
     if (
       !source ||
-      typeof source !== "object"
+      typeof source !==
+        "object"
     ) {
       continue;
     }
@@ -1032,16 +1597,41 @@ function normaliseFlashcard(
       source.flashcard_title ||
       source.flashcardTitle;
 
-    const content =
-      nested?.content ||
-      source.flashcard_content ||
-      source.flashcardContent;
-
     const rawType =
       nested?.type ||
       source.flashcard_type ||
       source.flashcardType ||
       "FLASHCARD";
+
+    let content =
+      nested?.content ||
+      source.flashcard_content ||
+      source.flashcardContent;
+
+    /*
+     * Also support the structured sections format.
+     */
+
+    if (
+      !content &&
+      Array.isArray(
+        nested?.sections
+      )
+    ) {
+      content =
+        Object.fromEntries(
+          nested.sections.map(
+            (section) => [
+              section.heading ||
+              "Review",
+
+              section.bullets ||
+              section.lines ||
+              []
+            ]
+          )
+        );
+    }
 
     if (
       title &&
@@ -1049,6 +1639,7 @@ function normaliseFlashcard(
     ) {
       return {
         title,
+
         content,
 
         type:
@@ -1084,18 +1675,21 @@ async function loadFlashcard(
     const {
       data,
       error
-    } = await supabaseClient
-      .from("questions")
-      .select(`
-        flashcard_title,
-        flashcard_type,
-        flashcard_content
-      `)
-      .eq(
-        "id",
-        question.id
-      )
-      .maybeSingle();
+    } =
+      await supabaseClient
+        .from(
+          "questions"
+        )
+        .select(`
+          flashcard_title,
+          flashcard_type,
+          flashcard_content
+        `)
+        .eq(
+          "id",
+          question.id
+        )
+        .maybeSingle();
 
     if (error) {
       console.info(
@@ -1120,50 +1714,68 @@ async function loadFlashcard(
 }
 
 
-function flashcardSections(content) {
+function flashcardSections(
+  content
+) {
   if (!content) {
     return [];
   }
 
-  if (Array.isArray(content)) {
-    return [
-      {
-        heading:
-          "High-yield review",
-
-        lines: content
-      }
-    ];
-  }
-
   if (
-    typeof content === "string"
+    Array.isArray(
+      content
+    )
   ) {
     return [
       {
         heading:
           "High-yield review",
 
-        lines: [content]
+        lines:
+          content
       }
     ];
   }
 
   if (
-    typeof content === "object"
+    typeof content ===
+    "string"
+  ) {
+    return [
+      {
+        heading:
+          "High-yield review",
+
+        lines:
+          [content]
+      }
+    ];
+  }
+
+  if (
+    typeof content ===
+    "object"
   ) {
     return Object.entries(
       content
     ).map(
-      ([heading, value]) => ({
+      (
+        [
+          heading,
+          value
+        ]
+      ) => ({
         heading,
 
         lines:
-          Array.isArray(value)
+          Array.isArray(
+            value
+          )
             ? value
             : [
                 String(
-                  value || ""
+                  value ||
+                  ""
                 )
               ]
       })
@@ -1174,7 +1786,9 @@ function flashcardSections(content) {
 }
 
 
-function openFlashcard(flashcard) {
+function openFlashcard(
+  flashcard
+) {
   if (!flashcard) {
     window.alert(
       "A flashcard has not yet been added for this question."
@@ -1201,10 +1815,6 @@ function openFlashcard(flashcard) {
     !title ||
     !content
   ) {
-    console.error(
-      "Flashcard elements are missing from learning.html."
-    );
-
     return;
   }
 
@@ -1241,16 +1851,22 @@ function openFlashcard(flashcard) {
                 </h3>
 
                 <ul>
+
                   ${section.lines
-                    .filter(Boolean)
+                    .filter(
+                      Boolean
+                    )
                     .map(
                       (line) => `
                         <li>
-                          ${esc(line)}
+                          ${esc(
+                            line
+                          )}
                         </li>
                       `
                     )
                     .join("")}
+
                 </ul>
 
               </section>
@@ -1259,13 +1875,16 @@ function openFlashcard(flashcard) {
           .join("")
       : `
         <section class="learning-flashcard-section">
+
           <p>
             No flashcard content has been added yet.
           </p>
+
         </section>
       `;
 
-  modal.hidden = false;
+  modal.hidden =
+    false;
 
   document.body.classList.add(
     "learning-modal-open"
@@ -1278,7 +1897,8 @@ function closeFlashcard() {
     $("learningFlashcardModal");
 
   if (modal) {
-    modal.hidden = true;
+    modal.hidden =
+      true;
   }
 
   document.body.classList.remove(
@@ -1288,36 +1908,209 @@ function closeFlashcard() {
 
 
 /* =========================================================
-   DR. CORAZÓN FEEDBACK
+   CONFIDENCE INTERFACE
 ========================================================= */
 
-function feedbackHtml(answer) {
+function confidencePanelHtml(
+  question,
+  answer
+) {
+  if (
+    answer ||
+    reviewMode ||
+    !confidenceEnabled() ||
+    !pendingSelectedIds.length
+  ) {
+    return "";
+  }
+
+  const selectedLabels =
+    optionsFor(
+      question
+    )
+      .filter(
+        (option) =>
+          pendingSelectedIds.includes(
+            String(
+              option.id
+            )
+          )
+      )
+      .map(
+        (option) =>
+          `${option.key}. ${option.text}`
+      );
+
+  return `
+    <section class="ppci-confidence-panel learning-confidence-panel">
+
+      <h3>
+        How confident are you?
+      </h3>
+
+      <p>
+        Select your confidence level to submit your answer.
+      </p>
+
+      <div class="ppci-confidence-options learning-confidence-options">
+
+        <button
+          type="button"
+          class="ppci-confidence-button high learning-confidence-button"
+          data-confidence="high"
+        >
+          <span aria-hidden="true">
+            🔥
+          </span>
+
+          High confidence
+        </button>
+
+
+        <button
+          type="button"
+          class="ppci-confidence-button low learning-confidence-button"
+          data-confidence="low"
+        >
+          <span aria-hidden="true">
+            🤔
+          </span>
+
+          Low confidence
+        </button>
+
+      </div>
+
+      <div class="ppci-confidence-selection learning-confidence-selection">
+
+        Selected:
+        ${esc(
+          selectedLabels.join(
+            " · "
+          )
+        )}
+
+      </div>
+
+    </section>
+  `;
+}
+
+
+function bindAnswerInputs(
+  question
+) {
+  document
+    .querySelectorAll(
+      'input[name="answer"]'
+    )
+    .forEach(
+      (input) => {
+        input.addEventListener(
+          "change",
+          () => {
+            const multipleResponse =
+              question.question_type ===
+              "multiple_response";
+
+            if (
+              multipleResponse
+            ) {
+              pendingSelectedIds =
+                [
+                  ...document.querySelectorAll(
+                    'input[name="answer"]:checked'
+                  )
+                ].map(
+                  (selectedInput) =>
+                    String(
+                      selectedInput.value
+                    )
+                );
+            } else {
+              pendingSelectedIds =
+                input.checked
+                  ? [
+                      String(
+                        input.value
+                      )
+                    ]
+                  : [];
+            }
+
+            render();
+          }
+        );
+      }
+    );
+}
+
+
+function bindConfidenceButtons() {
+  document
+    .querySelectorAll(
+      "[data-confidence]"
+    )
+    .forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          async () => {
+            await submit(
+              button.dataset
+                .confidence
+            );
+          }
+        );
+      }
+    );
+}
+
+
+/* =========================================================
+   FEEDBACK
+========================================================= */
+
+function feedbackHtml(
+  answer
+) {
   const correct =
-    Boolean(answer.correct);
+    Boolean(
+      answer.correct
+    );
 
   const points =
     Number(
-      answer.points || 0
+      answer.points ||
+      0
     );
 
   const pointText =
     `${
-      points >= 0 ? "+" : ""
+      points >= 0
+        ? "+"
+        : ""
     }${points} point${
-      Math.abs(points) === 1
+      Math.abs(
+        points
+      ) === 1
         ? ""
         : "s"
     }`;
+
+  const confidenceText =
+    answer.confidence ===
+      "high"
+      ? "High confidence"
+      : answer.confidence ===
+          "low"
+        ? "Low confidence"
+        : "Standard answering";
 
   const mascot =
     correct
       ? GOOD_JOB_MASCOT
       : SAD_MASCOT;
-
-  const mascotAlt =
-    correct
-      ? "Dr. Corazón celebrating a correct answer"
-      : "Dr. Corazón looking thoughtful after an incorrect answer";
 
   const explanation =
     quiz.show_explanations &&
@@ -1391,8 +2184,14 @@ function feedbackHtml(answer) {
 
         <img
           class="dr-corazon-image"
-          src="${esc(mascot)}"
-          alt="${esc(mascotAlt)}"
+          src="${esc(
+            mascot
+          )}"
+          alt="${
+            correct
+              ? "Dr. Corazón celebrating a correct answer"
+              : "Dr. Corazón encouraging review"
+          }"
         >
 
         <div
@@ -1406,29 +2205,6 @@ function feedbackHtml(answer) {
               : "🥺🫀"
           }
         </div>
-
-        ${
-          correct
-            ? `
-              <div
-                class="dr-corazon-confetti"
-                aria-hidden="true"
-              >
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            `
-            : `
-              <span
-                class="dr-corazon-tear"
-                aria-hidden="true"
-              ></span>
-            `
-        }
 
       </div>
 
@@ -1460,7 +2236,13 @@ function feedbackHtml(answer) {
         </p>
 
         <span class="learning-feedback-score">
-          ${pointText}
+          ${esc(
+            confidenceText
+          )}
+          ·
+          ${esc(
+            pointText
+          )}
         </span>
 
         ${explanation}
@@ -1490,7 +2272,9 @@ function feedbackHtml(answer) {
 }
 
 
-function bindFeedback(answer) {
+function bindFeedback(
+  answer
+) {
   const image =
     document.querySelector(
       ".dr-corazon-image"
@@ -1504,10 +2288,12 @@ function bindFeedback(answer) {
   image?.addEventListener(
     "error",
     () => {
-      image.hidden = true;
+      image.hidden =
+        true;
 
       if (fallback) {
-        fallback.hidden = false;
+        fallback.hidden =
+          false;
       }
     },
     {
@@ -1518,53 +2304,54 @@ function bindFeedback(answer) {
   $("reviewCurrentFlashcard")
     ?.addEventListener(
       "click",
-      () =>
+      () => {
         openFlashcard(
           answer.flashcard
-        )
+        );
+      }
     );
-
-  $("answerFeedbackHost")
-    ?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest"
-    });
 }
 
 
 /* =========================================================
    QUESTION RENDERING
 ========================================================= */
-function render() {
-  closeFlashcard();
 
+function render() {
   document.body.classList.add(
     "acl-expert-learning-mode"
   );
 
-  expandedLifeline =
-    expandedLifeline || null;
   const question =
     currentQuestion();
 
   if (!question) {
-    finish();
+    void finish();
 
     return;
   }
 
   const answer =
-    answerFor(question);
+    answerFor(
+      question
+    );
 
   const multipleResponse =
     question.question_type ===
     "multiple_response";
 
+  if (answer) {
+    pendingSelectedIds =
+      [];
+  }
+
   const progress =
     questions.length
       ? Math.round(
           (
-            (index + 1) /
+            (
+              index + 1
+            ) /
             questions.length
           ) *
           100
@@ -1594,165 +2381,211 @@ function render() {
     return;
   }
 
-quizArea.innerHTML = `
+  const eliminatedIds =
+    new Set(
+      eliminatedOptionsFor(
+        question
+      )
+    );
+
+  quizArea.innerHTML = `
     <article class="expert-question-layout">
 
       <div class="question-topic-row">
+
+        <span class="learning-topic">
+          ${esc(
+            question.topic ||
+            "Clinical question"
+          )}
+        </span>
+
+        ${scientificLifelinesToolbarHtml(
+          question,
+          answer
+        )}
+
+      </div>
+
+
       ${
-        question.topic
+        question.clinical_scenario
           ? `
-            <span class="learning-topic">
-              ${esc(question.topic)}
-            </span>
+            <div class="clinical-scenario">
+              ${esc(
+                question.clinical_scenario
+              )}
+            </div>
           `
-          : `
-            <span class="learning-topic">
-              Clinical question
-            </span>
-          `
+          : ""
       }
 
-      ${scientificLifelinesToolbarHtml(
+
+      <h2>
+        ${esc(
+          question.stem
+        )}
+      </h2>
+
+
+      ${
+        question.image_url
+          ? `
+            <img
+              class="question-image"
+              src="${esc(
+                question.image_url
+              )}"
+              alt="${esc(
+                question.image_alt ||
+                "Question image"
+              )}"
+            >
+          `
+          : ""
+      }
+
+
+      <div class="learning-options">
+
+        ${optionsFor(
+          question
+        )
+          .map(
+            (option) => {
+              const optionId =
+                String(
+                  option.id
+                );
+
+              const selectedIds =
+                answer
+                  ? (
+                      answer.selectedIds ||
+                      []
+                    ).map(
+                      String
+                    )
+                  : pendingSelectedIds;
+
+              const correctIds =
+                (
+                  answer?.correctOptionIds ||
+                  []
+                ).map(
+                  String
+                );
+
+              const selected =
+                selectedIds.includes(
+                  optionId
+                );
+
+              const correct =
+                correctIds.includes(
+                  optionId
+                );
+
+              const incorrect =
+                Boolean(
+                  answer &&
+                  !answer.correct &&
+                  selected
+                );
+
+              const eliminated =
+                !answer &&
+                eliminatedIds.has(
+                  optionId
+                );
+
+              return `
+                <label
+                  class="
+                    learning-option
+                    ${
+                      selected
+                        ? "selected"
+                        : ""
+                    }
+                    ${
+                      correct
+                        ? "correct is-correct"
+                        : ""
+                    }
+                    ${
+                      incorrect
+                        ? "incorrect is-incorrect"
+                        : ""
+                    }
+                    ${
+                      eliminated
+                        ? "is-eliminated"
+                        : ""
+                    }
+                  "
+                >
+
+                  <input
+                    type="${
+                      multipleResponse
+                        ? "checkbox"
+                        : "radio"
+                    }"
+                    name="answer"
+                    value="${esc(
+                      optionId
+                    )}"
+                    ${
+                      selected
+                        ? "checked"
+                        : ""
+                    }
+                    ${
+                      answer ||
+                      eliminated
+                        ? "disabled"
+                        : ""
+                    }
+                  >
+
+                  <span class="option-key">
+                    ${esc(
+                      option.key
+                    )}
+                  </span>
+
+                  <span>
+                    ${esc(
+                      option.text
+                    )}
+                  </span>
+
+                </label>
+              `;
+            }
+          )
+          .join("")}
+
+      </div>
+
+
+      ${
+        multipleResponse &&
+        !answer
+          ? `
+            <p class="muted">
+              Select all answers that apply.
+            </p>
+          `
+          : ""
+      }
+
+
+      ${confidencePanelHtml(
         question,
         answer
       )}
-
-    </div>
-
-    ${
-      question.clinical_scenario
-        ? `
-          <div class="clinical-scenario">
-            ${esc(
-              question.clinical_scenario
-            )}
-          </div>
-        `
-        : ""
-    }
-
-    <h2>
-      ${esc(question.stem)}
-    </h2>
-
-  
-         ${
-      question.image_url
-        ? `
-          <img
-            class="question-image"
-            src="${esc(
-              question.image_url
-            )}"
-            alt="${esc(
-              question.image_alt ||
-              "Question image"
-            )}"
-          >
-        `
-        : ""
-    }
-
-       <div class="learning-options">
-
-      ${optionsFor(question)
-        .map(
-          (option) => {
-            const selectedIds =
-              (answer?.selectedIds || [])
-                .map(String);
-
-            const correctIds =
-              (
-                answer?.correctOptionIds ||
-                []
-              ).map(String);
-
-            const selected =
-              selectedIds.includes(
-                String(option.id)
-              );
-
-            const correct =
-              correctIds.includes(
-                String(option.id)
-              );
-
-            const incorrect =
-              Boolean(
-                answer &&
-                !answer.correct &&
-                selected
-              );
-
-            return `
-              <label
-                class="
-                  learning-option
-                  ${
-                    selected
-                      ? "selected"
-                      : ""
-                  }
-                  ${
-                    correct
-                      ? "correct is-correct"
-                      : ""
-                  }
-                  ${
-                    incorrect
-                      ? "incorrect is-incorrect"
-                      : ""
-                  }
-                "
-              >
-
-                <input
-                  type="${
-                    multipleResponse
-                      ? "checkbox"
-                      : "radio"
-                  }"
-                  name="answer"
-                  value="${esc(option.id)}"
-                  ${
-                    selected
-                      ? "checked"
-                      : ""
-                  }
-                  ${
-                    answer
-                      ? "disabled"
-                      : ""
-                  }
-                >
-
-                <span class="option-key">
-                  ${esc(option.key)}
-                </span>
-
-                <span>
-                  ${esc(option.text)}
-                </span>
-
-              </label>
-            `;
-          }
-        )
-        .join("")}
-
-    </div>
-
-    ${
-      multipleResponse &&
-      !answer
-        ? `
-          <p class="muted">
-            Select all answers that apply.
-          </p>
-        `
-        : ""
-    }
 
     </article>
   `;
@@ -1763,11 +2596,13 @@ quizArea.innerHTML = `
   if (feedbackHost) {
     feedbackHost.innerHTML =
       answer
-        ? feedbackHtml(answer)
+        ? feedbackHtml(
+            answer
+          )
         : "";
   }
 
-   const submitButton =
+  const submitButton =
     $("submitAnswer");
 
   const nextButton =
@@ -1775,7 +2610,13 @@ quizArea.innerHTML = `
 
   if (submitButton) {
     submitButton.hidden =
-      Boolean(answer);
+      Boolean(
+        answer
+      ) ||
+      (
+        confidenceEnabled() &&
+        !reviewMode
+      );
 
     submitButton.disabled =
       false;
@@ -1787,7 +2628,9 @@ quizArea.innerHTML = `
   }
 
   if (answer) {
-    bindFeedback(answer);
+    bindFeedback(
+      answer
+    );
   } else {
     applyEliminatedOptionStyles(
       question
@@ -1796,15 +2639,23 @@ quizArea.innerHTML = `
     bindCompactLifelines(
       question
     );
+
+    bindAnswerInputs(
+      question
+    );
+
+    bindConfidenceButtons();
   }
 }
 
 
 /* =========================================================
-   ANSWER CHECKING
+   ANSWER SUBMISSION
 ========================================================= */
 
-async function submit() {
+async function submit(
+  confidence = null
+) {
   const question =
     currentQuestion();
 
@@ -1812,16 +2663,37 @@ async function submit() {
     return;
   }
 
-  const selectedIds = [
-    ...document.querySelectorAll(
-      'input[name="answer"]:checked'
-    )
-  ].map(
-    (input) =>
-      input.value
-  );
+  let selectedIds =
+    pendingSelectedIds.length
+      ? [
+          ...pendingSelectedIds
+        ]
+      : [
+          ...document.querySelectorAll(
+            'input[name="answer"]:checked'
+          )
+        ].map(
+          (input) =>
+            String(
+              input.value
+            )
+        );
 
-  if (!selectedIds.length) {
+  selectedIds =
+    selectedIds.filter(
+      (optionId) =>
+        !eliminatedOptionsFor(
+          question
+        ).includes(
+          String(
+            optionId
+          )
+        )
+    );
+
+  if (
+    !selectedIds.length
+  ) {
     const feedbackHost =
       $("answerFeedbackHost");
 
@@ -1836,31 +2708,84 @@ async function submit() {
     return;
   }
 
+  const normalizedConfidence =
+    normalizeConfidence(
+      confidence
+    );
+
+  if (
+    confidenceEnabled() &&
+    !normalizedConfidence
+  ) {
+    const feedbackHost =
+      $("answerFeedbackHost");
+
+    if (feedbackHost) {
+      feedbackHost.innerHTML = `
+        <div class="answer-feedback warning">
+          Select High confidence or Low confidence.
+        </div>
+      `;
+    }
+
+    return;
+  }
+
   const submitButton =
     $("submitAnswer");
 
+  document
+    .querySelectorAll(
+      "[data-confidence]"
+    )
+    .forEach(
+      (button) => {
+        button.disabled =
+          true;
+      }
+    );
+
   if (submitButton) {
-    submitButton.disabled = true;
+    submitButton.disabled =
+      true;
   }
 
   try {
     const {
       data,
       error
-    } = await supabaseClient.rpc(
-      "acl_check_learning_answer",
-      {
-        p_quiz_id: quiz.id,
-        p_question_id:
-          question.id,
-        p_option_ids:
-          selectedIds
-      }
-    );
+    } =
+      await supabaseClient.rpc(
+        "acl_check_learning_answer",
+        {
+          p_quiz_id:
+            quiz.id,
+
+          p_question_id:
+            question.id,
+
+          p_option_ids:
+            selectedIds
+        }
+      );
 
     if (error) {
       throw error;
     }
+
+    const correct =
+      Boolean(
+        data.correct ??
+        data.is_correct
+      );
+
+    const points =
+      confidencePoints({
+        correct,
+
+        confidence:
+          normalizedConfidence
+      });
 
     const flashcard =
       await loadFlashcard(
@@ -1874,18 +2799,17 @@ async function submit() {
 
       selectedIds,
 
-      correct:
-        Boolean(
-          data.correct ??
-          data.is_correct
-        ),
+      correct,
 
-      points:
-        Number(
-          data.points ??
-          data.points_awarded ??
-          0
-        ),
+      points,
+
+      confidence:
+        confidenceEnabled()
+          ? normalizedConfidence
+          : null,
+
+      confidenceEnabled:
+        confidenceEnabled(),
 
       correctOptionIds:
         data.correct_option_ids ||
@@ -1910,16 +2834,27 @@ async function submit() {
       flashcard,
 
       answeredAt:
-        new Date().toISOString()
+        new Date()
+          .toISOString()
     };
 
-    setAnswer(answer);
+    setAnswer(
+      answer
+    );
 
-    await persist(false);
+    pendingSelectedIds =
+      [];
+
+    await persist(
+      false
+    );
 
     render();
   } catch (error) {
-    console.error(error);
+    console.error(
+      "ANSWER CHECK ERROR:",
+      error
+    );
 
     const feedbackHost =
       $("answerFeedbackHost");
@@ -1936,48 +2871,70 @@ async function submit() {
     }
   } finally {
     if (submitButton) {
-      submitButton.disabled = false;
+      submitButton.disabled =
+        false;
     }
+
+    document
+      .querySelectorAll(
+        "[data-confidence]"
+      )
+      .forEach(
+        (button) => {
+          button.disabled =
+            false;
+        }
+      );
   }
 }
 
 
 /* =========================================================
-   COMPLETION AND REVIEW
+   COMPLETION
 ========================================================= */
 
 async function finish() {
+  if (
+    finishing
+  ) {
+    return;
+  }
+
+  finishing =
+    true;
+
   if (!reviewMode) {
-    await persist(true);
+    await persist(
+      true
+    );
   }
 
   const score =
     appState().score;
 
   const maximum =
-    questions.reduce(
-      (total, question) =>
-        total +
-        Number(
-          question.points || 1
-        ),
-      0
-    );
+    maximumPossibleScore();
 
   const percentage =
     maximum
       ? Math.round(
-          (score / maximum) *
+          (
+            score /
+            maximum
+          ) *
           100
         )
       : 0;
 
-  const passed =
-    percentage >=
+  const passingPercentage =
     Number(
       quiz.passing_percentage ||
       0
     );
+
+  const passed =
+    percentage >=
+    passingPercentage;
 
   const progressFill =
     $("progressFill");
@@ -1994,19 +2951,14 @@ async function finish() {
   }
 
   if (feedbackHost) {
-    feedbackHost.innerHTML = "";
+    feedbackHost.innerHTML =
+      "";
   }
-
-  const lifelinesPanel =
-    $("scientificLifelinesPanel");
-
-  if (lifelinesPanel) {
-    lifelinesPanel.hidden = true;
-  }
-
-  hideLifelineResponse();
 
   if (!quizArea) {
+    finishing =
+      false;
+
     return;
   }
 
@@ -2026,14 +2978,16 @@ async function finish() {
       </h2>
 
       <div class="result-score">
-        ${score} / ${maximum} points · ${percentage}%
+        ${score} / ${maximum} points
+        ·
+        ${percentage}%
       </div>
 
       <p>
         ${
           passed
-            ? `You reached the ${quiz.passing_percentage}% pass mark.`
-            : `The pass mark is ${quiz.passing_percentage}%. Review the explanations and try again.`
+            ? `You reached the ${passingPercentage}% pass mark.`
+            : `The pass mark is ${passingPercentage}%. Review the explanations and try again.`
         }
       </p>
 
@@ -2080,19 +3034,27 @@ async function finish() {
     $("nextQuestion");
 
   if (submitButton) {
-    submitButton.hidden = true;
+    submitButton.hidden =
+      true;
   }
 
   if (nextButton) {
-    nextButton.hidden = true;
+    nextButton.hidden =
+      true;
   }
 
   $("reviewAttempt")
     ?.addEventListener(
       "click",
       () => {
-        reviewMode = true;
-        index = 0;
+        reviewMode =
+          true;
+
+        index =
+          0;
+
+        finishing =
+          false;
 
         render();
       }
@@ -2103,15 +3065,32 @@ async function finish() {
       "click",
       startNewAttempt
     );
+
+  finishing =
+    false;
 }
 
 
+/* =========================================================
+   NEW ATTEMPT
+========================================================= */
+
 async function startNewAttempt() {
   try {
-    answers = [];
-    index = 0;
-    reviewMode = false;
-    expandedLifeline = null;
+    answers =
+      [];
+
+    index =
+      0;
+
+    reviewMode =
+      false;
+
+    finishing =
+      false;
+
+    pendingSelectedIds =
+      [];
 
     resetAllLifelines();
 
@@ -2136,7 +3115,10 @@ async function startNewAttempt() {
           questions.map(
             (question) =>
               question.id
-          )
+          ),
+
+        lifelines:
+          lifelinesState
       });
 
     setStatus(
@@ -2145,7 +3127,10 @@ async function startNewAttempt() {
 
     render();
   } catch (error) {
-    console.error(error);
+    console.error(
+      "NEW ATTEMPT ERROR:",
+      error
+    );
 
     setStatus(
       error.message ||
@@ -2163,7 +3148,11 @@ async function startNewAttempt() {
 $("submitAnswer")
   ?.addEventListener(
     "click",
-    submit
+    async () => {
+      await submit(
+        null
+      );
+    }
   );
 
 
@@ -2171,12 +3160,16 @@ $("nextQuestion")
   ?.addEventListener(
     "click",
     async () => {
-      expandedLifeline = null;
+      pendingSelectedIds =
+        [];
 
-      index += 1;
+      index +=
+        1;
 
       if (!reviewMode) {
-        await persist(false);
+        await persist(
+          false
+        );
       }
 
       render();
@@ -2208,7 +3201,10 @@ $("learningFlashcardBackdrop")
 document.addEventListener(
   "keydown",
   (event) => {
-    if (event.key === "Escape") {
+    if (
+      event.key ===
+      "Escape"
+    ) {
       closeFlashcard();
     }
   }
@@ -2243,22 +3239,45 @@ document.addEventListener(
 
   try {
     setStatus(
+      "Loading settings…"
+    );
+
+    try {
+      aclSettings =
+        normalizeAclSettings(
+          await getAclSettings()
+        );
+    } catch (settingsError) {
+      console.warn(
+        "ACL settings could not be loaded:",
+        settingsError
+      );
+
+      aclSettings =
+        normalizeAclSettings(
+          DEFAULT_ACL_SETTINGS
+        );
+    }
+
+    setStatus(
       "Loading learning mode…"
     );
 
     const {
       data,
       error
-    } = await supabaseClient.rpc(
-      "acl_get_learning_quiz",
-      {
-        p_quiz_slug:
-          quizSlug,
+    } =
+      await supabaseClient.rpc(
+        "acl_get_learning_quiz",
+        {
+          p_quiz_slug:
+            quizSlug,
 
-        p_module_id:
-          moduleId || null
-      }
-    );
+          p_module_id:
+            requestedModuleId ||
+            null
+        }
+      );
 
     if (error) {
       throw error;
@@ -2270,7 +3289,8 @@ document.addEventListener(
       );
     }
 
-    quiz = data;
+    quiz =
+      data;
 
     const moduleTitle =
       $("moduleTitle");
@@ -2296,18 +3316,22 @@ document.addEventListener(
     if (quizDescription) {
       quizDescription.textContent =
         quiz.description ||
-        "Immediate feedback, Dr. Corazón reactions, explanations and flashcards after every answer.";
+        "Immediate feedback, Scientific Lifelines, explanations and flashcards.";
     }
 
     let pool =
-      quiz.questions || [];
+      quiz.questions ||
+      [];
 
     if (
       quiz.randomize_questions ||
       quiz.selection_mode ===
         "random"
     ) {
-      pool = shuffle(pool);
+      pool =
+        shuffle(
+          pool
+        );
     }
 
     questions =
@@ -2339,7 +3363,10 @@ document.addEventListener(
         new Map(
           questions.map(
             (question) => [
-              String(question.id),
+              String(
+                question.id
+              ),
+
               question
             ]
           )
@@ -2353,12 +3380,16 @@ document.addEventListener(
       const restoredQuestions =
         savedQuestionIds
           .map(
-            (id) =>
+            (questionId) =>
               questionMap.get(
-                String(id)
+                String(
+                  questionId
+                )
               )
           )
-          .filter(Boolean);
+          .filter(
+            Boolean
+          );
 
       if (
         restoredQuestions.length
@@ -2376,9 +3407,11 @@ document.addEventListener(
 
       if (
         index < 0 ||
-        index >= questions.length
+        index >=
+          questions.length
       ) {
-        index = 0;
+        index =
+          0;
       }
 
       answers =
@@ -2389,6 +3422,7 @@ document.addEventListener(
           : [];
 
       restoreLifelinesState(
+        attempt.lifelines ||
         attempt.lifelines_state ||
         attempt.lifelinesState ||
         {}
@@ -2421,7 +3455,10 @@ document.addEventListener(
             questions.map(
               (question) =>
                 question.id
-            )
+            ),
+
+          lifelines:
+            lifelinesState
         });
 
       setStatus(
@@ -2431,9 +3468,13 @@ document.addEventListener(
 
     render();
   } catch (error) {
-    console.error(error);
+    console.error(
+      "LEARNING MODE ERROR:",
+      error
+    );
 
     setStatus(
+      error.message ||
       "Could not open learning mode",
       true
     );
