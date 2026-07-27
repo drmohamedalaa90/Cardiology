@@ -1942,7 +1942,7 @@ function confidencePanelHtml(
       );
 
   return `
-  <section class="learning-confidence-panel">
+  <section class="learning-confidence-panel confidence-dock">
 
     <div class="learning-confidence-heading">
 
