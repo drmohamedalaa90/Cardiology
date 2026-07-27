@@ -2224,7 +2224,7 @@
             550
           );
         } catch (error) {
-          console.error(error);
+          console.error(er  ror);
 
           settingsStatus.textContent =
             "Could not save settings.";
@@ -3721,14 +3721,17 @@ function confidenceHtml(
         );
 
         render();
-      } catch (error) {
-        console.error(error);
+    catch (error) {
+  console.error("SAVE ERROR:", error);
 
-        setSaveStatus(
-          "Could not create a new attempt",
-          true
-        );
-      }
+  alert(
+    JSON.stringify(error, null, 2)
+  );
+
+  setSaveStatus(
+    error.message || "Save failed",
+    true
+  );
     }
 
 
