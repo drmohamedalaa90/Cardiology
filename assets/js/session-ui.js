@@ -1250,18 +1250,20 @@ function buildDrawer(
 
 
   if (isAdmin) {
-    menu.appendChild(
-      createDrawerItem({
-        type: "admin",
-        label: "Admin",
-        href:
-          nestedPath(
-            "admin.html"
-          ),
-        admin: true
-      })
-    );
-     menu.appendChild(
+  menu.appendChild(
+    createDrawerItem({
+      type: "admin",
+      label: "Admin",
+      href:
+        nestedPath(
+          "admin.html"
+        ),
+      admin: true
+    })
+  );
+}
+
+menu.appendChild(
   createDrawerItem({
     type: "settings",
     label: "Settings",
@@ -1269,8 +1271,6 @@ function buildDrawer(
       openAclSettings
   })
 );
-  }
-
 
   menu.appendChild(
     createDrawerItem({
