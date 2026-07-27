@@ -4464,3 +4464,53 @@ body.acl-expert-learning-mode
     font-size: 22px;
   }
 }
+/* =========================================================
+   QUESTION RESULT THEMES
+========================================================= */
+
+.expert-question-layout {
+  transition:
+    background-color 260ms ease,
+    border-color 260ms ease,
+    box-shadow 260ms ease;
+}
+
+.expert-question-layout.question-result-correct {
+  border-color: #76cf9d;
+  background:
+    linear-gradient(
+      180deg,
+      #f2fff7,
+      #eafaf1
+    );
+  box-shadow:
+    0 16px 34px
+    rgba(36, 145, 88, 0.12);
+}
+
+.expert-question-layout.question-result-incorrect {
+  border-color: #ef9f9f;
+  background:
+    linear-gradient(
+      180deg,
+      #fff6f6,
+      #fff0f0
+    );
+  box-shadow:
+    0 16px 34px
+    rgba(190, 56, 56, 0.11);
+}
+
+.expert-question-layout.question-result-correct
+.learning-topic {
+  border-color: #93d8af;
+  background: #e5f8ed;
+  color: #08753c;
+}
+
+.expert-question-layout.question-result-incorrect
+.learning-topic {
+  border-color: #efb1b1;
+  background: #fde8e8;
+  color: #a52a2a;
+}
