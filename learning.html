@@ -25,7 +25,7 @@
 
   <link
     rel="stylesheet"
-    href="assets/css/learning-feedback.css?v=4.0.0"
+    href="assets/css/learning-feedback.css?v=4.0.1"
   >
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -40,8 +40,6 @@
 
   <header class="topbar learning-topbar">
 
-    <!-- Existing slide-menu button -->
-
     <button
       id="sidebarToggle"
       class="learning-menu-button"
@@ -53,8 +51,6 @@
       <span></span>
     </button>
 
-
-    <!-- Centered title and icon navigation -->
 
     <div class="learning-header-center">
 
@@ -182,8 +178,6 @@
 
     <section class="learning-stage">
 
-      <!-- Module name at the upper-left -->
-
       <div class="learning-module-corner">
 
         <span>
@@ -196,8 +190,6 @@
 
       </div>
 
-
-      <!-- Quiz title in an exciting central bordered banner -->
 
       <div class="learning-quiz-banner">
 
@@ -219,8 +211,6 @@
 
       </div>
 
-
-      <!-- Kept for JavaScript compatibility, but not displayed -->
 
       <p
         id="quizDescription"
@@ -267,13 +257,8 @@
         </p>
       </div>
 
-<!-- =====================================================
-     SCIENTIFIC LIFELINES / THE EXPERT PANEL
-     Dynamic buttons are rendered by learning-mode.js.
-====================================================== -->
 
-<section
-        <div
+      <div
         id="answerFeedbackHost"
         aria-live="polite"
       ></div>
@@ -381,13 +366,14 @@
 
   <script
     type="module"
-    src="assets/js/learning-mode.js?v=4.0.4"
+    src="assets/js/learning-mode.js?v=4.0.5"
   ></script>
-<script
-  type="module"
-  src="assets/js/learning-theme.js?v=1.0.0"
-></script>
-  
+
+  <script
+    type="module"
+    src="assets/js/learning-theme.js?v=1.0.0"
+  ></script>
+
 </body>
 
 </html>
