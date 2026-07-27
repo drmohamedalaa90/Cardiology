@@ -1535,10 +1535,15 @@ function bindFeedback(answer) {
 /* =========================================================
    QUESTION RENDERING
 ========================================================= */
-
 function render() {
   closeFlashcard();
 
+  document.body.classList.add(
+    "acl-expert-learning-mode"
+  );
+
+  expandedLifeline =
+    expandedLifeline || null;
   const question =
     currentQuestion();
 
@@ -1589,9 +1594,10 @@ function render() {
     return;
   }
 
-  quizArea.innerHTML = `
-        <div class="question-topic-row">
+quizArea.innerHTML = `
+    <article class="expert-question-layout">
 
+      <div class="question-topic-row">
       ${
         question.topic
           ? `
@@ -1647,51 +1653,7 @@ function render() {
         : ""
     }
 
-    <section
-      id="scientificLifelinesPanel"
-      class="scientific-lifelines-panel"
-      aria-label="Scientific Lifelines — The Expert Panel"
-      hidden
-    >
-
-      <div class="lifelines-panel-heading">
-
-        <div>
-
-          <span class="lifelines-kicker">
-            Scientific Lifelines
-          </span>
-
-          <h3>
-            The Expert Panel
-          </h3>
-
-        </div>
-
-        <span
-          id="lifelinesUsageCounter"
-          class="lifelines-usage-counter"
-        >
-          0 / 4 used
-        </span>
-
-      </div>
-
-      <div
-        id="scientificLifelinesButtons"
-        class="scientific-lifelines-buttons"
-      ></div>
-
-      <div
-        id="scientificLifelineResponse"
-        class="scientific-lifeline-response"
-        aria-live="polite"
-        hidden
-      ></div>
-
-    </section>
-
-    <div class="learning-options">
+       <div class="learning-options">
 
       ${optionsFor(question)
         .map(
@@ -1791,6 +1753,8 @@ function render() {
         `
         : ""
     }
+
+    </article>
   `;
 
   const feedbackHost =
