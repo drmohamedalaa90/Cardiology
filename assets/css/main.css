@@ -4852,3 +4852,659 @@ header.topbar.acl-unified-header
     min-height: 27px !important;
   }
 }
+/* =========================================================
+   ACL DRAWER FINAL FIX — VERSION 2.8.8
+
+   Fixes:
+   - Profile photo and signed-in name remain visible
+   - Drawer no longer hides behind the fixed header
+   - Header hamburger remains clickable while drawer is open
+   - Hamburger can open and close the drawer
+   - Internal close button remains visible
+   - Overlay closes the drawer normally
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   DRAWER LAYER ORDER
+
+   Drawer appears over the page and fixed header.
+   Hamburger is placed above everything so it remains usable.
+--------------------------------------------------------- */
+
+.acl-drawer-overlay {
+  position: fixed !important;
+
+  inset: 0 !important;
+
+  z-index: 6998 !important;
+
+  width: 100vw !important;
+  height: 100dvh !important;
+
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+
+  background:
+    rgba(3, 18, 39, 0.56) !important;
+
+  transition:
+    opacity 0.22s ease,
+    visibility 0.22s ease !important;
+}
+
+
+body.acl-drawer-open
+.acl-drawer-overlay {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+
+.acl-side-drawer {
+  position: fixed !important;
+
+  top: 0 !important;
+  left: 0 !important;
+  bottom: 0 !important;
+
+  z-index: 6999 !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  width:
+    min(
+      360px,
+      90vw
+    ) !important;
+
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+
+  padding:
+    22px
+    20px
+    28px !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+
+  background:
+    linear-gradient(
+      180deg,
+      #071c3e 0%,
+      #0a315f 100%
+    ) !important;
+
+  color: #ffffff !important;
+
+  box-shadow:
+    18px 0 50px
+    rgba(0, 0, 0, 0.3) !important;
+
+  transform:
+    translateX(-105%) !important;
+
+  transition:
+    transform
+    0.24s
+    ease !important;
+
+  visibility: visible !important;
+}
+
+
+body.acl-drawer-open
+.acl-side-drawer {
+  transform:
+    translateX(0) !important;
+}
+
+
+/* ---------------------------------------------------------
+   KEEP THE HEADER HAMBURGER ABOVE THE DRAWER
+
+   This allows the same three-line button to close the drawer.
+--------------------------------------------------------- */
+
+header.topbar.acl-unified-header {
+  z-index: 5000 !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-header-left {
+  position: relative !important;
+
+  z-index: 7002 !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-menu-button {
+  position: relative !important;
+
+  z-index: 7003 !important;
+
+  pointer-events: auto !important;
+}
+
+
+body.acl-drawer-open
+header.topbar.acl-unified-header {
+  pointer-events: none !important;
+}
+
+
+/*
+ * Restore pointer events only for the hamburger while
+ * the drawer is open.
+ */
+
+body.acl-drawer-open
+header.topbar.acl-unified-header
+.acl-header-left,
+
+body.acl-drawer-open
+header.topbar.acl-unified-header
+.acl-menu-button {
+  pointer-events: auto !important;
+}
+
+
+/* Give the open hamburger a visible active state */
+
+body.acl-drawer-open
+header.topbar.acl-unified-header
+.acl-menu-button {
+  background:
+    #ffffff !important;
+
+  color:
+    #082d58 !important;
+
+  border-color:
+    #ffffff !important;
+
+  box-shadow:
+    0 5px 18px
+    rgba(0, 0, 0, 0.22) !important;
+}
+
+
+/* ---------------------------------------------------------
+   DRAWER PROFILE AREA
+
+   Leave room for the fixed hamburger at the upper-left.
+--------------------------------------------------------- */
+
+.acl-drawer-top {
+  display: flex !important;
+
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  gap: 14px !important;
+
+  width: 100% !important;
+
+  min-height: 76px !important;
+
+  padding:
+    0
+    0
+    16px
+    58px !important;
+
+  margin: 0 !important;
+
+  border-bottom:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.18
+    ) !important;
+
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+
+.acl-drawer-identity {
+  display: flex !important;
+
+  align-items: center !important;
+
+  gap: 12px !important;
+
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+
+.acl-drawer-avatar {
+  display: grid !important;
+
+  place-items: center !important;
+
+  width: 58px !important;
+  height: 58px !important;
+
+  min-width: 58px !important;
+  min-height: 58px !important;
+
+  overflow: hidden !important;
+
+  border:
+    3px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.88
+    ) !important;
+
+  border-radius:
+    50% !important;
+
+  background:
+    #e7f2ff !important;
+
+  color:
+    #0a3d6d !important;
+
+  font-size:
+    1.1rem !important;
+
+  font-weight:
+    900 !important;
+
+  visibility:
+    visible !important;
+
+  opacity:
+    1 !important;
+}
+
+
+.acl-drawer-avatar img {
+  display: block !important;
+
+  width: 100% !important;
+  height: 100% !important;
+
+  object-fit: cover !important;
+  object-position: center !important;
+
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+
+.acl-drawer-identity-copy {
+  display: grid !important;
+
+  gap: 5px !important;
+
+  min-width: 0 !important;
+
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+
+.acl-drawer-identity-copy strong {
+  display: block !important;
+
+  max-width: 185px !important;
+
+  overflow: hidden !important;
+
+  color:
+    #ffffff !important;
+
+  font-size:
+    1rem !important;
+
+  font-weight:
+    900 !important;
+
+  line-height:
+    1.15 !important;
+
+  text-overflow:
+    ellipsis !important;
+
+  white-space:
+    nowrap !important;
+
+  visibility:
+    visible !important;
+
+  opacity:
+    1 !important;
+}
+
+
+.acl-drawer-identity-copy span {
+  display: block !important;
+
+  color:
+    #bed8f2 !important;
+
+  font-size:
+    0.73rem !important;
+
+  font-weight:
+    700 !important;
+
+  visibility:
+    visible !important;
+
+  opacity:
+    1 !important;
+}
+
+
+/* ---------------------------------------------------------
+   INTERNAL CLOSE BUTTON
+
+   Keep it visible as a second reliable closing method.
+--------------------------------------------------------- */
+
+.acl-drawer-close {
+  display: grid !important;
+
+  place-items: center !important;
+
+  width: 38px !important;
+  height: 38px !important;
+
+  min-width: 38px !important;
+  min-height: 38px !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.4
+    ) !important;
+
+  border-radius:
+    10px !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.09
+    ) !important;
+
+  color:
+    #ffffff !important;
+
+  cursor:
+    pointer !important;
+
+  pointer-events:
+    auto !important;
+
+  visibility:
+    visible !important;
+
+  opacity:
+    1 !important;
+
+  flex:
+    0 0 38px !important;
+}
+
+
+.acl-drawer-close:hover,
+.acl-drawer-close:focus-visible {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.2
+    ) !important;
+
+  border-color:
+    #ffffff !important;
+
+  outline:
+    none !important;
+}
+
+
+.acl-drawer-close svg {
+  display:
+    block !important;
+
+  width:
+    19px !important;
+
+  height:
+    19px !important;
+
+  fill:
+    none !important;
+
+  stroke:
+    currentColor !important;
+
+  stroke-width:
+    2 !important;
+
+  stroke-linecap:
+    round !important;
+
+  stroke-linejoin:
+    round !important;
+
+  pointer-events:
+    none !important;
+}
+
+
+/* ---------------------------------------------------------
+   DRAWER MENU GEOMETRY
+--------------------------------------------------------- */
+
+.acl-drawer-divider {
+  display: none !important;
+}
+
+
+.acl-drawer-menu {
+  display: grid !important;
+
+  gap: 11px !important;
+
+  width: 100% !important;
+
+  margin-top:
+    18px !important;
+
+  padding-bottom:
+    20px !important;
+}
+
+
+.acl-drawer-item {
+  position: relative !important;
+
+  z-index: 1 !important;
+
+  display: flex !important;
+
+  align-items: center !important;
+
+  gap: 13px !important;
+
+  width: 100% !important;
+  min-height: 56px !important;
+
+  padding:
+    12px
+    15px !important;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.22
+    ) !important;
+
+  border-radius:
+    14px !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.07
+    ) !important;
+
+  color:
+    #ffffff !important;
+
+  text-align:
+    left !important;
+
+  text-decoration:
+    none !important;
+
+  cursor:
+    pointer !important;
+
+  pointer-events:
+    auto !important;
+}
+
+
+/* ---------------------------------------------------------
+   MOBILE
+--------------------------------------------------------- */
+
+@media (max-width: 720px) {
+
+  .acl-side-drawer {
+    width:
+      min(
+        330px,
+        91vw
+      ) !important;
+
+    padding:
+      18px
+      16px
+      24px !important;
+  }
+
+
+  .acl-drawer-top {
+    min-height:
+      70px !important;
+
+    padding:
+      0
+      0
+      14px
+      47px !important;
+  }
+
+
+  .acl-drawer-avatar {
+    width:
+      50px !important;
+
+    height:
+      50px !important;
+
+    min-width:
+      50px !important;
+
+    min-height:
+      50px !important;
+  }
+
+
+  .acl-drawer-identity {
+    gap:
+      9px !important;
+  }
+
+
+  .acl-drawer-identity-copy strong {
+    max-width:
+      135px !important;
+
+    font-size:
+      0.9rem !important;
+  }
+
+
+  .acl-drawer-identity-copy span {
+    font-size:
+      0.67rem !important;
+  }
+
+
+  .acl-drawer-close {
+    width:
+      34px !important;
+
+    height:
+      34px !important;
+
+    min-width:
+      34px !important;
+
+    min-height:
+      34px !important;
+
+    flex-basis:
+      34px !important;
+  }
+
+
+  .acl-drawer-item {
+    min-height:
+      54px !important;
+  }
+}
+
+
+/* ---------------------------------------------------------
+   ACCESSIBILITY
+--------------------------------------------------------- */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .acl-side-drawer,
+  .acl-drawer-overlay {
+    transition:
+      none !important;
+  }
+}
