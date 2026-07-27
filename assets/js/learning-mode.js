@@ -2877,13 +2877,6 @@ async function submit(
         data.correct ??
         data.is_correct
       );
-console.log("ANSWER CHECK RESULT:", {
-  data,
-  correct,
-  normalizedConfidence,
-  confidenceEnabled:
-    confidenceEnabled()
-});
     const points =
       confidencePoints({
         correct,
@@ -2891,10 +2884,7 @@ console.log("ANSWER CHECK RESULT:", {
         confidence:
           normalizedConfidence
       });
-console.log(
-  "POINTS CALCULATED:",
-  points
-);
+
     const flashcard =
       await loadFlashcard(
         question,
@@ -2989,7 +2979,99 @@ console.log(
 /* =========================================================
    COMPLETION
 ========================================================= */
+function learningAnalytics() {
+  const totalQuestions =
+    answers.length;
 
+  const correctAnswers =
+    answers.filter(
+      (answer) =>
+        answer.correct
+    ).length;
+
+  const incorrectAnswers =
+    totalQuestions -
+    correctAnswers;
+
+  const highConfidenceCorrect =
+    answers.filter(
+      (answer) =>
+        answer.correct &&
+        answer.confidence ===
+          "high"
+    ).length;
+
+  const highConfidenceIncorrect =
+    answers.filter(
+      (answer) =>
+        !answer.correct &&
+        answer.confidence ===
+          "high"
+    ).length;
+
+  const lowConfidenceCorrect =
+    answers.filter(
+      (answer) =>
+        answer.correct &&
+        answer.confidence ===
+          "low"
+    ).length;
+
+  const lowConfidenceIncorrect =
+    answers.filter(
+      (answer) =>
+        !answer.correct &&
+        answer.confidence ===
+          "low"
+    ).length;
+
+  const lifelinesUsed =
+    Object.values(
+      lifelinesState
+    ).reduce(
+      (
+        total,
+        state
+      ) => {
+        if (
+          !state ||
+          typeof state !==
+            "object"
+        ) {
+          return total;
+        }
+
+        return (
+          total +
+          [
+            "expert",
+            "filter",
+            "guideline",
+            "vault"
+          ].filter(
+            (lifeline) =>
+              Boolean(
+                state[
+                  lifeline
+                ]
+              )
+          ).length
+        );
+      },
+      0
+    );
+
+  return {
+    totalQuestions,
+    correctAnswers,
+    incorrectAnswers,
+    highConfidenceCorrect,
+    highConfidenceIncorrect,
+    lowConfidenceCorrect,
+    lowConfidenceIncorrect,
+    lifelinesUsed
+  };
+}
 async function finish() {
   if (
     finishing
@@ -3032,7 +3114,40 @@ async function finish() {
   const passed =
     percentage >=
     passingPercentage;
+const analytics =
+  learningAnalytics();
 
+let performanceLabel =
+  "Review recommended";
+
+let performanceMessage =
+  "Revisit the explanations and flashcards before your next attempt.";
+
+if (
+  percentage >= 90
+) {
+  performanceLabel =
+    "Expert performance";
+
+  performanceMessage =
+    "Excellent mastery. Your knowledge and confidence were highly aligned.";
+} else if (
+  percentage >= 75
+) {
+  performanceLabel =
+    "Strong performance";
+
+  performanceMessage =
+    "A strong result with only a few areas needing reinforcement.";
+} else if (
+  percentage >= 60
+) {
+  performanceLabel =
+    "Developing mastery";
+
+  performanceMessage =
+    "Good progress. Review your incorrect and uncertain answers.";
+}
   const progressFill =
     $("progressFill");
 
@@ -3059,70 +3174,128 @@ async function finish() {
     return;
   }
 
-  quizArea.innerHTML = `
-    <div class="learning-result">
+quizArea.innerHTML = `
+  <div class="learning-result premium">
 
-      <span class="result-icon">
-        ${passed ? "✓" : "↻"}
-      </span>
+    <span class="result-icon">
+      ${passed ? "🏆" : "📚"}
+    </span>
 
-      <h2>
-        ${
-          passed
-            ? "Module completed"
-            : "Learning attempt completed"
-        }
-      </h2>
+    <span class="learning-result-kicker">
+      ${
+        passed
+          ? "Module completed"
+          : "Attempt completed"
+      }
+    </span>
 
-      <div class="result-score">
-        ${score} / ${maximum} points
-        ·
-        ${percentage}%
+    <h2>
+      ${esc(
+        performanceLabel
+      )}
+    </h2>
+
+    <p class="learning-result-message">
+      ${esc(
+        performanceMessage
+      )}
+    </p>
+
+    <div class="result-score">
+      ${score} / ${maximum} points
+      ·
+      ${percentage}%
+    </div>
+
+    <div class="learning-result-grid">
+
+      <div class="learning-result-stat">
+        <span>Correct</span>
+        <strong>
+          ${analytics.correctAnswers}
+        </strong>
       </div>
 
-      <p>
-        ${
-          passed
-            ? `You reached the ${passingPercentage}% pass mark.`
-            : `The pass mark is ${passingPercentage}%. Review the explanations and try again.`
-        }
-      </p>
+      <div class="learning-result-stat">
+        <span>Incorrect</span>
+        <strong>
+          ${analytics.incorrectAnswers}
+        </strong>
+      </div>
 
-      <div class="result-actions">
+      <div class="learning-result-stat">
+        <span>High-confidence correct</span>
+        <strong>
+          ${analytics.highConfidenceCorrect}
+        </strong>
+      </div>
 
-        ${
-          quiz.allow_review
-            ? `
-              <button
-                id="reviewAttempt"
-                class="secondary-btn"
-                type="button"
-              >
-                Review answers
-              </button>
-            `
-            : ""
-        }
+      <div class="learning-result-stat">
+        <span>High-confidence errors</span>
+        <strong>
+          ${analytics.highConfidenceIncorrect}
+        </strong>
+      </div>
 
-        <button
-          id="retryAttempt"
-          class="primary-btn"
-          type="button"
-        >
-          Start a new attempt
-        </button>
+      <div class="learning-result-stat">
+        <span>Low-confidence correct</span>
+        <strong>
+          ${analytics.lowConfidenceCorrect}
+        </strong>
+      </div>
 
-        <a
-          class="secondary-btn"
-          href="modules.html"
-        >
-          Back to modules
-        </a>
-
+      <div class="learning-result-stat">
+        <span>Lifelines used</span>
+        <strong>
+          ${analytics.lifelinesUsed}
+        </strong>
       </div>
 
     </div>
-  `;
+
+    <p class="learning-result-passmark">
+      ${
+        passed
+          ? `You reached the ${passingPercentage}% pass mark.`
+          : `The pass mark is ${passingPercentage}%.`
+      }
+    </p>
+
+    <div class="result-actions">
+
+      ${
+        quiz.allow_review
+          ? `
+            <button
+              id="reviewAttempt"
+              class="secondary-btn"
+              type="button"
+            >
+              Review answers
+            </button>
+          `
+          : ""
+      }
+
+      <button
+        id="retryAttempt"
+        class="primary-btn"
+        type="button"
+      >
+        Start a new attempt
+      </button>
+
+      <a
+        class="secondary-btn"
+        href="modules.html"
+      >
+        Back to modules
+      </a>
+
+    </div>
+
+  </div>
+`;
 
   const submitButton =
     $("submitAnswer");
