@@ -1722,12 +1722,12 @@
 
     import {
       protectAndRender
-    } from "../../assets/js/session-ui.js?v=5.1.0";
+    } from "../../assets/js/session-ui.js?v=5.2.0";
 
 
     import {
       QuizEngine
-    } from "../../assets/js/quiz-engine.js?v=5.1.0";
+    } from "../../assets/js/quiz-engine.js?v=5.2.0";
 
 
     import {
@@ -1735,12 +1735,12 @@
       createAttempt,
       saveAttempt,
       completeAttempt
-    } from "../../assets/js/cloud-progress.js?v=5.1.0";
+    } from "../../assets/js/cloud-progress.js?v=5.2.0";
 
 
     import {
       PPCI_QUESTIONS
-    } from "./questions.js?v=5.1.0";
+    } from "./questions.js?v=5.2.0";
 
 
     import {
@@ -1748,7 +1748,7 @@
       getAclSettings,
       saveAclSettings,
       normalizeAclSettings
-    } from "../../assets/js/user-settings.js?v=5.1.0";
+    } from "../../assets/js/user-settings.js?v=5.2.0";
 
 
     /* =====================================================
@@ -2240,7 +2240,7 @@
             550
           );
         } catch (error) {
-          console.error(er  ror);
+          console.error(error);
 
           settingsStatus.textContent =
             "Could not save settings.";
@@ -3692,64 +3692,47 @@ function confidenceHtml(
        NEW ATTEMPT
     ===================================================== */
 
-    async function startNewAttempt() {
-      try {
-        expandedLifeline =
-          null;
+   async function startNewAttempt() {
+  try {
+    expandedLifeline = null;
+    pendingChoice = null;
+    lifelinesState = {};
+    finishing = false;
 
-        pendingChoice =
-          null;
+    engine = new QuizEngine({
+      questions: PPCI_QUESTIONS,
+      count: PPCI_QUESTIONS.length,
+      confidenceEnabled:
+        Boolean(
+          aclSettings.confidenceEnabled
+        )
+    });
 
-        lifelinesState =
-          {};
+    attempt = await createAttempt({
+      moduleId: MODULE_ID,
+      moduleTitle: MODULE_TITLE,
+      questionIds:
+        engine.state().questionIds
+    });
 
-        finishing =
-          false;
+    setSaveStatus(
+      "New attempt saved to cloud"
+    );
 
-        engine =
-          new QuizEngine({
-            questions:
-              PPCI_QUESTIONS,
+    render();
+  } catch (error) {
+    console.error(
+      "NEW ATTEMPT ERROR:",
+      error
+    );
 
-            count:
-              PPCI_QUESTIONS.length,
-
-            confidenceEnabled:
-              aclSettings
-                .confidenceEnabled
-          });
-
-        attempt =
-          await createAttempt({
-            moduleId:
-              MODULE_ID,
-
-            moduleTitle:
-              MODULE_TITLE,
-
-            questionIds:
-              engine.state()
-                .questionIds
-          });
-
-        setSaveStatus(
-          "New attempt saved to cloud"
-        );
-
-        render();
-    catch (error) {
-  console.error("SAVE ERROR:", error);
-
-  alert(
-    JSON.stringify(error, null, 2)
-  );
-
-  setSaveStatus(
-    error.message || "Save failed",
-    true
-  );
-    }
-
+    setSaveStatus(
+      error.message ||
+      "Could not create a new attempt",
+      true
+    );
+  }
+}
 
     /* =====================================================
        NEXT QUESTION
