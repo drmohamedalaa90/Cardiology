@@ -1924,22 +1924,91 @@ function confidencePanelHtml(
     return "";
   }
 
-  const selectedLabels =
-    optionsFor(
-      question
-    )
-      .filter(
-        (option) =>
-          pendingSelectedIds.includes(
-            String(
-              option.id
-            )
-          )
-      )
-      .map(
-        (option) =>
-          `${option.key}. ${option.text}`
-      );
+  return `
+    <section
+      class="
+        learning-confidence-panel
+        contextual-confidence-card
+      "
+    >
+
+      <div class="learning-confidence-heading">
+
+        <span
+          class="learning-confidence-icon"
+          aria-hidden="true"
+        >
+          🎯
+        </span>
+
+        <h3>
+          How confident are you?
+        </h3>
+
+      </div>
+
+      <div
+        class="
+          learning-confidence-options
+          compact-row
+        "
+      >
+
+        <button
+          type="button"
+          class="
+            learning-confidence-button
+            is-high
+            compact-confidence-choice
+          "
+          data-confidence="high"
+        >
+
+          <span
+            class="learning-confidence-symbol"
+            aria-hidden="true"
+          >
+            🔥
+          </span>
+
+          <span class="confidence-choice-copy">
+            <strong>
+              Highly confident
+            </strong>
+          </span>
+
+        </button>
+
+        <button
+          type="button"
+          class="
+            learning-confidence-button
+            is-low
+            compact-confidence-choice
+          "
+          data-confidence="low"
+        >
+
+          <span
+            class="learning-confidence-symbol"
+            aria-hidden="true"
+          >
+            🤔
+          </span>
+
+          <span class="confidence-choice-copy">
+            <strong>
+              Low confidence
+            </strong>
+          </span>
+
+        </button>
+
+      </div>
+
+    </section>
+  `;
+}
 
   function bindAnswerInputs(
   question
