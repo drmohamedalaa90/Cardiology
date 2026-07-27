@@ -4515,3 +4515,24 @@ body.acl-expert-learning-mode
   background: #fde8e8;
   color: #a52a2a;
 }
+/* QUESTION RESULT THEMES */
+
+.expert-question-layout {
+...
+}
+
+.expert-question-layout.question-result-incorrect
+.learning-topic {
+  border-color: #efb1b1;
+  background: #fde8e8;
+  color: #a52a2a;
+}
+
+
+/* =========================================================
+   CONFIDENCE DOCK
+========================================================= */
+
+.learning-confidence-panel.confidence-dock {
+...
+}
