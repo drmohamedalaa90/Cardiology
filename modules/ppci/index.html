@@ -39,7 +39,21 @@
     body {
       min-height: 100vh;
     }
+/*
+ * Prevent the old PPCI header from flashing
+ * before session-ui.js builds the unified header.
+ */
 
+.topbar {
+  min-height: 82px;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.topbar.acl-unified-header {
+  opacity: 1;
+  visibility: visible;
+}
     body.ppci-modal-open,
     body.acl-settings-open {
       overflow: hidden;
