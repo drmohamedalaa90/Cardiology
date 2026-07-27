@@ -4527,12 +4527,173 @@ body.acl-expert-learning-mode
   background: #fde8e8;
   color: #a52a2a;
 }
-
-
 /* =========================================================
-   CONFIDENCE DOCK
+   CONTEXTUAL CONFIDENCE CARD
 ========================================================= */
 
-.learning-confidence-panel.confidence-dock {
-...
+.learning-option-context-row {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.learning-option-context-row.has-confidence-card {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(290px, 350px);
+  gap: 16px;
+  align-items: start;
+}
+
+.learning-option-context-row
+.learning-option {
+  width: 100%;
+  margin: 0;
+}
+
+.learning-confidence-panel.contextual-confidence-card {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid #b9d7f2;
+  border-radius: 22px;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #f1f8ff
+    );
+  box-shadow:
+    0 16px 34px
+    rgba(13, 66, 116, 0.16);
+  animation:
+    contextual-confidence-enter
+    220ms
+    ease
+    both;
+}
+
+.learning-confidence-panel.contextual-confidence-card::before {
+  position: absolute;
+  top: 28px;
+  left: -10px;
+  width: 18px;
+  height: 18px;
+  border-bottom: 1px solid #b9d7f2;
+  border-left: 1px solid #b9d7f2;
+  background: #ffffff;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-heading {
+  margin-bottom: 14px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-heading h3 {
+  font-size: 18px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-heading p {
+  font-size: 13px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-options {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-button {
+  width: 100%;
+  min-height: 74px;
+  padding: 12px 14px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-selected-answer {
+  margin-top: 12px;
+}
+
+@keyframes contextual-confidence-enter {
+  from {
+    opacity: 0;
+    transform:
+      translateX(18px)
+      scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateX(0)
+      scale(1);
+  }
+}
+
+
+/* TABLET AND MOBILE */
+
+@media (max-width: 900px) {
+  .learning-option-context-row.has-confidence-card {
+    grid-template-columns: 1fr;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card {
+    margin-top: 10px;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card::before {
+    top: -10px;
+    left: 42px;
+    border-top: 1px solid #b9d7f2;
+    border-right: 1px solid #b9d7f2;
+    border-bottom: 0;
+    border-left: 0;
+  }
+
+  @keyframes contextual-confidence-enter {
+    from {
+      opacity: 0;
+      transform:
+        translateY(-8px)
+        scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform:
+        translateY(0)
+        scale(1);
+    }
+  }
+}
+
+
+@media (max-width: 520px) {
+  .learning-confidence-panel.contextual-confidence-card {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card
+  .learning-confidence-heading {
+    margin-bottom: 10px;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card
+  .learning-confidence-button {
+    min-height: 66px;
+  }
+
+  .learning-confidence-panel.contextual-confidence-card
+  .learning-selected-answer {
+    display: none;
+  }
 }
