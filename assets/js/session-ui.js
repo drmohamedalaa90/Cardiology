@@ -895,17 +895,26 @@ function buildUnifiedHeader() {
   );
 
 
-  iconNav.appendChild(
-    createHeaderLink({
-      type: "profile",
-      label: "My Profile",
-      href:
-        nestedPath(
-          "profile.html"
-        )
-    })
-  );
+iconNav.appendChild(
+  createHeaderLink({
+    type: "profile",
+    label: "My Profile",
+    href:
+      nestedPath(
+        "profile.html"
+      )
+  })
+);
 
+
+iconNav.appendChild(
+  createHeaderLink({
+    type: "settings",
+    label: "Settings",
+    action:
+      openAclSettings
+  })
+);
 
   iconNav.appendChild(
     createHeaderLink({
