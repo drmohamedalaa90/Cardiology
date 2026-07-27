@@ -2877,7 +2877,13 @@ async function submit(
         data.correct ??
         data.is_correct
       );
-
+console.log("ANSWER CHECK RESULT:", {
+  data,
+  correct,
+  normalizedConfidence,
+  confidenceEnabled:
+    confidenceEnabled()
+});
     const points =
       confidencePoints({
         correct,
@@ -2885,7 +2891,10 @@ async function submit(
         confidence:
           normalizedConfidence
       });
-
+console.log(
+  "POINTS CALCULATED:",
+  points
+);
     const flashcard =
       await loadFlashcard(
         question,
