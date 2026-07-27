@@ -44,10 +44,31 @@
  * before session-ui.js builds the unified header.
  */
 
+/*
+ * Keep the blue header area visible,
+ * but hide the old fallback content.
+ */
+
 .topbar {
   min-height: 82px;
   opacity: 1;
   visibility: visible;
+}
+
+/*
+ * Hide only the original page-specific header elements.
+ */
+
+.topbar > :not(.acl-header-layout) {
+  display: none !important;
+}
+
+/*
+ * Show the unified header created by session-ui.js.
+ */
+
+.topbar .acl-header-layout {
+  display: grid;
 }
     body.ppci-modal-open,
     body.acl-settings-open {
