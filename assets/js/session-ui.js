@@ -385,7 +385,19 @@ const iconSvgs = {
       <path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>
     </svg>
   `,
-
+settings: `
+  <svg
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path
+      d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"
+    />
+    <path
+      d="M19.4 13.5c.1-.5.1-1 0-1.5l2-1.6-2-3.5-2.5 1a8 8 0 0 0-1.3-.8L15.2 4h-4l-.4 3.1c-.5.2-.9.5-1.3.8L7 6.9l-2 3.5L7 12c-.1.5-.1 1 0 1.5l-2 1.6 2 3.5 2.5-1c.4.3.8.6 1.3.8l.4 3.1h4l.4-3.1c.5-.2.9-.5 1.3-.8l2.5 1 2-3.5-2-1.6Z"
+    />
+  </svg>
+`,
   modules: `
     <svg
       viewBox="0 0 24 24"
@@ -680,7 +692,15 @@ function createRollingBrand() {
 
   return brand;
 }
+function openAclSettings() {
+  closeAclDrawer();
 
+  window.dispatchEvent(
+    new CustomEvent(
+      "acl:open-settings"
+    )
+  );
+}
 
 /* =========================================================
    UNIFIED GLOBAL HEADER
@@ -845,6 +865,8 @@ function buildUnifiedHeader() {
           "acl-header-admin-icon"
       })
     );
+);
+     
   }
 
 
@@ -1232,6 +1254,14 @@ function buildDrawer(
         admin: true
       })
     );
+     menu.appendChild(
+  createDrawerItem({
+    type: "settings",
+    label: "Settings",
+    action:
+      openAclSettings
+  })
+);
   }
 
 
