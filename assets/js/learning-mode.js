@@ -3123,6 +3123,12 @@ let performanceLabel =
 let performanceMessage =
   "Revisit the explanations and flashcards before your next attempt.";
 
+let resultMascot =
+  SAD_MASCOT;
+
+let resultMascotAlt =
+  "Dr. Corazón encouraging further review";
+
 if (
   percentage >= 90
 ) {
@@ -3131,6 +3137,12 @@ if (
 
   performanceMessage =
     "Excellent mastery. Your knowledge and confidence were highly aligned.";
+
+  resultMascot =
+    GOOD_JOB_MASCOT;
+
+  resultMascotAlt =
+    "Dr. Corazón celebrating expert performance";
 } else if (
   percentage >= 75
 ) {
@@ -3139,6 +3151,12 @@ if (
 
   performanceMessage =
     "A strong result with only a few areas needing reinforcement.";
+
+  resultMascot =
+    HAPPY_MASCOT;
+
+  resultMascotAlt =
+    "Dr. Corazón congratulating a strong performance";
 } else if (
   percentage >= 60
 ) {
@@ -3147,6 +3165,12 @@ if (
 
   performanceMessage =
     "Good progress. Review your incorrect and uncertain answers.";
+
+  resultMascot =
+    HAPPY_MASCOT;
+
+  resultMascotAlt =
+    "Dr. Corazón encouraging continued learning";
 }
   const progressFill =
     $("progressFill");
@@ -3177,10 +3201,21 @@ if (
 quizArea.innerHTML = `
   <div class="learning-result premium">
 
-    <span class="result-icon">
-      ${passed ? "🏆" : "📚"}
-    </span>
+    <div class="learning-result-mascot-stage">
 
+  <img
+    class="learning-result-mascot"
+    src="${esc(
+      resultMascot
+    )}"
+    alt="${esc(
+      resultMascotAlt
+    )}"
+  >
+
+  <div class="learning-result-mascot-glow"></div>
+
+</div>
     <span class="learning-result-kicker">
       ${
         passed
@@ -3243,7 +3278,12 @@ quizArea.innerHTML = `
           ${analytics.lowConfidenceCorrect}
         </strong>
       </div>
-
+<div class="learning-result-stat">
+  <span>Low-confidence incorrect</span>
+  <strong>
+    ${analytics.lowConfidenceIncorrect}
+  </strong>
+</div>
       <div class="learning-result-stat">
         <span>Lifelines used</span>
         <strong>
