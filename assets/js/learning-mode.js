@@ -2098,15 +2098,6 @@ function feedbackHtml(
         : "s"
     }`;
 
-  const confidenceText =
-    answer.confidence ===
-      "high"
-      ? "High confidence"
-      : answer.confidence ===
-          "low"
-        ? "Low confidence"
-        : "Standard answering";
-
   const mascot =
     correct
       ? GOOD_JOB_MASCOT
@@ -2235,15 +2226,9 @@ function feedbackHtml(
           }
         </p>
 
-        <span class="learning-feedback-score">
-          ${esc(
-            confidenceText
-          )}
-          ·
-          ${esc(
-            pointText
-          )}
-        </span>
+       <span class="learning-feedback-score">
+  ${esc(pointText)}
+</span>
 
         ${explanation}
 
