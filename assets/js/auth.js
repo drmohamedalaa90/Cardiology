@@ -72,22 +72,54 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
   try {
     const { data: taken } = await supabaseClient.from("profiles").select("id").ilike("username", username).maybeSingle();
     if (taken) throw new Error("This username is already taken.");
-    const { data, error } = await supabaseClient.auth.signUp({
-      email, password,
-      options: {
-        emailRedirectTo: `${window.location.origin}${ACL_CONFIG.siteBase}confirm.html`,
-        data: { full_name: fullName, username, whatsapp, position: position, institution }
-      }
-    });
-    if (error) throw error;
-    if (!data.session) {
+   const { data, error } = await supabaseClient.auth.signUp({
+  email,
+  password,
+  options: {
+    emailRedirectTo: `${window.location.origin}${ACL_CONFIG.siteBase}confirm.html`,
+    data: {
+      full_name: fullName,
+      username,
+      whatsapp,
+      position,
+      institution
+    }
+  }
+});
+
+console.log("SIGNUP DATA:", data);
+console.log("SIGNUP ERROR:", error);
+
+if (error) throw error;    if (!data.session) {
       setMessage("registerSuccess", "Account created. Open the confirmation email, confirm your address, then return to sign in.");
       event.target.reset();
     } else {
       const { data: isAdmin, error: adminError } = await supabaseClient.rpc("acl_is_admin");
       window.location.href = (!adminError && isAdmin === true) ? "admin.html" : "modules.html";
     }
-  } catch (error) {
-    setMessage("registerError", error.message || "Could not create account.");
-  } finally { if (submit) submit.disabled = false; }
+ } catch (error) {
+    console.error(
+      "REGISTER ERROR:",
+      error
+    );
+
+    alert(
+      JSON.stringify(
+        error,
+        null,
+        2
+      )
+    );
+
+    setMessage(
+      "registerError",
+      error.message ||
+      "Could not create account."
+    );
+  } finally {
+    if (submit) {
+      submit.disabled =
+        false;
+    }
+  }
 });
