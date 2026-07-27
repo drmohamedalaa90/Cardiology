@@ -4696,3 +4696,52 @@ body.acl-expert-learning-mode
     display: none;
   }
 }
+/* COMPACT CONTEXTUAL CONFIDENCE CARD */
+
+.learning-confidence-panel.contextual-confidence-card {
+  padding: 14px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-heading {
+  margin-bottom: 10px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-heading h3 {
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-options {
+  gap: 8px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-button {
+  min-height: 62px;
+  padding: 10px 12px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-symbol {
+  width: 44px;
+  height: 44px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.confidence-choice-copy strong {
+  font-size: 15px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.confidence-choice-copy small {
+  font-size: 12px;
+}
+
+.learning-confidence-panel.contextual-confidence-card
+.learning-confidence-points {
+  padding: 6px 10px;
+  font-size: 12px;
+}
