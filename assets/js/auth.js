@@ -60,11 +60,11 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
   const username = normalizeUsername(byId("username").value);
   const email = byId("email").value.trim().toLowerCase();
   const whatsapp = normalizeEgyptWhatsapp(byId("whatsapp").value);
-  const academicYear = byId("academicYear").value.trim();
+  const position = byId("position").value.trim();
   const institution = byId("institution").value.trim();
   const password = byId("registerPassword").value;
   const confirmation = byId("confirmPassword").value;
-  if (!fullName || !email || !whatsapp || !academicYear || !institution) return setMessage("registerError", "Please complete all required fields.");
+  if (!fullName || !email || !whatsapp || !position || !institution) return setMessage("registerError", "Please complete all required fields.");
   if (!validUsername(username)) return setMessage("registerError", "Username must be 3–30 characters using letters, numbers, dots or underscores.");
   if (password.length < 8) return setMessage("registerError", "Password must contain at least 8 characters.");
   if (password !== confirmation) return setMessage("registerError", "Passwords do not match.");
@@ -76,7 +76,7 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
       email, password,
       options: {
         emailRedirectTo: `${window.location.origin}${ACL_CONFIG.siteBase}confirm.html`,
-        data: { full_name: fullName, username, whatsapp, academic_year: academicYear, institution }
+        data: { full_name: fullName, username, whatsapp, position: position, institution }
       }
     });
     if (error) throw error;
