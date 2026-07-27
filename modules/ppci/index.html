@@ -30,19 +30,30 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+
   <style>
     /* =====================================================
-       PPCI EXPERT EDITION — PAGE-SPECIFIC SAFETY
+       BASIC PAGE
     ===================================================== */
 
     body {
       min-height: 100vh;
     }
 
+    body.ppci-modal-open,
+    body.acl-settings-open {
+      overflow: hidden;
+    }
+
     .ppci-learning-shell {
       width: min(1050px, calc(100% - 32px));
       margin: 30px auto 60px;
     }
+
+
+    /* =====================================================
+       MODULE HEADER
+    ===================================================== */
 
     .ppci-stage {
       margin-bottom: 18px;
@@ -104,6 +115,11 @@
       color: #5d7185;
       line-height: 1.5;
     }
+
+
+    /* =====================================================
+       QUIZ CARD
+    ===================================================== */
 
     .ppci-learning-card {
       padding: clamp(20px, 4vw, 36px) !important;
@@ -194,6 +210,136 @@
       font-weight: 900;
     }
 
+    .ppci-question-title {
+      margin: 18px 0 22px;
+      color: #082747;
+      font-size: clamp(1.2rem, 2vw, 1.65rem);
+      font-weight: 900;
+      line-height: 1.28;
+    }
+
+
+    /* =====================================================
+       ANSWER OPTIONS
+    ===================================================== */
+
+    .ppci-options {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      width: 100%;
+      margin: 20px 0;
+    }
+
+    .ppci-option {
+      display: grid;
+      grid-template-columns:
+        auto
+        auto
+        minmax(0, 1fr);
+      align-items: center;
+      gap: 13px;
+      width: 100%;
+      min-height: 62px;
+      padding: 14px 17px;
+      border: 1px solid #b9cee1;
+      border-radius: 14px;
+      background: #ffffff;
+      color: #102f4d;
+      text-align: left;
+      cursor: pointer;
+      box-shadow:
+        0 4px 12px
+        rgba(14, 63, 113, 0.035);
+      transition:
+        transform 0.16s ease,
+        border-color 0.16s ease,
+        background 0.16s ease,
+        box-shadow 0.16s ease;
+    }
+
+    .ppci-option:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: #538cb7;
+      background: #f5fbff;
+      box-shadow:
+        0 7px 17px
+        rgba(14, 63, 113, 0.08);
+    }
+
+    .ppci-option-key {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #8f2030;
+      color: #ffffff;
+      font-size: 0.86rem;
+      font-weight: 900;
+    }
+
+    .ppci-option-radio {
+      display: block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #a4b9ca;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    .ppci-option-copy {
+      color: #102f4d;
+      font-size: 1rem;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .ppci-option.selected {
+      border-color: #8f2030;
+      background: #fff5f6;
+      box-shadow:
+        0 0 0 3px
+        rgba(143, 32, 48, 0.09);
+    }
+
+    .ppci-option.selected
+    .ppci-option-radio {
+      border: 5px solid #8f2030;
+    }
+
+    .ppci-option.correct {
+      border-color: #29945a;
+      background: #effbf4;
+    }
+
+    .ppci-option.correct
+    .ppci-option-key {
+      background: #21834e;
+    }
+
+    .ppci-option.incorrect {
+      border-color: #c84552;
+      background: #fff1f2;
+    }
+
+    .ppci-option.incorrect
+    .ppci-option-key {
+      background: #b73240;
+    }
+
+    .ppci-option.is-eliminated {
+      opacity: 0.4;
+      filter: grayscale(0.8);
+      text-decoration: line-through;
+      pointer-events: none;
+    }
+
+
+    /* =====================================================
+       SCIENTIFIC LIFELINES
+    ===================================================== */
+
     .ppci-lifelines {
       display: flex;
       align-items: center;
@@ -241,7 +387,7 @@
         transform 0.2s ease;
     }
 
-    .ppci-lifeline-button:hover {
+    .ppci-lifeline-button:hover:not(:disabled) {
       transform: translateY(-2px);
       border-color: #c5404f;
       box-shadow:
@@ -366,42 +512,60 @@
       line-height: 1.55;
     }
 
-    .ppci-question-title {
-      margin: 18px 0 22px;
-      color: #082747;
-      font-size: clamp(1.2rem, 2vw, 1.65rem);
-      font-weight: 900;
-      line-height: 1.28;
+
+    /* =====================================================
+       CONFIDENCE ANSWERING
+    ===================================================== */
+
+    .ppci-confidence-panel {
+      margin-top: 22px;
+      padding: 20px;
+      border: 1px solid #c7d9e8;
+      border-radius: 18px;
+      background:
+        linear-gradient(
+          145deg,
+          #f8fcff,
+          #eef7fc
+        );
+      box-shadow:
+        0 10px 25px
+        rgba(13, 59, 104, 0.08);
     }
 
-    .ppci-options {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      width: 100%;
-      margin: 20px 0;
+    .ppci-confidence-panel h3 {
+      margin: 0;
+      color: #102f4d;
+      font-size: 1.12rem;
     }
 
-    .ppci-option {
+    .ppci-confidence-panel p {
+      margin: 7px 0 17px;
+      color: #60768a;
+      line-height: 1.45;
+    }
+
+    .ppci-confidence-options {
       display: grid;
       grid-template-columns:
-        auto
-        auto
-        minmax(0, 1fr);
+        repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .ppci-confidence-button {
+      display: flex;
       align-items: center;
-      gap: 13px;
-      width: 100%;
-      min-height: 62px;
-      padding: 14px 17px;
-      border: 1px solid #b9cee1;
-      border-radius: 14px;
+      justify-content: center;
+      gap: 9px;
+      min-height: 52px;
+      padding: 12px 16px;
+      border: 1px solid #a9c2d6;
+      border-radius: 13px;
       background: #ffffff;
-      color: #102f4d;
-      text-align: left;
+      color: #173f67;
+      font-size: 0.94rem;
+      font-weight: 900;
       cursor: pointer;
-      box-shadow:
-        0 4px 12px
-        rgba(14, 63, 113, 0.035);
       transition:
         transform 0.16s ease,
         border-color 0.16s ease,
@@ -409,175 +573,38 @@
         box-shadow 0.16s ease;
     }
 
-    .ppci-option:hover:not(:disabled) {
+    .ppci-confidence-button:hover {
       transform: translateY(-1px);
-      border-color: #538cb7;
-      background: #f5fbff;
-      box-shadow:
-        0 7px 17px
-        rgba(14, 63, 113, 0.08);
-    }
-
-    .ppci-option-key {
-      display: grid;
-      place-items: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: #8f2030;
-      color: #ffffff;
-      font-size: 0.86rem;
-      font-weight: 900;
-    }
-
-    .ppci-option-radio {
-      display: block;
-      width: 18px;
-      height: 18px;
-      border: 2px solid #a4b9ca;
-      border-radius: 50%;
-      background: #ffffff;
-    }
-
-    .ppci-option-copy {
-      color: #102f4d;
-      font-size: 1rem;
-      font-weight: 750;
-      line-height: 1.35;
-    }
-
-    .ppci-option.selected {
       border-color: #8f2030;
-      background: #fff5f6;
+      background: #fff6f7;
       box-shadow:
-        0 0 0 3px
-        rgba(143, 32, 48, 0.09);
+        0 7px 16px
+        rgba(113, 26, 39, 0.1);
     }
 
-    .ppci-option.selected
-    .ppci-option-radio {
-      border: 5px solid #8f2030;
+    .ppci-confidence-button.high {
+      border-color: #8f2030;
+      color: #8f2030;
     }
 
-    .ppci-option.correct {
-      border-color: #29945a;
-      background: #effbf4;
+    .ppci-confidence-button.low {
+      border-color: #4d7e9f;
+      color: #295d80;
     }
 
-    .ppci-option.correct
-    .ppci-option-key {
-      background: #21834e;
+    .ppci-confidence-selection {
+      margin-top: 12px;
+      color: #60768a;
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-align: center;
     }
 
-    .ppci-option.incorrect {
-      border-color: #c84552;
-      background: #fff1f2;
-    }
 
-    .ppci-option.is-eliminated {
-      opacity: 0.4;
-      filter: grayscale(0.8);
-      text-decoration: line-through;
-      pointer-events: none;
-    }
-/* =====================================================
-   CONFIDENCE ANSWERING
-===================================================== */
+    /* =====================================================
+       FEEDBACK
+    ===================================================== */
 
-.ppci-confidence-panel {
-  margin-top: 22px;
-  padding: 20px;
-  border: 1px solid #c7d9e8;
-  border-radius: 18px;
-  background:
-    linear-gradient(
-      145deg,
-      #f8fcff,
-      #eef7fc
-    );
-  box-shadow:
-    0 10px 25px
-    rgba(13, 59, 104, 0.08);
-}
-
-.ppci-confidence-panel h3 {
-  margin: 0;
-  color: #102f4d;
-  font-size: 1.12rem;
-}
-
-.ppci-confidence-panel p {
-  margin: 7px 0 17px;
-  color: #60768a;
-  line-height: 1.45;
-}
-
-.ppci-confidence-options {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.ppci-confidence-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-height: 52px;
-  padding: 12px 16px;
-  border: 1px solid #a9c2d6;
-  border-radius: 13px;
-  background: #ffffff;
-  color: #173f67;
-  font-size: 0.94rem;
-  font-weight: 900;
-  cursor: pointer;
-  transition:
-    transform 0.16s ease,
-    border-color 0.16s ease,
-    background 0.16s ease,
-    box-shadow 0.16s ease;
-}
-
-.ppci-confidence-button:hover {
-  transform: translateY(-1px);
-  border-color: #8f2030;
-  background: #fff6f7;
-  box-shadow:
-    0 7px 16px
-    rgba(113, 26, 39, 0.1);
-}
-
-.ppci-confidence-button.high {
-  border-color: #8f2030;
-  color: #8f2030;
-}
-
-.ppci-confidence-button.low {
-  border-color: #4d7e9f;
-  color: #295d80;
-}
-
-.ppci-confidence-selection {
-  margin-top: 12px;
-  color: #60768a;
-  font-size: 0.82rem;
-  font-weight: 800;
-  text-align: center;
-}
-
-.ppci-answer-score {
-  display: inline-flex;
-  align-items: center;
-  margin-top: 10px;
-  padding: 6px 11px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8);
-  color: #173f67;
-  font-size: 0.82rem;
-  font-weight: 900;
-}
     .ppci-answer-feedback {
       display: grid;
       grid-template-columns:
@@ -601,7 +628,6 @@
     }
 
     .ppci-feedback-mascot {
-      position: relative;
       display: grid;
       place-items: center;
       min-height: 170px;
@@ -633,6 +659,18 @@
       line-height: 1.6;
     }
 
+    .ppci-answer-score {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 10px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.8);
+      color: #173f67;
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+
     .ppci-explanation {
       margin-top: 14px;
       padding: 14px 16px;
@@ -641,11 +679,36 @@
       background: rgba(255, 255, 255, 0.7);
     }
 
+    .ppci-review-flashcard {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding: 10px 15px;
+      border: 1px solid #b33344;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #8f2030;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .ppci-review-flashcard:hover {
+      background: #8f2030;
+      color: #ffffff;
+    }
+
     .ppci-actions {
       display: flex;
       justify-content: flex-end;
       margin-top: 22px;
     }
+
+
+    /* =====================================================
+       FINAL RESULT
+    ===================================================== */
 
     .ppci-result {
       padding: 20px;
@@ -676,6 +739,12 @@
       font-weight: 900;
     }
 
+    .ppci-result-detail {
+      margin-top: 8px;
+      color: #5d7185;
+      font-weight: 800;
+    }
+
     .ppci-result-actions {
       display: flex;
       justify-content: center;
@@ -683,167 +752,13 @@
       flex-wrap: wrap;
       margin-top: 20px;
     }
+
+
     /* =====================================================
-       PPCI FLASHCARD MODAL
+       FLASHCARD MODAL
     ===================================================== */
 
-    .ppci-flashcard-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 10000;
-      display: grid;
-      place-items: center;
-      padding: 22px;
-    }
-
-    .ppci-flashcard-modal[hidden] {
-      display: none;
-    }
-
-    .ppci-flashcard-backdrop {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: 0;
-      background: rgba(6, 24, 42, 0.72);
-      backdrop-filter: blur(5px);
-      cursor: pointer;
-    }
-
-    .ppci-flashcard-panel {
-      position: relative;
-      z-index: 1;
-      width: min(860px, 100%);
-      max-height: min(88vh, 900px);
-      overflow: hidden;
-      border: 1px solid #d7e2ec;
-      border-radius: 24px;
-      background: #ffffff;
-      box-shadow:
-        0 28px 80px
-        rgba(0, 20, 40, 0.34);
-    }
-
-    .ppci-flashcard-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 18px;
-      padding: 22px 24px;
-      border-bottom: 1px solid #edc8cd;
-      background:
-        linear-gradient(
-          120deg,
-          #8f2030,
-          #c74655
-        );
-      color: #ffffff;
-    }
-
-    .ppci-flashcard-type {
-      display: inline-flex;
-      margin-bottom: 8px;
-      padding: 5px 10px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.14);
-      font-size: 0.69rem;
-      font-weight: 950;
-      letter-spacing: 0.12em;
-    }
-
-    .ppci-flashcard-head h2 {
-      margin: 0;
-      color: #ffffff;
-      font-size: clamp(1.3rem, 3vw, 2rem);
-    }
-
-    .ppci-flashcard-close {
-      display: grid;
-      place-items: center;
-      width: 40px;
-      min-width: 40px;
-      height: 40px;
-      border: 1px solid rgba(255, 255, 255, 0.42);
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.15);
-      color: #ffffff;
-      font-size: 1.8rem;
-      line-height: 1;
-      cursor: pointer;
-    }
-
-    .ppci-flashcard-content {
-      max-height: calc(88vh - 185px);
-      overflow-y: auto;
-      padding: 24px;
-    }
-
-    .ppci-flashcard-section + .ppci-flashcard-section {
-      margin-top: 22px;
-    }
-
-    .ppci-flashcard-section h3 {
-      margin: 0 0 10px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #f0d6da;
-      color: #8f2030;
-      font-size: 1.05rem;
-    }
-
-    .ppci-flashcard-section ul {
-      display: grid;
-      gap: 8px;
-      margin: 0;
-      padding-left: 22px;
-    }
-
-    .ppci-flashcard-section li {
-      color: #243f57;
-      line-height: 1.55;
-    }
-
-    .ppci-flashcard-footer {
-      display: flex;
-      justify-content: center;
-      padding: 16px 24px 22px;
-      border-top: 1px solid #e2eaf0;
-      background: #f8fbfd;
-    }
-
-    .ppci-review-flashcard {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 14px;
-      padding: 10px 15px;
-      border: 1px solid #b33344;
-      border-radius: 999px;
-      background: #ffffff;
-      color: #8f2030;
-      font-weight: 900;
-      cursor: pointer;
-      transition:
-        transform 0.16s ease,
-        background 0.16s ease,
-        color 0.16s ease;
-    }
-
-    .ppci-review-flashcard:hover {
-      transform: translateY(-1px);
-      background: #8f2030;
-      color: #ffffff;
-    }
-
-    body.ppci-modal-open {
-      overflow: hidden;
-    }
-        /* =====================================================
-       ACL SETTINGS MODAL
-    ===================================================== */
-
+    .ppci-flashcard-modal,
     .acl-settings-modal {
       position: fixed;
       inset: 0;
@@ -853,10 +768,12 @@
       padding: 22px;
     }
 
+    .ppci-flashcard-modal[hidden],
     .acl-settings-modal[hidden] {
       display: none;
     }
 
+    .ppci-flashcard-backdrop,
     .acl-settings-backdrop {
       position: absolute;
       inset: 0;
@@ -868,10 +785,11 @@
       cursor: pointer;
     }
 
+    .ppci-flashcard-panel,
     .acl-settings-panel {
       position: relative;
       z-index: 1;
-      width: min(620px, 100%);
+      width: min(860px, 100%);
       max-height: 90vh;
       overflow: hidden;
       border: 1px solid #d7e2ec;
@@ -882,6 +800,11 @@
         rgba(0, 20, 40, 0.34);
     }
 
+    .acl-settings-panel {
+      width: min(620px, 100%);
+    }
+
+    .ppci-flashcard-head,
     .acl-settings-head {
       display: flex;
       align-items: flex-start;
@@ -897,39 +820,86 @@
       color: #ffffff;
     }
 
-    .acl-settings-kicker {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.7rem;
-      font-weight: 950;
-      letter-spacing: 0.12em;
-      opacity: 0.84;
-    }
-
+    .ppci-flashcard-head h2,
     .acl-settings-head h2 {
       margin: 0;
       color: #ffffff;
     }
 
+    .ppci-flashcard-type,
+    .acl-settings-kicker {
+      display: inline-flex;
+      margin-bottom: 8px;
+      font-size: 0.7rem;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+    }
+
+    .ppci-flashcard-type {
+      padding: 5px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .ppci-flashcard-close,
     .acl-settings-close {
       display: grid;
       place-items: center;
       width: 40px;
       min-width: 40px;
       height: 40px;
-      border: 1px solid rgba(255, 255, 255, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.42);
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.15);
       color: #ffffff;
       font-size: 1.8rem;
       cursor: pointer;
     }
 
+    .ppci-flashcard-content,
     .acl-settings-body {
-      max-height: calc(90vh - 175px);
+      max-height: calc(90vh - 180px);
       overflow-y: auto;
-      padding: 22px 24px;
+      padding: 24px;
     }
+
+    .ppci-flashcard-section + .ppci-flashcard-section {
+      margin-top: 22px;
+    }
+
+    .ppci-flashcard-section h3 {
+      margin: 0 0 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #f0d6da;
+      color: #8f2030;
+    }
+
+    .ppci-flashcard-section ul {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .ppci-flashcard-section li {
+      color: #243f57;
+      line-height: 1.55;
+    }
+
+    .ppci-flashcard-footer,
+    .acl-settings-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 16px 24px 22px;
+      border-top: 1px solid #e2eaf0;
+      background: #f8fbfd;
+    }
+
+
+    /* =====================================================
+       SETTINGS
+    ===================================================== */
 
     .acl-settings-group + .acl-settings-group {
       margin-top: 25px;
@@ -960,10 +930,6 @@
 
     .acl-setting-row + .acl-setting-row {
       border-top: 1px solid #edf2f6;
-    }
-
-    .acl-setting-copy {
-      min-width: 0;
     }
 
     .acl-setting-copy strong {
@@ -1000,8 +966,7 @@
       inset: 0;
       border-radius: 999px;
       background: #bac7d1;
-      transition:
-        background 0.18s ease;
+      transition: background 0.18s ease;
     }
 
     .acl-switch-track::after {
@@ -1016,8 +981,7 @@
       box-shadow:
         0 2px 6px
         rgba(20, 39, 58, 0.2);
-      transition:
-        transform 0.18s ease;
+      transition: transform 0.18s ease;
     }
 
     .acl-switch input:checked +
@@ -1049,18 +1013,11 @@
       color: #a32635;
     }
 
-    .acl-settings-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      padding: 16px 24px 22px;
-      border-top: 1px solid #e2eaf0;
-      background: #f8fbfd;
-    }
 
-    body.acl-settings-open {
-      overflow: hidden;
-    }
+    /* =====================================================
+       MOBILE
+    ===================================================== */
+
     @media (max-width: 760px) {
       .ppci-learning-shell {
         width: min(100% - 20px, 1050px);
@@ -1069,10 +1026,6 @@
 
       .ppci-stage-body {
         padding: 18px;
-      }
-
-      .ppci-topic-tools-row {
-        align-items: flex-start;
       }
 
       .ppci-lifelines {
@@ -1114,54 +1067,27 @@
         max-height: 145px;
       }
 
-      .ppci-actions .primary-btn {
-        width: 100%;
-      }
-            .ppci-flashcard-modal {
-        padding: 10px;
-      }
-
-      .ppci-flashcard-panel {
-        max-height: 94vh;
-        border-radius: 18px;
-      }
-
-      .ppci-flashcard-head {
-        padding: 18px;
-      }
-
-      .ppci-flashcard-content {
-        max-height: calc(94vh - 178px);
-        padding: 18px;
-      }
-
+      .ppci-actions .primary-btn,
+      .acl-settings-footer .primary-btn,
       .ppci-flashcard-footer .primary-btn {
         width: 100%;
       }
-            .acl-settings-modal {
+
+      .ppci-flashcard-modal,
+      .acl-settings-modal {
         padding: 10px;
       }
 
+      .ppci-flashcard-panel,
       .acl-settings-panel {
         max-height: 95vh;
         border-radius: 18px;
       }
 
-      .acl-settings-head {
-        padding: 18px;
-      }
-
+      .ppci-flashcard-content,
       .acl-settings-body {
-        max-height: calc(95vh - 170px);
+        max-height: calc(95vh - 175px);
         padding: 18px;
-      }
-
-      .acl-settings-footer {
-        padding: 14px 18px 18px;
-      }
-
-      .acl-settings-footer .primary-btn {
-        width: 100%;
       }
     }
   </style>
@@ -1397,8 +1323,10 @@
     </section>
 
   </main>
+
+
   <!-- =====================================================
-       KNOWLEDGE VAULT / REVIEW FLASHCARD
+       FLASHCARD MODAL
   ====================================================== -->
 
   <div
@@ -1473,8 +1401,10 @@
     </section>
 
   </div>
+
+
   <!-- =====================================================
-       ACL SETTINGS
+       SETTINGS MODAL
   ====================================================== -->
 
   <div
@@ -1534,7 +1464,8 @@
           </h3>
 
           <p class="acl-settings-description">
-            Choose whether confidence is requested after selecting an answer.
+            Select whether confidence is requested before an answer
+            is submitted.
           </p>
 
 
@@ -1547,7 +1478,7 @@
               </strong>
 
               <small>
-                High and low confidence choices will affect the question score.
+                High and Low confidence choices affect the question score.
               </small>
 
             </div>
@@ -1589,7 +1520,7 @@
               </strong>
 
               <small>
-                The master switch hides or shows the complete Expert Panel.
+                Show or hide the complete Expert Panel.
               </small>
 
             </div>
@@ -1751,6 +1682,12 @@
     </section>
 
   </div>
+
+
+  <!-- =====================================================
+       APPLICATION
+  ====================================================== -->
+
   <script type="module">
 
     import {
@@ -1774,12 +1711,19 @@
     import {
       PPCI_QUESTIONS
     } from "./questions.js";
-import {
-  DEFAULT_ACL_SETTINGS,
-  getAclSettings,
-  saveAclSettings,
-  normalizeAclSettings
-} from "../../assets/js/user-settings.js";
+
+
+    import {
+      DEFAULT_ACL_SETTINGS,
+      getAclSettings,
+      saveAclSettings,
+      normalizeAclSettings
+    } from "../../assets/js/user-settings.js";
+
+
+    /* =====================================================
+       CONSTANTS
+    ===================================================== */
 
     const MODULE_ID =
       "ppci-fundamentals";
@@ -1806,6 +1750,10 @@ import {
         import.meta.url
       ).href;
 
+
+    /* =====================================================
+       ELEMENTS
+    ===================================================== */
 
     const quizArea =
       document.getElementById(
@@ -1836,6 +1784,7 @@ import {
       document.getElementById(
         "progressFill"
       );
+
 
     const flashcardModal =
       document.getElementById(
@@ -1871,71 +1820,98 @@ import {
       document.getElementById(
         "closePpciFlashcardBottom"
       );
+
+
     const settingsModal =
-  document.getElementById(
-    "aclSettingsModal"
-  );
+      document.getElementById(
+        "aclSettingsModal"
+      );
 
-const settingsBackdrop =
-  document.getElementById(
-    "aclSettingsBackdrop"
-  );
+    const settingsBackdrop =
+      document.getElementById(
+        "aclSettingsBackdrop"
+      );
 
-const closeSettingsButton =
-  document.getElementById(
-    "closeAclSettings"
-  );
+    const closeSettingsButton =
+      document.getElementById(
+        "closeAclSettings"
+      );
 
-const saveSettingsButton =
-  document.getElementById(
-    "saveAclSettings"
-  );
+    const saveSettingsButton =
+      document.getElementById(
+        "saveAclSettings"
+      );
 
-const settingsStatus =
-  document.getElementById(
-    "aclSettingsStatus"
-  );
+    const settingsStatus =
+      document.getElementById(
+        "aclSettingsStatus"
+      );
 
-const settingConfidence =
-  document.getElementById(
-    "settingConfidence"
-  );
+    const settingConfidence =
+      document.getElementById(
+        "settingConfidence"
+      );
 
-const settingLifelines =
-  document.getElementById(
-    "settingLifelines"
-  );
+    const settingLifelines =
+      document.getElementById(
+        "settingLifelines"
+      );
 
-const settingExpert =
-  document.getElementById(
-    "settingExpert"
-  );
+    const settingExpert =
+      document.getElementById(
+        "settingExpert"
+      );
 
-const settingFilter =
-  document.getElementById(
-    "settingFilter"
-  );
+    const settingFilter =
+      document.getElementById(
+        "settingFilter"
+      );
 
-const settingGuideline =
-  document.getElementById(
-    "settingGuideline"
-  );
+    const settingGuideline =
+      document.getElementById(
+        "settingGuideline"
+      );
 
-const settingVault =
-  document.getElementById(
-    "settingVault"
-  );
-    let attempt = null;
-    let engine = null;
-    let saving = false;
-    let expandedLifeline = null;
-    let pendingChoice = null;
+    const settingVault =
+      document.getElementById(
+        "settingVault"
+      );
 
-    let lifelinesState = {};
-let aclSettings =
-  normalizeAclSettings(
-    DEFAULT_ACL_SETTINGS
-  );
+
+    /* =====================================================
+       APPLICATION STATE
+    ===================================================== */
+
+    let attempt =
+      null;
+
+    let engine =
+      null;
+
+    let saving =
+      false;
+
+    let finishing =
+      false;
+
+    let expandedLifeline =
+      null;
+
+    let pendingChoice =
+      null;
+
+    let lifelinesState =
+      {};
+
+    let aclSettings =
+      normalizeAclSettings(
+        DEFAULT_ACL_SETTINGS
+      );
+
+
+    /* =====================================================
+       GENERAL HELPERS
+    ===================================================== */
 
     function escapeHtml(
       value = ""
@@ -1966,210 +1942,293 @@ let aclSettings =
         isError
       );
     }
-function syncSettingsControls() {
-  settingConfidence.checked =
-    aclSettings
-      .confidenceEnabled;
-
-  settingLifelines.checked =
-    aclSettings
-      .lifelinesEnabled;
-
-  settingExpert.checked =
-    aclSettings
-      .enabledLifelines
-      .expert;
-
-  settingFilter.checked =
-    aclSettings
-      .enabledLifelines
-      .filter;
-
-  settingGuideline.checked =
-    aclSettings
-      .enabledLifelines
-      .guideline;
-
-  settingVault.checked =
-    aclSettings
-      .enabledLifelines
-      .vault;
-
-  const lifelinesDisabled =
-    !settingLifelines.checked;
-
-  settingExpert.disabled =
-    lifelinesDisabled;
-
-  settingFilter.disabled =
-    lifelinesDisabled;
-
-  settingGuideline.disabled =
-    lifelinesDisabled;
-
-  settingVault.disabled =
-    lifelinesDisabled;
-}
 
 
-function openSettings() {
-  syncSettingsControls();
+    /* =====================================================
+       SETTINGS
+    ===================================================== */
 
-  settingsStatus.textContent =
-    "";
-
-  settingsStatus.classList.remove(
-    "error"
-  );
-
-  settingsModal.hidden =
-    false;
-
-  document.body.classList.add(
-    "acl-settings-open"
-  );
-
-  closeSettingsButton.focus();
-}
-
-
-function closeSettings() {
-  settingsModal.hidden =
-    true;
-
-  document.body.classList.remove(
-    "acl-settings-open"
-  );
-}
-
-
-function settingsFromControls() {
-  return normalizeAclSettings({
-    confidenceEnabled:
-      settingConfidence.checked,
-
-    lifelinesEnabled:
-      settingLifelines.checked,
-
-    enabledLifelines: {
-      expert:
-        settingExpert.checked,
-
-      filter:
-        settingFilter.checked,
-
-      guideline:
-        settingGuideline.checked,
-
-      vault:
-        settingVault.checked
-    }
-  });
-}
-
-
-settingLifelines.addEventListener(
-  "change",
-  syncSettingsControls
-);
-
-
-settingsBackdrop.addEventListener(
-  "click",
-  closeSettings
-);
-
-
-closeSettingsButton.addEventListener(
-  "click",
-  closeSettings
-);
-
-
-window.addEventListener(
-  "acl:open-settings",
-  openSettings
-);
-
-
-window.addEventListener(
-  "acl:settings-changed",
-  (event) => {
-    aclSettings =
-      normalizeAclSettings(
-        event.detail
-      );
-
-    syncSettingsControls();
-
-    pendingChoice =
-      null;
-
-    if (engine) {
-      engine.setConfidenceEnabled(
-        aclSettings
-          .confidenceEnabled
-      );
-
-      render();
-    }
-  }
-);
-
-
-saveSettingsButton.addEventListener(
-  "click",
-  async () => {
-    saveSettingsButton.disabled =
-      true;
-
-    settingsStatus.textContent =
-      "Saving settings…";
-
-    settingsStatus.classList.remove(
-      "error"
-    );
-
-    try {
-      aclSettings =
-        await saveAclSettings(
-          settingsFromControls()
+    function syncSettingsControls() {
+      settingConfidence.checked =
+        Boolean(
+          aclSettings
+            .confidenceEnabled
         );
 
-   settingsStatus.textContent =
-  "Settings saved successfully.";
+      settingLifelines.checked =
+        Boolean(
+          aclSettings
+            .lifelinesEnabled
+        );
 
-pendingChoice =
-  null;
+      settingExpert.checked =
+        aclSettings
+          .enabledLifelines
+          .expert !== false;
 
-if (engine) {
-  engine.setConfidenceEnabled(
-    aclSettings
-      .confidenceEnabled
-  );
-}
+      settingFilter.checked =
+        aclSettings
+          .enabledLifelines
+          .filter !== false;
 
-render();
+      settingGuideline.checked =
+        aclSettings
+          .enabledLifelines
+          .guideline !== false;
 
-      window.setTimeout(
-        closeSettings,
-        550
-      );
-    } catch (error) {
-      console.error(error);
+      settingVault.checked =
+        aclSettings
+          .enabledLifelines
+          .vault !== false;
+
+      const disabled =
+        !settingLifelines.checked;
+
+      settingExpert.disabled =
+        disabled;
+
+      settingFilter.disabled =
+        disabled;
+
+      settingGuideline.disabled =
+        disabled;
+
+      settingVault.disabled =
+        disabled;
+    }
+
+
+    function openSettings() {
+      syncSettingsControls();
 
       settingsStatus.textContent =
-        "Could not save settings.";
+        "";
 
-      settingsStatus.classList.add(
+      settingsStatus.classList.remove(
         "error"
       );
-    } finally {
-      saveSettingsButton.disabled =
+
+      settingsModal.hidden =
         false;
+
+      document.body.classList.add(
+        "acl-settings-open"
+      );
+
+      closeSettingsButton.focus();
     }
-  }
-);
+
+
+    function closeSettings() {
+      settingsModal.hidden =
+        true;
+
+      document.body.classList.remove(
+        "acl-settings-open"
+      );
+    }
+
+
+    function settingsFromControls() {
+      return normalizeAclSettings({
+        confidenceEnabled:
+          settingConfidence.checked,
+
+        lifelinesEnabled:
+          settingLifelines.checked,
+
+        enabledLifelines: {
+          expert:
+            settingExpert.checked,
+
+          filter:
+            settingFilter.checked,
+
+          guideline:
+            settingGuideline.checked,
+
+          vault:
+            settingVault.checked
+        }
+      });
+    }
+
+
+    settingLifelines.addEventListener(
+      "change",
+      syncSettingsControls
+    );
+
+
+    settingsBackdrop.addEventListener(
+      "click",
+      closeSettings
+    );
+
+
+    closeSettingsButton.addEventListener(
+      "click",
+      closeSettings
+    );
+
+
+    /*
+     * Normal event used by session-ui.js.
+     */
+
+    window.addEventListener(
+      "acl:open-settings",
+      openSettings
+    );
+
+
+    /*
+     * Public fallback.
+     */
+
+    window.openAclSettings =
+      openSettings;
+
+
+    /*
+     * Delegated fallback for Settings links rendered by
+     * session-ui.js after the page has already loaded.
+     */
+
+    document.addEventListener(
+      "click",
+      (event) => {
+        const target =
+          event.target instanceof Element
+            ? event.target
+            : null;
+
+        if (!target) {
+          return;
+        }
+
+        const settingsTrigger =
+          target.closest(
+            [
+              "[data-open-settings]",
+              "[data-acl-settings]",
+              "[data-action='open-settings']",
+              "#aclSettingsButton",
+              "#settingsButton",
+              "#sidebarSettings",
+              ".acl-settings-trigger",
+              "a[href='#settings']"
+            ].join(",")
+          );
+
+        if (!settingsTrigger) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        openSettings();
+      }
+    );
+
+
+    window.addEventListener(
+      "acl:settings-changed",
+      (event) => {
+        aclSettings =
+          normalizeAclSettings(
+            event.detail ||
+            DEFAULT_ACL_SETTINGS
+          );
+
+        pendingChoice =
+          null;
+
+        expandedLifeline =
+          null;
+
+        syncSettingsControls();
+
+        if (engine) {
+          engine.setConfidenceEnabled(
+            aclSettings
+              .confidenceEnabled
+          );
+
+          render();
+        }
+      }
+    );
+
+
+    saveSettingsButton.addEventListener(
+      "click",
+      async () => {
+        saveSettingsButton.disabled =
+          true;
+
+        settingsStatus.textContent =
+          "Saving settings…";
+
+        settingsStatus.classList.remove(
+          "error"
+        );
+
+        try {
+          aclSettings =
+            await saveAclSettings(
+              settingsFromControls()
+            );
+
+          aclSettings =
+            normalizeAclSettings(
+              aclSettings
+            );
+
+          pendingChoice =
+            null;
+
+          expandedLifeline =
+            null;
+
+          if (engine) {
+            engine.setConfidenceEnabled(
+              aclSettings
+                .confidenceEnabled
+            );
+          }
+
+          syncSettingsControls();
+          render();
+
+          settingsStatus.textContent =
+            "Settings saved successfully.";
+
+          window.setTimeout(
+            closeSettings,
+            550
+          );
+        } catch (error) {
+          console.error(error);
+
+          settingsStatus.textContent =
+            "Could not save settings.";
+
+          settingsStatus.classList.add(
+            "error"
+          );
+        } finally {
+          saveSettingsButton.disabled =
+            false;
+        }
+      }
+    );
+
+
+    /* =====================================================
+       ATTEMPT STATE
+    ===================================================== */
 
     function defaultLifelineState() {
       return {
@@ -2186,31 +2245,37 @@ render();
       question
     ) {
       const questionId =
-        String(question.id);
+        String(
+          question.id
+        );
 
-      if (!lifelinesState[questionId]) {
-        lifelinesState[questionId] =
+      if (
+        !lifelinesState[
+          questionId
+        ]
+      ) {
+        lifelinesState[
+          questionId
+        ] =
           defaultLifelineState();
       }
 
-      return lifelinesState[questionId];
-    }
-
-
-    function lifelineUsedCount(
-      question
-    ) {
       const state =
-        lifelinesForQuestion(
-          question
-        );
+        lifelinesState[
+          questionId
+        ];
 
-      return [
-        state.expert,
-        state.filter,
-        state.guideline,
-        state.vault
-      ].filter(Boolean).length;
+      if (
+        !Array.isArray(
+          state
+            .eliminatedIndexes
+        )
+      ) {
+        state.eliminatedIndexes =
+          [];
+      }
+
+      return state;
     }
 
 
@@ -2234,7 +2299,8 @@ render();
         return;
       }
 
-      saving = true;
+      saving =
+        true;
 
       setSaveStatus(
         "Saving…"
@@ -2268,9 +2334,16 @@ render();
           true
         );
       } finally {
-        saving = false;
+        saving =
+          false;
       }
     }
+
+
+    /* =====================================================
+       FLASHCARD
+    ===================================================== */
+
     function flashcardHtml(
       flashcard
     ) {
@@ -2352,7 +2425,8 @@ render();
           flashcard
         );
 
-      flashcardModal.hidden = false;
+      flashcardModal.hidden =
+        false;
 
       document.body.classList.add(
         "ppci-modal-open"
@@ -2363,7 +2437,8 @@ render();
 
 
     function closeFlashcard() {
-      flashcardModal.hidden = true;
+      flashcardModal.hidden =
+        true;
 
       document.body.classList.remove(
         "ppci-modal-open"
@@ -2390,23 +2465,29 @@ render();
 
 
     document.addEventListener(
-  "keydown",
-  (event) => {
-    if (
-      event.key === "Escape" &&
-      !flashcardModal.hidden
-    ) {
-      closeFlashcard();
-    }
+      "keydown",
+      (event) => {
+        if (
+          event.key === "Escape" &&
+          !flashcardModal.hidden
+        ) {
+          closeFlashcard();
+        }
 
-    if (
-      event.key === "Escape" &&
-      !settingsModal.hidden
-    ) {
-      closeSettings();
-    }
-  }
-);
+        if (
+          event.key === "Escape" &&
+          !settingsModal.hidden
+        ) {
+          closeSettings();
+        }
+      }
+    );
+
+
+    /* =====================================================
+       LIFELINES
+    ===================================================== */
+
     function eligibleWrongIndexes(
       question
     ) {
@@ -2418,7 +2499,9 @@ render();
         .filter(
           (optionIndex) =>
             optionIndex !==
-            Number(question.answer)
+            Number(
+              question.answer
+            )
         );
     }
 
@@ -2432,7 +2515,8 @@ render();
           question
         );
 
-      const selected = [];
+      const selected =
+        [];
 
       while (
         pool.length &&
@@ -2456,49 +2540,49 @@ render();
     }
 
 
-  function lifelineDefinitions() {
-  if (
-    !aclSettings
-      .lifelinesEnabled
-  ) {
-    return [];
-  }
+    function lifelineDefinitions() {
+      if (
+        !aclSettings
+          .lifelinesEnabled
+      ) {
+        return [];
+      }
 
-  const definitions = [
-    {
-      id: "expert",
-      name: "Dr. Corazón",
-      image: HAPPY_MASCOT,
-      icon: ""
-    },
-    {
-      id: "filter",
-      name: "Evidence Filter",
-      image: "",
-      icon: "✂️"
-    },
-    {
-      id: "guideline",
-      name: "ESC Guideline",
-      image: "",
-      icon: "📘"
-    },
-    {
-      id: "vault",
-      name: "Knowledge Vault",
-      image: "",
-      icon: "🧠"
+      const definitions = [
+        {
+          id: "expert",
+          name: "Dr. Corazón",
+          image: HAPPY_MASCOT,
+          icon: ""
+        },
+        {
+          id: "filter",
+          name: "Evidence Filter",
+          image: "",
+          icon: "✂️"
+        },
+        {
+          id: "guideline",
+          name: "ESC Guideline",
+          image: "",
+          icon: "📘"
+        },
+        {
+          id: "vault",
+          name: "Knowledge Vault",
+          image: "",
+          icon: "🧠"
+        }
+      ];
+
+      return definitions.filter(
+        (definition) =>
+          aclSettings
+            .enabledLifelines[
+              definition.id
+            ] !== false
+      );
     }
-  ];
-
-  return definitions.filter(
-    (definition) =>
-      aclSettings
-        .enabledLifelines[
-          definition.id
-        ] !== false
-  );
-}
 
 
     function lifelineButtonHtml(
@@ -2512,7 +2596,9 @@ render();
 
       const used =
         Boolean(
-          state[definition.id]
+          state[
+            definition.id
+          ]
         );
 
       const expanded =
@@ -2588,63 +2674,63 @@ render();
 
 
     function lifelinesHtml(
-  question,
-  answered
-) {
-  if (
-    answered ||
-    !aclSettings
-      .lifelinesEnabled
-  ) {
-    return "";
-  }
+      question,
+      answered
+    ) {
+      if (
+        answered ||
+        !aclSettings
+          .lifelinesEnabled
+      ) {
+        return "";
+      }
 
-  const definitions =
-    lifelineDefinitions();
+      const definitions =
+        lifelineDefinitions();
 
-  if (!definitions.length) {
-    return "";
-  }
+      if (!definitions.length) {
+        return "";
+      }
 
-  const state =
-    lifelinesForQuestion(
-      question
-    );
+      const state =
+        lifelinesForQuestion(
+          question
+        );
 
-  const visibleUsedCount =
-    definitions.filter(
-      (definition) =>
-        Boolean(
-          state[
-            definition.id
-          ]
-        )
-    ).length;
-
-  return `
-    <div class="ppci-lifelines">
-
-      <span class="ppci-lifelines-label">
-        Expert Panel
-      </span>
-
-      ${definitions
-        .map(
+      const usedCount =
+        definitions.filter(
           (definition) =>
-            lifelineButtonHtml(
-              question,
-              definition
+            Boolean(
+              state[
+                definition.id
+              ]
             )
-        )
-        .join("")}
+        ).length;
 
-      <span class="ppci-lifeline-counter">
-        ${visibleUsedCount}/${definitions.length}
-      </span>
+      return `
+        <div class="ppci-lifelines">
 
-    </div>
-  `;
-}
+          <span class="ppci-lifelines-label">
+            Expert Panel
+          </span>
+
+          ${definitions
+            .map(
+              (definition) =>
+                lifelineButtonHtml(
+                  question,
+                  definition
+                )
+            )
+            .join("")}
+
+          <span class="ppci-lifeline-counter">
+            ${usedCount}/${definitions.length}
+          </span>
+
+        </div>
+      `;
+    }
 
 
     function showLifelineResponse(
@@ -2662,73 +2748,121 @@ render();
 
       response.innerHTML = `
         <strong>
-          ${escapeHtml(title)}
+          ${escapeHtml(
+            title
+          )}
         </strong>
 
         <p>
-          ${escapeHtml(message)}
+          ${escapeHtml(
+            message
+          )}
         </p>
       `;
 
-      response.hidden = false;
+      response.hidden =
+        false;
     }
 
 
     async function activateLifeline(
-  question,
-  lifeline
-) {
-  const state =
-    lifelinesForQuestion(
-      question
-    );
+      question,
+      lifeline
+    ) {
+      const state =
+        lifelinesForQuestion(
+          question
+        );
 
-  if (state[lifeline]) {
-    return;
-  }
+      if (
+        state[
+          lifeline
+        ]
+      ) {
+        return;
+      }
 
-  state[lifeline] = true;
-  expandedLifeline = null;
+      state[
+        lifeline
+      ] =
+        true;
 
-  if (lifeline === "filter") {
-    state.eliminatedIndexes =
-      randomWrongIndexes(
-        question,
-        2
+      expandedLifeline =
+        null;
+
+      if (
+        lifeline ===
+        "filter"
+      ) {
+        state.eliminatedIndexes =
+          randomWrongIndexes(
+            question,
+            2
+          );
+
+        if (
+          pendingChoice !== null &&
+          state
+            .eliminatedIndexes
+            .includes(
+              pendingChoice
+            )
+        ) {
+          pendingChoice =
+            null;
+        }
+      }
+
+      render();
+
+      if (
+        lifeline ===
+        "expert"
+      ) {
+        showLifelineResponse(
+          "Dr. Corazón says",
+          question.expertHint ||
+          "Identify the central clinical decision and eliminate unrelated procedural details."
+        );
+      }
+
+      if (
+        lifeline ===
+        "guideline"
+      ) {
+        showLifelineResponse(
+          "ESC Pocket Guideline",
+          question.guidelineHint ||
+          "Recall the relevant recommendation, timing threshold and whether the intervention is routine or selective."
+        );
+      }
+
+      if (
+        lifeline ===
+        "filter"
+      ) {
+        showLifelineResponse(
+          "Evidence Filter",
+          "Two incorrect options have been removed. Reassess the remaining choices carefully."
+        );
+      }
+
+      if (
+        lifeline ===
+        "vault"
+      ) {
+        openFlashcard(
+          question
+        );
+      }
+
+      await persist(
+        false
       );
-  }
+    }
 
-  render();
 
-  if (lifeline === "expert") {
-    showLifelineResponse(
-      "Dr. Corazón says",
-      question.expertHint ||
-        "Identify the central clinical decision and eliminate unrelated procedural details."
-    );
-  }
-
-  if (lifeline === "guideline") {
-    showLifelineResponse(
-      "ESC Pocket Guideline",
-      question.guidelineHint ||
-        "Recall the relevant recommendation, timing threshold and whether the intervention is routine or selective."
-    );
-  }
-
-  if (lifeline === "filter") {
-    showLifelineResponse(
-      "Evidence Filter",
-      "Two incorrect options have been removed. Reassess the remaining choices carefully."
-    );
-  }
-
-  if (lifeline === "vault") {
-    openFlashcard(question);
-  }
-
-  await persist(false);
-}    function bindLifelines(
+    function bindLifelines(
       question
     ) {
       document
@@ -2753,7 +2887,11 @@ render();
                     question
                   );
 
-                if (state[lifeline]) {
+                if (
+                  state[
+                    lifeline
+                  ]
+                ) {
                   return;
                 }
 
@@ -2778,543 +2916,669 @@ render();
           }
         );
     }
-function confidenceHtml(
-  question
-) {
-  if (
-    !aclSettings.confidenceEnabled ||
-    pendingChoice === null
-  ) {
-    return "";
-  }
-
-  const selectedOption =
-    question.options[
-      pendingChoice
-    ];
-
-  return `
-    <section class="ppci-confidence-panel">
-
-      <h3>
-        How confident are you?
-      </h3>
-
-      <p>
-        Confirm your confidence before submitting this answer.
-        Your confidence level will affect the awarded score.
-      </p>
-
-      <div class="ppci-confidence-options">
-
-        <button
-          type="button"
-          class="ppci-confidence-button high"
-          data-confidence="high"
-        >
-          <span aria-hidden="true">
-            🔥
-          </span>
-
-          High confidence
-        </button>
 
 
-        <button
-          type="button"
-          class="ppci-confidence-button low"
-          data-confidence="low"
-        >
-          <span aria-hidden="true">
-            🤔
-          </span>
+    /* =====================================================
+       CONFIDENCE
+    ===================================================== */
 
-          Low confidence
-        </button>
+    function confidenceHtml(
+      question
+    ) {
+      if (
+        !aclSettings
+          .confidenceEnabled ||
+        pendingChoice ===
+          null
+      ) {
+        return "";
+      }
 
-      </div>
+      const selectedOption =
+        question.options[
+          pendingChoice
+        ];
 
-      <div class="ppci-confidence-selection">
-        Selected answer:
-        ${String.fromCharCode(
-          65 + pendingChoice
-        )}.
-        ${escapeHtml(
-          selectedOption
-        )}
-      </div>
+      return `
+        <section class="ppci-confidence-panel">
 
-    </section>
-  `;
-}
-
-    function feedbackHtml(
-  question,
-  answer
-) {
-  const correct =
-    Boolean(
-      answer.correct
-    );
-
-  const confidenceLabel =
-    answer.confidence === "high"
-      ? "High confidence"
-      : answer.confidence === "low"
-        ? "Low confidence"
-        : "Standard answering";
-
-  const points =
-    Number(
-      answer.points ?? 0
-    );
-
-  const pointsLabel =
-    points > 0
-      ? `+${points}`
-      : String(points);
-
-  return `
-    <section
-      class="
-        ppci-answer-feedback
-        ${
-          correct
-            ? "correct"
-            : "incorrect"
-        }
-      "
-    >
-
-      <div class="ppci-feedback-mascot">
-
-        <img
-          src="${escapeHtml(
-            correct
-              ? GOOD_JOB_MASCOT
-              : SAD_MASCOT
-          )}"
-          alt="${
-            correct
-              ? "Dr. Corazón celebrating"
-              : "Dr. Corazón encouraging review"
-          }"
-        >
-
-      </div>
-
-
-      <div class="ppci-feedback-copy">
-
-        <button
-          type="button"
-          class="ppci-review-flashcard"
-          data-review-flashcard="${escapeHtml(
-            question.id
-          )}"
-        >
-          🧠 Review the flashcard
-        </button>
-
-        <span class="ppci-feedback-kicker">
-          ${
-            correct
-              ? "Correct answer"
-              : "Learning opportunity"
-          }
-        </span>
-
-        <h3>
-          ${
-            correct
-              ? "Excellent — correct!"
-              : "Not quite — review this point"
-          }
-        </h3>
-
-        <p>
-          ${
-            correct
-              ? "Dr. Corazón is delighted. Reinforce the key concept before moving forward."
-              : "Dr. Corazón wants you to review the explanation and strengthen this concept."
-          }
-        </p>
-
-        <span class="ppci-answer-score">
-          ${escapeHtml(
-            confidenceLabel
-          )}
-          ·
-          ${escapeHtml(
-            pointsLabel
-          )}
-          point${Math.abs(points) === 1 ? "" : "s"}
-        </span>
-
-        <div class="ppci-explanation">
-
-          <strong>
-            Explanation
-          </strong>
+          <h3>
+            How confident are you?
+          </h3>
 
           <p>
-            ${escapeHtml(
-              question.explanation
-            )}
+            Choose your confidence level to submit the selected answer.
+            You may change the selected answer before choosing confidence.
           </p>
 
-        </div>
+          <div class="ppci-confidence-options">
 
-      </div>
+            <button
+              type="button"
+              class="ppci-confidence-button high"
+              data-confidence="high"
+            >
+              <span aria-hidden="true">
+                🔥
+              </span>
 
-    </section>
-  `;
-}
+              High confidence
+            </button>
 
-function render() {
-  const question =
-    engine.current();
 
-  questionCount.textContent =
-    question
-      ? `Question ${engine.index + 1} of ${engine.questions.length}`
-      : `${engine.questions.length} questions completed`;
+            <button
+              type="button"
+              class="ppci-confidence-button low"
+              data-confidence="low"
+            >
+              <span aria-hidden="true">
+                🤔
+              </span>
 
-  const progress =
-    engine.questions.length
-      ? Math.min(
-          100,
-          Math.round(
-            (
-              Math.min(
-                engine.index + 1,
-                engine.questions.length
-              ) /
-              engine.questions.length
-            ) *
-            100
+              Low confidence
+            </button>
+
+          </div>
+
+          <div class="ppci-confidence-selection">
+
+            Selected answer:
+            ${String.fromCharCode(
+              65 +
+              pendingChoice
+            )}.
+
+            ${escapeHtml(
+              selectedOption
+            )}
+
+          </div>
+
+        </section>
+      `;
+    }
+
+
+    /* =====================================================
+       FEEDBACK
+    ===================================================== */
+
+    function feedbackHtml(
+      question,
+      answer
+    ) {
+      const correct =
+        Boolean(
+          answer.correct
+        );
+
+      const confidenceLabel =
+        answer.confidence ===
+          "high"
+          ? "High confidence"
+          : answer.confidence ===
+              "low"
+            ? "Low confidence"
+            : "Standard answering";
+
+      const points =
+        Number(
+          answer.points ??
+          (
+            answer.correct
+              ? 1
+              : 0
           )
-        )
-      : 0;
+        );
 
-  progressFill.style.width =
-    `${progress}%`;
+      const pointsLabel =
+        points > 0
+          ? `+${points}`
+          : String(
+              points
+            );
 
-  if (!question) {
-    finish();
+      return `
+        <section
+          class="
+            ppci-answer-feedback
+            ${
+              correct
+                ? "correct"
+                : "incorrect"
+            }
+          "
+        >
 
-    return;
-  }
+          <div class="ppci-feedback-mascot">
 
-  const answered =
-    engine.currentAnswer();
+            <img
+              src="${escapeHtml(
+                correct
+                  ? GOOD_JOB_MASCOT
+                  : SAD_MASCOT
+              )}"
+              alt="${
+                correct
+                  ? "Dr. Corazón celebrating"
+                  : "Dr. Corazón encouraging review"
+              }"
+            >
 
-  if (answered) {
-    pendingChoice =
-      null;
-  }
+          </div>
 
-  const lifelineState =
-    lifelinesForQuestion(
-      question
-    );
 
-  quizArea.innerHTML = `
-    <article class="ppci-question-layout">
+          <div class="ppci-feedback-copy">
 
-      <div class="ppci-topic-tools-row">
+            <button
+              type="button"
+              class="ppci-review-flashcard"
+              data-review-flashcard="${escapeHtml(
+                question.id
+              )}"
+            >
+              🧠 Review the flashcard
+            </button>
 
-        <span class="ppci-topic">
-          ${escapeHtml(
-            question.topic ||
-            "Primary PCI"
-          )}
-        </span>
 
-        ${lifelinesHtml(
-          question,
-          answered
-        )}
+            <div>
 
-      </div>
+              <span class="ppci-feedback-kicker">
+                ${
+                  correct
+                    ? "Correct answer"
+                    : "Learning opportunity"
+                }
+              </span>
 
-      ${
-        !answered
-          ? `
-            <div
-              id="ppciLifelineResponse"
-              class="ppci-lifeline-response"
-              aria-live="polite"
-              hidden
-            ></div>
-          `
-          : ""
+            </div>
+
+
+            <h3>
+              ${
+                correct
+                  ? "Excellent — correct!"
+                  : "Not quite — review this point"
+              }
+            </h3>
+
+
+            <p>
+              ${
+                correct
+                  ? "Dr. Corazón is delighted. Reinforce the key concept before moving forward."
+                  : "Dr. Corazón wants you to review the explanation and strengthen this concept."
+              }
+            </p>
+
+
+            <span class="ppci-answer-score">
+
+              ${escapeHtml(
+                confidenceLabel
+              )}
+
+              ·
+
+              ${escapeHtml(
+                pointsLabel
+              )}
+
+              point${
+                Math.abs(
+                  points
+                ) === 1
+                  ? ""
+                  : "s"
+              }
+
+            </span>
+
+
+            <div class="ppci-explanation">
+
+              <strong>
+                Explanation
+              </strong>
+
+              <p>
+                ${escapeHtml(
+                  question.explanation
+                )}
+              </p>
+
+            </div>
+
+          </div>
+
+        </section>
+      `;
+    }
+
+
+    /* =====================================================
+       RENDER
+    ===================================================== */
+
+    function render() {
+      if (!engine) {
+        return;
       }
 
-      <h2 class="ppci-question-title">
-        ${escapeHtml(
-          question.stem
-        )}
-      </h2>
+      const question =
+        engine.current();
 
-      <div class="ppci-options">
+      questionCount.textContent =
+        question
+          ? `Question ${engine.index + 1} of ${engine.questions.length}`
+          : `${engine.questions.length} questions completed`;
 
-        ${question.options
-          .map(
-            (
-              option,
-              optionIndex
-            ) => {
-              const selected =
-                answered
-                  ? answered.choice ===
-                    optionIndex
-                  : pendingChoice ===
-                    optionIndex;
+      const progress =
+        engine.questions.length
+          ? Math.min(
+              100,
+              Math.round(
+                (
+                  Math.min(
+                    engine.index + 1,
+                    engine.questions.length
+                  ) /
+                  engine.questions.length
+                ) *
+                100
+              )
+            )
+          : 0;
 
-              const correctOption =
-                Boolean(
-                  answered &&
-                  optionIndex ===
-                    Number(
-                      question.answer
-                    )
-                );
+      progressFill.style.width =
+        `${progress}%`;
 
-              const incorrectSelected =
-                Boolean(
-                  answered &&
-                  selected &&
-                  !answered.correct
-                );
+      if (!question) {
+        void finish();
 
-              const eliminated =
-                !answered &&
-                lifelineState
-                  .eliminatedIndexes
-                  .includes(
-                    optionIndex
+        return;
+      }
+
+      const answered =
+        engine.currentAnswer();
+
+      if (answered) {
+        pendingChoice =
+          null;
+      }
+
+      const lifelineState =
+        lifelinesForQuestion(
+          question
+        );
+
+      quizArea.innerHTML = `
+        <article class="ppci-question-layout">
+
+          <div class="ppci-topic-tools-row">
+
+            <span class="ppci-topic">
+              ${escapeHtml(
+                question.topic ||
+                "Primary PCI"
+              )}
+            </span>
+
+            ${lifelinesHtml(
+              question,
+              answered
+            )}
+
+          </div>
+
+
+          ${
+            !answered
+              ? `
+                <div
+                  id="ppciLifelineResponse"
+                  class="ppci-lifeline-response"
+                  aria-live="polite"
+                  hidden
+                ></div>
+              `
+              : ""
+          }
+
+
+          <h2 class="ppci-question-title">
+            ${escapeHtml(
+              question.stem
+            )}
+          </h2>
+
+
+          <div class="ppci-options">
+
+            ${question.options
+              .map(
+                (
+                  option,
+                  optionIndex
+                ) => {
+                  const selected =
+                    answered
+                      ? Number(
+                          answered.choice
+                        ) ===
+                        optionIndex
+                      : pendingChoice ===
+                        optionIndex;
+
+                  const correctOption =
+                    Boolean(
+                      answered &&
+                      optionIndex ===
+                      Number(
+                        question.answer
+                      )
+                    );
+
+                  const incorrectSelected =
+                    Boolean(
+                      answered &&
+                      selected &&
+                      !answered.correct
+                    );
+
+                  const eliminated =
+                    Boolean(
+                      !answered &&
+                      lifelineState
+                        .eliminatedIndexes
+                        .includes(
+                          optionIndex
+                        )
+                    );
+
+                  return `
+                    <button
+                      type="button"
+                      class="
+                        ppci-option
+                        ${
+                          selected
+                            ? "selected"
+                            : ""
+                        }
+                        ${
+                          correctOption
+                            ? "correct"
+                            : ""
+                        }
+                        ${
+                          incorrectSelected
+                            ? "incorrect"
+                            : ""
+                        }
+                        ${
+                          eliminated
+                            ? "is-eliminated"
+                            : ""
+                        }
+                      "
+                      data-index="${optionIndex}"
+                      ${
+                        answered ||
+                        eliminated
+                          ? "disabled"
+                          : ""
+                      }
+                    >
+
+                      <span
+                        class="ppci-option-radio"
+                        aria-hidden="true"
+                      ></span>
+
+                      <span class="ppci-option-key">
+                        ${String.fromCharCode(
+                          65 +
+                          optionIndex
+                        )}
+                      </span>
+
+                      <span class="ppci-option-copy">
+                        ${escapeHtml(
+                          option
+                        )}
+                      </span>
+
+                    </button>
+                  `;
+                }
+              )
+              .join("")}
+
+          </div>
+
+
+          ${confidenceHtml(
+            question
+          )}
+
+        </article>
+      `;
+
+
+      feedbackHost.innerHTML =
+        answered
+          ? feedbackHtml(
+              question,
+              answered
+            )
+          : "";
+
+
+      nextBtn.hidden =
+        !answered;
+
+
+      if (answered) {
+        document
+          .querySelector(
+            "[data-review-flashcard]"
+          )
+          ?.addEventListener(
+            "click",
+            () => {
+              openFlashcard(
+                question
+              );
+            }
+          );
+
+        return;
+      }
+
+
+      bindLifelines(
+        question
+      );
+
+
+      document
+        .querySelectorAll(
+          ".ppci-option:not(.is-eliminated)"
+        )
+        .forEach(
+          (button) => {
+            button.addEventListener(
+              "click",
+              async () => {
+                const choice =
+                  Number(
+                    button.dataset
+                      .index
                   );
 
-              return `
-                <button
-                  type="button"
-                  class="
-                    ppci-option
-                    ${
-                      selected
-                        ? "selected"
-                        : ""
-                    }
-                    ${
-                      correctOption
-                        ? "correct"
-                        : ""
-                    }
-                    ${
-                      incorrectSelected
-                        ? "incorrect"
-                        : ""
-                    }
-                    ${
-                      eliminated
-                        ? "is-eliminated"
-                        : ""
-                    }
-                  "
-                  data-index="${optionIndex}"
-                  ${
-                    answered ||
-                    eliminated
-                      ? "disabled"
-                      : ""
-                  }
-                >
+                if (
+                  !Number.isInteger(
+                    choice
+                  )
+                ) {
+                  return;
+                }
 
-                  <span
-                    class="ppci-option-radio"
-                    aria-hidden="true"
-                  ></span>
 
-                  <span class="ppci-option-key">
-                    ${String.fromCharCode(
-                      65 + optionIndex
-                    )}
-                  </span>
+                /*
+                 * Confidence enabled:
+                 * select option only.
+                 */
 
-                  <span class="ppci-option-copy">
-                    ${escapeHtml(
-                      option
-                    )}
-                  </span>
+                if (
+                  aclSettings
+                    .confidenceEnabled
+                ) {
+                  pendingChoice =
+                    choice;
 
-                </button>
-              `;
-            }
-          )
-          .join("")}
+                  expandedLifeline =
+                    null;
 
-      </div>
+                  render();
 
-      ${confidenceHtml(
-        question
-      )}
+                  return;
+                }
 
-    </article>
-  `;
 
-  feedbackHost.innerHTML =
-    answered
-      ? feedbackHtml(
-          question,
-          answered
+                /*
+                 * Confidence disabled:
+                 * submit immediately.
+                 */
+
+                const result =
+                  engine.submitAnswer({
+                    choice,
+                    confidence: null
+                  });
+
+                if (
+                  !result.accepted
+                ) {
+                  console.warn(
+                    "Answer rejected:",
+                    result.reason
+                  );
+
+                  return;
+                }
+
+                pendingChoice =
+                  null;
+
+                expandedLifeline =
+                  null;
+
+                await persist(
+                  false
+                );
+
+                render();
+              }
+            );
+          }
+        );
+
+
+      document
+        .querySelectorAll(
+          "[data-confidence]"
         )
-      : "";
+        .forEach(
+          (button) => {
+            button.addEventListener(
+              "click",
+              async () => {
+                if (
+                  pendingChoice ===
+                  null
+                ) {
+                  return;
+                }
 
-  if (answered) {
-    document
-      .querySelector(
-        "[data-review-flashcard]"
-      )
-      ?.addEventListener(
-        "click",
-        () => {
-          openFlashcard(
-            question
-          );
-        }
-      );
-  }
+                const confidence =
+                  button.dataset
+                    .confidence;
 
-  nextBtn.hidden =
-    !answered;
+                if (
+                  confidence !==
+                    "high" &&
+                  confidence !==
+                    "low"
+                ) {
+                  return;
+                }
 
-  if (answered) {
-    return;
-  }
+                const result =
+                  engine.submitAnswer({
+                    choice:
+                      pendingChoice,
 
-  bindLifelines(
-    question
-  );
+                    confidence
+                  });
 
-  document
-    .querySelectorAll(
-      ".ppci-option:not(.is-eliminated)"
-    )
-    .forEach(
-      (button) => {
-        button.addEventListener(
-          "click",
-          async () => {
-            const choice =
-              Number(
-                button.dataset.index
-              );
+                if (
+                  !result.accepted
+                ) {
+                  console.warn(
+                    "Confidence answer rejected:",
+                    result.reason
+                  );
 
-            /*
-             * Confidence enabled:
-             * only select the answer first.
-             */
+                  return;
+                }
 
-            if (
-              aclSettings
-                .confidenceEnabled
-            ) {
-              pendingChoice =
-                choice;
+                pendingChoice =
+                  null;
 
-              render();
+                expandedLifeline =
+                  null;
 
-              return;
-            }
+                await persist(
+                  false
+                );
 
-            /*
-             * Confidence disabled:
-             * submit immediately.
-             */
-
-            const result =
-              engine.submitAnswer({
-                choice,
-                confidence: null
-              });
-
-            if (!result.accepted) {
-              console.warn(
-                "Answer was not accepted:",
-                result.reason
-              );
-
-              return;
-            }
-
-            pendingChoice =
-              null;
-
-            await persist(false);
-
-            render();
+                render();
+              }
+            );
           }
         );
-      }
-    );
+    }
 
-  document
-    .querySelectorAll(
-      "[data-confidence]"
-    )
-    .forEach(
-      (button) => {
-        button.addEventListener(
-          "click",
-          async () => {
-            if (
-              pendingChoice === null
-            ) {
-              return;
-            }
 
-            const confidence =
-              button.dataset
-                .confidence;
-
-            const result =
-              engine.submitAnswer({
-                choice:
-                  pendingChoice,
-
-                confidence
-              });
-
-            if (!result.accepted) {
-              console.warn(
-                "Confidence answer was not accepted:",
-                result.reason
-              );
-
-              return;
-            }
-
-            pendingChoice =
-              null;
-
-            await persist(false);
-
-            render();
-          }
-        );
-      }
-    );
-}
+    /* =====================================================
+       FINISH
+    ===================================================== */
 
     async function finish() {
+      if (
+        finishing ||
+        !engine
+      ) {
+        return;
+      }
+
+      finishing =
+        true;
+
       progressFill.style.width =
         "100%";
 
-      feedbackHost.innerHTML = "";
-      nextBtn.hidden = true;
+      feedbackHost.innerHTML =
+        "";
 
-      await persist(true);
+      nextBtn.hidden =
+        true;
+
+      await persist(
+        true
+      );
 
       const score =
         engine.score();
@@ -3322,20 +3586,17 @@ function render() {
       const maximum =
         engine.maximumPossibleScore();
 
+      const correctCount =
+        engine.correctCount();
+
       const percentage =
-        maximum
-          ? Math.max(
-              0,
-              Math.min(
-                100,
-                Math.round(
-                  (
-                    score /
-                    maximum
-                  ) *
-                  100
-                )
-              )
+        maximum > 0
+          ? Math.round(
+              (
+                score /
+                maximum
+              ) *
+              100
             )
           : 0;
 
@@ -3359,7 +3620,14 @@ function render() {
           </h2>
 
           <div class="ppci-result-score">
-            ${score} / ${maximum} · ${percentage}%
+            ${score} / ${maximum}
+            ·
+            ${percentage}%
+          </div>
+
+          <div class="ppci-result-detail">
+            ${correctCount} of ${engine.questions.length}
+            questions answered correctly
           </div>
 
           <p>
@@ -3396,14 +3664,29 @@ function render() {
           "click",
           startNewAttempt
         );
+
+      finishing =
+        false;
     }
 
 
+    /* =====================================================
+       NEW ATTEMPT
+    ===================================================== */
+
     async function startNewAttempt() {
       try {
-        expandedLifeline = null;
-        pendingChoice = null;
-        lifelinesState = {};
+        expandedLifeline =
+          null;
+
+        pendingChoice =
+          null;
+
+        lifelinesState =
+          {};
+
+        finishing =
+          false;
 
         engine =
           new QuizEngine({
@@ -3447,17 +3730,34 @@ function render() {
     }
 
 
+    /* =====================================================
+       NEXT QUESTION
+    ===================================================== */
+
     nextBtn.addEventListener(
       "click",
       async () => {
-        expandedLifeline = null;
-        pendingChoice = null;
+        if (
+          !engine ||
+          !engine.currentAnswer()
+        ) {
+          return;
+        }
+
+        expandedLifeline =
+          null;
+
+        pendingChoice =
+          null;
 
         engine.next();
 
-        nextBtn.hidden = true;
+        nextBtn.hidden =
+          true;
 
-        await persist(false);
+        await persist(
+          false
+        );
 
         render();
       }
@@ -3466,9 +3766,17 @@ function render() {
 
     window.addEventListener(
       "online",
-      () => persist(false)
+      () => {
+        void persist(
+          false
+        );
+      }
     );
 
+
+    /* =====================================================
+       INITIALISE
+    ===================================================== */
 
     try {
       const profile =
@@ -3480,26 +3788,38 @@ function render() {
         throw new Error(
           "Authentication is required."
         );
-      }try {
-  aclSettings =
-    await getAclSettings();
-} catch (settingsError) {
-  console.warn(
-    "Could not load ACL settings:",
-    settingsError
-  );
+      }
 
-  aclSettings =
-    normalizeAclSettings(
-      DEFAULT_ACL_SETTINGS
-    );
-}
 
-syncSettingsControls();
+      try {
+        aclSettings =
+          await getAclSettings();
+
+        aclSettings =
+          normalizeAclSettings(
+            aclSettings
+          );
+      } catch (settingsError) {
+        console.warn(
+          "Could not load ACL settings:",
+          settingsError
+        );
+
+        aclSettings =
+          normalizeAclSettings(
+            DEFAULT_ACL_SETTINGS
+          );
+      }
+
+
+      syncSettingsControls();
+
+
       attempt =
         await getOpenAttempt(
           MODULE_ID
         );
+
 
       if (attempt) {
         engine =
@@ -3564,6 +3884,7 @@ syncSettingsControls();
           "New attempt saved to cloud"
         );
       }
+
 
       render();
     } catch (error) {
