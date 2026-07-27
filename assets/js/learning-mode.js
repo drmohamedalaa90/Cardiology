@@ -1942,61 +1942,128 @@ function confidencePanelHtml(
       );
 
   return `
-    <section class="ppci-confidence-panel learning-confidence-panel">
+  <section class="learning-confidence-panel">
 
-      <h3>
-        How confident are you?
-      </h3>
+    <div class="learning-confidence-heading">
 
-      <p>
-        Select your confidence level to submit your answer.
-      </p>
+      <span
+        class="learning-confidence-icon"
+        aria-hidden="true"
+      >
+        🎯
+      </span>
 
-      <div class="ppci-confidence-options learning-confidence-options">
+      <div>
 
-        <button
-          type="button"
-          class="ppci-confidence-button high learning-confidence-button"
-          data-confidence="high"
-        >
-          <span aria-hidden="true">
-            🔥
-          </span>
+        <h3>
+          How confident are you?
+        </h3>
 
-          High confidence
-        </button>
-
-
-        <button
-          type="button"
-          class="ppci-confidence-button low learning-confidence-button"
-          data-confidence="low"
-        >
-          <span aria-hidden="true">
-            🤔
-          </span>
-
-          Low confidence
-        </button>
+        <p>
+          Your confidence level affects the points awarded.
+        </p>
 
       </div>
 
-      <div class="ppci-confidence-selection learning-confidence-selection">
+    </div>
 
-        Selected:
+
+    <div class="learning-confidence-options">
+
+      <button
+        type="button"
+        class="
+          learning-confidence-button
+          is-high
+        "
+        data-confidence="high"
+      >
+
+        <span
+          class="learning-confidence-symbol"
+          aria-hidden="true"
+        >
+          🔥
+        </span>
+
+        <span class="confidence-choice-copy">
+
+          <strong>
+            High confidence
+          </strong>
+
+          <small>
+            I am confident in this answer
+          </small>
+
+        </span>
+
+        <span
+          class="learning-confidence-points"
+        >
+          Up to +2
+        </span>
+
+      </button>
+
+
+      <button
+        type="button"
+        class="
+          learning-confidence-button
+          is-low
+        "
+        data-confidence="low"
+      >
+
+        <span
+          class="learning-confidence-symbol"
+          aria-hidden="true"
+        >
+          🤔
+        </span>
+
+        <span class="confidence-choice-copy">
+
+          <strong>
+            Low confidence
+          </strong>
+
+          <small>
+            I am not completely certain
+          </small>
+
+        </span>
+
+        <span
+          class="learning-confidence-points"
+        >
+          Safer choice
+        </span>
+
+      </button>
+
+    </div>
+
+
+    <div class="learning-selected-answer">
+
+      <span class="learning-selected-answer-label">
+        Selected answer
+      </span>
+
+      <strong>
         ${esc(
           selectedLabels.join(
             " · "
           )
         )}
+      </strong>
 
-      </div>
+    </div>
 
-    </section>
-  `;
-}
-
-
+  </section>
+`;
 function bindAnswerInputs(
   question
 ) {
@@ -2045,7 +2112,6 @@ function bindAnswerInputs(
     );
 }
 
-
 function bindConfidenceButtons() {
   document
     .querySelectorAll(
@@ -2056,9 +2122,67 @@ function bindConfidenceButtons() {
         button.addEventListener(
           "click",
           async () => {
+            const confidence =
+              button.dataset.confidence;
+
+            const allButtons =
+              document.querySelectorAll(
+                "[data-confidence]"
+              );
+
+            allButtons.forEach(
+              (item) => {
+                item.classList.remove(
+                  "is-selected"
+                );
+
+                item.disabled = true;
+              }
+            );
+
+            button.classList.add(
+              "is-selected"
+            );
+
+            button.innerHTML = `
+              <span
+                class="confidence-choice-check"
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+
+              <span class="confidence-choice-copy">
+
+                <strong>
+                  ${
+                    confidence === "high"
+                      ? "High confidence"
+                      : "Low confidence"
+                  }
+                </strong>
+
+                <small>
+                  ${
+                    confidence === "high"
+                      ? "I am confident in this answer"
+                      : "I am not completely certain"
+                  }
+                </small>
+
+              </span>
+            `;
+
+            await new Promise(
+              (resolve) =>
+                window.setTimeout(
+                  resolve,
+                  220
+                )
+            );
+
             await submit(
-              button.dataset
-                .confidence
+              confidence
             );
           }
         );
@@ -2859,18 +2983,6 @@ async function submit(
       submitButton.disabled =
         false;
     }
-
-    document
-      .querySelectorAll(
-        "[data-confidence]"
-      )
-      .forEach(
-        (button) => {
-          button.disabled =
-            false;
-        }
-      );
-  }
 }
 
 
