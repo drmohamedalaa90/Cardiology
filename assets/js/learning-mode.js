@@ -3072,6 +3072,142 @@ function learningAnalytics() {
     lifelinesUsed
   };
 }
+function resultInsight(
+  analytics,
+  percentage
+) {
+  if (
+    percentage === 100
+  ) {
+    return {
+      icon:
+        "🏆",
+
+      title:
+        "Complete mastery",
+
+      message:
+        "You answered every question correctly. Your knowledge and confidence were perfectly aligned."
+    };
+  }
+
+  if (
+    analytics
+      .highConfidenceIncorrect >
+    0
+  ) {
+    return {
+      icon:
+        "⚠️",
+
+      title:
+        "Review overconfident errors",
+
+      message:
+        `You made ${
+          analytics
+            .highConfidenceIncorrect
+        } high-confidence ${
+          analytics
+            .highConfidenceIncorrect ===
+          1
+            ? "error"
+            : "errors"
+        }. Review these concepts carefully before relying on them clinically.`
+    };
+  }
+
+  if (
+    analytics
+      .lowConfidenceCorrect >
+    analytics
+      .highConfidenceCorrect
+  ) {
+    return {
+      icon:
+        "🎯",
+
+      title:
+        "Trust your clinical reasoning",
+
+      message:
+        "You answered several questions correctly despite low confidence. Your knowledge may be stronger than you think."
+    };
+  }
+
+  if (
+    analytics.correctAnswers ===
+    0
+  ) {
+    return {
+      icon:
+        "📚",
+
+      title:
+        "Start with focused review",
+
+      message:
+        "Review the explanations and flashcards, then repeat the module while concentrating on the decisive clinical clues."
+    };
+  }
+
+  if (
+    percentage < 60
+  ) {
+    return {
+      icon:
+        "🧠",
+
+      title:
+        "Reinforce the foundations",
+
+      message:
+        "You have identified important learning gaps. Review each incorrect answer before starting another attempt."
+    };
+  }
+
+  if (
+    percentage < 75
+  ) {
+    return {
+      icon:
+        "📈",
+
+      title:
+        "Developing mastery",
+
+      message:
+        "You are progressing well. Focus your review on incorrect answers and questions answered with uncertainty."
+    };
+  }
+
+  if (
+    analytics.lifelinesUsed >
+    0
+  ) {
+    return {
+      icon:
+        "🩺",
+
+      title:
+        "Strategic learning",
+
+      message:
+        "You used the Expert Panel during this attempt. Revisit those concepts so you can answer independently next time."
+    };
+  }
+
+  return {
+    icon:
+      "⭐",
+
+    title:
+      "Strong clinical understanding",
+
+    message:
+      "Your performance was strong. Review the few remaining weak points to consolidate mastery."
+  };
+}
 async function finish() {
   if (
     finishing
@@ -3116,7 +3252,11 @@ async function finish() {
     passingPercentage;
 const analytics =
   learningAnalytics();
-
+const insight =
+  resultInsight(
+    analytics,
+    percentage
+  );
 let performanceLabel =
   "Review recommended";
 
@@ -3326,6 +3466,34 @@ quizArea.innerHTML = `
       </div>
 
     </div>
+<div class="learning-result-insight">
+
+  <span
+    class="learning-result-insight-icon"
+    aria-hidden="true"
+  >
+    ${esc(
+      insight.icon
+    )}
+  </span>
+
+  <div>
+
+    <strong>
+      ${esc(
+        insight.title
+      )}
+    </strong>
+
+    <p>
+      ${esc(
+        insight.message
+      )}
+    </p>
+
+  </div>
+
+</div>
 
     <p class="learning-result-passmark">
       ${
