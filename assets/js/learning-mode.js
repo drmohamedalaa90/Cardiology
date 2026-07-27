@@ -3201,21 +3201,10 @@ if (
 quizArea.innerHTML = `
   <div class="learning-result premium">
 
-    <div class="learning-result-mascot-stage">
+    <div class="learning-result-hero">
 
-  <img
-    class="learning-result-mascot"
-    src="${esc(
-      resultMascot
-    )}"
-    alt="${esc(
-      resultMascotAlt
-    )}"
-  >
+  <div class="learning-result-summary">
 
-  <div class="learning-result-mascot-glow"></div>
-
-</div>
     <span class="learning-result-kicker">
       ${
         passed
@@ -3241,6 +3230,51 @@ quizArea.innerHTML = `
       ·
       ${percentage}%
     </div>
+
+  </div>
+
+
+  <div class="learning-result-character">
+
+    <div class="learning-result-mascot-stage">
+
+      <div class="learning-result-mascot-glow"></div>
+
+      <img
+        class="learning-result-mascot"
+        src="${esc(
+          resultMascot
+        )}"
+        alt="${esc(
+          resultMascotAlt
+        )}"
+      >
+
+    </div>
+
+    <div class="learning-result-speech">
+
+      <strong>
+        Dr. Corazón
+      </strong>
+
+      <p>
+        ${
+          percentage >= 90
+            ? "Outstanding work! Your confidence matched your knowledge."
+            : percentage >= 75
+              ? "Very good performance. Polish the remaining weak points."
+              : percentage >= 60
+                ? "You are progressing. Review the uncertain concepts carefully."
+                : "Do not worry. Review the explanations and flashcards, then try again."
+        }
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
 
     <div class="learning-result-grid">
 
