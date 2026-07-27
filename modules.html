@@ -18,19 +18,305 @@
     Modules | ACL Expert Edition
   </title>
 
+
+  <!-- =====================================================
+       EARLY PAGE-BOOT STATE
+
+       This runs before the page is painted, preventing the
+       old fallback header from briefly appearing.
+  ====================================================== -->
+
+  <script>
+    document.documentElement.classList.add(
+      "acl-page-booting"
+    );
+  </script>
+
+
   <link
     rel="stylesheet"
-    href="assets/css/main.css?v=2.8.7"
+    href="assets/css/main.css?v=2.8.8"
   >
 
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <style>
+    /* =====================================================
+       ACL PAGE LOADER
+    ===================================================== */
+
+    html.acl-page-booting {
+      overflow: hidden;
+    }
+
+    html.acl-page-booting body {
+      overflow: hidden;
+    }
+
+    .acl-page-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(
+          circle at 50% 25%,
+          rgba(77, 148, 211, 0.15),
+          transparent 36%
+        ),
+        linear-gradient(
+          145deg,
+          #f7fbff,
+          #eaf3fb
+        );
+      opacity: 1;
+      visibility: visible;
+      transition:
+        opacity 0.24s ease,
+        visibility 0.24s ease;
+    }
+
+    .acl-page-loader.is-hiding {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .acl-loader-card {
+      display: grid;
+      justify-items: center;
+      width: min(430px, 100%);
+      padding: 34px 28px;
+      border: 1px solid #caddec;
+      border-radius: 24px;
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.92
+        );
+      box-shadow:
+        0 22px 60px
+        rgba(16, 61, 103, 0.14);
+      text-align: center;
+      backdrop-filter:
+        blur(10px);
+    }
+
+    .acl-loader-brand {
+      margin-bottom: 5px;
+      color: #092f5b;
+      font-size:
+        clamp(
+          1.35rem,
+          4vw,
+          2rem
+        );
+      font-weight: 950;
+      letter-spacing: 0.01em;
+    }
+
+    .acl-loader-brand span {
+      color: #f5b400;
+    }
+
+    .acl-loader-subtitle {
+      margin: 0;
+      color: #61788e;
+      font-size: 0.91rem;
+      font-weight: 750;
+      line-height: 1.5;
+    }
+
+    .acl-loader-animation {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 78px;
+      height: 78px;
+      margin: 25px 0 20px;
+    }
+
+    .acl-loader-ring {
+      position: absolute;
+      inset: 0;
+      border: 6px solid #dce9f4;
+      border-top-color: #0a4e85;
+      border-right-color: #efb400;
+      border-radius: 50%;
+      animation:
+        aclLoaderSpin
+        0.85s
+        linear
+        infinite;
+    }
+
+    .acl-loader-heart {
+      position: relative;
+      z-index: 1;
+      color: #b82d3c;
+      font-size: 1.7rem;
+      animation:
+        aclLoaderPulse
+        0.9s
+        ease-in-out
+        infinite alternate;
+    }
+
+    .acl-loader-message {
+      min-height: 24px;
+      margin: 0;
+      color: #143d65;
+      font-size: 0.92rem;
+      font-weight: 900;
+    }
+
+    .acl-loader-progress {
+      width: min(260px, 100%);
+      height: 7px;
+      margin-top: 18px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #dce8f1;
+    }
+
+    .acl-loader-progress span {
+      display: block;
+      width: 45%;
+      height: 100%;
+      border-radius: inherit;
+      background:
+        linear-gradient(
+          90deg,
+          #0b4e84,
+          #2c91c7,
+          #f1b400
+        );
+      animation:
+        aclLoaderProgress
+        1.1s
+        ease-in-out
+        infinite;
+    }
+
+    @keyframes aclLoaderSpin {
+      to {
+        transform:
+          rotate(360deg);
+      }
+    }
+
+    @keyframes aclLoaderPulse {
+      from {
+        transform:
+          scale(0.9);
+      }
+
+      to {
+        transform:
+          scale(1.08);
+      }
+    }
+
+    @keyframes aclLoaderProgress {
+      0% {
+        transform:
+          translateX(-120%);
+      }
+
+      100% {
+        transform:
+          translateX(260%);
+      }
+    }
+
+    @media (
+      prefers-reduced-motion:
+      reduce
+    ) {
+      .acl-loader-ring,
+      .acl-loader-heart,
+      .acl-loader-progress span {
+        animation-duration:
+          2.2s;
+      }
+    }
+  </style>
 </head>
 
 
 <body>
 
   <!-- =====================================================
-       HEADER
+       PAGE LOADER
+
+       Covers the fallback page until:
+       1. session-ui.js creates the unified header.
+       2. modules.js finishes rendering the catalogue.
+
+       A safety timeout removes it even if loading fails.
+  ====================================================== -->
+
+  <div
+    id="aclPageLoader"
+    class="acl-page-loader"
+    role="status"
+    aria-live="polite"
+    aria-label="Loading ACL Expert Edition"
+  >
+
+    <div class="acl-loader-card">
+
+      <div class="acl-loader-brand">
+        ACL <span>; THE EXPERT EDITION</span>
+      </div>
+
+      <p class="acl-loader-subtitle">
+        Preparing your personalized cardiology learning catalogue
+      </p>
+
+
+      <div
+        class="acl-loader-animation"
+        aria-hidden="true"
+      >
+
+        <span class="acl-loader-ring"></span>
+
+        <span class="acl-loader-heart">
+          ♥
+        </span>
+
+      </div>
+
+
+      <p
+        id="aclLoaderMessage"
+        class="acl-loader-message"
+      >
+        Loading modules…
+      </p>
+
+
+      <div
+        class="acl-loader-progress"
+        aria-hidden="true"
+      >
+        <span></span>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       FALLBACK HEADER
 
        session-ui.js transforms this fallback header into the
        unified rolling ACL header with centered icon navigation.
@@ -181,16 +467,276 @@
 
 
   <!-- =====================================================
-       JAVASCRIPT
+       MAIN PAGE JAVASCRIPT
 
        modules.js imports session-ui.js internally.
-       Do not add a separate session-ui.js script here.
+       Do not add a separate session-ui.js import here.
   ====================================================== -->
 
   <script
     type="module"
-    src="assets/js/modules.js?v=2.8.1"
+    src="assets/js/modules.js?v=2.8.2"
   ></script>
+
+
+  <!-- =====================================================
+       LOADER CONTROLLER
+
+       Watches for:
+       - Unified header completion
+       - Module catalogue completion
+
+       Then removes the loading overlay.
+  ====================================================== -->
+
+  <script>
+    (() => {
+      const loader =
+        document.getElementById(
+          "aclPageLoader"
+        );
+
+      const loaderMessage =
+        document.getElementById(
+          "aclLoaderMessage"
+        );
+
+      const modulesGrid =
+        document.getElementById(
+          "modulesGrid"
+        );
+
+      const catalogueSummary =
+        document.getElementById(
+          "catalogueSummary"
+        );
+
+
+      let loaderRemoved =
+        false;
+
+      let headerReady =
+        false;
+
+      let catalogueReady =
+        false;
+
+
+      function isHeaderReady() {
+        return Boolean(
+          document.querySelector(
+            ".acl-header-layout"
+          ) ||
+          document.querySelector(
+            ".acl-unified-header"
+          )
+        );
+      }
+
+
+      function isCatalogueReady() {
+        if (
+          !modulesGrid ||
+          !catalogueSummary
+        ) {
+          return false;
+        }
+
+        const gridText =
+          modulesGrid.textContent
+            ?.trim()
+            .toLowerCase() ||
+          "";
+
+        const summaryText =
+          catalogueSummary
+            .textContent
+            ?.trim()
+            .toLowerCase() ||
+          "";
+
+        const gridStillLoading =
+          gridText ===
+            "loading modules…" ||
+          gridText ===
+            "loading modules..." ||
+          gridText.includes(
+            "loading modules"
+          );
+
+        const summaryStillLoading =
+          summaryText ===
+            "loading catalogue…" ||
+          summaryText ===
+            "loading catalogue..." ||
+          summaryText.includes(
+            "loading catalogue"
+          );
+
+        return (
+          !gridStillLoading &&
+          !summaryStillLoading
+        );
+      }
+
+
+      function updateLoaderMessage() {
+        if (!loaderMessage) {
+          return;
+        }
+
+        if (
+          !headerReady &&
+          !catalogueReady
+        ) {
+          loaderMessage.textContent =
+            "Preparing ACL Expert Edition…";
+
+          return;
+        }
+
+        if (!headerReady) {
+          loaderMessage.textContent =
+            "Preparing navigation…";
+
+          return;
+        }
+
+        if (!catalogueReady) {
+          loaderMessage.textContent =
+            "Loading your modules…";
+
+          return;
+        }
+
+        loaderMessage.textContent =
+          "Ready";
+      }
+
+
+      function removeLoader() {
+        if (
+          loaderRemoved ||
+          !loader
+        ) {
+          return;
+        }
+
+        loaderRemoved =
+          true;
+
+        loader.classList.add(
+          "is-hiding"
+        );
+
+        document.documentElement
+          .classList.remove(
+            "acl-page-booting"
+          );
+
+        document.documentElement
+          .classList.add(
+            "acl-page-ready"
+          );
+
+        window.setTimeout(
+          () => {
+            loader.remove();
+          },
+          280
+        );
+      }
+
+
+      function checkReadiness() {
+        headerReady =
+          isHeaderReady();
+
+        catalogueReady =
+          isCatalogueReady();
+
+        updateLoaderMessage();
+
+        if (
+          headerReady &&
+          catalogueReady
+        ) {
+          window.setTimeout(
+            removeLoader,
+            120
+          );
+
+          return true;
+        }
+
+        return false;
+      }
+
+
+      const observer =
+        new MutationObserver(
+          () => {
+            if (
+              checkReadiness()
+            ) {
+              observer.disconnect();
+            }
+          }
+        );
+
+
+      observer.observe(
+        document.documentElement,
+        {
+          childList: true,
+          subtree: true,
+          characterData: true,
+          attributes: true,
+          attributeFilter: [
+            "class"
+          ]
+        }
+      );
+
+
+      document.addEventListener(
+        "DOMContentLoaded",
+        checkReadiness
+      );
+
+
+      window.addEventListener(
+        "load",
+        () => {
+          checkReadiness();
+        }
+      );
+
+
+      /*
+       * Safety fallback:
+       * The loader must never permanently block the page,
+       * even if Supabase or another script returns an error.
+       */
+
+      window.setTimeout(
+        () => {
+          observer.disconnect();
+
+          if (loaderMessage) {
+            loaderMessage.textContent =
+              "Opening catalogue…";
+          }
+
+          removeLoader();
+        },
+        5000
+      );
+
+
+      checkReadiness();
+    })();
+  </script>
 
 </body>
 
