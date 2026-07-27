@@ -1692,12 +1692,12 @@
 
     import {
       protectAndRender
-    } from "../../assets/js/session-ui.js?v=2.8.9";
+    } from "../../assets/js/session-ui.js?v=5.0.0";
 
 
     import {
       QuizEngine
-    } from "../../assets/js/quiz-engine.js";
+    } from "../../assets/js/quiz-engine.js?v=5.0.0";
 
 
     import {
@@ -1718,7 +1718,7 @@
       getAclSettings,
       saveAclSettings,
       normalizeAclSettings
-    } from "../../assets/js/user-settings.js";
+    } from "../../assets/js/user-settings.js?v=5.0.0";
 
 
     /* =====================================================
@@ -2912,17 +2912,16 @@
        CONFIDENCE
     ===================================================== */
 
-    function confidenceHtml(
-      question
-    ) {
-      if (
-        !aclSettings
-          .confidenceEnabled ||
-        pendingChoice ===
-          null
-      ) {
-        return "";
-      }
+function confidenceHtml(
+  question
+) {
+  if (
+    !engine ||
+    !engine.isConfidenceEnabled() ||
+    pendingChoice === null
+  ) {
+    return "";
+  }
 
       const selectedOption =
         question.options[
@@ -3422,9 +3421,8 @@
                  */
 
                 if (
-                  aclSettings
-                    .confidenceEnabled
-                ) {
+  engine.isConfidenceEnabled()
+) {
                   pendingChoice =
                     choice;
 
