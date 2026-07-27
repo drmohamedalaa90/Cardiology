@@ -1953,18 +1953,13 @@ function confidencePanelHtml(
         🎯
       </span>
 
-      <div>
+     <div>
 
-        <h3>
-          How confident are you?
-        </h3>
+  <h3>
+    How confident are you?
+  </h3>
 
-        <p>
-          Your confidence level affects the points awarded.
-        </p>
-
-      </div>
-
+</div>
     </div>
 
 
