@@ -3833,10 +3833,11 @@ function confidenceHtml(
                 .confidenceEnabled
           });
 
-        lifelinesState =
-          attempt.lifelines_state ||
-          attempt.lifelinesState ||
-          {};
+       lifelinesState =
+  attempt.lifelines ||
+  attempt.lifelines_state ||
+  attempt.lifelinesState ||
+  {};
 
         setSaveStatus(
           "Unfinished attempt restored"
