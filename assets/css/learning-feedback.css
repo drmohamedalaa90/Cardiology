@@ -4085,3 +4085,35 @@ body.acl-expert-learning-mode
     grid-template-columns: 1fr;
   }
 }
+@media (max-width: 430px) {
+  .learning-result-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* PASTE THE NEW CODE HERE */
+
+/* DR. CORAZÓN RESULT REACTION */
+
+.learning-result-mascot-stage {
+  position: relative;
+  display: grid;
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 16px;
+  place-items: center;
+}
+
+/* ...rest of the mascot CSS... */
+
+@media (max-width: 520px) {
+  .learning-result-mascot-stage {
+    width: 122px;
+    height: 122px;
+  }
+
+  .learning-result-mascot {
+    width: 112px;
+    height: 112px;
+  }
+}
