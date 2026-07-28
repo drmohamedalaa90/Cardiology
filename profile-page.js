@@ -5,7 +5,7 @@ import {
 
 import {
   protectAndRender
-} from "./session-ui.js?v=5.3.0";
+} from "./session-ui.js?v=2.8.0";
 
 
 const el = (id) =>
