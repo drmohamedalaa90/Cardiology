@@ -411,7 +411,199 @@
 
     </section>
 
+<!-- ===================================================
+     TROPHIES AND ACHIEVEMENTS
+==================================================== -->
 
+<section
+  class="card profile-trophies-card"
+  style="margin-top: 20px"
+>
+
+  <div class="profile-trophies-heading">
+
+    <div>
+      <span class="admin-kicker">
+        ACL ACHIEVEMENTS
+      </span>
+
+      <h2>
+        My Trophies
+      </h2>
+
+      <p class="muted">
+        Your learning, competition and activity achievements.
+      </p>
+    </div>
+
+    <button
+      id="refreshProfileTrophies"
+      class="secondary-btn"
+      type="button"
+    >
+      Refresh
+    </button>
+
+  </div>
+
+
+  <div
+    id="profileTrophiesStatus"
+    class="status-box"
+    role="status"
+    aria-live="polite"
+  >
+    Loading trophies…
+  </div>
+
+
+  <div
+    id="profileTrophiesGrid"
+    class="profile-trophies-grid"
+    hidden
+  >
+
+    <article class="profile-trophy trophy-gold">
+
+      <span
+        class="profile-trophy-icon"
+        aria-hidden="true"
+      >
+        🏆
+      </span>
+
+      <div>
+        <span>
+          Challenges Won
+        </span>
+
+        <strong id="trophyChallengeWins">
+          0
+        </strong>
+      </div>
+
+    </article>
+
+
+    <article class="profile-trophy trophy-blue">
+
+      <span
+        class="profile-trophy-icon"
+        aria-hidden="true"
+      >
+        📚
+      </span>
+
+      <div>
+        <span>
+          Modules Completed
+        </span>
+
+        <strong id="trophyModulesCompleted">
+          0
+        </strong>
+      </div>
+
+    </article>
+
+
+    <article class="profile-trophy trophy-orange">
+
+      <span
+        class="profile-trophy-icon"
+        aria-hidden="true"
+      >
+        🔥
+      </span>
+
+      <div>
+        <span>
+          Current Streak
+        </span>
+
+        <strong>
+          <span id="trophyCurrentStreak">
+            0
+          </span>
+          days
+        </strong>
+      </div>
+
+    </article>
+
+
+    <article class="profile-trophy trophy-purple">
+
+      <span
+        class="profile-trophy-icon"
+        aria-hidden="true"
+      >
+        ⚡
+      </span>
+
+      <div>
+        <span>
+          Best Streak
+        </span>
+
+        <strong>
+          <span id="trophyBestStreak">
+            0
+          </span>
+          days
+        </strong>
+      </div>
+
+    </article>
+
+
+    <article class="profile-trophy trophy-green">
+
+      <span
+        class="profile-trophy-icon"
+        aria-hidden="true"
+      >
+        ✅
+      </span>
+
+      <div>
+        <span>
+          Completed Attempts
+        </span>
+
+        <strong id="trophyCompletedAttempts">
+          0
+        </strong>
+      </div>
+
+    </article>
+
+
+    <article class="profile-trophy trophy-red">
+
+      <span
+        class="profile-trophy-icon"
+        aria-hidden="true"
+      >
+        🎯
+      </span>
+
+      <div>
+        <span>
+          Perfect Scores
+        </span>
+
+        <strong id="trophyPerfectScores">
+          0
+        </strong>
+      </div>
+
+    </article>
+
+  </div>
+
+</section>
+    
     <!-- ===================================================
          CHANGE PASSWORD
     ==================================================== -->
