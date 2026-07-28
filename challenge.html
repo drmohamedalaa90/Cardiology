@@ -1,240 +1,255 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <meta charset="UTF-8">
+  <title>Challenge a Colleague | ACL Expert Edition</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+  <!-- Keep the same global stylesheet used by the rest of your platform. -->
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/challenge.css" />
 
-  <title>
-    ACL Challenge | The Expert Edition
-  </title>
-
-  <link
-    rel="stylesheet"
-    href="assets/css/base.css?v=5.3.0"
-  >
-
-  <link
-    rel="stylesheet"
-    href="assets/css/challenge.css?v=1.0.0"
-  >
-
+  <!-- Load your existing Supabase config BEFORE challenge.js. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/config.js"></script>
 </head>
 
-
 <body class="challenge-page">
-
   <main class="challenge-shell">
+    <a class="challenge-back-link" href="modules.html" aria-label="Return to modules">
+      ← Back to modules
+    </a>
 
-    <section
-      id="challengeLoading"
-      class="challenge-loading"
-    >
-
-      <span class="challenge-loading-icon">
-        ⚔️
-      </span>
-
-      <h1>
-        Loading challenge…
-      </h1>
-
-      <p>
-        Preparing the ACL Expert Edition challenge.
-      </p>
-
-    </section>
-
-
-    <section
-      id="challengeView"
-      class="challenge-view"
-      hidden
-    >
-
-      <header class="challenge-hero">
-
-        <div class="challenge-hero-copy">
-
-          <span class="challenge-kicker">
-            ACL Expert Edition
-          </span>
-
-          <h1 id="challengeTitle">
-            Challenge
-          </h1>
-
-          <p id="challengeModuleTitle">
-            Learning module
-          </p>
-
-        </div>
-
-        <div
-          class="challenge-status-badge"
-          id="challengeStatusBadge"
-        >
-          Open
-        </div>
-
-      </header>
-
-
-      <div class="challenge-information-grid">
-
-        <article class="challenge-info-card">
-
-          <span>
-            Challenge code
-          </span>
-
-          <strong id="challengeCode">
-            —
-          </strong>
-
-        </article>
-
-
-        <article class="challenge-info-card">
-
-          <span>
-            Participants
-          </span>
-
-          <strong id="challengeParticipantCount">
-            —
-          </strong>
-
-        </article>
-
-
-        <article class="challenge-info-card">
-
-          <span>
-            Ends
-          </span>
-
-          <strong id="challengeEndsAt">
-            —
-          </strong>
-
-        </article>
-
+    <section class="challenge-hero">
+      <div class="challenge-hero-copy">
+        <p class="challenge-eyebrow">ACL EXPERT EDITION</p>
+        <h1>Challenge a colleague</h1>
+        <p>
+          Select a module, create a private head-to-head challenge, and share
+          the generated invitation link.
+        </p>
       </div>
 
-
-      <section class="challenge-rules-card">
-
-        <h2>
-          Challenge rules
-        </h2>
-
-        <ul>
-
-          <li>
-            Everyone receives the same question set.
-          </li>
-
-          <li>
-            Confidence-adjusted scoring is used.
-          </li>
-
-          <li>
-            Highest score wins.
-          </li>
-
-          <li>
-            Ties are decided by the shortest completion time.
-          </li>
-
-          <li>
-            Each participant receives one official attempt.
-          </li>
-
-        </ul>
-
-      </section>
-
-
-      <div
-        id="challengeMessage"
-        class="challenge-message"
-        hidden
-      ></div>
-
-
-      <div class="challenge-actions">
-
-        <button
-          id="joinChallenge"
-          type="button"
-          class="challenge-primary-button"
-        >
-          Join challenge
-        </button>
-
-        <button
-          id="startChallenge"
-          type="button"
-          class="challenge-primary-button"
-          hidden
-        >
-          Start challenge
-        </button>
-
-        <a
-          href="modules.html"
-          class="challenge-secondary-button"
-        >
-          Back to modules
-        </a>
-
+      <div class="challenge-hero-badge" aria-hidden="true">
+        <span>1</span>
+        <small>VS</small>
+        <span>1</span>
       </div>
-
     </section>
 
+    <section class="challenge-panel" id="challengeCreatorPanel">
+      <div class="challenge-panel-heading">
+        <div>
+          <p class="challenge-step-label">STEP 1</p>
+          <h2>Create the challenge</h2>
+        </div>
+        <span class="challenge-status-pill">Private link</span>
+      </div>
 
-    <section
-      id="challengeError"
-      class="challenge-error"
-      hidden
-    >
+      <form id="challengeForm" class="challenge-form" novalidate>
+        <div class="challenge-field">
+          <label for="challengeModule">Module</label>
+          <select id="challengeModule" name="module" required>
+            <option value="">Choose a module</option>
+            <option value="ecg">ECG Rhythms</option>
+            <option value="ppci">Primary PCI</option>
+            <option value="left-main">Left Main Interventions</option>
+            <option value="mitral">Mitral Valve Interventions</option>
+            <option value="mcs">Mechanical Circulatory Support</option>
+            <option value="heart-failure">Heart Failure</option>
+          </select>
+          <small>The selected quiz must exist in your quizzes table.</small>
+        </div>
 
-      <span class="challenge-error-icon">
-        ⚠️
-      </span>
+        <div class="challenge-field">
+          <label for="challengeQuiz">Quiz</label>
+          <select id="challengeQuiz" name="quiz" required disabled>
+            <option value="">Choose a module first</option>
+          </select>
+          <small id="quizLoadingText">Available quizzes will appear automatically.</small>
+        </div>
 
-      <h1>
-        Challenge unavailable
-      </h1>
+        <div class="challenge-grid-two">
+          <div class="challenge-field">
+            <label for="challengeQuestions">Questions</label>
+            <select id="challengeQuestions" name="question_count" required>
+              <option value="5">5 questions</option>
+              <option value="10" selected>10 questions</option>
+              <option value="20">20 questions</option>
+            </select>
+          </div>
 
-      <p id="challengeErrorMessage">
-        This challenge could not be opened.
-      </p>
+          <div class="challenge-field">
+            <label for="challengeExpiry">Invitation validity</label>
+            <select id="challengeExpiry" name="expiry_hours" required>
+              <option value="6">6 hours</option>
+              <option value="12">12 hours</option>
+              <option value="24" selected>24 hours</option>
+              <option value="48">48 hours</option>
+              <option value="72">72 hours</option>
+            </select>
+          </div>
+        </div>
 
-      <a
-        href="modules.html"
-        class="challenge-secondary-button"
-      >
-        Back to modules
+        <div class="challenge-field">
+          <label for="challengeMessage">Message <span>(optional)</span></label>
+          <textarea
+            id="challengeMessage"
+            name="message"
+            rows="3"
+            maxlength="180"
+            placeholder="Ready to test your expert knowledge?"
+          ></textarea>
+          <div class="challenge-character-count">
+            <span id="challengeMessageCount">0</span>/180
+          </div>
+        </div>
+
+        <label class="challenge-check-row">
+          <input id="challengeSameQuestions" type="checkbox" checked />
+          <span>
+            <strong>Use identical questions for both competitors</strong>
+            <small>Recommended for a fair head-to-head result.</small>
+          </span>
+        </label>
+
+        <div id="challengeFormError" class="challenge-alert challenge-alert-error" hidden></div>
+
+        <button id="createChallengeButton" class="challenge-primary-button" type="submit">
+          <span>Create challenge</span>
+          <span aria-hidden="true">⚡</span>
+        </button>
+      </form>
+    </section>
+
+    <section id="challengeCreatedCard" class="challenge-created-card" hidden>
+      <div class="challenge-created-header">
+        <div class="challenge-created-icon">✓</div>
+        <div>
+          <p class="challenge-step-label">CHALLENGE CREATED</p>
+          <h2>Your invitation is ready</h2>
+          <p>Complete your attempt, then send the invitation to one colleague.</p>
+        </div>
+      </div>
+
+      <div class="challenge-created-details">
+        <div>
+          <span>Module</span>
+          <strong id="createdModuleName">—</strong>
+        </div>
+        <div>
+          <span>Questions</span>
+          <strong id="createdQuestionCount">—</strong>
+        </div>
+        <div>
+          <span>Valid until</span>
+          <strong id="createdExpiry">—</strong>
+        </div>
+      </div>
+
+      <div class="challenge-link-box">
+        <label for="challengeInviteLink">Invitation link</label>
+        <div>
+          <input id="challengeInviteLink" type="text" readonly />
+          <button id="copyChallengeLinkButton" type="button">Copy</button>
+        </div>
+      </div>
+
+      <div class="challenge-created-actions">
+        <button id="startMyChallengeButton" class="challenge-primary-button" type="button">
+          Start my attempt
+        </button>
+        <button id="shareChallengeButton" class="challenge-secondary-button" type="button">
+          Share invitation
+        </button>
+      </div>
+
+      <p id="copyChallengeFeedback" class="challenge-copy-feedback" aria-live="polite"></p>
+    </section>
+
+    <section id="incomingChallengePanel" class="challenge-panel" hidden>
+      <div class="challenge-panel-heading">
+        <div>
+          <p class="challenge-step-label">INVITATION</p>
+          <h2 id="incomingChallengeTitle">You have been challenged</h2>
+        </div>
+        <span id="incomingChallengeState" class="challenge-status-pill">Waiting</span>
+      </div>
+
+      <div class="incoming-challenge-summary">
+        <div class="incoming-versus">
+          <div>
+            <span class="incoming-avatar" id="challengerInitial">C</span>
+            <strong id="challengerName">Challenger</strong>
+          </div>
+          <span class="incoming-vs">VS</span>
+          <div>
+            <span class="incoming-avatar incoming-avatar-you">YOU</span>
+            <strong>Your attempt</strong>
+          </div>
+        </div>
+
+        <blockquote id="incomingChallengeMessage" hidden></blockquote>
+
+        <div class="challenge-created-details">
+          <div>
+            <span>Module</span>
+            <strong id="incomingModuleName">—</strong>
+          </div>
+          <div>
+            <span>Questions</span>
+            <strong id="incomingQuestionCount">—</strong>
+          </div>
+          <div>
+            <span>Expires</span>
+            <strong id="incomingExpiry">—</strong>
+          </div>
+        </div>
+
+        <div id="incomingChallengeError" class="challenge-alert challenge-alert-error" hidden></div>
+
+        <button id="acceptChallengeButton" class="challenge-primary-button" type="button">
+          Accept and start
+        </button>
+      </div>
+    </section>
+
+    <section id="challengeResultPanel" class="challenge-panel" hidden>
+      <div class="challenge-panel-heading">
+        <div>
+          <p class="challenge-step-label">HEAD-TO-HEAD RESULT</p>
+          <h2>Challenge scoreboard</h2>
+        </div>
+        <span id="resultStatusPill" class="challenge-status-pill">In progress</span>
+      </div>
+
+      <div class="challenge-scoreboard">
+        <article class="challenge-player-card">
+          <span class="challenge-player-label">CHALLENGER</span>
+          <h3 id="resultChallengerName">—</h3>
+          <strong id="resultChallengerScore">—</strong>
+          <small id="resultChallengerTime">Waiting</small>
+        </article>
+
+        <div class="challenge-result-vs">VS</div>
+
+        <article class="challenge-player-card">
+          <span class="challenge-player-label">OPPONENT</span>
+          <h3 id="resultOpponentName">—</h3>
+          <strong id="resultOpponentScore">—</strong>
+          <small id="resultOpponentTime">Waiting</small>
+        </article>
+      </div>
+
+      <div id="challengeWinnerBanner" class="challenge-winner-banner" hidden></div>
+
+      <a id="openChallengeQuizLink" class="challenge-secondary-button challenge-link-button" href="#">
+        Open my challenge attempt
       </a>
-
     </section>
-
   </main>
 
-
-  <script
-    type="module"
-    src="assets/js/challenge.js?v=1.0.0"
-  ></script>
-
+  <script src="assets/js/challenge.js"></script>
 </body>
-
 </html>
