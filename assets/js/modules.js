@@ -10,6 +10,63 @@ const stateBox =
 
 const summary =
   document.getElementById("catalogueSummary");
+
+/* =========================================================
+   MODULE FILTER STATE
+========================================================= */
+
+const moduleSearchInput =
+  document.getElementById(
+    "moduleSearchInput"
+  );
+
+
+const moduleCategoryFilter =
+  document.getElementById(
+    "moduleCategoryFilter"
+  );
+
+
+const moduleDifficultyFilter =
+  document.getElementById(
+    "moduleDifficultyFilter"
+  );
+
+
+const moduleAccessFilter =
+  document.getElementById(
+    "moduleAccessFilter"
+  );
+
+
+const moduleSearchSummary =
+  document.getElementById(
+    "moduleSearchSummary"
+  );
+
+
+const clearModuleFiltersButton =
+  document.getElementById(
+    "clearModuleFilters"
+  );
+
+
+let loadedModules =
+  [];
+
+
+let loadedAssignedIds =
+  new Set();
+
+
+let loadedTotalScore =
+  0;
+
+
+let loadedProgressMap =
+  new Map();
+
+
 /* =========================================================
    EDITION SELECTION
 ========================================================= */
