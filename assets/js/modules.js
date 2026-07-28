@@ -3,7 +3,7 @@ import { protectAndRender } from "./session-ui.js?v=2.8.0";
 
 
 const grid =
-  document.getElementById("modulesGrid");
+  document.getElementById("modules");
 
 const stateBox =
   document.getElementById("modulesStatus");
@@ -1721,127 +1721,6 @@ async function createModuleChallenge() {
   }
 }
 
-const challengeLinkInput =
-  document.getElementById(
-    "createdChallengeLink"
-  );
-
-const copyChallengeCodeButton =
-  document.getElementById(
-    "copyChallengeCode"
-  );
-
-const copyChallengeLinkButton =
-  document.getElementById(
-    "copyChallengeLink"
-  );
-
-const copyChallengeLinkLargeButton =
-  document.getElementById(
-    "copyChallengeLinkLarge"
-  );
-
-const challengeCopyFeedback =
-  document.getElementById(
-    "challengeCopyFeedback"
-  );
-
-
-async function copyChallengeText(
-  text,
-  successMessage
-) {
-  try {
-    await navigator.clipboard.writeText(
-      text
-    );
-
-    if (
-      challengeCopyFeedback
-    ) {
-      challengeCopyFeedback.textContent =
-        successMessage;
-    }
-  } catch {
-    if (
-      challengeLinkInput
-    ) {
-      challengeLinkInput.select();
-      challengeLinkInput.setSelectionRange(
-        0,
-        challengeLinkInput.value.length
-      );
-
-      document.execCommand(
-        "copy"
-      );
-    }
-
-    if (
-      challengeCopyFeedback
-    ) {
-      challengeCopyFeedback.textContent =
-        successMessage;
-    }
-  }
-
-  window.setTimeout(
-    () => {
-      if (
-        challengeCopyFeedback
-      ) {
-        challengeCopyFeedback.textContent =
-          "";
-      }
-    },
-    2400
-  );
-}
-
-
-copyChallengeCodeButton
-  ?.addEventListener(
-    "click",
-    () => {
-      copyChallengeText(
-        challenge.challenge_code,
-        "Challenge code copied."
-      );
-    }
-  );
-
-
-copyChallengeLinkButton
-  ?.addEventListener(
-    "click",
-    () => {
-      copyChallengeText(
-        challengeUrl,
-        "Challenge link copied."
-      );
-    }
-  );
-
-
-copyChallengeLinkLargeButton
-  ?.addEventListener(
-    "click",
-    () => {
-      copyChallengeText(
-        challengeUrl,
-        "Challenge link copied."
-      );
-    }
-  );
-
-
-challengeLinkInput
-  ?.addEventListener(
-    "click",
-    () => {
-      challengeLinkInput.select();
-    }
-  );
 
 /*
  * Delegated event listener because module cards
