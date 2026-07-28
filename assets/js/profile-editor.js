@@ -7,8 +7,9 @@ import {
   protectAndRender
 } from "./session-ui.js?v=2.8.0";
 
+
 console.log(
-  "ACL PROFILE EDITOR v1.0.0 LOADED"
+  "ACL PROFILE EDITOR v1.1.1 LOADED"
 );
 
 
@@ -17,12 +18,12 @@ const el = (id) =>
 
 
 /* =========================================================
-   STATUS
+   STATUS MESSAGES
 ========================================================= */
 
 function setProfileStatus(
   message = "",
-  error = false
+  isError = false
 ) {
   const status =
     el("profileStatus");
@@ -39,20 +40,20 @@ function setProfileStatus(
 
   status.classList.toggle(
     "error",
-    error
+    isError
   );
 
   status.classList.toggle(
     "success",
     Boolean(message) &&
-    !error
+    !isError
   );
 }
 
 
 function setPasswordStatus(
   message = "",
-  error = false
+  isError = false
 ) {
   const status =
     el("passwordStatus");
@@ -69,13 +70,13 @@ function setPasswordStatus(
 
   status.classList.toggle(
     "error",
-    error
+    isError
   );
 
   status.classList.toggle(
     "success",
     Boolean(message) &&
-    !error
+    !isError
   );
 }
 
@@ -88,22 +89,24 @@ function profileInitials(
   profile
 ) {
   const name =
-    profile.display_name ||
-    profile.full_name ||
-    profile.username ||
+    profile?.display_name ||
+    profile?.full_name ||
+    profile?.username ||
     "ACL";
 
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map(
-      (part) =>
-        part.charAt(0)
-    )
-    .join("")
-    .toUpperCase() ||
-    "ACL";
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map(
+        (part) =>
+          part.charAt(0)
+      )
+      .join("")
+      .toUpperCase() ||
+    "ACL"
+  );
 }
 
 
@@ -128,7 +131,7 @@ function renderAvatar(
       profile
     );
 
-  if (profile.avatar_url) {
+  if (profile?.avatar_url) {
     image.src =
       profile.avatar_url;
 
@@ -182,15 +185,12 @@ async function uploadAvatar(
   } =
     await supabaseClient
       .storage
-      .from(
-        "avatars"
-      )
+      .from("avatars")
       .upload(
         filePath,
         file,
         {
-          upsert:
-            true
+          upsert: true
         }
       );
 
@@ -203,9 +203,7 @@ async function uploadAvatar(
   } =
     supabaseClient
       .storage
-      .from(
-        "avatars"
-      )
+      .from("avatars")
       .getPublicUrl(
         filePath
       );
@@ -218,7 +216,7 @@ async function uploadAvatar(
 
 
 /* =========================================================
-   PROFILE FORM
+   LOAD PROFILE
 ========================================================= */
 
 async function loadProfilePage() {
@@ -232,55 +230,41 @@ async function loadProfilePage() {
       return;
     }
 
-    const displayNameInput =
-      el("displayName");
-
-    const emailInput =
-      el("email");
-
-    const usernameInput =
-      el("username");
-
-    const whatsappInput =
-      el("whatsapp");
-
-    const positionInput =
-      el("academicYear");
-
-    const institutionInput =
-      el("institution");
-
-
-    if (displayNameInput) {
-      displayNameInput.value =
+    if (el("displayName")) {
+      el("displayName").value =
         profile.display_name ||
         profile.full_name ||
         profile.username ||
         "";
     }
 
-
-    if (emailInput) {
-      emailInput.value =
+    if (el("email")) {
+      el("email").value =
         profile.email ||
         "";
     }
 
-
-    if (usernameInput) {
-      usernameInput.value =
+    if (el("username")) {
+      el("username").value =
         profile.username ||
         "";
     }
 
-
-    if (whatsappInput) {
-      whatsappInput.value =
+    if (el("whatsapp")) {
+      el("whatsapp").value =
         profile.whatsapp ||
         profile.phone_e164 ||
         "";
     }
 
+    if (el("institution")) {
+      el("institution").value =
+        profile.institution ||
+        "";
+    }
+
+    const positionInput =
+      el("academicYear");
 
     if (positionInput) {
       const savedPosition =
@@ -291,11 +275,6 @@ async function loadProfilePage() {
       positionInput.value =
         savedPosition;
 
-      /*
-       * If the stored value does not match one of the
-       * available options, keep the placeholder visible.
-       */
-
       if (
         positionInput.value !==
         savedPosition
@@ -305,18 +284,9 @@ async function loadProfilePage() {
       }
     }
 
-
-    if (institutionInput) {
-      institutionInput.value =
-        profile.institution ||
-        "";
-    }
-
-
     renderAvatar(
       profile
     );
-
 
     setProfileStatus(
       ""
@@ -333,7 +303,146 @@ async function loadProfilePage() {
       true
     );
   }
-}  );
+}
+
+
+/* =========================================================
+   SAVE PROFILE
+========================================================= */
+
+el("profileForm")
+  ?.addEventListener(
+    "submit",
+    async (event) => {
+      event.preventDefault();
+
+      setProfileStatus(
+        "Saving profile…"
+      );
+
+      try {
+        const {
+          data: userData,
+          error: userError
+        } =
+          await supabaseClient
+            .auth
+            .getUser();
+
+        if (userError) {
+          throw userError;
+        }
+
+        const user =
+          userData?.user;
+
+        if (!user) {
+          throw new Error(
+            "Your session has expired. Please sign in again."
+          );
+        }
+
+        const displayName =
+          el("displayName")
+            ?.value
+            ?.trim() ||
+          "";
+
+        const whatsapp =
+          el("whatsapp")
+            ?.value
+            ?.trim() ||
+          "";
+
+        const position =
+          el("academicYear")
+            ?.value ||
+          "";
+
+        const institution =
+          el("institution")
+            ?.value
+            ?.trim() ||
+          "";
+
+        if (
+          displayName.length < 2
+        ) {
+          throw new Error(
+            "Display Name must contain at least 2 characters."
+          );
+        }
+
+        const avatarUrl =
+          await uploadAvatar(
+            user.id
+          );
+
+        const updates = {
+          display_name:
+            displayName,
+
+          whatsapp,
+
+          academic_year:
+            position,
+
+          institution
+        };
+
+        if (avatarUrl) {
+          updates.avatar_url =
+            avatarUrl;
+        }
+
+        const {
+          data,
+          error
+        } =
+          await supabaseClient
+            .from("profiles")
+            .update(
+              updates
+            )
+            .eq(
+              "id",
+              user.id
+            )
+            .select("*")
+            .single();
+
+        if (error) {
+          throw error;
+        }
+
+        window.aclCurrentProfile = {
+          ...window.aclCurrentProfile,
+          ...data,
+          email:
+            user.email
+        };
+
+        renderAvatar(
+          window.aclCurrentProfile
+        );
+
+        setProfileStatus(
+          "Profile saved successfully."
+        );
+      } catch (error) {
+        console.error(
+          "PROFILE SAVE ERROR:",
+          error
+        );
+
+        setProfileStatus(
+          error.message ||
+          "The profile could not be saved.",
+          true
+        );
+      }
+    }
+  );
 
 
 /* =========================================================
@@ -463,5 +572,9 @@ el("passwordForm")
     }
   );
 
+
+/* =========================================================
+   START
+========================================================= */
 
 loadProfilePage();
