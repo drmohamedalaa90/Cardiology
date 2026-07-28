@@ -1,0 +1,69 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 512 512"
+  role="img"
+  aria-labelledby="title"
+>
+  <title id="title">
+    Alexandria Cardiology League
+  </title>
+
+  <rect
+    width="512"
+    height="512"
+    rx="112"
+    fill="#0b5791"
+  />
+
+  <circle
+    cx="256"
+    cy="256"
+    r="184"
+    fill="#092e57"
+  />
+
+  <path
+    d="
+      M256 379
+      C222 350 145 299 145 218
+      C145 164 182 129 229 129
+      C254 129 276 142 289 162
+      C303 142 325 129 350 129
+      C397 129 434 164 434 218
+      C434 299 357 350 323 379
+      L289 408
+      Z
+    "
+    fill="#e53935"
+    transform="translate(-33 0)"
+  />
+
+  <path
+    d="
+      M112 261
+      H178
+      L204 210
+      L244 316
+      L280 242
+      L309 261
+      H400
+    "
+    fill="none"
+    stroke="#f2b500"
+    stroke-width="22"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <text
+    x="256"
+    y="465"
+    text-anchor="middle"
+    font-family="Arial, sans-serif"
+    font-size="62"
+    font-weight="900"
+    fill="#ffffff"
+  >
+    ACL
+  </text>
+</svg>
