@@ -965,11 +965,8 @@ async function copyChallengeLink(
   }
 }
 
-
 async function createModuleChallenge() {
-  if (
-    !selectedChallengeModule
-  ) {
+  if (!selectedChallengeModule) {
     return;
   }
 
@@ -991,8 +988,7 @@ async function createModuleChallenge() {
 
   if (!quizSlug) {
     if (result) {
-      result.hidden =
-        false;
+      result.hidden = false;
 
       result.innerHTML = `
         <div class="module-challenge-error">
@@ -1005,9 +1001,7 @@ async function createModuleChallenge() {
   }
 
   if (createButton) {
-    createButton.disabled =
-      true;
-
+    createButton.disabled = true;
     createButton.textContent =
       "Creating challenge…";
   }
@@ -1040,34 +1034,34 @@ async function createModuleChallenge() {
 
 
     /*
-     * Find the published quiz from the module launch path.
+     * Find the published quiz linked to the module.
      */
 
-const {
-  data: quizData,
-  error: quizError
-} =
-  await supabaseClient
-    .from(
-      "quizzes"
-    )
-    .select(`
-      id,
-      slug,
-      title,
-      module_id,
-      question_count
-    `)
-    .eq(
-      "slug",
-      quizSlug
-    )
-    .eq(
-      "status",
-      "published"
-    )
-    .maybeSingle();
-    
+    const {
+      data: quizData,
+      error: quizError
+    } =
+      await supabaseClient
+        .from(
+          "quizzes"
+        )
+        .select(`
+          id,
+          slug,
+          title,
+          module_id,
+          question_count
+        `)
+        .eq(
+          "slug",
+          quizSlug
+        )
+        .eq(
+          "status",
+          "published"
+        )
+        .maybeSingle();
+
     if (quizError) {
       throw quizError;
     }
@@ -1078,112 +1072,121 @@ const {
       );
     }
 
-/*
- * Load all published questions belonging to this quiz.
- * The selected IDs will be saved permanently in the
- * challenge so every participant receives the same set.
- */
 
-const {
-  data: questionRows,
-  error: questionsError
-} =
-  await supabaseClient
-    .from(
-      "questions"
-    )
-    .select(`
-      id,
-      order_index
-    `)
-    .eq(
-      "quiz_id",
-      quizData.id
-    )
-    .order(
-      "order_index",
-      {
-        ascending:
-          true
-      }
-    );
+    /*
+     * Load the available questions.
+     *
+     * The selected question IDs are saved with the
+     * challenge so every participant receives the
+     * same questions in the same order.
+     */
 
-if (questionsError) {
-  throw questionsError;
-}
+    const {
+      data: questionRows,
+      error: questionsError
+    } =
+      await supabaseClient
+        .from(
+          "questions"
+        )
+        .select(`
+          id,
+          order_index
+        `)
+        .eq(
+          "quiz_id",
+          quizData.id
+        )
+        .order(
+          "order_index",
+          {
+            ascending: true
+          }
+        );
 
-if (
-  !Array.isArray(
-    questionRows
-  ) ||
-  !questionRows.length
-) {
-  throw new Error(
-    "No questions are available for this challenge."
-  );
-}
+    if (questionsError) {
+      throw questionsError;
+    }
 
-
-/*
- * Preserve normal order unless this quiz is configured
- * to select questions randomly.
- */
-
-const shouldRandomizeQuestions =
-  Boolean(
-    quizData
-      .randomize_questions
-  ) ||
-  quizData
-    .selection_mode ===
-    "random";
-
-const challengeQuestionPool =
-  shouldRandomizeQuestions
-    ? shuffleChallengeItems(
+    if (
+      !Array.isArray(
         questionRows
-      )
-    : [
-        ...questionRows
-      ];
+      ) ||
+      !questionRows.length
+    ) {
+      throw new Error(
+        "No questions are available for this challenge."
+      );
+    }
 
 
-const requestedQuestionCount =
-  Math.max(
-    1,
-    Number(
-      quizData
-        .question_count ||
+    /*
+     * Randomize the available pool once.
+     *
+     * The generated order is then saved permanently
+     * inside this challenge.
+     */
+
+    const challengeQuestionPool =
+      typeof shuffleChallengeItems ===
+      "function"
+        ? shuffleChallengeItems(
+            questionRows
+          )
+        : [
+            ...questionRows
+          ];
+
+
+    /*
+     * Determine how many questions belong to the
+     * challenge.
+     */
+
+    const configuredQuestionCount =
+      Number(
+        quizData.question_count
+      );
+
+    const requestedQuestionCount =
+      Number.isFinite(
+        configuredQuestionCount
+      ) &&
+      configuredQuestionCount > 0
+        ? configuredQuestionCount
+        : challengeQuestionPool
+            .length;
+
+
+    const challengeQuestionIds =
       challengeQuestionPool
+        .slice(
+          0,
+          Math.min(
+            requestedQuestionCount,
+            challengeQuestionPool
+              .length
+          )
+        )
+        .map(
+          (question) =>
+            question.id
+        );
+
+    if (
+      !challengeQuestionIds
         .length
-    )
-  );
+    ) {
+      throw new Error(
+        "The challenge question set could not be prepared."
+      );
+    }
 
 
-const challengeQuestionIds =
-  challengeQuestionPool
-    .slice(
-      0,
-      Math.min(
-        requestedQuestionCount,
-        challengeQuestionPool
-          .length
-      )
-    )
-    .map(
-      (question) =>
-        question.id
-    );
+    /*
+     * Read the challenge settings selected in the modal.
+     */
 
-
-if (
-  !challengeQuestionIds
-    .length
-) {
-  throw new Error(
-    "The challenge question set could not be prepared."
-  );
-}
     const audience =
       selectedChallengeAudience();
 
@@ -1215,10 +1218,6 @@ if (
 
     /*
      * Create the challenge.
-     *
-     * question_ids stays empty during this first stage.
-     * We will populate the fixed challenge question set
-     * when challenge.html is added.
      */
 
     const {
@@ -1246,9 +1245,9 @@ if (
           title:
             `${selectedChallengeModule.title} Challenge`,
 
-         question_ids:
-  challengeQuestionIds,
-          
+          question_ids:
+            challengeQuestionIds,
+
           maximum_participants:
             maximumParticipants,
 
@@ -1311,6 +1310,10 @@ if (
     }
 
 
+    /*
+     * Build the invitation link and WhatsApp message.
+     */
+
     const challengeUrl =
       challengeLinkFor(
         challenge
@@ -1318,133 +1321,366 @@ if (
       );
 
     const whatsappMessage =
-      [
-        "⚔️ ACL Expert Edition Challenge",
-        "",
-        `I challenge you to the ${selectedChallengeModule.title} module!`,
-        "",
-        "Highest confidence-adjusted score wins.",
-        "Ties are decided by the shortest completion time.",
-        "",
-        challengeUrl
-      ].join(
-        "\n"
+      encodeURIComponent(
+        `⚔️ ACL Head-to-Head Challenge\n\n` +
+        `${selectedChallengeModule.title}\n` +
+        `Challenge code: ${challenge.challenge_code}\n\n` +
+        `Highest confidence-adjusted score wins.\n` +
+        `Ties are decided by the shortest completion time.\n\n` +
+        `Join the challenge here:\n${challengeUrl}`
       );
 
 
+    /*
+     * Display the redesigned success card.
+     */
+
     if (result) {
-      result.hidden =
-        false;
+      result.hidden = false;
 
       result.innerHTML = `
-        <div class="module-challenge-success">
+        <section class="challenge-created-card">
 
-          <span class="module-challenge-success-icon">
-            ⚔️
-          </span>
+          <div class="challenge-created-header">
 
-          <h3>
-            Challenge created!
-          </h3>
+            <div
+              class="challenge-created-icon"
+              aria-hidden="true"
+            >
+              ✓
+            </div>
 
-          <p>
-  Share this private challenge link with your friend
-  or group.
-</p>
+            <div>
 
-<div class="module-challenge-created-summary">
+              <span class="challenge-created-eyebrow">
+                Challenge created
+              </span>
 
-  <span>
-    Questions
-  </span>
+              <h3>
+                Ready for head-to-head competition
+              </h3>
 
-  <strong>
-    ${challengeQuestionIds.length}
-  </strong>
-
-  <small>
-    The same question set will be used for all participants.
-  </small>
-
-</div>
-
-          <div class="module-challenge-code">
-
-            <span>
-              Challenge code
-            </span>
-
-            <strong>
-              ${escapeHtml(
-                challenge.challenge_code
-              )}
-            </strong>
+            </div>
 
           </div>
 
-          <label class="module-challenge-link-field">
+
+          <div class="module-challenge-created-summary">
 
             <span>
-              Challenge link
+              Questions
             </span>
 
-            <input
-              id="createdChallengeLink"
-              type="text"
-              value="${escapeHtml(
-                challengeUrl
-              )}"
-              readonly
-            >
+            <strong>
+              ${challengeQuestionIds.length}
+            </strong>
 
-          </label>
+            <small>
+              Every participant will receive the same question set.
+            </small>
 
-          <div class="module-challenge-share-actions">
+          </div>
+
+
+          <div class="challenge-share-field">
+
+            <div class="challenge-share-field-heading">
+
+              <span>
+                Challenge code
+              </span>
+
+              <button
+                type="button"
+                class="challenge-inline-copy"
+                id="copyChallengeCode"
+                aria-label="Copy challenge code"
+              >
+                Copy code
+              </button>
+
+            </div>
+
+            <div class="challenge-code-display">
+
+              <strong>
+                ${escapeHtml(
+                  challenge
+                    .challenge_code
+                )}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="challenge-share-field">
+
+            <div class="challenge-share-field-heading">
+
+              <span>
+                Private invitation link
+              </span>
+
+            </div>
+
+            <div class="challenge-link-display">
+
+              <input
+                id="createdChallengeLink"
+                type="text"
+                value="${escapeHtml(
+                  challengeUrl
+                )}"
+                readonly
+                aria-label="Challenge invitation link"
+              >
+
+              <button
+                type="button"
+                class="challenge-link-copy-button"
+                id="copyChallengeLink"
+              >
+                Copy
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <div class="challenge-created-actions">
 
             <button
-              id="copyCreatedChallenge"
               type="button"
-              class="secondary-btn"
+              class="challenge-created-copy-button"
+              id="copyChallengeLinkLarge"
             >
+              <span aria-hidden="true">
+                🔗
+              </span>
+
               Copy challenge link
             </button>
 
             <a
-              class="primary-btn"
-              href="https://wa.me/?text=${encodeURIComponent(
-                whatsappMessage
-              )}"
+              class="challenge-created-whatsapp-button"
+              href="https://wa.me/?text=${whatsappMessage}"
               target="_blank"
               rel="noopener noreferrer"
             >
+              <span aria-hidden="true">
+                💬
+              </span>
+
               Share on WhatsApp
             </a>
 
           </div>
 
-        </div>
+
+          <p
+            class="challenge-copy-feedback"
+            id="challengeCopyFeedback"
+            aria-live="polite"
+          ></p>
+
+        </section>
       `;
     }
 
-    const copyButton =
+
+    /*
+     * Find the newly rendered controls.
+     */
+
+    const challengeLinkInput =
       challengeElement(
-        "copyCreatedChallenge"
+        "createdChallengeLink"
       );
 
-    copyButton
+    const copyCodeButton =
+      challengeElement(
+        "copyChallengeCode"
+      );
+
+    const copyLinkButton =
+      challengeElement(
+        "copyChallengeLink"
+      );
+
+    const copyLargeButton =
+      challengeElement(
+        "copyChallengeLinkLarge"
+      );
+
+    const copyFeedback =
+      challengeElement(
+        "challengeCopyFeedback"
+      );
+
+
+    /*
+     * Copy text with a fallback for browsers where
+     * navigator.clipboard is unavailable.
+     */
+
+    async function copyText(
+      text,
+      successMessage
+    ) {
+      try {
+        if (
+          navigator.clipboard &&
+          window.isSecureContext
+        ) {
+          await navigator
+            .clipboard
+            .writeText(
+              text
+            );
+        } else {
+          const temporaryInput =
+            document.createElement(
+              "textarea"
+            );
+
+          temporaryInput.value =
+            text;
+
+          temporaryInput.setAttribute(
+            "readonly",
+            ""
+          );
+
+          temporaryInput.style.position =
+            "fixed";
+
+          temporaryInput.style.opacity =
+            "0";
+
+          document.body.appendChild(
+            temporaryInput
+          );
+
+          temporaryInput.select();
+
+          const copied =
+            document.execCommand(
+              "copy"
+            );
+
+          temporaryInput.remove();
+
+          if (!copied) {
+            throw new Error(
+              "Copy command failed."
+            );
+          }
+        }
+
+        if (copyFeedback) {
+          copyFeedback.textContent =
+            successMessage;
+        }
+      } catch (copyError) {
+        console.error(
+          "COPY CHALLENGE TEXT ERROR:",
+          copyError
+        );
+
+        if (challengeLinkInput) {
+          challengeLinkInput.focus();
+          challengeLinkInput.select();
+        }
+
+        if (copyFeedback) {
+          copyFeedback.textContent =
+            "Please copy the selected text manually.";
+        }
+      }
+
+      window.setTimeout(
+        () => {
+          if (copyFeedback) {
+            copyFeedback.textContent =
+              "";
+          }
+        },
+        2400
+      );
+    }
+
+
+    /*
+     * Copy challenge code.
+     */
+
+    copyCodeButton
       ?.addEventListener(
         "click",
         async () => {
-          await copyChallengeLink(
-            challengeUrl,
-            copyButton
+          await copyText(
+            challenge
+              .challenge_code,
+            "Challenge code copied."
           );
         }
       );
 
+
+    /*
+     * Copy challenge link from the small button.
+     */
+
+    copyLinkButton
+      ?.addEventListener(
+        "click",
+        async () => {
+          await copyText(
+            challengeUrl,
+            "Challenge link copied."
+          );
+        }
+      );
+
+
+    /*
+     * Copy challenge link from the large button.
+     */
+
+    copyLargeButton
+      ?.addEventListener(
+        "click",
+        async () => {
+          await copyText(
+            challengeUrl,
+            "Challenge link copied."
+          );
+        }
+      );
+
+
+    /*
+     * Select the invitation URL when the input is clicked.
+     */
+
+    challengeLinkInput
+      ?.addEventListener(
+        "click",
+        () => {
+          challengeLinkInput.select();
+        }
+      );
+
+
+    /*
+     * Hide the creation button after success.
+     */
+
     if (createButton) {
-      createButton.hidden =
-        true;
+      createButton.hidden = true;
     }
   } catch (error) {
     console.error(
@@ -1453,8 +1689,7 @@ if (
     );
 
     if (result) {
-      result.hidden =
-        false;
+      result.hidden = false;
 
       result.innerHTML = `
         <div class="module-challenge-error">
@@ -1478,9 +1713,7 @@ if (
       createButton.disabled =
         false;
 
-      if (
-        !createButton.hidden
-      ) {
+      if (!createButton.hidden) {
         createButton.textContent =
           "Create challenge";
       }
@@ -1488,6 +1721,127 @@ if (
   }
 }
 
+const challengeLinkInput =
+  document.getElementById(
+    "createdChallengeLink"
+  );
+
+const copyChallengeCodeButton =
+  document.getElementById(
+    "copyChallengeCode"
+  );
+
+const copyChallengeLinkButton =
+  document.getElementById(
+    "copyChallengeLink"
+  );
+
+const copyChallengeLinkLargeButton =
+  document.getElementById(
+    "copyChallengeLinkLarge"
+  );
+
+const challengeCopyFeedback =
+  document.getElementById(
+    "challengeCopyFeedback"
+  );
+
+
+async function copyChallengeText(
+  text,
+  successMessage
+) {
+  try {
+    await navigator.clipboard.writeText(
+      text
+    );
+
+    if (
+      challengeCopyFeedback
+    ) {
+      challengeCopyFeedback.textContent =
+        successMessage;
+    }
+  } catch {
+    if (
+      challengeLinkInput
+    ) {
+      challengeLinkInput.select();
+      challengeLinkInput.setSelectionRange(
+        0,
+        challengeLinkInput.value.length
+      );
+
+      document.execCommand(
+        "copy"
+      );
+    }
+
+    if (
+      challengeCopyFeedback
+    ) {
+      challengeCopyFeedback.textContent =
+        successMessage;
+    }
+  }
+
+  window.setTimeout(
+    () => {
+      if (
+        challengeCopyFeedback
+      ) {
+        challengeCopyFeedback.textContent =
+          "";
+      }
+    },
+    2400
+  );
+}
+
+
+copyChallengeCodeButton
+  ?.addEventListener(
+    "click",
+    () => {
+      copyChallengeText(
+        challenge.challenge_code,
+        "Challenge code copied."
+      );
+    }
+  );
+
+
+copyChallengeLinkButton
+  ?.addEventListener(
+    "click",
+    () => {
+      copyChallengeText(
+        challengeUrl,
+        "Challenge link copied."
+      );
+    }
+  );
+
+
+copyChallengeLinkLargeButton
+  ?.addEventListener(
+    "click",
+    () => {
+      copyChallengeText(
+        challengeUrl,
+        "Challenge link copied."
+      );
+    }
+  );
+
+
+challengeLinkInput
+  ?.addEventListener(
+    "click",
+    () => {
+      challengeLinkInput.select();
+    }
+  );
 
 /*
  * Delegated event listener because module cards
