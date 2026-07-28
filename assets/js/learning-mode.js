@@ -3491,9 +3491,23 @@ return `
       false;
   }
 
-  if (nextButton) {
+   if (nextButton) {
     nextButton.hidden =
       !answer;
+
+    const isLastQuestion =
+      index ===
+      questions.length - 1;
+
+    nextButton.textContent =
+      isLastQuestion
+        ? "Submit and view results"
+        : "Next question";
+
+    nextButton.classList.toggle(
+      "is-final-question",
+      isLastQuestion
+    );
   }
 
   if (answer) {
@@ -5278,9 +5292,24 @@ quizArea.innerHTML = `
     );
 
 
-  finishing =
+   finishing =
     false;
-  }
+
+  window.requestAnimationFrame(
+    () => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+
+      quizArea
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+    }
+  );
+}
 
 
 /* =========================================================
@@ -5289,6 +5318,10 @@ quizArea.innerHTML = `
 
 async function startNewAttempt() {
   try {
+    setStatus(
+      "Preparing new attempt…"
+    );
+
     answers =
       [];
 
@@ -5301,13 +5334,21 @@ async function startNewAttempt() {
     finishing =
       false;
 
-        pendingSelectedIds =
+    pendingSelectedIds =
       [];
 
     preQuizReviewSeen =
       false;
 
     resetAllLifelines();
+
+    /*
+     * Reload the briefing configuration so that every
+     * completely new attempt begins with Dr. Corazón's
+     * optional review screen.
+     */
+
+    await loadPreQuizReviewConfig();
 
     attempt =
       await createAttempt({
@@ -5336,11 +5377,34 @@ async function startNewAttempt() {
           lifelinesState
       });
 
+    /*
+     * Keep this false after creating the cloud attempt.
+     * The candidate has not yet passed the briefing screen.
+     */
+
+    preQuizReviewSeen =
+      false;
+
     setStatus(
       "New learning attempt saved"
     );
 
     render();
+
+    window.requestAnimationFrame(
+      () => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+
+        $("quizArea")
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+      }
+    );
   } catch (error) {
     console.error(
       "NEW ATTEMPT ERROR:",
@@ -5354,7 +5418,6 @@ async function startNewAttempt() {
     );
   }
 }
-
 
 /* =========================================================
    EVENTS
@@ -5378,6 +5441,19 @@ $("nextQuestion")
       pendingSelectedIds =
         [];
 
+      const isLastQuestion =
+        index ===
+        questions.length - 1;
+
+      if (
+        isLastQuestion &&
+        !reviewMode
+      ) {
+        await finish();
+
+        return;
+      }
+
       index +=
         1;
 
@@ -5388,6 +5464,15 @@ $("nextQuestion")
       }
 
       render();
+
+      window.requestAnimationFrame(
+        () => {
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+          });
+        }
+      );
     }
   );
 
