@@ -7008,3 +7008,31 @@ body.acl-expert-learning-mode
       100%;
   }
 }
+/* =========================================================
+   FINAL QUESTION BUTTON
+========================================================= */
+
+#nextQuestion.is-final-question {
+  min-width: 240px;
+  background:
+    linear-gradient(
+      135deg,
+      #0a7c52,
+      #13a36d
+    );
+  border-color:
+    #087048;
+  color:
+    #ffffff;
+  box-shadow:
+    0 12px 26px
+    rgba(10, 124, 82, 0.22);
+}
+
+#nextQuestion.is-final-question:hover {
+  transform:
+    translateY(-2px);
+  box-shadow:
+    0 15px 30px
+    rgba(10, 124, 82, 0.28);
+}
