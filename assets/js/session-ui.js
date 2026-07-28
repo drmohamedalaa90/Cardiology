@@ -1539,3 +1539,138 @@ if (
 ) {
   initializeNavigation();
 }
+/* =========================================================
+   ACL EDITION-AWARE NAVIGATION
+========================================================= */
+
+function getActiveAclEdition() {
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+
+  const urlEdition =
+    params.get(
+      "edition"
+    );
+
+
+  if (
+    urlEdition === "basic" ||
+    urlEdition === "expert"
+  ) {
+    localStorage.setItem(
+      "aclSelectedEdition",
+      urlEdition
+    );
+
+    return urlEdition;
+  }
+
+
+  const savedEdition =
+    localStorage.getItem(
+      "aclSelectedEdition"
+    );
+
+
+  if (
+    savedEdition === "basic" ||
+    savedEdition === "expert"
+  ) {
+    return savedEdition;
+  }
+
+
+  return null;
+}
+
+
+function updateEditionNavigation() {
+  const edition =
+    getActiveAclEdition();
+
+
+  if (!edition) {
+    return;
+  }
+
+
+  const pages = [
+    "modules.html",
+    "progress.html",
+    "profile.html",
+    "settings.html"
+  ];
+
+
+  document
+    .querySelectorAll("a[href]")
+    .forEach(
+      (link) => {
+        const href =
+          link.getAttribute(
+            "href"
+          );
+
+
+        if (
+          !href ||
+          href.startsWith("#") ||
+          href.startsWith("http") ||
+          href.startsWith("mailto:") ||
+          href.startsWith("tel:")
+        ) {
+          return;
+        }
+
+
+        const matchingPage =
+          pages.find(
+            (page) =>
+              href === page ||
+              href.startsWith(
+                `${page}?`
+              )
+          );
+
+
+        if (!matchingPage) {
+          return;
+        }
+
+
+        const linkUrl =
+          new URL(
+            href,
+            window.location.href
+          );
+
+
+        linkUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        link.setAttribute(
+          "href",
+          `${matchingPage}${linkUrl.search}`
+        );
+      }
+    );
+}
+
+
+if (
+  document.readyState ===
+  "loading"
+) {
+  document.addEventListener(
+    "DOMContentLoaded",
+    updateEditionNavigation
+  );
+} else {
+  updateEditionNavigation();
+}
