@@ -171,9 +171,9 @@ self.addEventListener(
                   request
                 )
               ) ||
-              caches.match(
-                "/offline.html"
-              )
+             caches.match(
+  `${ACL_BASE}/offline.html`
+)
           )
       );
 
