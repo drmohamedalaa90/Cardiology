@@ -6554,3 +6554,57 @@ body.module-challenge-open {
     grid-template-columns: 1fr;
   }
 }
+/* =========================================================
+   PWA CONNECTION BANNER
+========================================================= */
+
+.acl-connection-banner {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 10000;
+
+  width: min(
+    420px,
+    calc(100% - 36px)
+  );
+
+  padding: 14px 17px;
+
+  border-radius: 15px;
+
+  color: #ffffff;
+
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.45;
+
+  box-shadow:
+    0 18px 42px
+    rgba(12, 43, 81, 0.22);
+}
+
+
+.acl-connection-banner.offline {
+  background:
+    linear-gradient(
+      135deg,
+      #9d2733,
+      #c33a47
+    );
+}
+
+
+.acl-connection-banner.online {
+  background:
+    linear-gradient(
+      135deg,
+      #14754e,
+      #1da66d
+    );
+}
+
+
+.acl-connection-banner[hidden] {
+  display: none;
+}
