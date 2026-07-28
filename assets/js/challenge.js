@@ -527,7 +527,310 @@
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
   }
+/* =========================================================
+   CHALLENGE LEADERBOARD
+========================================================= */
 
+async function loadChallengeLeaderboard() {
+  const status =
+    el(
+      "challengeLeaderboardStatus"
+    );
+
+  const table =
+    el(
+      "challengeLeaderboardTable"
+    );
+
+  if (
+    !status ||
+    !table
+  ) {
+    return;
+  }
+
+  status.hidden =
+    false;
+
+  status.textContent =
+    "Loading leaderboard…";
+
+  table.hidden =
+    true;
+
+  table.innerHTML =
+    "";
+
+  try {
+    const {
+      data,
+      error
+    } =
+      await db
+        .from(
+          "module_challenge_leaderboard"
+        )
+        .select(`
+          leaderboard_position,
+          participant_name,
+          username,
+          avatar_url,
+          completed_challenges,
+          challenge_wins,
+          total_challenge_score,
+          average_duration_seconds
+        `)
+        .order(
+          "leaderboard_position",
+          {
+            ascending:
+              true
+          }
+        )
+        .limit(
+          50
+        );
+
+    if (error) {
+      throw error;
+    }
+
+    if (
+      !Array.isArray(
+        data
+      ) ||
+      !data.length
+    ) {
+      status.textContent =
+        "No completed challenges yet.";
+
+      return;
+    }
+
+    table.innerHTML = `
+      <div class="challenge-leaderboard-header">
+
+        <span>
+          Rank
+        </span>
+
+        <span>
+          Competitor
+        </span>
+
+        <span>
+          Wins
+        </span>
+
+        <span>
+          Score
+        </span>
+
+        <span>
+          Average time
+        </span>
+
+      </div>
+
+      ${data
+        .map(
+          (
+            participant,
+            participantIndex
+          ) =>
+            challengeLeaderboardRowHtml(
+              participant,
+              participantIndex
+            )
+        )
+        .join("")}
+    `;
+
+    status.hidden =
+      true;
+
+    table.hidden =
+      false;
+  } catch (error) {
+    console.error(
+      "CHALLENGE LEADERBOARD ERROR:",
+      error
+    );
+
+    status.textContent =
+      error.message ||
+      "The challenge leaderboard could not be loaded.";
+  }
+}
+
+
+function challengeLeaderboardRowHtml(
+  participant,
+  participantIndex
+) {
+  const position =
+    Number(
+      participant
+        .leaderboard_position ||
+      participantIndex + 1
+    );
+
+  const participantName =
+    participant
+      .participant_name ||
+    participant
+      .username ||
+    "ACL Competitor";
+
+  const initials =
+    participantName
+      .trim()
+      .split(
+        /\s+/
+      )
+      .slice(
+        0,
+        2
+      )
+      .map(
+        (part) =>
+          part
+            .charAt(
+              0
+            )
+            .toUpperCase()
+      )
+      .join("") ||
+    "ACL";
+
+  const averageSeconds =
+    Math.max(
+      0,
+      Math.round(
+        Number(
+          participant
+            .average_duration_seconds ||
+          0
+        )
+      )
+    );
+
+  const minutes =
+    Math.floor(
+      averageSeconds /
+      60
+    );
+
+  const seconds =
+    averageSeconds %
+    60;
+
+  const formattedTime =
+    `${minutes}:${String(
+      seconds
+    ).padStart(
+      2,
+      "0"
+    )}`;
+
+  const medal =
+    position === 1
+      ? "🥇"
+      : position === 2
+        ? "🥈"
+        : position === 3
+          ? "🥉"
+          : position;
+
+  return `
+    <article
+      class="
+        challenge-leaderboard-row
+        ${
+          position <= 3
+            ? `is-top-${position}`
+            : ""
+        }
+      "
+    >
+
+      <div class="challenge-leaderboard-rank">
+        ${medal}
+      </div>
+
+
+      <div class="challenge-leaderboard-person">
+
+        ${
+          participant.avatar_url
+            ? `
+              <img
+                src="${escapeHtml(
+                  participant.avatar_url
+                )}"
+                alt=""
+                class="challenge-leaderboard-avatar"
+              >
+            `
+            : `
+              <span
+                class="challenge-leaderboard-avatar challenge-leaderboard-initials"
+                aria-hidden="true"
+              >
+                ${escapeHtml(
+                  initials
+                )}
+              </span>
+            `
+        }
+
+        <div>
+
+          <strong>
+            ${escapeHtml(
+              participantName
+            )}
+          </strong>
+
+          <small>
+            ${Number(
+              participant
+                .completed_challenges ||
+              0
+            )}
+            completed
+          </small>
+
+        </div>
+
+      </div>
+
+
+      <strong class="challenge-leaderboard-value">
+        ${Number(
+          participant
+            .challenge_wins ||
+          0
+        )}
+      </strong>
+
+
+      <strong class="challenge-leaderboard-value">
+        ${Number(
+          participant
+            .total_challenge_score ||
+          0
+        )}
+      </strong>
+
+
+      <strong class="challenge-leaderboard-value">
+        ${formattedTime}
+      </strong>
+
+    </article>
+  `;
+}
   async function init() {
     try {
       const authenticated = await requireAuthenticatedUser();
@@ -542,7 +845,16 @@
       );
 
       form?.addEventListener("submit", createChallenge);
+await loadChallengeLeaderboard();
 
+
+el(
+  "refreshChallengeLeaderboard"
+)
+  ?.addEventListener(
+    "click",
+    loadChallengeLeaderboard
+  );
       const challengeId = new URLSearchParams(location.search).get("id");
 
       if (challengeId) {
