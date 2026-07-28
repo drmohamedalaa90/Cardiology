@@ -604,7 +604,7 @@ function enabledLifeline(
    QUIZ-WIDE LIFELINE STATE
 ========================================================= */
 
-function defaultQuizLifelines(
+function defaultQuizLifelines() {
     return {
     expert:
       false,
