@@ -1,60 +1,64 @@
 /* =========================================================
    ACL PWA SERVICE WORKER
 ========================================================= */
-const ACL_CACHE_VERSION =
-  "acl-shell-v1.1.0";
+
+const CACHE_NAME =
+  "acl-pwa-v1.2.0";
 
 
-const ACL_BASE =
+const BASE_PATH =
   "/Cardiology";
 
 
-const ACL_APP_SHELL = [
-  `${ACL_BASE}/`,
-  `${ACL_BASE}/index.html`,
-  `${ACL_BASE}/login.html`,
-  `${ACL_BASE}/pathways.html`,
-  `${ACL_BASE}/modules.html`,
-  `${ACL_BASE}/profile.html`,
-  `${ACL_BASE}/progress.html`,
-  `${ACL_BASE}/settings.html`,
-  `${ACL_BASE}/offline.html`,
-  `${ACL_BASE}/manifest.json`,
-  `${ACL_BASE}/assets/css/main.css`,
-  `${ACL_BASE}/assets/css/auth.css`,
-  `${ACL_BASE}/assets/images/acl-icon.svg`
+const OFFLINE_PAGE =
+  `${BASE_PATH}/offline.html`;
+
+
+const CORE_FILES = [
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/login.html`,
+  `${BASE_PATH}/pathways.html`,
+  `${BASE_PATH}/offline.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/assets/css/main.css`,
+  `${BASE_PATH}/assets/images/acl-icon.svg`
 ];
+
 
 /* =========================================================
    INSTALL
 ========================================================= */
 
-event.waitUntil(
-  caches
-    .open(
-      ACL_CACHE_VERSION
-    )
-    .then(
-      async (cache) => {
-        for (
-          const resource of
-          ACL_APP_SHELL
-        ) {
-          try {
-            await cache.add(
-              resource
-            );
-          } catch (error) {
-            console.warn(
-              "ACL PWA could not pre-cache:",
-              resource,
-              error
-            );
+self.addEventListener(
+  "install",
+  (event) => {
+    event.waitUntil(
+      caches
+        .open(
+          CACHE_NAME
+        )
+        .then(
+          async (cache) => {
+            for (
+              const file of
+              CORE_FILES
+            ) {
+              try {
+                await cache.add(
+                  file
+                );
+              } catch (error) {
+                console.warn(
+                  "ACL cache skipped:",
+                  file,
+                  error
+                );
+              }
+            }
           }
-        }
-      }
-    )
-);
+        )
+    );
 
     self.skipWaiting();
   }
@@ -69,28 +73,30 @@ self.addEventListener(
   "activate",
   (event) => {
     event.waitUntil(
-      caches
-        .keys()
-        .then(
-          (cacheNames) =>
-            Promise.all(
-              cacheNames
-                .filter(
-                  (cacheName) =>
-                    cacheName !==
-                    ACL_CACHE_VERSION
-                )
-                .map(
-                  (cacheName) =>
-                    caches.delete(
-                      cacheName
-                    )
-                )
-            )
-        )
-    );
+      Promise.all([
+        caches
+          .keys()
+          .then(
+            (cacheNames) =>
+              Promise.all(
+                cacheNames
+                  .filter(
+                    (cacheName) =>
+                      cacheName !==
+                      CACHE_NAME
+                  )
+                  .map(
+                    (cacheName) =>
+                      caches.delete(
+                        cacheName
+                      )
+                  )
+              )
+          ),
 
-    self.clients.claim();
+        self.clients.claim()
+      ])
+    );
   }
 );
 
@@ -121,12 +127,30 @@ self.addEventListener(
 
 
     /*
-     * Do not cache Supabase/API requests.
+     * Ignore requests outside this website.
+     */
+
+    if (
+      requestUrl.origin !==
+      self.location.origin
+    ) {
+      return;
+    }
+
+
+    /*
+     * Ignore Supabase/API traffic.
      */
 
     if (
       requestUrl.hostname.includes(
         "supabase"
+      ) ||
+      requestUrl.pathname.includes(
+        "/rest/v1/"
+      ) ||
+      requestUrl.pathname.includes(
+        "/auth/v1/"
       )
     ) {
       return;
@@ -134,8 +158,8 @@ self.addEventListener(
 
 
     /*
-     * HTML navigation:
-     * Try network first, then cached page, then offline page.
+     * Page navigation:
+     * network first, offline fallback.
      */
 
     if (
@@ -143,23 +167,25 @@ self.addEventListener(
       "navigate"
     ) {
       event.respondWith(
-        fetch(request)
+        fetch(
+          request
+        )
           .then(
-            (response) => {
-              const copy =
-                response.clone();
+            async (response) => {
+              if (
+                response &&
+                response.ok
+              ) {
+                const cache =
+                  await caches.open(
+                    CACHE_NAME
+                  );
 
-              caches
-                .open(
-                  ACL_CACHE_VERSION
-                )
-                .then(
-                  (cache) =>
-                    cache.put(
-                      request,
-                      copy
-                    )
+                await cache.put(
+                  request,
+                  response.clone()
                 );
+              }
 
               return response;
             }
@@ -171,9 +197,9 @@ self.addEventListener(
                   request
                 )
               ) ||
-             caches.match(
-  `${ACL_BASE}/offline.html`
-)
+              caches.match(
+                OFFLINE_PAGE
+              )
           )
       );
 
@@ -182,8 +208,8 @@ self.addEventListener(
 
 
     /*
-     * Static files:
-     * Use cache first, then network.
+     * Static assets:
+     * cache first, then network.
      */
 
     event.respondWith(
@@ -192,37 +218,33 @@ self.addEventListener(
           request
         )
         .then(
-          (cachedResponse) =>
-            cachedResponse ||
-            fetch(request)
-              .then(
-                (response) => {
-                  if (
-                    !response ||
-                    response.status !==
-                      200
-                  ) {
-                    return response;
-                  }
+          async (cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
 
-                  const copy =
-                    response.clone();
+            const networkResponse =
+              await fetch(
+                request
+              );
 
-                  caches
-                    .open(
-                      ACL_CACHE_VERSION
-                    )
-                    .then(
-                      (cache) =>
-                        cache.put(
-                          request,
-                          copy
-                        )
-                    );
+            if (
+              networkResponse &&
+              networkResponse.ok
+            ) {
+              const cache =
+                await caches.open(
+                  CACHE_NAME
+                );
 
-                  return response;
-                }
-              )
+              await cache.put(
+                request,
+                networkResponse.clone()
+              );
+            }
+
+            return networkResponse;
+          }
         )
     );
   }
