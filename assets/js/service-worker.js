@@ -1,10 +1,8 @@
 /* =========================================================
    ACL PWA SERVICE WORKER
 ========================================================= */
-
 const ACL_CACHE_VERSION =
-  "acl-shell-v1.0.0";
-
+  "acl-shell-v1.0.1";
 
 const ACL_APP_SHELL = [
   "/",
@@ -26,21 +24,32 @@ const ACL_APP_SHELL = [
    INSTALL
 ========================================================= */
 
-self.addEventListener(
-  "install",
-  (event) => {
-    event.waitUntil(
-      caches
-        .open(
-          ACL_CACHE_VERSION
-        )
-        .then(
-          (cache) =>
-            cache.addAll(
-              ACL_APP_SHELL
-            )
-        )
-    );
+event.waitUntil(
+  caches
+    .open(
+      ACL_CACHE_VERSION
+    )
+    .then(
+      async (cache) => {
+        for (
+          const resource of
+          ACL_APP_SHELL
+        ) {
+          try {
+            await cache.add(
+              resource
+            );
+          } catch (error) {
+            console.warn(
+              "ACL PWA could not pre-cache:",
+              resource,
+              error
+            );
+          }
+        }
+      }
+    )
+);
 
     self.skipWaiting();
   }
