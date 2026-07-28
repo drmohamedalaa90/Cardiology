@@ -2,23 +2,28 @@
    ACL PWA SERVICE WORKER
 ========================================================= */
 const ACL_CACHE_VERSION =
-  "acl-shell-v1.0.1";
+  "acl-shell-v1.1.0";
+
+
+const ACL_BASE =
+  "/Cardiology";
+
 
 const ACL_APP_SHELL = [
-  "/",
-  "/index.html",
-  "/login.html",
-  "/pathways.html",
-  "/modules.html",
-  "/profile.html",
-  "/progress.html",
-  "/settings.html",
-  "/offline.html",
-  "/manifest.json",
-  "/assets/css/main.css",
-  "/assets/css/auth.css"
+  `${ACL_BASE}/`,
+  `${ACL_BASE}/index.html`,
+  `${ACL_BASE}/login.html`,
+  `${ACL_BASE}/pathways.html`,
+  `${ACL_BASE}/modules.html`,
+  `${ACL_BASE}/profile.html`,
+  `${ACL_BASE}/progress.html`,
+  `${ACL_BASE}/settings.html`,
+  `${ACL_BASE}/offline.html`,
+  `${ACL_BASE}/manifest.json`,
+  `${ACL_BASE}/assets/css/main.css`,
+  `${ACL_BASE}/assets/css/auth.css`,
+  `${ACL_BASE}/assets/images/acl-icon.svg`
 ];
-
 
 /* =========================================================
    INSTALL
