@@ -5,7 +5,7 @@ import {
 
 import {
   protectAndRender
-} from "./session-ui.js?v=2.9.0";
+} from "./session-ui.js?v=3.0.0";
 
 
 console.log(
