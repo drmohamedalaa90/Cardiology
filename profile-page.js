@@ -227,9 +227,6 @@ async function loadProfilePage() {
     return;
   }
 
-  el("name").value =
-    profile.full_name ||
-    "";
 
   el("displayName").value =
     profile.display_name ||
