@@ -5805,7 +5805,10 @@ if (
   challengeId &&
   activeChallenge &&
   activeChallengeParticipant &&
-  !reviewMode
+  !reviewMode &&
+  activeChallengeParticipant
+    .invitation_status !==
+      "completed"
 ) {
   await saveChallengeResult();
 }
