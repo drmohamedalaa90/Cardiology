@@ -2,6 +2,7 @@ import { supabaseClient } from "./supabase-client.js";
 import { protectAndRender } from "./session-ui.js?v=4.0.0";
 
 
+
 const grid =
   document.getElementById("modules");
 
