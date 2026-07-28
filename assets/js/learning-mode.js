@@ -2928,10 +2928,32 @@ async function submit(
       [];
 
     await persist(
-      false
-    );
+  false
+);
 
-    render();
+render();
+
+window.requestAnimationFrame(
+  () => {
+    const feedback =
+      document.querySelector(
+        ".learning-answer-feedback"
+      );
+
+    if (!feedback) {
+      return;
+    }
+
+    feedback.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    feedback.classList.add(
+      "is-revealing"
+    );
+  }
+);
   } catch (error) {
     console.error(
       "ANSWER CHECK ERROR:",
