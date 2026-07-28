@@ -3591,6 +3591,249 @@ function learningAnalytics() {
     lifelinesUsed
   };
 }
+
+function resultAnalyticsHtml(
+  analytics
+) {
+  const correctPercentage =
+    analytics.totalQuestions
+      ? Math.round(
+          (
+            analytics.correctAnswers /
+            analytics.totalQuestions
+          ) *
+          100
+        )
+      : 0;
+
+  const incorrectPercentage =
+    analytics.totalQuestions
+      ? Math.round(
+          (
+            analytics.incorrectAnswers /
+            analytics.totalQuestions
+          ) *
+          100
+        )
+      : 0;
+
+  return `
+    <section class="result-performance-panels">
+
+      <article
+        class="
+          result-performance-card
+          is-correct
+        "
+      >
+
+        <div class="result-performance-header">
+
+          <div
+            class="result-performance-icon"
+            aria-hidden="true"
+          >
+            ✓
+          </div>
+
+          <div class="result-performance-summary">
+
+            <span class="result-performance-label">
+              Correct Answers
+            </span>
+
+            <strong class="result-performance-total">
+              ${analytics.correctAnswers}
+            </strong>
+
+            <small>
+              of ${analytics.totalQuestions}
+              questions
+              ·
+              ${correctPercentage}%
+            </small>
+
+          </div>
+
+        </div>
+
+
+        <div class="result-confidence-breakdown">
+
+          <div class="result-confidence-card">
+
+            <span
+              class="result-confidence-symbol"
+              aria-hidden="true"
+            >
+              🔥
+            </span>
+
+            <div>
+
+              <span>
+                High-confidence correct
+              </span>
+
+              <strong>
+                ${analytics.highConfidenceCorrect}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="result-confidence-card">
+
+            <span
+              class="result-confidence-symbol"
+              aria-hidden="true"
+            >
+              🤔
+            </span>
+
+            <div>
+
+              <span>
+                Low-confidence correct
+              </span>
+
+              <strong>
+                ${analytics.lowConfidenceCorrect}
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </article>
+
+
+      <article
+        class="
+          result-performance-card
+          is-incorrect
+        "
+      >
+
+        <div class="result-performance-header">
+
+          <div
+            class="result-performance-icon"
+            aria-hidden="true"
+          >
+            ×
+          </div>
+
+          <div class="result-performance-summary">
+
+            <span class="result-performance-label">
+              Incorrect Answers
+            </span>
+
+            <strong class="result-performance-total">
+              ${analytics.incorrectAnswers}
+            </strong>
+
+            <small>
+              of ${analytics.totalQuestions}
+              questions
+              ·
+              ${incorrectPercentage}%
+            </small>
+
+          </div>
+
+        </div>
+
+
+        <div class="result-confidence-breakdown">
+
+          <div class="result-confidence-card">
+
+            <span
+              class="result-confidence-symbol"
+              aria-hidden="true"
+            >
+              🔥
+            </span>
+
+            <div>
+
+              <span>
+                High-confidence errors
+              </span>
+
+              <strong>
+                ${analytics.highConfidenceIncorrect}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="result-confidence-card">
+
+            <span
+              class="result-confidence-symbol"
+              aria-hidden="true"
+            >
+              🤔
+            </span>
+
+            <div>
+
+              <span>
+                Low-confidence incorrect
+              </span>
+
+              <strong>
+                ${analytics.lowConfidenceIncorrect}
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </article>
+
+    </section>
+
+
+    <section class="result-lifeline-summary">
+
+      <div
+        class="result-lifeline-summary-icon"
+        aria-hidden="true"
+      >
+        🛟
+      </div>
+
+      <div>
+
+        <span>
+          Expert Panel usage
+        </span>
+
+        <strong>
+          ${analytics.lifelinesUsed}
+          of
+          ${enabledLifelineCount()}
+          lifelines used
+        </strong>
+
+      </div>
+
+    </section>
+  `;
+}
+
 function resultInsight(
   analytics,
   percentage
@@ -3935,54 +4178,9 @@ quizArea.innerHTML = `
 
 </div>
 
-    <div class="learning-result-grid">
-
-      <div class="learning-result-stat">
-        <span>Correct</span>
-        <strong>
-          ${analytics.correctAnswers}
-        </strong>
-      </div>
-
-      <div class="learning-result-stat">
-        <span>Incorrect</span>
-        <strong>
-          ${analytics.incorrectAnswers}
-        </strong>
-      </div>
-
-      <div class="learning-result-stat">
-        <span>High-confidence correct</span>
-        <strong>
-          ${analytics.highConfidenceCorrect}
-        </strong>
-      </div>
-
-      <div class="learning-result-stat">
-        <span>High-confidence errors</span>
-        <strong>
-          ${analytics.highConfidenceIncorrect}
-        </strong>
-      </div>
-
-      <div class="learning-result-stat">
-        <span>Low-confidence correct</span>
-        <strong>
-          ${analytics.lowConfidenceCorrect}
-        </strong>
-      </div>
-<div class="learning-result-stat">
-  <span>Low-confidence incorrect</span>
-  <strong>
-    ${analytics.lowConfidenceIncorrect}
-  </strong>
-</div>
-      <div class="learning-result-stat">
-        <span>Lifelines used</span>
-        <strong>
-          ${analytics.lifelinesUsed}
-        </strong>
-      </div>
+    ${resultAnalyticsHtml(
+      analytics
+    )}
 
     </div>
 <div class="learning-result-insight">
