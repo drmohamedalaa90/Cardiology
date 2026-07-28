@@ -11,14 +11,13 @@ if (
     async () => {
       try {
         const registration =
-          await navigator
-            .serviceWorker
-            .register(
-              "/service-worker.js",
-              {
-                scope: "/"
-              }
-            );
+          await navigator.serviceWorker.register(
+            "/Cardiology/service-worker.js",
+            {
+              scope:
+                "/Cardiology/"
+            }
+          );
 
         console.log(
           "ACL PWA service worker registered:",
