@@ -2346,6 +2346,7 @@ if (catalogueHeading) {
         );
       }
     }
+    
 loadedModules =
   modules;
 
@@ -2376,7 +2377,10 @@ loadedProgressMap =
           "0 modules";
       }
 
-
+if (moduleSearchSummary) {
+  moduleSearchSummary.textContent =
+    "0 modules available";
+}
       setStatus("");
 
       return;
