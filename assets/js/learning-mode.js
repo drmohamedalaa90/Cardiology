@@ -61,6 +61,8 @@ const quizSlug =
 
 const requestedModuleId =
   params.get("module");
+const challengeId =
+  params.get("challenge");
 
 
 /* =========================================================
@@ -146,7 +148,14 @@ let pendingSelectedIds =
   [];
 let preQuizReviewSeen =
   false;
+let activeChallenge =
+  null;
 
+let activeChallengeParticipant =
+  null;
+
+let challengeStartedAt =
+  null;
 let aclSettings =
   normalizeAclSettings(
     DEFAULT_ACL_SETTINGS
@@ -479,6 +488,230 @@ function shouldShowPreQuizReview() {
     index === 0
   );
 }
+
+async function loadActiveChallenge() {
+  if (!challengeId) {
+    return;
+  }
+
+  const {
+    data: challenge,
+    error: challengeError
+  } =
+    await supabaseClient
+      .from(
+        "module_challenges"
+      )
+      .select(`
+        id,
+        module_id,
+        quiz_id,
+        creator_id,
+        challenge_code,
+        title,
+        question_ids,
+        maximum_participants,
+        starts_at,
+        ends_at,
+        status
+      `)
+      .eq(
+        "id",
+        challengeId
+      )
+      .maybeSingle();
+
+  if (challengeError) {
+    throw challengeError;
+  }
+
+  if (!challenge) {
+    throw new Error(
+      "Challenge not found."
+    );
+  }
+
+  if (
+    challenge.status !==
+    "open"
+  ) {
+    throw new Error(
+      "This challenge is no longer open."
+    );
+  }
+
+  if (
+    new Date(
+      challenge.ends_at
+    ).getTime() <=
+    Date.now()
+  ) {
+    throw new Error(
+      "This challenge has expired."
+    );
+  }
+
+  if (
+    String(
+      challenge.module_id
+    ) !==
+    String(
+      quiz.module_id
+    )
+  ) {
+    throw new Error(
+      "This challenge does not belong to this module."
+    );
+  }
+
+  if (
+    String(
+      challenge.quiz_id
+    ) !==
+    String(
+      quiz.id
+    )
+  ) {
+    throw new Error(
+      "This challenge does not belong to this quiz."
+    );
+  }
+
+  activeChallenge =
+    challenge;
+
+
+  const {
+    data: userData,
+    error: userError
+  } =
+    await supabaseClient
+      .auth
+      .getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  const user =
+    userData?.user;
+
+  if (!user) {
+    throw new Error(
+      "Please sign in before starting this challenge."
+    );
+  }
+
+
+  const {
+    data: participant,
+    error: participantError
+  } =
+    await supabaseClient
+      .from(
+        "module_challenge_participants"
+      )
+      .select(`
+        id,
+        challenge_id,
+        user_id,
+        attempt_id,
+        invitation_status,
+        joined_at,
+        completed_at,
+        score,
+        duration_seconds,
+        correct_answers
+      `)
+      .eq(
+        "challenge_id",
+        challenge.id
+      )
+      .eq(
+        "user_id",
+        user.id
+      )
+      .maybeSingle();
+
+  if (participantError) {
+    throw participantError;
+  }
+
+  if (!participant) {
+    throw new Error(
+      "Join this challenge before starting it."
+    );
+  }
+
+  if (
+    participant.invitation_status ===
+    "completed"
+  ) {
+    throw new Error(
+      "You have already completed your official challenge attempt."
+    );
+  }
+
+  activeChallengeParticipant =
+    participant;
+
+  challengeStartedAt =
+    participant.joined_at
+      ? new Date(
+          participant.joined_at
+        )
+      : new Date();
+}
+
+
+function applyChallengeQuestionSet() {
+  if (
+    !activeChallenge ||
+    !Array.isArray(
+      activeChallenge.question_ids
+    ) ||
+    !activeChallenge
+      .question_ids
+      .length
+  ) {
+    return;
+  }
+
+  const questionMap =
+    new Map(
+      questions.map(
+        (question) => [
+          String(
+            question.id
+          ),
+          question
+        ]
+      )
+    );
+
+  const fixedQuestions =
+    activeChallenge
+      .question_ids
+      .map(
+        (questionId) =>
+          questionMap.get(
+            String(
+              questionId
+            )
+          )
+      )
+      .filter(
+        Boolean
+      );
+
+  if (
+    fixedQuestions.length
+  ) {
+    questions =
+      fixedQuestions;
+  }
+}
+
 function normalizePreQuizReviewPoint(
   point,
   pointIndex
@@ -5438,6 +5671,94 @@ function resultInsight(
       "Your performance was strong. Review the few remaining weak points to consolidate mastery."
   };
 }
+async function saveChallengeResult() {
+  if (
+    !activeChallengeParticipant
+  ) {
+    return;
+  }
+
+  const score =
+    appState().score;
+
+  const correctAnswers =
+    answers.filter(
+      (answer) =>
+        answer.correct
+    ).length;
+
+  const startedAt =
+    challengeStartedAt
+      ? new Date(
+          challengeStartedAt
+        ).getTime()
+      : Date.now();
+
+  const durationSeconds =
+    Math.max(
+      0,
+      Math.round(
+        (
+          Date.now() -
+          startedAt
+        ) /
+        1000
+      )
+    );
+
+  const {
+    error
+  } =
+    await supabaseClient
+      .from(
+        "module_challenge_participants"
+      )
+      .update({
+        attempt_id:
+          attempt?.id ||
+          null,
+
+        invitation_status:
+          "completed",
+
+        completed_at:
+          new Date()
+            .toISOString(),
+
+        score,
+
+        duration_seconds:
+          durationSeconds,
+
+        correct_answers:
+          correctAnswers
+      })
+      .eq(
+        "id",
+        activeChallengeParticipant.id
+      );
+
+  if (error) {
+    throw error;
+  }
+
+  activeChallengeParticipant =
+    {
+      ...activeChallengeParticipant,
+
+      invitation_status:
+        "completed",
+
+      score,
+
+      duration_seconds:
+        durationSeconds,
+
+      correct_answers:
+        correctAnswers
+    };
+}
+
 async function finish() {
   if (
     finishing
@@ -5453,7 +5774,14 @@ async function finish() {
       true
     );
   }
-
+if (
+  challengeId &&
+  activeChallenge &&
+  activeChallengeParticipant &&
+  !reviewMode
+) {
+  await saveChallengeResult();
+}
   const score =
     appState().score;
 
@@ -5714,6 +6042,21 @@ quizArea.innerHTML = `
           : ""
       }
 
+     ${
+  challengeId
+    ? `
+      <a
+        class="primary-btn"
+        href="challenge.html?code=${esc(
+          activeChallenge
+            ?.challenge_code ||
+          ""
+        )}"
+      >
+        View challenge
+      </a>
+    `
+    : `
       <button
         id="retryAttempt"
         class="primary-btn"
@@ -5721,6 +6064,8 @@ quizArea.innerHTML = `
       >
         Start a new attempt
       </button>
+    `
+}
 
       <a
         class="secondary-btn"
@@ -6121,10 +6466,13 @@ document.addEventListener(
     }
 
        quiz =
-      data;
+  data;
 
-    await loadPreQuizReviewConfig();
+await loadPreQuizReviewConfig();
 
+if (challengeId) {
+  await loadActiveChallenge();
+}
     const moduleTitle =
       $("moduleTitle");
 
@@ -6178,7 +6526,9 @@ document.addEventListener(
           pool.length
         )
       );
-
+if (challengeId) {
+  applyChallengeQuestionSet();
+}
     if (!questions.length) {
       throw new Error(
         "No questions are available in this quiz."
