@@ -1797,6 +1797,7 @@ async function activateLifeline(
       );
     }
   }
+  }
 
 function bindCompactLifelines(
   question
