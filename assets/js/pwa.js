@@ -4,7 +4,125 @@
 
 let deferredInstallPrompt =
   null;
+/* =========================================================
+   CONNECTION STATUS
+========================================================= */
 
+function createConnectionBanner() {
+  let banner =
+    document.getElementById(
+      "aclConnectionBanner"
+    );
+
+
+  if (banner) {
+    return banner;
+  }
+
+
+  banner =
+    document.createElement(
+      "div"
+    );
+
+
+  banner.id =
+    "aclConnectionBanner";
+
+
+  banner.className =
+    "acl-connection-banner";
+
+
+  banner.setAttribute(
+    "role",
+    "status"
+  );
+
+
+  banner.setAttribute(
+    "aria-live",
+    "polite"
+  );
+
+
+  banner.hidden =
+    true;
+
+
+  document.body.appendChild(
+    banner
+  );
+
+
+  return banner;
+}
+
+
+function updateConnectionStatus() {
+  const banner =
+    createConnectionBanner();
+
+
+  if (!navigator.onLine) {
+    banner.textContent =
+      "You are offline. Saved pages remain available, but new progress cannot synchronize.";
+
+    banner.classList.add(
+      "offline"
+    );
+
+    banner.classList.remove(
+      "online"
+    );
+
+    banner.hidden =
+      false;
+
+    return;
+  }
+
+
+  banner.textContent =
+    "Connection restored.";
+
+  banner.classList.remove(
+    "offline"
+  );
+
+  banner.classList.add(
+    "online"
+  );
+
+  banner.hidden =
+    false;
+
+
+  window.setTimeout(
+    () => {
+      banner.hidden =
+        true;
+    },
+    2500
+  );
+}
+
+
+window.addEventListener(
+  "offline",
+  updateConnectionStatus
+);
+
+
+window.addEventListener(
+  "online",
+  updateConnectionStatus
+);
+
+
+if (!navigator.onLine) {
+  updateConnectionStatus();
+}
 
 const installSection =
   document.getElementById(
@@ -33,6 +151,73 @@ function setInstallStatus(
   }
 }
 
+function showAppUpdateNotice(
+  registration
+) {
+  if (
+    document.getElementById(
+      "aclUpdateNotice"
+    )
+  ) {
+    return;
+  }
+
+
+  const notice =
+    document.createElement(
+      "section"
+    );
+
+
+  notice.id =
+    "aclUpdateNotice";
+
+
+  notice.className =
+    "acl-update-notice";
+
+
+  notice.innerHTML = `
+    <div>
+      <strong>
+        A new ACL version is available
+      </strong>
+
+      <span>
+        Refresh to receive the latest improvements.
+      </span>
+    </div>
+
+    <button
+      id="applyAclUpdate"
+      type="button"
+    >
+      Update now
+    </button>
+  `;
+
+
+  document.body.appendChild(
+    notice
+  );
+
+
+  document
+    .getElementById(
+      "applyAclUpdate"
+    )
+    ?.addEventListener(
+      "click",
+      () => {
+        registration
+          .waiting
+          ?.postMessage({
+            type:
+              "SKIP_WAITING"
+          });
+      }
+    );
+}
 
 /* =========================================================
    SERVICE WORKER
@@ -61,7 +246,34 @@ if (
           "ACL PWA registered:",
           registration.scope
         );
+registration.addEventListener(
+  "updatefound",
+  () => {
+    const installingWorker =
+      registration.installing;
 
+
+    if (!installingWorker) {
+      return;
+    }
+
+
+    installingWorker.addEventListener(
+      "statechange",
+      () => {
+        if (
+          installingWorker.state ===
+            "installed" &&
+          navigator.serviceWorker.controller
+        ) {
+          showAppUpdateNotice(
+            registration
+          );
+        }
+      }
+    );
+  }
+);
         registration
           .update()
           .catch(
