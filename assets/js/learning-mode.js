@@ -3991,6 +3991,538 @@ function resultAnalyticsHtml(
     `;
 }
 
+function clinicalPerformanceHtml(
+  percentage
+) {
+  const safePercentage =
+    clampPercentage(
+      percentage
+    );
+
+  const profile =
+    performanceProfile(
+      safePercentage
+    );
+
+  return `
+    <section
+      class="
+        clinical-performance-panel
+        ${esc(
+          profile.className
+        )}
+      "
+    >
+
+      <div class="clinical-performance-heading">
+
+        <span
+          class="clinical-performance-heading-icon"
+          aria-hidden="true"
+        >
+          🛡️
+        </span>
+
+        <div>
+
+          <span>
+            Clinical Performance
+          </span>
+
+          <strong>
+            ${esc(
+              profile.level
+            )}
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="clinical-performance-body">
+
+        <div
+          class="clinical-score-ring"
+          style="
+            --clinical-score:
+            ${safePercentage};
+          "
+        >
+
+          <div class="clinical-score-ring-inner">
+
+            <strong>
+              ${safePercentage}%
+            </strong>
+
+            <span>
+              Score
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div class="clinical-performance-copy">
+
+          <div class="clinical-performance-level">
+
+            <span aria-hidden="true">
+              ${esc(
+                profile.icon
+              )}
+            </span>
+
+            <strong>
+              ${esc(
+                profile.level
+              )}
+            </strong>
+
+          </div>
+
+          <p>
+            ${esc(
+              profile.message
+            )}
+          </p>
+
+
+          <div class="clinical-performance-scale">
+
+            <div
+              class="
+                clinical-performance-marker
+                ${esc(
+                  profile.className
+                )}
+              "
+              style="
+                left:
+                ${safePercentage}%;
+              "
+            ></div>
+
+            <div class="clinical-performance-scale-bar">
+
+              <span class="is-review"></span>
+
+              <span class="is-developing"></span>
+
+              <span class="is-strong"></span>
+
+              <span class="is-expert"></span>
+
+            </div>
+
+            <div class="clinical-performance-scale-labels">
+
+              <span>
+                &lt;60%
+                <small>
+                  Review
+                </small>
+              </span>
+
+              <span>
+                60–74%
+                <small>
+                  Developing
+                </small>
+              </span>
+
+              <span>
+                75–89%
+                <small>
+                  Strong
+                </small>
+              </span>
+
+              <span>
+                90–100%
+                <small>
+                  Expert
+                </small>
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
+}
+function nextStepsHtml(
+  analytics,
+  percentage
+) {
+  const safePercentage =
+    clampPercentage(
+      percentage
+    );
+
+  const incorrectCount =
+    analytics
+      .incorrectAnswers;
+
+  const overconfidentErrors =
+    analytics
+      .highConfidenceIncorrect;
+
+  const uncertainCorrect =
+    analytics
+      .lowConfidenceCorrect;
+
+  const profile =
+    performanceProfile(
+      safePercentage
+    );
+
+  return `
+    <section class="result-next-steps">
+
+      <div class="result-next-steps-heading">
+
+        <span
+          aria-hidden="true"
+          class="result-next-steps-heading-icon"
+        >
+          🚀
+        </span>
+
+        <div>
+
+          <h3>
+            What’s next?
+          </h3>
+
+          <p>
+            Personalized recommendations from this attempt
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="result-next-steps-grid">
+
+        <button
+          type="button"
+          class="
+            result-next-step-card
+            is-review
+          "
+          data-result-action="review"
+          ${
+            incorrectCount === 0
+              ? "disabled"
+              : ""
+          }
+        >
+
+          <span
+            class="result-next-step-icon"
+            aria-hidden="true"
+          >
+            🎯
+          </span>
+
+          <span class="result-next-step-copy">
+
+            <strong>
+              ${
+                incorrectCount > 0
+                  ? `Review ${incorrectCount} incorrect ${
+                      incorrectCount === 1
+                        ? "question"
+                        : "questions"
+                    }`
+                  : "No incorrect questions"
+              }
+            </strong>
+
+            <small>
+              ${
+                incorrectCount > 0
+                  ? "Focus on the concepts you missed before retrying."
+                  : "You answered every question correctly."
+              }
+            </small>
+
+          </span>
+
+          <span
+            class="result-next-step-arrow"
+            aria-hidden="true"
+          >
+            ›
+          </span>
+
+        </button>
+
+
+        <button
+          type="button"
+          class="
+            result-next-step-card
+            is-flashcard
+          "
+          data-result-action="review"
+        >
+
+          <span
+            class="result-next-step-icon"
+            aria-hidden="true"
+          >
+            📚
+          </span>
+
+          <span class="result-next-step-copy">
+
+            <strong>
+              Study related flashcards
+            </strong>
+
+            <small>
+              Review the high-yield notes linked to your answered questions.
+            </small>
+
+          </span>
+
+          <span
+            class="result-next-step-arrow"
+            aria-hidden="true"
+          >
+            ›
+          </span>
+
+        </button>
+
+
+        <button
+          type="button"
+          class="
+            result-next-step-card
+            is-confidence
+          "
+          data-result-action="review"
+          ${
+            overconfidentErrors === 0 &&
+            uncertainCorrect === 0
+              ? "disabled"
+              : ""
+          }
+        >
+
+          <span
+            class="result-next-step-icon"
+            aria-hidden="true"
+          >
+            🔥
+          </span>
+
+          <span class="result-next-step-copy">
+
+            <strong>
+              ${
+                overconfidentErrors > 0
+                  ? `Review ${overconfidentErrors} overconfident ${
+                      overconfidentErrors === 1
+                        ? "error"
+                        : "errors"
+                    }`
+                  : uncertainCorrect > 0
+                    ? "Build confidence in correct reasoning"
+                    : "Confidence well aligned"
+              }
+            </strong>
+
+            <small>
+              ${
+                overconfidentErrors > 0
+                  ? "These mistakes deserve priority review."
+                  : uncertainCorrect > 0
+                    ? `You had ${uncertainCorrect} correct ${
+                        uncertainCorrect === 1
+                          ? "answer"
+                          : "answers"
+                      } with low confidence.`
+                    : "Your confidence matched your answers well."
+              }
+            </small>
+
+          </span>
+
+          <span
+            class="result-next-step-arrow"
+            aria-hidden="true"
+          >
+            ›
+          </span>
+
+        </button>
+
+
+        <button
+          type="button"
+          class="
+            result-next-step-card
+            is-retry
+          "
+          data-result-action="retry"
+        >
+
+          <span
+            class="result-next-step-icon"
+            aria-hidden="true"
+          >
+            🏆
+          </span>
+
+          <span class="result-next-step-copy">
+
+            <strong>
+              Retry the quiz
+            </strong>
+
+            <small>
+              ${
+                safePercentage >= 90
+                  ? "Maintain your Expert performance."
+                  : `Current level: ${esc(
+                      profile.level
+                    )}. Aim for Expert performance above 90%.`
+              }
+            </small>
+
+          </span>
+
+          <span
+            class="result-next-step-arrow"
+            aria-hidden="true"
+          >
+            ›
+          </span>
+
+        </button>
+
+      </div>
+
+    </section>
+  `;
+}
+
+function clampPercentage(
+  value
+) {
+  const number =
+    Number(
+      value
+    );
+
+  if (
+    !Number.isFinite(
+      number
+    )
+  ) {
+    return 0;
+  }
+
+  return Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(
+        number
+      )
+    )
+  );
+}
+
+
+function performanceProfile(
+  percentage
+) {
+  const safePercentage =
+    clampPercentage(
+      percentage
+    );
+
+  if (
+    safePercentage >= 90
+  ) {
+    return {
+      level:
+        "Expert",
+
+      className:
+        "is-expert",
+
+      icon:
+        "🏆",
+
+      message:
+        "Excellent mastery. Your knowledge and confidence are strongly aligned."
+    };
+  }
+
+  if (
+    safePercentage >= 75
+  ) {
+    return {
+      level:
+        "Strong",
+
+      className:
+        "is-strong",
+
+      icon:
+        "⭐",
+
+      message:
+        "Strong clinical understanding with only a few areas requiring reinforcement."
+    };
+  }
+
+  if (
+    safePercentage >= 60
+  ) {
+    return {
+      level:
+        "Developing",
+
+      className:
+        "is-developing",
+
+      icon:
+        "📈",
+
+      message:
+        "Good progress. Review incorrect and uncertain answers to strengthen mastery."
+    };
+  }
+
+  return {
+    level:
+      "Needs Review",
+
+    className:
+      "is-review",
+
+    icon:
+      "📚",
+
+    message:
+      "Focused review is recommended before repeating the module."
+  };
+}
 function resultInsight(
   analytics,
   percentage
@@ -4149,16 +4681,19 @@ async function finish() {
   const maximum =
     maximumPossibleScore();
 
-  const percentage =
+    const rawPercentage =
     maximum
-      ? Math.round(
-          (
-            score /
-            maximum
-          ) *
-          100
-        )
+      ? (
+          score /
+          maximum
+        ) *
+        100
       : 0;
+
+  const percentage =
+    clampPercentage(
+      rawPercentage
+    );
 
   const passingPercentage =
     Number(
@@ -4335,13 +4870,20 @@ quizArea.innerHTML = `
 
 </div>
 
-    ${resultAnalyticsHtml(
+       ${resultAnalyticsHtml(
       analytics
     )}
 
-    </div>
-<div class="learning-result-insight">
+    ${clinicalPerformanceHtml(
+      percentage
+    )}
 
+    ${nextStepsHtml(
+      analytics,
+      percentage
+    )}
+
+<div class="learning-result-insight">
   <span
     class="learning-result-insight-icon"
     aria-hidden="true"
@@ -4452,9 +4994,49 @@ quizArea.innerHTML = `
       startNewAttempt
     );
 
+
+  document
+    .querySelectorAll(
+      '[data-result-action="review"]'
+    )
+    .forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          () => {
+            reviewMode =
+              true;
+
+            index =
+              0;
+
+            finishing =
+              false;
+
+            render();
+          }
+        );
+      }
+    );
+
+
+  document
+    .querySelectorAll(
+      '[data-result-action="retry"]'
+    )
+    .forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          startNewAttempt
+        );
+      }
+    );
+
+
   finishing =
     false;
-}
+  }
 
 
 /* =========================================================
