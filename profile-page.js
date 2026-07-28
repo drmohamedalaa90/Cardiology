@@ -329,8 +329,7 @@ async function loadProfilePage() {
       true
     );
   }
-}  );
-
+} 
 
 /* =========================================================
    CHANGE PASSWORD
