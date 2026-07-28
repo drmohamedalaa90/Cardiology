@@ -3806,42 +3806,24 @@ function learningAnalytics() {
           "low"
     ).length;
 
-  const lifelinesUsed =
-    Object.values(
-      lifelinesState
-    ).reduce(
-      (
-        total,
-        state
-      ) => {
-        if (
-          !state ||
-          typeof state !==
-            "object"
-        ) {
-          return total;
-        }
+  const lifelineState =
+  ensureLifelinesState();
 
-        return (
-          total +
-          [
-            "expert",
-            "filter",
-            "guideline",
-            "vault"
-          ].filter(
-            (lifeline) =>
-              Boolean(
-                state[
-                  lifeline
-                ]
-              )
-          ).length
-        );
-      },
-      0
-    );
-
+const lifelinesUsed =
+  [
+    LIFELINES.expert,
+    LIFELINES.filter,
+    LIFELINES.guideline,
+    LIFELINES.vault
+  ].filter(
+    (lifeline) =>
+      Boolean(
+        lifelineState[
+          lifeline
+        ]
+      )
+  ).length;
+  
   return {
     totalQuestions,
     correctAnswers,
@@ -5655,18 +5637,19 @@ document.addEventListener(
         )
           ? attempt.answers
           : [];
-            preQuizReviewSeen =
-        Boolean(
-          attempt.preQuizReviewSeen ??
-          attempt.pre_quiz_review_seen ??
-          attempt.state
-            ?.preQuizReviewSeen ??
-          attempt.app_state
-            ?.preQuizReviewSeen ??
-          answers.length > 0 ||
-          index > 0
-        );
-
+           preQuizReviewSeen =
+  Boolean(
+    attempt.preQuizReviewSeen ??
+    attempt.pre_quiz_review_seen ??
+    attempt.state
+      ?.preQuizReviewSeen ??
+    attempt.app_state
+      ?.preQuizReviewSeen ??
+    (
+      answers.length > 0 ||
+      index > 0
+    )
+  );
       restoreLifelinesState(
         attempt.lifelines ||
         attempt.lifelines_state ||
