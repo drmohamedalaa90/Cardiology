@@ -218,202 +218,118 @@ async function uploadAvatar(
 ========================================================= */
 
 async function loadProfilePage() {
-  const profile =
-    await protectAndRender(
-      "login.html"
-    );
-
-  if (!profile) {
-    return;
-  }
-
-
-  el("displayName").value =
-    profile.display_name ||
-    profile.full_name ||
-    profile.username ||
-    "";
-
-  el("email").value =
-    profile.email ||
-    "";
-
-  el("username").value =
-    profile.username ||
-    "";
-
-  el("whatsapp").value =
-    profile.whatsapp ||
-    profile.phone_e164 ||
-    "";
-
-  el("academicYear").value =
-    profile.academic_year ||
-    profile.position ||
-    "";
-
-  el("institution").value =
-    profile.institution ||
-    "";
-
-  renderAvatar(
-    profile
-  );
-}
-
-
-el("profileForm")
-  ?.addEventListener(
-    "submit",
-    async (event) => {
-      event.preventDefault();
-
-      setProfileStatus(
-        "Saving profile…"
+  try {
+    const profile =
+      await protectAndRender(
+        "login.html"
       );
 
-      const {
-        data: userData,
-        error: userError
-      } =
-        await supabaseClient
-          .auth
-          .getUser();
+    if (!profile) {
+      return;
+    }
 
-      if (userError) {
-        setProfileStatus(
-          userError.message,
-          true
-        );
+    const displayNameInput =
+      el("displayName");
 
-        return;
-      }
+    const emailInput =
+      el("email");
 
-      const user =
-        userData?.user;
+    const usernameInput =
+      el("username");
 
-      if (!user) {
-        setProfileStatus(
-          "Your session has expired. Please sign in again.",
-          true
-        );
+    const whatsappInput =
+      el("whatsapp");
 
-        return;
-      }
+    const positionInput =
+      el("academicYear");
 
-      const displayName =
-        el("displayName")
-          ?.value
-          ?.trim() ||
+    const institutionInput =
+      el("institution");
+
+
+    if (displayNameInput) {
+      displayNameInput.value =
+        profile.display_name ||
+        profile.full_name ||
+        profile.username ||
+        "";
+    }
+
+
+    if (emailInput) {
+      emailInput.value =
+        profile.email ||
+        "";
+    }
+
+
+    if (usernameInput) {
+      usernameInput.value =
+        profile.username ||
+        "";
+    }
+
+
+    if (whatsappInput) {
+      whatsappInput.value =
+        profile.whatsapp ||
+        profile.phone_e164 ||
+        "";
+    }
+
+
+    if (positionInput) {
+      const savedPosition =
+        profile.position ||
+        profile.academic_year ||
         "";
 
-      const whatsapp =
-        el("whatsapp")
-          ?.value
-          ?.trim() ||
-        "";
+      positionInput.value =
+        savedPosition;
 
-      const position =
-        el("academicYear")
-          ?.value
-          ?.trim() ||
-        "";
-
-      const institution =
-        el("institution")
-          ?.value
-          ?.trim() ||
-        "";
+      /*
+       * If the stored value does not match one of the
+       * available options, keep the placeholder visible.
+       */
 
       if (
-        displayName.length < 2
+        positionInput.value !==
+        savedPosition
       ) {
-        setProfileStatus(
-          "Display Name must contain at least 2 characters.",
-          true
-        );
-
-        return;
-      }
-
-      try {
-        const avatarUrl =
-          await uploadAvatar(
-            user.id
-          );
-
-        const updates = {
-          display_name:
-            displayName,
-
-          whatsapp,
-
-          academic_year:
-            position,
-
-          institution
-        };
-
-        if (avatarUrl) {
-          updates.avatar_url =
-            avatarUrl;
-        }
-
-        const {
-          data,
-          error
-        } =
-          await supabaseClient
-            .from(
-              "profiles"
-            )
-            .update(
-              updates
-            )
-            .eq(
-              "id",
-              user.id
-            )
-            .select("*")
-            .single();
-
-        if (error) {
-          throw error;
-        }
-
-        window.aclCurrentProfile =
-          {
-            ...window
-              .aclCurrentProfile,
-
-            ...data,
-
-            email:
-              user.email
-          };
-
-        renderAvatar(
-          window
-            .aclCurrentProfile
-        );
-
-        setProfileStatus(
-          "Profile saved successfully."
-        );
-      } catch (error) {
-        console.error(
-          "PROFILE SAVE ERROR:",
-          error
-        );
-
-        setProfileStatus(
-          error.message ||
-          "The profile could not be saved.",
-          true
-        );
+        positionInput.value =
+          "";
       }
     }
-  );
+
+
+    if (institutionInput) {
+      institutionInput.value =
+        profile.institution ||
+        "";
+    }
+
+
+    renderAvatar(
+      profile
+    );
+
+
+    setProfileStatus(
+      ""
+    );
+  } catch (error) {
+    console.error(
+      "PROFILE LOAD ERROR:",
+      error
+    );
+
+    setProfileStatus(
+      error.message ||
+      "The profile could not be loaded.",
+      true
+    );
+  }
+}  );
 
 
 /* =========================================================
