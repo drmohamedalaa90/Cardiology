@@ -6262,3 +6262,417 @@ body.acl-expert-learning-mode
       24px;
   }
 }
+/* =========================================================
+   CLINICAL PERFORMANCE
+========================================================= */
+
+.clinical-performance-panel {
+  margin-top: 22px;
+  padding: 24px;
+  border: 1px solid #bfdaf6;
+  border-radius: 26px;
+  background:
+    linear-gradient(
+      135deg,
+      #f9fcff,
+      #eff7ff
+    );
+  box-shadow:
+    0 14px 34px
+    rgba(17, 72, 128, 0.08);
+}
+
+.clinical-performance-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clinical-performance-heading-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #e8f3ff;
+  font-size: 23px;
+}
+
+.clinical-performance-heading div {
+  display: flex;
+  flex-direction: column;
+}
+
+.clinical-performance-heading span {
+  color: #54708f;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.clinical-performance-heading strong {
+  margin-top: 2px;
+  color: #083f7e;
+  font-size: 22px;
+}
+
+.clinical-performance-body {
+  display: grid;
+  grid-template-columns:
+    180px
+    minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  margin-top: 22px;
+}
+
+.clinical-score-ring {
+  --clinical-score: 0;
+
+  width: 170px;
+  height: 170px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+
+  background:
+    conic-gradient(
+      #1768d7
+      calc(
+        var(--clinical-score) *
+        1%
+      ),
+      #dcecff 0
+    );
+
+  box-shadow:
+    0 14px 30px
+    rgba(20, 90, 175, 0.15);
+}
+
+.clinical-score-ring-inner {
+  width: 132px;
+  height: 132px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.clinical-score-ring-inner strong {
+  color: #073f7e;
+  font-size: 38px;
+  line-height: 1;
+}
+
+.clinical-score-ring-inner span {
+  margin-top: 6px;
+  color: #66829b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.clinical-performance-level {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.clinical-performance-level span {
+  font-size: 25px;
+}
+
+.clinical-performance-level strong {
+  color: #083f7e;
+  font-size: 25px;
+}
+
+.clinical-performance-copy p {
+  margin: 10px 0 0;
+  color: #47647f;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.clinical-performance-scale {
+  position: relative;
+  margin-top: 25px;
+  padding-top: 12px;
+}
+
+.clinical-performance-scale-bar {
+  display: grid;
+  grid-template-columns:
+    60fr
+    15fr
+    15fr
+    10fr;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.clinical-performance-scale-bar span.is-review {
+  background: #df3d46;
+}
+
+.clinical-performance-scale-bar span.is-developing {
+  background: #efa318;
+}
+
+.clinical-performance-scale-bar span.is-strong {
+  background: #2b75d8;
+}
+
+.clinical-performance-scale-bar span.is-expert {
+  background: #2c9d4d;
+}
+
+.clinical-performance-marker {
+  position: absolute;
+  top: 4px;
+  width: 17px;
+  height: 17px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow:
+    0 4px 12px
+    rgba(26, 73, 120, 0.25);
+}
+
+.clinical-performance-marker.is-review {
+  background: #df3d46;
+}
+
+.clinical-performance-marker.is-developing {
+  background: #efa318;
+}
+
+.clinical-performance-marker.is-strong {
+  background: #2b75d8;
+}
+
+.clinical-performance-marker.is-expert {
+  background: #2c9d4d;
+}
+
+.clinical-performance-scale-labels {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.clinical-performance-scale-labels span {
+  color: #496985;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.clinical-performance-scale-labels small {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   PERSONALIZED NEXT STEPS
+========================================================= */
+
+.result-next-steps {
+  margin-top: 22px;
+  padding: 22px;
+  border: 1px solid #bfdaf6;
+  border-radius: 26px;
+  background:
+    linear-gradient(
+      135deg,
+      #fbfdff,
+      #f3f8ff
+    );
+  box-shadow:
+    0 14px 34px
+    rgba(17, 72, 128, 0.07);
+}
+
+.result-next-steps-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.result-next-steps-heading-icon {
+  width: 47px;
+  height: 47px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: #e9f3ff;
+  font-size: 25px;
+}
+
+.result-next-steps-heading h3 {
+  margin: 0;
+  color: #073f7e;
+  font-size: 22px;
+}
+
+.result-next-steps-heading p {
+  margin: 3px 0 0;
+  color: #66809a;
+  font-size: 12px;
+}
+
+.result-next-steps-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 13px;
+  margin-top: 18px;
+}
+
+.result-next-step-card {
+  display: grid;
+  grid-template-columns:
+    51px
+    minmax(0, 1fr)
+    22px;
+  gap: 13px;
+  align-items: center;
+  min-height: 98px;
+  padding: 14px;
+  border: 1px solid #d4e5f5;
+  border-radius: 19px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.result-next-step-card:hover:not(
+  :disabled
+) {
+  transform:
+    translateY(-2px);
+  border-color:
+    #89bff1;
+  box-shadow:
+    0 11px 24px
+    rgba(25, 83, 140, 0.11);
+}
+
+.result-next-step-card:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.result-next-step-icon {
+  width: 51px;
+  height: 51px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  font-size: 27px;
+  background: #eef6ff;
+}
+
+.result-next-step-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.result-next-step-copy strong {
+  color: #0b467f;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.result-next-step-copy small {
+  margin-top: 5px;
+  color: #647f98;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.result-next-step-arrow {
+  color: #7c94aa;
+  font-size: 28px;
+  line-height: 1;
+}
+
+
+@media (max-width: 800px) {
+  .clinical-performance-body {
+    grid-template-columns:
+      1fr;
+  }
+
+  .clinical-score-ring {
+    margin:
+      0
+      auto;
+  }
+
+  .result-next-steps-grid {
+    grid-template-columns:
+      1fr;
+  }
+}
+
+
+@media (max-width: 520px) {
+  .clinical-performance-panel,
+  .result-next-steps {
+    padding: 17px;
+    border-radius: 21px;
+  }
+
+  .clinical-score-ring {
+    width: 145px;
+    height: 145px;
+  }
+
+  .clinical-score-ring-inner {
+    width: 111px;
+    height: 111px;
+  }
+
+  .clinical-score-ring-inner strong {
+    font-size: 31px;
+  }
+
+  .clinical-performance-scale-labels {
+    gap: 3px;
+  }
+
+  .result-next-step-card {
+    grid-template-columns:
+      45px
+      minmax(0, 1fr)
+      18px;
+  }
+
+  .result-next-step-icon {
+    width: 45px;
+    height: 45px;
+    font-size: 23px;
+  }
+}
