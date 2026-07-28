@@ -6778,3 +6778,111 @@ body.acl-basic-edition .acl-brand-name,
 body.acl-basic-edition .acl-brand-separator {
   color: #ffffff;
 }
+/* =========================================================
+   BASIC EDITION DRAWER
+========================================================= */
+
+body.acl-basic-edition .acl-side-drawer {
+  background:
+    linear-gradient(
+      180deg,
+      #063f34 0%,
+      #075c49 52%,
+      #04372e 100%
+    );
+
+  border-right-color:
+    rgba(
+      184,
+      232,
+      93,
+      0.35
+    );
+}
+
+
+body.acl-basic-edition .acl-drawer-top {
+  background:
+    rgba(
+      0,
+      0,
+      0,
+      0.08
+    );
+}
+
+
+body.acl-basic-edition .acl-drawer-identity-copy strong,
+body.acl-basic-edition .acl-drawer-item-label {
+  color: #ffffff;
+}
+
+
+body.acl-basic-edition .acl-drawer-identity-copy span {
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.7
+    );
+}
+
+
+body.acl-basic-edition .acl-drawer-avatar {
+  color: #063f34;
+  background: #b8e85d;
+}
+
+
+body.acl-basic-edition .acl-drawer-item {
+  color: #ffffff;
+}
+
+
+body.acl-basic-edition .acl-drawer-item:hover {
+  background:
+    rgba(
+      184,
+      232,
+      93,
+      0.15
+    );
+}
+
+
+body.acl-basic-edition .acl-drawer-item-icon {
+  color: #b8e85d;
+}
+
+
+body.acl-basic-edition .acl-drawer-divider {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.14
+    );
+}
+
+
+body.acl-basic-edition .acl-drawer-close {
+  color: #ffffff;
+
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.28
+    );
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
+}
