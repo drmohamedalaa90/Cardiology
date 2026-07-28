@@ -3591,7 +3591,187 @@ function learningAnalytics() {
     lifelinesUsed
   };
 }
+function resultLifelineHistoryHtml() {
+  const state =
+    ensureLifelinesState();
 
+  const definitions =
+    lifelineDefinitions();
+
+  const usedCount =
+    definitions.filter(
+      (definition) =>
+        Boolean(
+          state[
+            definition.id
+          ]
+        )
+    ).length;
+
+  const totalCount =
+    definitions.length;
+
+  const remainingCount =
+    Math.max(
+      totalCount -
+      usedCount,
+      0
+    );
+
+  return `
+    <section class="result-expert-panel">
+
+      <div class="result-expert-panel-summary">
+
+        <div
+          class="result-expert-panel-symbol"
+          aria-hidden="true"
+        >
+          🛟
+        </div>
+
+        <div class="result-expert-panel-heading">
+
+          <span>
+            Expert Panel
+          </span>
+
+          <strong>
+            ${usedCount}
+            /
+            ${totalCount}
+            used
+          </strong>
+
+          <small>
+            ${
+              remainingCount === 0
+                ? "No lifelines remaining"
+                : `${remainingCount} ${
+                    remainingCount === 1
+                      ? "lifeline"
+                      : "lifelines"
+                  } remaining`
+            }
+          </small>
+
+        </div>
+
+      </div>
+
+
+      <div class="result-lifeline-history">
+
+        ${definitions
+          .map(
+            (definition) => {
+              const used =
+                Boolean(
+                  state[
+                    definition.id
+                  ]
+                );
+
+              const questionNumber =
+                state
+                  .usedOnQuestion?.[
+                    definition.id
+                  ] ||
+                null;
+
+              return `
+                <div
+                  class="
+                    result-lifeline-history-item
+                    ${
+                      used
+                        ? "is-used"
+                        : "is-unused"
+                    }
+                  "
+                >
+
+                  <div class="result-lifeline-history-icon">
+
+                    ${
+                      definition.image
+                        ? `
+                          <img
+                            src="${esc(
+                              definition.image
+                            )}"
+                            alt=""
+                            aria-hidden="true"
+                          >
+                        `
+                        : `
+                          <span aria-hidden="true">
+                            ${esc(
+                              definition.icon
+                            )}
+                          </span>
+                        `
+                    }
+
+                  </div>
+
+
+                  <div class="result-lifeline-history-copy">
+
+                    <strong>
+                      ${esc(
+                        definition.title
+                      )}
+                    </strong>
+
+                    <span>
+                      ${
+                        used
+                          ? (
+                              questionNumber
+                                ? `Used on Question ${questionNumber}`
+                                : "Used during this attempt"
+                            )
+                          : "Not used"
+                      }
+                    </span>
+
+                  </div>
+
+
+                  <span
+                    class="
+                      result-lifeline-history-status
+                      ${
+                        used
+                          ? "is-used"
+                          : "is-unused"
+                      }
+                    "
+                    aria-label="${
+                      used
+                        ? "Used"
+                        : "Not used"
+                    }"
+                  >
+                    ${
+                      used
+                        ? "✓"
+                        : "—"
+                    }
+                  </span>
+
+                </div>
+              `;
+            }
+          )
+          .join("")}
+
+      </div>
+
+    </section>
+  `;
+}
 function resultAnalyticsHtml(
   analytics
 ) {
@@ -3806,32 +3986,9 @@ function resultAnalyticsHtml(
     </section>
 
 
-    <section class="result-lifeline-summary">
-
-      <div
-        class="result-lifeline-summary-icon"
-        aria-hidden="true"
-      >
-        🛟
-      </div>
-
-      <div>
-
-        <span>
-          Expert Panel usage
-        </span>
-
-        <strong>
-          ${analytics.lifelinesUsed}
-          of
-          ${enabledLifelineCount()}
-          lifelines used
-        </strong>
-
-      </div>
-
-    </section>
-  `;
+    ${resultLifelineHistoryHtml()} 
+    
+    `;
 }
 
 function resultInsight(
