@@ -5844,3 +5844,421 @@ body.acl-expert-learning-mode
     font-size: 17px;
   }
 }
+/* =========================================================
+   RESULT PAGE — EXPERT PANEL HISTORY
+========================================================= */
+
+.result-expert-panel {
+  display: grid;
+
+  grid-template-columns:
+    minmax(220px, 0.38fr)
+    minmax(0, 1fr);
+
+  gap:
+    22px;
+
+  align-items:
+    stretch;
+
+  margin-top:
+    22px;
+
+  padding:
+    22px;
+
+  border:
+    1px solid
+    #b9d9fb;
+
+  border-radius:
+    26px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f8fbff,
+      #eef6ff
+    );
+
+  box-shadow:
+    0 14px 34px
+    rgba(17, 72, 128, 0.08);
+}
+
+
+.result-expert-panel-summary {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    16px;
+
+  padding-right:
+    22px;
+
+  border-right:
+    1px solid
+    #d5e7f8;
+}
+
+
+.result-expert-panel-symbol {
+  width:
+    72px;
+
+  height:
+    72px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  flex:
+    0
+    0
+    auto;
+
+  border-radius:
+    22px;
+
+  font-size:
+    38px;
+
+  background:
+    #ffffff;
+
+  box-shadow:
+    0 10px 24px
+    rgba(17, 72, 128, 0.11);
+}
+
+
+.result-expert-panel-heading {
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  min-width:
+    0;
+}
+
+
+.result-expert-panel-heading > span {
+  color:
+    #496985;
+
+  font-size:
+    12px;
+
+  font-weight:
+    900;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    0.08em;
+}
+
+
+.result-expert-panel-heading strong {
+  margin-top:
+    3px;
+
+  color:
+    #073f7e;
+
+  font-size:
+    29px;
+
+  line-height:
+    1.1;
+}
+
+
+.result-expert-panel-heading small {
+  margin-top:
+    7px;
+
+  color:
+    #477194;
+
+  font-size:
+    12px;
+
+  font-weight:
+    800;
+}
+
+
+.result-lifeline-history {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap:
+    11px;
+}
+
+
+.result-lifeline-history-item {
+  display:
+    grid;
+
+  grid-template-columns:
+    45px
+    minmax(0, 1fr)
+    28px;
+
+  gap:
+    11px;
+
+  align-items:
+    center;
+
+  min-height:
+    72px;
+
+  padding:
+    10px
+    12px;
+
+  border:
+    1px solid;
+
+  border-radius:
+    18px;
+
+  background:
+    rgba(255, 255, 255, 0.82);
+}
+
+
+.result-lifeline-history-item.is-used {
+  border-color:
+    #a9d9bb;
+
+  box-shadow:
+    0 7px 18px
+    rgba(40, 142, 80, 0.07);
+}
+
+
+.result-lifeline-history-item.is-unused {
+  border-color:
+    #d7e2ec;
+
+  opacity:
+    0.76;
+}
+
+
+.result-lifeline-history-icon {
+  width:
+    45px;
+
+  height:
+    45px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    14px;
+
+  font-size:
+    23px;
+
+  background:
+    #edf6ff;
+}
+
+
+.result-lifeline-history-icon img {
+  width:
+    100%;
+
+  height:
+    100%;
+
+  object-fit:
+    contain;
+
+  object-position:
+    center bottom;
+}
+
+
+.result-lifeline-history-copy {
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  min-width:
+    0;
+}
+
+
+.result-lifeline-history-copy strong {
+  overflow:
+    hidden;
+
+  color:
+    #0b467f;
+
+  font-size:
+    13px;
+
+  line-height:
+    1.25;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+}
+
+
+.result-lifeline-history-copy span {
+  margin-top:
+    4px;
+
+  color:
+    #62809a;
+
+  font-size:
+    11px;
+
+  font-weight:
+    750;
+}
+
+
+.result-lifeline-history-status {
+  width:
+    27px;
+
+  height:
+    27px;
+
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  border-radius:
+    50%;
+
+  font-size:
+    15px;
+
+  font-weight:
+    1000;
+}
+
+
+.result-lifeline-history-status.is-used {
+  color:
+    #16843d;
+
+  background:
+    #e6f8eb;
+
+  border:
+    1px solid
+    #9bd2aa;
+}
+
+
+.result-lifeline-history-status.is-unused {
+  color:
+    #75889b;
+
+  background:
+    #f1f5f8;
+
+  border:
+    1px solid
+    #cbd8e3;
+}
+
+
+@media (max-width: 900px) {
+  .result-expert-panel {
+    grid-template-columns:
+      1fr;
+  }
+
+  .result-expert-panel-summary {
+    padding-right:
+      0;
+
+    padding-bottom:
+      18px;
+
+    border-right:
+      0;
+
+    border-bottom:
+      1px solid
+      #d5e7f8;
+  }
+}
+
+
+@media (max-width: 640px) {
+  .result-expert-panel {
+    padding:
+      16px;
+
+    border-radius:
+      21px;
+  }
+
+  .result-lifeline-history {
+    grid-template-columns:
+      1fr;
+  }
+
+  .result-expert-panel-symbol {
+    width:
+      60px;
+
+    height:
+      60px;
+
+    border-radius:
+      18px;
+
+    font-size:
+      31px;
+  }
+
+  .result-expert-panel-heading strong {
+    font-size:
+      24px;
+  }
+}
