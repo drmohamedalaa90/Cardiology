@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0b5791"
+  >
+
+  <title>
+    Offline | ACL
+  </title>
+
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+
+    body {
+      display: grid;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+      place-items: center;
+      color: #173f67;
+      background:
+        linear-gradient(
+          145deg,
+          #eef7ff,
+          #ffffff
+        );
+      font-family:
+        Arial,
+        sans-serif;
+    }
+
+
+    .offline-card {
+      width: min(520px, 100%);
+      padding: 34px;
+      border: 1px solid #cbddec;
+      border-radius: 26px;
+      background: #ffffff;
+      text-align: center;
+      box-shadow:
+        0 22px 52px
+        rgba(12, 43, 81, 0.12);
+    }
+
+
+    .offline-icon {
+      display: grid;
+      width: 78px;
+      height: 78px;
+      margin: 0 auto 20px;
+      place-items: center;
+      border-radius: 22px;
+      background: #eef7ff;
+      font-size: 2rem;
+    }
+
+
+    h1 {
+      margin: 0;
+      color: #092e57;
+    }
+
+
+    p {
+      margin: 16px 0 24px;
+      color: #647f96;
+      line-height: 1.65;
+    }
+
+
+    button {
+      min-height: 48px;
+      padding: 0 22px;
+      border: 0;
+      border-radius: 14px;
+      color: #ffffff;
+      background: #0b5791;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+
+<body>
+
+  <main class="offline-card">
+
+    <div
+      class="offline-icon"
+      aria-hidden="true"
+    >
+      📡
+    </div>
+
+    <h1>
+      You are currently offline
+    </h1>
+
+    <p>
+      Previously opened ACL pages may remain available.
+      Reconnect to continue quizzes, synchronize progress,
+      or load new modules.
+    </p>
+
+    <button
+      type="button"
+      onclick="window.location.reload()"
+    >
+      Try again
+    </button>
+
+  </main>
+
+</body>
+
+</html>
