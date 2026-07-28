@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    ACL Challenge | The Expert Edition
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="assets/css/base.css?v=5.3.0"
+  >
+
+  <link
+    rel="stylesheet"
+    href="assets/css/challenge.css?v=1.0.0"
+  >
+
+</head>
+
+
+<body class="challenge-page">
+
+  <main class="challenge-shell">
+
+    <section
+      id="challengeLoading"
+      class="challenge-loading"
+    >
+
+      <span class="challenge-loading-icon">
+        ⚔️
+      </span>
+
+      <h1>
+        Loading challenge…
+      </h1>
+
+      <p>
+        Preparing the ACL Expert Edition challenge.
+      </p>
+
+    </section>
+
+
+    <section
+      id="challengeView"
+      class="challenge-view"
+      hidden
+    >
+
+      <header class="challenge-hero">
+
+        <div class="challenge-hero-copy">
+
+          <span class="challenge-kicker">
+            ACL Expert Edition
+          </span>
+
+          <h1 id="challengeTitle">
+            Challenge
+          </h1>
+
+          <p id="challengeModuleTitle">
+            Learning module
+          </p>
+
+        </div>
+
+        <div
+          class="challenge-status-badge"
+          id="challengeStatusBadge"
+        >
+          Open
+        </div>
+
+      </header>
+
+
+      <div class="challenge-information-grid">
+
+        <article class="challenge-info-card">
+
+          <span>
+            Challenge code
+          </span>
+
+          <strong id="challengeCode">
+            —
+          </strong>
+
+        </article>
+
+
+        <article class="challenge-info-card">
+
+          <span>
+            Participants
+          </span>
+
+          <strong id="challengeParticipantCount">
+            —
+          </strong>
+
+        </article>
+
+
+        <article class="challenge-info-card">
+
+          <span>
+            Ends
+          </span>
+
+          <strong id="challengeEndsAt">
+            —
+          </strong>
+
+        </article>
+
+      </div>
+
+
+      <section class="challenge-rules-card">
+
+        <h2>
+          Challenge rules
+        </h2>
+
+        <ul>
+
+          <li>
+            Everyone receives the same question set.
+          </li>
+
+          <li>
+            Confidence-adjusted scoring is used.
+          </li>
+
+          <li>
+            Highest score wins.
+          </li>
+
+          <li>
+            Ties are decided by the shortest completion time.
+          </li>
+
+          <li>
+            Each participant receives one official attempt.
+          </li>
+
+        </ul>
+
+      </section>
+
+
+      <div
+        id="challengeMessage"
+        class="challenge-message"
+        hidden
+      ></div>
+
+
+      <div class="challenge-actions">
+
+        <button
+          id="joinChallenge"
+          type="button"
+          class="challenge-primary-button"
+        >
+          Join challenge
+        </button>
+
+        <button
+          id="startChallenge"
+          type="button"
+          class="challenge-primary-button"
+          hidden
+        >
+          Start challenge
+        </button>
+
+        <a
+          href="modules.html"
+          class="challenge-secondary-button"
+        >
+          Back to modules
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <section
+      id="challengeError"
+      class="challenge-error"
+      hidden
+    >
+
+      <span class="challenge-error-icon">
+        ⚠️
+      </span>
+
+      <h1>
+        Challenge unavailable
+      </h1>
+
+      <p id="challengeErrorMessage">
+        This challenge could not be opened.
+      </p>
+
+      <a
+        href="modules.html"
+        class="challenge-secondary-button"
+      >
+        Back to modules
+      </a>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="assets/js/challenge.js?v=1.0.0"
+  ></script>
+
+</body>
+
+</html>
