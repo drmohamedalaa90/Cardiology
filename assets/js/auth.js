@@ -112,13 +112,21 @@ const confirmation =
   password,
   options: {
     emailRedirectTo: `${window.location.origin}${ACL_CONFIG.siteBase}confirm.html`,
-    data: {
-      full_name: fullName,
-      username,
-      whatsapp,
-      position,
-      institution
-    }
+ data: {
+  full_name:
+    fullName,
+
+  display_name:
+    fullName,
+
+  username,
+
+  whatsapp,
+
+  position,
+
+  institution
+}
   }
 });
 
