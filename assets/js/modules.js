@@ -587,29 +587,46 @@ function moduleCard(
             decision.state ===
             "open"
               ? `
-                <button
-                  type="button"
-                  class="module-challenge-button"
-                  data-challenge-module-id="${escapeHtml(
-                    module.id
-                  )}"
-                  data-challenge-module-title="${escapeHtml(
-                    module.title
-                  )}"
-                  data-challenge-launch-path="${escapeHtml(
-                    module.launch_path ||
-                    ""
-                  )}"
-                >
-                  <span aria-hidden="true">
-                    ⚔️
-                  </span>
+               <button
+  type="button"
+  class="module-challenge-button"
+  data-challenge-module-id="${escapeHtml(
+    module.id
+  )}"
+  data-challenge-module-title="${escapeHtml(
+    module.title
+  )}"
+  data-challenge-launch-path="${escapeHtml(
+    module.launch_path ||
+    ""
+  )}"
+>
+  <span
+    class="module-challenge-button-icon"
+    aria-hidden="true"
+  >
+    ⚔️
+  </span>
 
-                  <span>
-                    Challenge a friend
-                  </span>
-                </button>
-              `
+  <span class="module-challenge-button-copy">
+
+    <strong>
+      Challenge a friend
+    </strong>
+
+    <small>
+      Same quiz · Head-to-head
+    </small>
+
+  </span>
+
+  <span
+    class="module-challenge-button-arrow"
+    aria-hidden="true"
+  >
+    ›
+  </span>
+</button>              `
               : ""
           }
 
