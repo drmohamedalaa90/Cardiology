@@ -600,65 +600,126 @@ function enabledLifeline(
   );
 }
 
-
 /* =========================================================
-   LIFELINE STATE
+   QUIZ-WIDE LIFELINE STATE
 ========================================================= */
 
-function defaultQuestionLifelines() {
+function defaultQuizLifelines() {
   return {
-    expert: false,
-    filter: false,
-    guideline: false,
-    vault: false,
+    expert:
+      false,
 
-    eliminatedOptionIds:
-      []
+    filter:
+      false,
+
+    guideline:
+      false,
+
+    vault:
+      false,
+
+    eliminatedOptionIdsByQuestion:
+      {}
   };
+}
+
+
+function ensureLifelinesState() {
+  if (
+    !lifelinesState ||
+    typeof lifelinesState !==
+      "object" ||
+    Array.isArray(
+      lifelinesState
+    )
+  ) {
+    lifelinesState =
+      defaultQuizLifelines();
+  }
+
+  [
+    LIFELINES.expert,
+    LIFELINES.filter,
+    LIFELINES.guideline,
+    LIFELINES.vault
+  ].forEach(
+    (lifeline) => {
+      lifelinesState[
+        lifeline
+      ] =
+        Boolean(
+          lifelinesState[
+            lifeline
+          ]
+        );
+    }
+  );
+
+  if (
+    !lifelinesState
+      .eliminatedOptionIdsByQuestion ||
+    typeof lifelinesState
+      .eliminatedOptionIdsByQuestion !==
+      "object" ||
+    Array.isArray(
+      lifelinesState
+        .eliminatedOptionIdsByQuestion
+    )
+  ) {
+    lifelinesState
+      .eliminatedOptionIdsByQuestion =
+        {};
+  }
+
+  return lifelinesState;
 }
 
 
 function lifelinesForQuestion(
   question
 ) {
-  if (!question) {
-    return (
-      defaultQuestionLifelines()
-    );
-  }
+  const state =
+    ensureLifelinesState();
 
   const questionId =
-    String(
-      question.id
-    );
+    question
+      ? String(
+          question.id
+        )
+      : "";
 
-  if (
-    !lifelinesState[
-      questionId
-    ]
-  ) {
-    lifelinesState[
-      questionId
-    ] =
-      defaultQuestionLifelines();
-  }
-
-  const state =
-    lifelinesState[
-      questionId
-    ];
-
-  if (
-    !Array.isArray(
+  const eliminatedOptionIds =
+    questionId &&
+    Array.isArray(
       state
-        .eliminatedOptionIds
+        .eliminatedOptionIdsByQuestion[
+          questionId
+        ]
     )
-  ) {
-    state.eliminatedOptionIds =
-      [];
-  }
+      ? state
+          .eliminatedOptionIdsByQuestion[
+            questionId
+          ]
+      : [];
 
-  return state;
+  return {
+    expert:
+      state.expert,
+
+    filter:
+      state.filter,
+
+    guideline:
+      state.guideline,
+
+    vault:
+      state.vault,
+
+    eliminatedOptionIds:
+      eliminatedOptionIds.map(
+        String
+      )
+  };
 }
 
 
@@ -666,24 +727,66 @@ function updateQuestionLifelines(
   question,
   changes = {}
 ) {
-  if (!question) {
-    return;
+  const state =
+    ensureLifelinesState();
+
+  [
+    LIFELINES.expert,
+    LIFELINES.filter,
+    LIFELINES.guideline,
+    LIFELINES.vault
+  ].forEach(
+    (lifeline) => {
+      if (
+        Object.prototype
+          .hasOwnProperty.call(
+            changes,
+            lifeline
+          )
+      ) {
+        state[
+          lifeline
+        ] =
+          Boolean(
+            changes[
+              lifeline
+            ]
+          );
+      }
+    }
+  );
+
+  if (
+    question &&
+    Object.prototype
+      .hasOwnProperty.call(
+        changes,
+        "eliminatedOptionIds"
+      )
+  ) {
+    const questionId =
+      String(
+        question.id
+      );
+
+    state
+      .eliminatedOptionIdsByQuestion[
+        questionId
+      ] =
+        Array.isArray(
+          changes
+            .eliminatedOptionIds
+        )
+          ? changes
+              .eliminatedOptionIds
+              .map(
+                String
+              )
+          : [];
   }
 
-  const questionId =
-    String(
-      question.id
-    );
-
-  lifelinesState[
-    questionId
-  ] = {
-    ...lifelinesForQuestion(
-      question
-    ),
-
-    ...changes
-  };
+  lifelinesState =
+    state;
 }
 
 
@@ -691,10 +794,10 @@ function lifelineIsUsed(
   question,
   lifeline
 ) {
+  void question;
+
   return Boolean(
-    lifelinesForQuestion(
-      question
-    )[
+    ensureLifelinesState()[
       lifeline
     ]
   );
@@ -705,23 +808,28 @@ function markLifelineUsed(
   question,
   lifeline
 ) {
-  updateQuestionLifelines(
-    question,
-    {
-      [lifeline]:
-        true
-    }
-  );
+  void question;
+
+  const state =
+    ensureLifelinesState();
+
+  state[
+    lifeline
+  ] =
+    true;
+
+  lifelinesState =
+    state;
 }
 
 
 function lifelineUsedCount(
   question
 ) {
+  void question;
+
   const state =
-    lifelinesForQuestion(
-      question
-    );
+    ensureLifelinesState();
 
   return [
     LIFELINES.expert,
@@ -765,15 +873,31 @@ function enabledLifelineCount() {
 function eliminatedOptionsFor(
   question
 ) {
-  return (
-    lifelinesForQuestion(
-      question
-    )
-      .eliminatedOptionIds ||
-    []
-  ).map(
-    String
-  );
+  if (!question) {
+    return [];
+  }
+
+  const state =
+    ensureLifelinesState();
+
+  const questionId =
+    String(
+      question.id
+    );
+
+  const eliminated =
+    state
+      .eliminatedOptionIdsByQuestion[
+        questionId
+      ];
+
+  return Array.isArray(
+    eliminated
+  )
+    ? eliminated.map(
+        String
+      )
+    : [];
 }
 
 
@@ -781,48 +905,233 @@ function setEliminatedOptions(
   question,
   optionIds
 ) {
-  updateQuestionLifelines(
-    question,
-    {
-      eliminatedOptionIds:
-        (
-          optionIds ||
-          []
-        ).map(
-          String
-        )
-    }
-  );
+  if (!question) {
+    return;
+  }
+
+  const state =
+    ensureLifelinesState();
+
+  const questionId =
+    String(
+      question.id
+    );
+
+  state
+    .eliminatedOptionIdsByQuestion[
+      questionId
+    ] =
+      Array.isArray(
+        optionIds
+      )
+        ? optionIds.map(
+            String
+          )
+        : [];
+
+  lifelinesState =
+    state;
 }
 
 
 function restoreLifelinesState(
   storedState
 ) {
+  const restored =
+    defaultQuizLifelines();
+
   if (
-    storedState &&
-    typeof storedState ===
-      "object" &&
-    !Array.isArray(
+    !storedState ||
+    typeof storedState !==
+      "object" ||
+    Array.isArray(
       storedState
     )
   ) {
     lifelinesState =
-      storedState;
+      restored;
 
     return;
   }
 
+  /*
+   * Restore the new quiz-wide format.
+   */
+
+  const newFormatDetected =
+    Object.prototype
+      .hasOwnProperty.call(
+        storedState,
+        "expert"
+      ) ||
+    Object.prototype
+      .hasOwnProperty.call(
+        storedState,
+        "filter"
+      ) ||
+    Object.prototype
+      .hasOwnProperty.call(
+        storedState,
+        "guideline"
+      ) ||
+    Object.prototype
+      .hasOwnProperty.call(
+        storedState,
+        "vault"
+      ) ||
+    Object.prototype
+      .hasOwnProperty.call(
+        storedState,
+        "eliminatedOptionIdsByQuestion"
+      );
+
+  if (
+    newFormatDetected
+  ) {
+    restored.expert =
+      Boolean(
+        storedState.expert
+      );
+
+    restored.filter =
+      Boolean(
+        storedState.filter
+      );
+
+    restored.guideline =
+      Boolean(
+        storedState.guideline
+      );
+
+    restored.vault =
+      Boolean(
+        storedState.vault
+      );
+
+    const eliminatedMap =
+      storedState
+        .eliminatedOptionIdsByQuestion;
+
+    if (
+      eliminatedMap &&
+      typeof eliminatedMap ===
+        "object" &&
+      !Array.isArray(
+        eliminatedMap
+      )
+    ) {
+      Object.entries(
+        eliminatedMap
+      ).forEach(
+        (
+          [
+            questionId,
+            optionIds
+          ]
+        ) => {
+          restored
+            .eliminatedOptionIdsByQuestion[
+              String(
+                questionId
+              )
+            ] =
+              Array.isArray(
+                optionIds
+              )
+                ? optionIds.map(
+                    String
+                  )
+                : [];
+        }
+      );
+    }
+
+    lifelinesState =
+      restored;
+
+    return;
+  }
+
+  /*
+   * Migrate old per-question saved attempts.
+   * A lifeline is considered used for the whole quiz when it
+   * had already been used on any question.
+   */
+
+  Object.entries(
+    storedState
+  ).forEach(
+    (
+      [
+        questionId,
+        questionState
+      ]
+    ) => {
+      if (
+        !questionState ||
+        typeof questionState !==
+          "object" ||
+        Array.isArray(
+          questionState
+        )
+      ) {
+        return;
+      }
+
+      restored.expert =
+        restored.expert ||
+        Boolean(
+          questionState.expert
+        );
+
+      restored.filter =
+        restored.filter ||
+        Boolean(
+          questionState.filter
+        );
+
+      restored.guideline =
+        restored.guideline ||
+        Boolean(
+          questionState.guideline
+        );
+
+      restored.vault =
+        restored.vault ||
+        Boolean(
+          questionState.vault
+        );
+
+      if (
+        Array.isArray(
+          questionState
+            .eliminatedOptionIds
+        )
+      ) {
+        restored
+          .eliminatedOptionIdsByQuestion[
+            String(
+              questionId
+            )
+          ] =
+            questionState
+              .eliminatedOptionIds
+              .map(
+                String
+              );
+      }
+    }
+  );
+
   lifelinesState =
-    {};
+    restored;
 }
 
 
 function resetAllLifelines() {
   lifelinesState =
-    {};
+    defaultQuizLifelines();
 }
-
 
 /* =========================================================
    LIFELINE RESPONSE
