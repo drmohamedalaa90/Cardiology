@@ -832,7 +832,7 @@ function openAclSettings() {
   closeAclDrawer();
 
   window.location.assign(
-    nestedPath(
+    editionAwarePath(
       "settings.html"
     )
   );
@@ -1019,36 +1019,34 @@ iconNav.appendChild(
 );
    
   iconNav.appendChild(
-    createHeaderLink({
-      type: "modules",
-      label: "Modules",
-      href:
-        nestedPath(
-          "modules.html"
-        )
-    })
-  );
+  createHeaderLink({
+    type: "modules",
+    label: "Modules",
+    href:
+      editionAwarePath(
+        "modules.html"
+      )
+  })
+);
 
-
-  iconNav.appendChild(
-    createHeaderLink({
-      type: "progress",
-      label:
-        "My Progress",
-      href:
-        nestedPath(
-          "progress.html"
-        )
-    })
-  );
-
+iconNav.appendChild(
+  createHeaderLink({
+    type: "progress",
+    label:
+      "My Progress",
+    href:
+      editionAwarePath(
+        "progress.html"
+      )
+  })
+);
 
 iconNav.appendChild(
   createHeaderLink({
     type: "profile",
     label: "My Profile",
     href:
-      nestedPath(
+      editionAwarePath(
         "profile.html"
       )
   })
@@ -1421,16 +1419,16 @@ menu.appendChild(
   })
 );
 
-  menu.appendChild(
-    createDrawerItem({
-      type: "profile",
-      label: "Edit profile",
-      href:
-        nestedPath(
-          "profile.html"
-        )
-    })
-  );
+ menu.appendChild(
+  createDrawerItem({
+    type: "profile",
+    label: "Edit profile",
+    href:
+      nestedPath(
+        "profile.html"
+      )
+  })
+);
 
 menu.appendChild(
   createDrawerItem({
@@ -1448,27 +1446,26 @@ menu.appendChild(
 );
    
   menu.appendChild(
-    createDrawerItem({
-      type: "modules",
-      label: "Modules",
-      href:
-        nestedPath(
-          "modules.html"
-        )
-    })
-  );
-
+  createDrawerItem({
+    type: "modules",
+    label: "Modules",
+    href:
+      editionAwarePath(
+        "modules.html"
+      )
+  })
+);
 
   menu.appendChild(
-    createDrawerItem({
-      type: "progress",
-      label: "My Progress",
-      href:
-        nestedPath(
-          "progress.html"
-        )
-    })
-  );
+  createDrawerItem({
+    type: "progress",
+    label: "My Progress",
+    href:
+      nestedPath(
+        "progress.html"
+      )
+  })
+);
 
 
   menu.appendChild(
@@ -1658,50 +1655,6 @@ if (
    ACL EDITION-AWARE NAVIGATION
 ========================================================= */
 
-function getActiveAclEdition() {
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
-
-  const urlEdition =
-    params.get(
-      "edition"
-    );
-
-
-  if (
-    urlEdition === "basic" ||
-    urlEdition === "expert"
-  ) {
-    localStorage.setItem(
-      "aclSelectedEdition",
-      urlEdition
-    );
-
-    return urlEdition;
-  }
-
-
-  const savedEdition =
-    localStorage.getItem(
-      "aclSelectedEdition"
-    );
-
-
-  if (
-    savedEdition === "basic" ||
-    savedEdition === "expert"
-  ) {
-    return savedEdition;
-  }
-
-
-  return null;
-}
-
-
 function updateEditionNavigation() {
   const edition =
     getActiveAclEdition();
@@ -1712,16 +1665,19 @@ function updateEditionNavigation() {
   }
 
 
-  const pages = [
-    "modules.html",
-    "progress.html",
-    "profile.html",
-    "settings.html"
-  ];
+  const editionPages =
+    new Set([
+      "modules.html",
+      "progress.html",
+      "profile.html",
+      "settings.html"
+    ]);
 
 
   document
-    .querySelectorAll("a[href]")
+    .querySelectorAll(
+      "a[href]"
+    )
     .forEach(
       (link) => {
         const href =
@@ -1741,51 +1697,56 @@ function updateEditionNavigation() {
         }
 
 
-        const matchingPage =
-          pages.find(
-            (page) =>
-              href === page ||
-              href.startsWith(
-                `${page}?`
-              )
-          );
-
-
-        if (!matchingPage) {
-          return;
-        }
-
-
-        const linkUrl =
+        const url =
           new URL(
             href,
             window.location.href
           );
 
 
-        linkUrl.searchParams.set(
+        const pageName =
+          url.pathname
+            .split("/")
+            .pop();
+
+
+        if (
+          !editionPages.has(
+            pageName
+          )
+        ) {
+          return;
+        }
+
+
+        url.searchParams.set(
           "edition",
           edition
         );
 
 
+        const originalPath =
+          href.split("?")[0];
+
+
         link.setAttribute(
           "href",
-          `${matchingPage}${linkUrl.search}`
+          `${originalPath}${url.search}`
         );
       }
     );
 }
 
 
+document.addEventListener(
+  "DOMContentLoaded",
+  updateEditionNavigation
+);
+
+
 if (
-  document.readyState ===
+  document.readyState !==
   "loading"
 ) {
-  document.addEventListener(
-    "DOMContentLoaded",
-    updateEditionNavigation
-  );
-} else {
   updateEditionNavigation();
 }
