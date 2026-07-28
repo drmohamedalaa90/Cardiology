@@ -479,6 +479,444 @@ function shouldShowPreQuizReview() {
     index === 0
   );
 }
+function normalizePreQuizReviewPoint(
+  point,
+  pointIndex
+) {
+  /*
+   * Backward compatibility:
+   *
+   * Old format:
+   * "Review the definition of heart failure."
+   *
+   * New format:
+   * {
+   *   title: "Definition and classification",
+   *   summary: "Review the definition...",
+   *   content: [...]
+   * }
+   */
+
+  if (
+    typeof point ===
+    "string"
+  ) {
+    return {
+      title:
+        point,
+
+      summary:
+        point,
+
+      content:
+        [],
+
+      available:
+        false,
+
+      pointIndex
+    };
+  }
+
+  if (
+    point &&
+    typeof point ===
+      "object" &&
+    !Array.isArray(
+      point
+    )
+  ) {
+    const content =
+      point.content ??
+      point.points ??
+      point.bullets ??
+      point.lines ??
+      [];
+
+    const normalizedContent =
+      Array.isArray(
+        content
+      )
+        ? content.filter(
+            Boolean
+          )
+        : (
+            typeof content ===
+              "string" &&
+            content.trim()
+              ? [
+                  content.trim()
+                ]
+              : []
+          );
+
+    return {
+      title:
+        point.title ||
+        point.topic ||
+        point.heading ||
+        point.summary ||
+        `Review topic ${pointIndex + 1}`,
+
+      summary:
+        point.summary ||
+        point.subtitle ||
+        point.description ||
+        point.title ||
+        point.topic ||
+        point.heading ||
+        `Review topic ${pointIndex + 1}`,
+
+      content:
+        normalizedContent,
+
+      available:
+        normalizedContent.length >
+        0,
+
+      pointIndex
+    };
+  }
+
+  return {
+    title:
+      `Review topic ${pointIndex + 1}`,
+
+    summary:
+      `Review topic ${pointIndex + 1}`,
+
+    content:
+      [],
+
+    available:
+      false,
+
+    pointIndex
+  };
+}
+
+
+function normalizedPreQuizReviewPoints() {
+  const points =
+    Array.isArray(
+      quiz?.pre_quiz_review_points
+    )
+      ? quiz.pre_quiz_review_points
+      : [];
+
+  return points.map(
+    (
+      point,
+      pointIndex
+    ) =>
+      normalizePreQuizReviewPoint(
+        point,
+        pointIndex
+      )
+  );
+}
+
+
+function ensurePreQuizReviewModal() {
+  let modal =
+    $("preQuizReviewModal");
+
+  if (modal) {
+    return modal;
+  }
+
+  modal =
+    document.createElement(
+      "div"
+    );
+
+  modal.id =
+    "preQuizReviewModal";
+
+  modal.className =
+    "pre-quiz-topic-modal";
+
+  modal.hidden =
+    true;
+
+  modal.innerHTML = `
+    <div
+      id="preQuizReviewModalBackdrop"
+      class="pre-quiz-topic-modal-backdrop"
+    ></div>
+
+    <section
+      class="pre-quiz-topic-modal-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="preQuizReviewModalTitle"
+    >
+
+      <div class="pre-quiz-topic-modal-header">
+
+        <div class="pre-quiz-topic-modal-doctor">
+
+          <img
+            src="${esc(
+              HAPPY_MASCOT
+            )}"
+            alt="Dr. Corazón"
+          >
+
+        </div>
+
+
+        <div class="pre-quiz-topic-modal-heading">
+
+          <span>
+            Dr. Corazón’s review card
+          </span>
+
+          <h2 id="preQuizReviewModalTitle">
+            Topic review
+          </h2>
+
+        </div>
+
+
+        <button
+          id="closePreQuizReviewModal"
+          class="pre-quiz-topic-modal-close"
+          type="button"
+          aria-label="Close review card"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div
+        id="preQuizReviewModalContent"
+        class="pre-quiz-topic-modal-content"
+      ></div>
+
+
+      <div class="pre-quiz-topic-modal-actions">
+
+        <button
+          id="returnToPreQuizPoints"
+          class="secondary-btn pre-quiz-topic-return"
+          type="button"
+        >
+          Back to the review points
+        </button>
+
+        <button
+          id="startQuizFromReviewModal"
+          class="primary-btn pre-quiz-topic-start"
+          type="button"
+        >
+          ✓ I have reviewed — take me to the quiz now!
+        </button>
+
+      </div>
+
+    </section>
+  `;
+
+  document.body.appendChild(
+    modal
+  );
+
+  $("closePreQuizReviewModal")
+    ?.addEventListener(
+      "click",
+      closePreQuizReviewModal
+    );
+
+  $("preQuizReviewModalBackdrop")
+    ?.addEventListener(
+      "click",
+      closePreQuizReviewModal
+    );
+
+  $("returnToPreQuizPoints")
+    ?.addEventListener(
+      "click",
+      closePreQuizReviewModal
+    );
+
+  $("startQuizFromReviewModal")
+    ?.addEventListener(
+      "click",
+      proceedFromPreQuizReview
+    );
+
+  return modal;
+}
+
+
+function preQuizReviewModalContentHtml(
+  reviewPoint
+) {
+  if (
+    !reviewPoint.available
+  ) {
+    return `
+      <div class="pre-quiz-topic-unavailable">
+
+        <span
+          class="pre-quiz-topic-unavailable-icon"
+          aria-hidden="true"
+        >
+          📚
+        </span>
+
+        <h3>
+          Review card coming soon
+        </h3>
+
+        <p>
+          The review card will be available for this topic soon.
+        </p>
+
+        <small>
+          You may return to the review points or proceed directly
+          to the quiz.
+        </small>
+
+      </div>
+    `;
+  }
+
+  return `
+    <div class="pre-quiz-topic-review-card">
+
+      <div class="pre-quiz-topic-review-intro">
+
+        <span>
+          High-yield review
+        </span>
+
+        <p>
+          Review these essential points before starting the quiz.
+        </p>
+
+      </div>
+
+
+      <ul class="pre-quiz-topic-review-list">
+
+        ${reviewPoint.content
+          .map(
+            (line) => `
+              <li>
+                <span
+                  class="pre-quiz-topic-review-check"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
+
+                <span>
+                  ${esc(
+                    line
+                  )}
+                </span>
+              </li>
+            `
+          )
+          .join("")}
+
+      </ul>
+
+    </div>
+  `;
+}
+
+
+function openPreQuizReviewModal(
+  pointIndex
+) {
+  const points =
+    normalizedPreQuizReviewPoints();
+
+  const reviewPoint =
+    points[
+      Number(
+        pointIndex
+      )
+    ];
+
+  if (!reviewPoint) {
+    return;
+  }
+
+  const modal =
+    ensurePreQuizReviewModal();
+
+  const title =
+    $("preQuizReviewModalTitle");
+
+  const content =
+    $("preQuizReviewModalContent");
+
+  if (title) {
+    title.textContent =
+      reviewPoint.title;
+  }
+
+  if (content) {
+    content.innerHTML =
+      preQuizReviewModalContentHtml(
+        reviewPoint
+      );
+  }
+
+  modal.hidden =
+    false;
+
+  document.body.classList.add(
+    "pre-quiz-modal-open"
+  );
+
+  window.requestAnimationFrame(
+    () => {
+      $("closePreQuizReviewModal")
+        ?.focus();
+    }
+  );
+}
+
+
+function closePreQuizReviewModal() {
+  const modal =
+    $("preQuizReviewModal");
+
+  if (modal) {
+    modal.hidden =
+      true;
+  }
+
+  document.body.classList.remove(
+    "pre-quiz-modal-open"
+  );
+}
+
+
+async function proceedFromPreQuizReview() {
+  preQuizReviewSeen =
+    true;
+
+  closePreQuizReviewModal();
+
+  await persist(
+    false
+  );
+
+  render();
+
+  focusLearningContent(
+    ".expert-question-layout"
+  );
+}
+
 function resetPreQuizReviewForNewAttempt() {
   preQuizReviewSeen =
     false;
@@ -3017,11 +3455,7 @@ function bindFeedback(
 ========================================================= */
 function preQuizReviewHtml() {
   const points =
-    Array.isArray(
-      quiz?.pre_quiz_review_points
-    )
-      ? quiz.pre_quiz_review_points
-      : [];
+    normalizedPreQuizReviewPoints();
 
   return `
     <section class="pre-quiz-review">
@@ -3069,31 +3503,66 @@ function preQuizReviewHtml() {
       <div class="pre-quiz-review-points">
 
         ${points
-          .map(
-            (
-              point,
-              pointIndex
-            ) => `
-              <div class="pre-quiz-review-point">
+  .map(
+    (
+      point,
+      pointIndex
+    ) => `
+      <button
+        type="button"
+        class="
+          pre-quiz-review-point
+          pre-quiz-review-point-button
+          ${
+            point.available
+              ? "has-review-card"
+              : "is-coming-soon"
+          }
+        "
+        data-pre-quiz-review-point="${pointIndex}"
+        aria-label="Open review card: ${esc(
+          point.title
+        )}"
+      >
 
-                <span
-                  class="pre-quiz-review-point-number"
-                  aria-hidden="true"
-                >
-                  ${pointIndex + 1}
-                </span>
+        <span
+          class="pre-quiz-review-point-number"
+          aria-hidden="true"
+        >
+          ${pointIndex + 1}
+        </span>
 
-                <p>
-                  ${esc(
-                    point
-                  )}
-                </p>
 
-              </div>
-            `
-          )
-          .join("")}
+        <span class="pre-quiz-review-point-copy">
 
+          <strong>
+            ${esc(
+              point.summary
+            )}
+          </strong>
+
+          <small>
+            ${
+              point.available
+                ? "Open topic review"
+                : "Review card coming soon"
+            }
+          </small>
+
+        </span>
+
+
+        <span
+          class="pre-quiz-review-point-arrow"
+          aria-hidden="true"
+        >
+          ›
+        </span>
+
+      </button>
+    `
+  )
+  .join("")}
       </div>
 
 
@@ -3121,36 +3590,37 @@ function preQuizReviewHtml() {
   `;
 }
 
-
 function bindPreQuizReviewActions() {
-  const proceed =
-    async () => {
-      preQuizReviewSeen =
-        true;
+  document
+    .querySelectorAll(
+      "[data-pre-quiz-review-point]"
+    )
+    .forEach(
+      (button) => {
+        button.addEventListener(
+          "click",
+          () => {
+            openPreQuizReviewModal(
+              button.dataset
+                .preQuizReviewPoint
+            );
+          }
+        );
+      }
+    );
 
-      await persist(
-        false
-      );
-
-      render();
-
-          render();
-
-      focusLearningContent(
-        ".expert-question-layout"
-      );
-    };
 
   $("startQuizAfterReview")
     ?.addEventListener(
       "click",
-      proceed
+      proceedFromPreQuizReview
     );
+
 
   $("skipPreQuizReview")
     ?.addEventListener(
       "click",
-      proceed
+      proceedFromPreQuizReview
     );
 }
 function render() {
@@ -5566,6 +6036,7 @@ document.addEventListener(
       "Escape"
     ) {
       closeFlashcard();
+      closePreQuizReviewModal();
     }
   }
 );
