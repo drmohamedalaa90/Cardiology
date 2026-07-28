@@ -1,5 +1,5 @@
 import { supabaseClient } from "./supabase-client.js";
-import { protectAndRender } from "./session-ui.js?v=2.8.0";
+import { protectAndRender } from "./session-ui.js?v=2.9.0";
 
 
 const grid =
