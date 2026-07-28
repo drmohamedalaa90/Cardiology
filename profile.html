@@ -1,63 +1,522 @@
-<!doctype html><html lang="en"><head>
-<meta name="referrer" content="strict-origin-when-cross-origin">
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Profile | ACL</title>
-<link rel="stylesheet" href="assets/css/main.css?v=2.8.7"><link rel="stylesheet" href="assets/css/auth.css?v=1.5.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header class="topbar"><a class="brand brand-link" href="modules.html" aria-label="ACL Expert Edition home">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container">
-<section class="card"><h1>My Profile</h1><div class="profile-layout"><aside class="profile-avatar-card"><img id="avatarPreview" class="profile-avatar-large" alt="" style="display:none"><div id="avatarPlaceholder" class="avatar-placeholder" style="width:150px;height:150px;margin:auto;font-size:2rem">ACL</div><p><input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></p></aside>
-<form id="profileForm"><div class="form-grid">
-<div class="field full">
-  <label for="displayName">
-    Display Name
-  </label>
+<!doctype html>
+<html lang="en">
 
-  <input
-    id="displayName"
-    type="text"
-    minlength="2"
-    maxlength="60"
-    required
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
   >
 
-  <small>
-    This name appears in your header, profile, leaderboards and connections.
-  </small>
-</div>
-
-
-<div class="field full">
-  <label for="email">
-    Email
-  </label>
-
-  <input
-    id="email"
-    class="readonly-field"
-    type="email"
-    readonly
-  >
-</div>
-
-
-<div class="field full">
-  <label for="username">
-    Username
-  </label>
-
-  <input
-    id="username"
-    class="readonly-field"
-    type="text"
-    readonly
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
   >
 
-  <small>
-    Your username is permanent and cannot be changed.
-  </small>
-</div>
-    <div class="field full"><label>WhatsApp</label><input id="whatsapp" required></div><div class="field"><label for="academicYear">Position</label><select id="academicYear" required><option value="" disabled selected>Select position</option><option value="Consultant">Consultant</option><option value="Specialist">Specialist</option><option value="Assistant Lecturer">Assistant Lecturer</option><option value="Resident">Resident</option><option value="General Practitioner">General Practitioner</option><option value="Intern">Intern</option><option value="Medical Student">Medical Student</option><option value="Nurse">Nurse</option><option value="Technician">Technician</option></select></div><div class="field"><label>Institution</label><input id="institution" required></div></div><button class="primary-btn" type="submit" style="margin-top:18px">Save profile</button><div id="profileStatus" class="status-box"></div></form></div></section>
-<section class="card" style="margin-top:20px"><h2>Change password</h2><form id="passwordForm"><div class="form-grid"><div class="field full"><label for="currentPassword">Current password</label><input id="currentPassword" type="password" autocomplete="current-password" required></div><div class="field"><label for="profileNewPassword">New password</label><input id="profileNewPassword" type="password" autocomplete="new-password" minlength="8" required></div><div class="field"><label for="profileConfirmPassword">Confirm new password</label><input id="profileConfirmPassword" type="password" autocomplete="new-password" minlength="8" required></div></div><button class="primary-btn" type="submit" style="margin-top:18px">Change password</button><div id="passwordStatus" class="status-box"></div></form></section>
-</main>
-<script type="module" src="assets/js/profile-page.js?v=1.6.1"></script>  
- <script type="module" src="assets/js/session-ui.js?v=5.3.2"></script>
-</body></html>
+  <title>
+    My Profile | ACL
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=2.8.13"
+  >
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=1.5.2"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <style>
+    /* =====================================================
+       PROFILE PAGE SPACING
+    ===================================================== */
+
+    body {
+      padding-top: 92px;
+    }
+
+
+    .profile-page {
+      padding-top: 28px;
+      padding-bottom: 60px;
+    }
+
+
+    .profile-page h1 {
+      margin-top: 0;
+    }
+
+
+    .profile-readonly-note {
+      display: block;
+      margin-top: 7px;
+      color: #647f96;
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+
+    .profile-avatar-upload {
+      margin-top: 18px;
+    }
+
+
+    .profile-avatar-upload input {
+      width: 100%;
+    }
+
+
+    #profileStatus:empty,
+    #passwordStatus:empty {
+      display: none;
+    }
+
+
+    @media (max-width: 760px) {
+      body {
+        padding-top: 82px;
+      }
+
+
+      .profile-page {
+        padding-top: 20px;
+      }
+    }
+  </style>
+</head>
+
+
+<body>
+
+  <!-- =====================================================
+       FALLBACK HEADER
+
+       profile-page.js imports session-ui.js, which converts
+       this fallback into the unified ACL header.
+  ====================================================== -->
+
+  <header class="topbar">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="ACL pathway selection"
+    >
+      Alexandria Cardiology League;
+      <b>THE EXPERT EDITION</b>
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open my profile"
+      ></a>
+
+
+      <a
+        class="nav-btn"
+        href="pathways.html"
+      >
+        Pathways
+      </a>
+
+
+      <a
+        class="nav-btn"
+        href="modules.html?edition=expert"
+      >
+        Modules
+      </a>
+
+
+      <a
+        class="nav-btn"
+        href="progress.html"
+      >
+        My Progress
+      </a>
+
+
+      <button
+        class="nav-btn"
+        type="button"
+        onclick="aclSignOut()"
+      >
+        Sign Out
+      </button>
+
+    </nav>
+
+  </header>
+
+
+  <main class="container profile-page">
+
+    <!-- ===================================================
+         PROFILE DETAILS
+    ==================================================== -->
+
+    <section class="card">
+
+      <h1>
+        My Profile
+      </h1>
+
+
+      <div class="profile-layout">
+
+        <!-- ===============================================
+             PROFILE PHOTO
+        ================================================ -->
+
+        <aside class="profile-avatar-card">
+
+          <img
+            id="avatarPreview"
+            class="profile-avatar-large"
+            alt="Profile photo"
+            style="display: none"
+          >
+
+
+          <div
+            id="avatarPlaceholder"
+            class="avatar-placeholder"
+            style="
+              width: 150px;
+              height: 150px;
+              margin: auto;
+              font-size: 2rem;
+            "
+            aria-hidden="true"
+          >
+            ACL
+          </div>
+
+
+          <div class="profile-avatar-upload">
+
+            <label for="avatarFile">
+              Profile photo
+            </label>
+
+            <input
+              id="avatarFile"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+            >
+
+            <small class="profile-readonly-note">
+              Accepted formats: PNG, JPEG or WebP.
+            </small>
+
+          </div>
+
+        </aside>
+
+
+        <!-- ===============================================
+             PROFILE FORM
+        ================================================ -->
+
+        <form id="profileForm">
+
+          <div class="form-grid">
+
+            <div class="field full">
+
+              <label for="displayName">
+                Display Name
+              </label>
+
+              <input
+                id="displayName"
+                type="text"
+                minlength="2"
+                maxlength="60"
+                autocomplete="name"
+                required
+              >
+
+              <small class="profile-readonly-note">
+                This name appears in your header, profile,
+                leaderboards and connections.
+              </small>
+
+            </div>
+
+
+            <div class="field full">
+
+              <label for="email">
+                Email
+              </label>
+
+              <input
+                id="email"
+                class="readonly-field"
+                type="email"
+                autocomplete="email"
+                readonly
+              >
+
+            </div>
+
+
+            <div class="field full">
+
+              <label for="username">
+                Username
+              </label>
+
+              <input
+                id="username"
+                class="readonly-field"
+                type="text"
+                autocomplete="username"
+                readonly
+              >
+
+              <small class="profile-readonly-note">
+                Your username is permanent and cannot be changed.
+              </small>
+
+            </div>
+
+
+            <div class="field full">
+
+              <label for="whatsapp">
+                WhatsApp
+              </label>
+
+              <input
+                id="whatsapp"
+                type="tel"
+                autocomplete="tel"
+                required
+              >
+
+            </div>
+
+
+            <div class="field">
+
+              <label for="academicYear">
+                Position
+              </label>
+
+              <select
+                id="academicYear"
+                required
+              >
+
+                <option
+                  value=""
+                  disabled
+                  selected
+                >
+                  Select position
+                </option>
+
+                <option value="Consultant">
+                  Consultant
+                </option>
+
+                <option value="Specialist">
+                  Specialist
+                </option>
+
+                <option value="Assistant Lecturer">
+                  Assistant Lecturer
+                </option>
+
+                <option value="Resident">
+                  Resident
+                </option>
+
+                <option value="General Practitioner">
+                  General Practitioner
+                </option>
+
+                <option value="Intern">
+                  Intern
+                </option>
+
+                <option value="Medical Student">
+                  Medical Student
+                </option>
+
+                <option value="Nurse">
+                  Nurse
+                </option>
+
+                <option value="Technician">
+                  Technician
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="field">
+
+              <label for="institution">
+                Institution
+              </label>
+
+              <input
+                id="institution"
+                type="text"
+                autocomplete="organization"
+                required
+              >
+
+            </div>
+
+          </div>
+
+
+          <button
+            class="primary-btn"
+            type="submit"
+            style="margin-top: 18px"
+          >
+            Save profile
+          </button>
+
+
+          <div
+            id="profileStatus"
+            class="status-box"
+            role="status"
+            aria-live="polite"
+          ></div>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         CHANGE PASSWORD
+    ==================================================== -->
+
+    <section
+      class="card"
+      style="margin-top: 20px"
+    >
+
+      <h2>
+        Change password
+      </h2>
+
+
+      <form id="passwordForm">
+
+        <div class="form-grid">
+
+          <div class="field full">
+
+            <label for="currentPassword">
+              Current password
+            </label>
+
+            <input
+              id="currentPassword"
+              type="password"
+              autocomplete="current-password"
+              required
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="profileNewPassword">
+              New password
+            </label>
+
+            <input
+              id="profileNewPassword"
+              type="password"
+              autocomplete="new-password"
+              minlength="8"
+              required
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="profileConfirmPassword">
+              Confirm new password
+            </label>
+
+            <input
+              id="profileConfirmPassword"
+              type="password"
+              autocomplete="new-password"
+              minlength="8"
+              required
+            >
+
+          </div>
+
+        </div>
+
+
+        <button
+          class="primary-btn"
+          type="submit"
+          style="margin-top: 18px"
+        >
+          Change password
+        </button>
+
+
+        <div
+          id="passwordStatus"
+          class="status-box"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+      </form>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       PROFILE APPLICATION
+
+       profile-page.js imports session-ui.js.
+       Do not add another separate session-ui.js script.
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="assets/js/profile-page.js?v=1.6.2"
+  ></script>
+
+</body>
+
+</html>
