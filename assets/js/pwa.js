@@ -141,6 +141,12 @@ const installStatus =
     "pwaInstallStatus"
   );
 
+const runningStandalone =
+  window.matchMedia(
+    "(display-mode: standalone)"
+  ).matches ||
+  window.navigator.standalone ===
+    true;
 
 function setInstallStatus(
   message = ""
@@ -149,6 +155,56 @@ function setInstallStatus(
     installStatus.textContent =
       message;
   }
+}
+const isIosDevice =
+  /iphone|ipad|ipod/i.test(
+    navigator.userAgent
+  );
+
+
+const isSafariBrowser =
+  /^((?!chrome|android|crios|fxios).)*safari/i.test(
+    navigator.userAgent
+  );
+
+
+if (
+  isIosDevice &&
+  isSafariBrowser &&
+  !runningStandalone
+) {
+  if (installSection) {
+    installSection.hidden =
+      false;
+  }
+
+
+  if (installButton) {
+    installButton.textContent =
+      "How to install on iPhone";
+
+
+    installButton.addEventListener(
+      "click",
+      () => {
+        window.alert(
+          "To install ACL on iPhone:\n\n" +
+          "1. Tap the Safari Share button.\n" +
+          "2. Scroll down.\n" +
+          "3. Tap Add to Home Screen.\n" +
+          "4. Tap Add."
+        );
+      },
+      {
+        once: true
+      }
+    );
+  }
+
+
+  setInstallStatus(
+    "On iPhone, use Safari → Share → Add to Home Screen."
+  );
 }
 
 function showAppUpdateNotice(
@@ -399,24 +455,19 @@ window.addEventListener(
         true;
     }
 
+    if (installButton) {
+      installButton.hidden =
+        true;
+    }
+
     setInstallStatus(
       "ACL has been installed successfully."
     );
   }
 );
-
-
 /* =========================================================
    ALREADY RUNNING AS AN APP
 ========================================================= */
-
-const runningStandalone =
-  window.matchMedia(
-    "(display-mode: standalone)"
-  ).matches ||
-  window.navigator.standalone ===
-    true;
-
 
 if (runningStandalone) {
   if (installSection) {
@@ -424,7 +475,16 @@ if (runningStandalone) {
       true;
   }
 
+  if (installButton) {
+    installButton.hidden =
+      true;
+  }
+
   setInstallStatus(
-    "You are using the installed ACL app."
+    ""
+  );
+
+  document.body.classList.add(
+    "acl-running-standalone"
   );
 }
