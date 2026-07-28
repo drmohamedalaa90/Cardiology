@@ -1885,6 +1885,270 @@ document.addEventListener(
     }
   }
 );
+/* =========================================================
+   MODULE SEARCH AND FILTERING
+========================================================= */
+
+function normalizedModuleText(
+  module
+) {
+  return [
+    module?.title,
+    module?.name,
+    module?.category,
+    module?.short_description,
+    module?.description,
+    module?.slug,
+    module?.difficulty
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+
+function moduleCategoryKey(
+  module
+) {
+  const theme =
+    getModuleTheme(
+      module
+    );
+
+  if (
+    theme.className ===
+    "module-ecg"
+  ) {
+    return "ecg";
+  }
+
+
+  if (
+    theme.className ===
+    "module-intervention"
+  ) {
+    return "intervention";
+  }
+
+
+  if (
+    theme.className ===
+    "module-imaging"
+  ) {
+    return "imaging";
+  }
+
+
+  return "general";
+}
+
+
+function renderFilteredModules() {
+  if (!grid) {
+    return;
+  }
+
+
+  const searchTerm =
+    String(
+      moduleSearchInput
+        ?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const category =
+    moduleCategoryFilter
+      ?.value ||
+    "all";
+
+
+  const difficulty =
+    moduleDifficultyFilter
+      ?.value ||
+    "all";
+
+
+  const access =
+    moduleAccessFilter
+      ?.value ||
+    "all";
+
+
+  const filteredModules =
+    loadedModules.filter(
+      (module) => {
+        const decision =
+          accessDecision(
+            module,
+            loadedAssignedIds,
+            loadedTotalScore
+          );
+
+
+        const matchesSearch =
+          !searchTerm ||
+          normalizedModuleText(
+            module
+          ).includes(
+            searchTerm
+          );
+
+
+        const matchesCategory =
+          category ===
+            "all" ||
+          moduleCategoryKey(
+            module
+          ) ===
+            category;
+
+
+        const moduleDifficulty =
+          String(
+            module.difficulty ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
+
+
+        const matchesDifficulty =
+          difficulty ===
+            "all" ||
+          moduleDifficulty ===
+            difficulty;
+
+
+        const matchesAccess =
+          access ===
+            "all" ||
+          decision.state ===
+            access;
+
+
+        return (
+          matchesSearch &&
+          matchesCategory &&
+          matchesDifficulty &&
+          matchesAccess
+        );
+      }
+    );
+
+
+  if (
+    !filteredModules.length
+  ) {
+    grid.innerHTML = `
+      <div class="module-filter-empty">
+
+        <strong>
+          No matching modules found
+        </strong>
+
+        <p>
+          Try changing the search term or filters.
+        </p>
+
+      </div>
+    `;
+  } else {
+    grid.innerHTML =
+      filteredModules
+        .map(
+          (module) =>
+            moduleCard(
+              module,
+
+              accessDecision(
+                module,
+                loadedAssignedIds,
+                loadedTotalScore
+              ),
+
+              loadedProgressMap
+            )
+        )
+        .join("");
+  }
+
+
+  if (moduleSearchSummary) {
+    moduleSearchSummary.textContent =
+      `${filteredModules.length} of ${loadedModules.length} module${
+        loadedModules.length === 1
+          ? ""
+          : "s"
+      } shown`;
+  }
+}
+
+
+function clearModuleFilters() {
+  if (moduleSearchInput) {
+    moduleSearchInput.value =
+      "";
+  }
+
+
+  if (moduleCategoryFilter) {
+    moduleCategoryFilter.value =
+      "all";
+  }
+
+
+  if (moduleDifficultyFilter) {
+    moduleDifficultyFilter.value =
+      "all";
+  }
+
+
+  if (moduleAccessFilter) {
+    moduleAccessFilter.value =
+      "all";
+  }
+
+
+  renderFilteredModules();
+}
+
+
+moduleSearchInput
+  ?.addEventListener(
+    "input",
+    renderFilteredModules
+  );
+
+
+moduleCategoryFilter
+  ?.addEventListener(
+    "change",
+    renderFilteredModules
+  );
+
+
+moduleDifficultyFilter
+  ?.addEventListener(
+    "change",
+    renderFilteredModules
+  );
+
+
+moduleAccessFilter
+  ?.addEventListener(
+    "change",
+    renderFilteredModules
+  );
+
+
+clearModuleFiltersButton
+  ?.addEventListener(
+    "click",
+    clearModuleFilters
+  );
 
 /* =========================================================
    LOAD MODULE CATALOGUE
@@ -2082,7 +2346,20 @@ if (catalogueHeading) {
         );
       }
     }
+loadedModules =
+  modules;
 
+
+loadedAssignedIds =
+  assignedIds;
+
+
+loadedTotalScore =
+  totalScore;
+
+
+loadedProgressMap =
+  progressMap;
 
     if (
       !modules.length
@@ -2105,24 +2382,7 @@ if (catalogueHeading) {
       return;
     }
 
-
-    grid.innerHTML =
-      modules
-        .map(
-          (module) =>
-            moduleCard(
-              module,
-
-              accessDecision(
-                module,
-                assignedIds,
-                totalScore
-              ),
-
-              progressMap
-            )
-        )
-        .join("");
+renderFilteredModules();
 
 
     if (summary) {
