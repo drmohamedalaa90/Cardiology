@@ -1,0 +1,596 @@
+/* =========================================================
+   ACL PATHWAY SELECTION
+========================================================= */
+
+:root {
+  --acl-pathway-blue:
+    #0b5791;
+
+  --acl-pathway-deep-blue:
+    #092e57;
+
+  --acl-pathway-yellow:
+    #f2b500;
+
+  --acl-pathway-green:
+    #1da66d;
+
+  --acl-pathway-text:
+    #173f67;
+
+  --acl-pathway-muted:
+    #667f96;
+}
+
+
+* {
+  box-sizing:
+    border-box;
+}
+
+
+body.acl-pathways-page {
+  min-height:
+    100vh;
+
+  margin:
+    0;
+
+  color:
+    var(--acl-pathway-text);
+
+  background:
+    radial-gradient(
+      circle at 8% 8%,
+      rgba(
+        242,
+        181,
+        0,
+        0.15
+      ),
+      transparent 300px
+    ),
+    radial-gradient(
+      circle at 92% 4%,
+      rgba(
+        29,
+        166,
+        109,
+        0.12
+      ),
+      transparent 340px
+    ),
+    linear-gradient(
+      150deg,
+      #edf7ff 0%,
+      #f9fcff 50%,
+      #eef6ff 100%
+    );
+
+  font-family:
+    Inter,
+    Arial,
+    sans-serif;
+}
+
+
+.pathways-shell {
+  width:
+    min(
+      1120px,
+      calc(
+        100% - 30px
+      )
+    );
+
+  margin:
+    0 auto;
+
+  padding:
+    64px 0 72px;
+}
+
+
+.pathways-heading {
+  max-width:
+    780px;
+
+  margin:
+    0 auto 38px;
+
+  text-align:
+    center;
+}
+
+
+.pathways-kicker {
+  display:
+    inline-block;
+
+  margin-bottom:
+    13px;
+
+  color:
+    var(--acl-pathway-blue);
+
+  font-size:
+    0.78rem;
+
+  font-weight:
+    1000;
+
+  letter-spacing:
+    0.14em;
+}
+
+
+.pathways-heading h1 {
+  margin:
+    0;
+
+  color:
+    var(--acl-pathway-deep-blue);
+
+  font-size:
+    clamp(
+      2.1rem,
+      6vw,
+      4rem
+    );
+
+  line-height:
+    1.05;
+}
+
+
+.pathways-heading p {
+  max-width:
+    680px;
+
+  margin:
+    18px auto 0;
+
+  color:
+    var(--acl-pathway-muted);
+
+  font-size:
+    1.04rem;
+
+  line-height:
+    1.7;
+}
+
+
+.pathways-grid {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap:
+    24px;
+}
+
+
+.pathway-card {
+  position:
+    relative;
+
+  display:
+    flex;
+
+  min-height:
+    540px;
+
+  overflow:
+    hidden;
+
+  flex-direction:
+    column;
+
+  padding:
+    34px;
+
+  border:
+    1px solid
+    rgba(
+      11,
+      87,
+      145,
+      0.14
+    );
+
+  border-radius:
+    28px;
+
+  color:
+    inherit;
+
+  text-decoration:
+    none;
+
+  box-shadow:
+    0 24px 55px
+    rgba(
+      12,
+      43,
+      81,
+      0.12
+    );
+
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+
+.pathway-card:hover {
+  transform:
+    translateY(
+      -5px
+    );
+
+  box-shadow:
+    0 30px 65px
+    rgba(
+      12,
+      43,
+      81,
+      0.18
+    );
+}
+
+
+.pathway-basic {
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(
+        242,
+        181,
+        0,
+        0.22
+      ),
+      transparent 310px
+    ),
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #effff8
+    );
+}
+
+
+.pathway-expert {
+  color:
+    #ffffff;
+
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(
+        242,
+        181,
+        0,
+        0.25
+      ),
+      transparent 330px
+    ),
+    linear-gradient(
+      145deg,
+      #0b5791,
+      #092e57
+    );
+}
+
+
+.pathway-card-decoration {
+  position:
+    absolute;
+
+  top:
+    25px;
+
+  right:
+    25px;
+
+  display:
+    flex;
+
+  gap:
+    7px;
+
+  opacity:
+    0.5;
+}
+
+
+.pathway-card-decoration span {
+  width:
+    8px;
+
+  height:
+    8px;
+
+  border-radius:
+    50%;
+
+  background:
+    var(--acl-pathway-yellow);
+}
+
+
+.pathway-icon {
+  display:
+    grid;
+
+  width:
+    72px;
+
+  height:
+    72px;
+
+  margin-bottom:
+    27px;
+
+  place-items:
+    center;
+
+  border-radius:
+    22px;
+
+  font-size:
+    2rem;
+}
+
+
+.pathway-basic .pathway-icon {
+  background:
+    rgba(
+      29,
+      166,
+      109,
+      0.12
+    );
+}
+
+
+.pathway-expert .pathway-icon {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.12
+    );
+}
+
+
+.pathway-label {
+  margin-bottom:
+    7px;
+
+  color:
+    var(--acl-pathway-yellow);
+
+  font-size:
+    0.78rem;
+
+  font-weight:
+    1000;
+
+  letter-spacing:
+    0.13em;
+}
+
+
+.pathway-card h2 {
+  margin:
+    0;
+
+  font-size:
+    clamp(
+      1.65rem,
+      4vw,
+      2.5rem
+    );
+
+  line-height:
+    1.1;
+}
+
+
+.pathway-tagline {
+  min-height:
+    90px;
+
+  margin:
+    18px 0 24px;
+
+  line-height:
+    1.65;
+}
+
+
+.pathway-basic .pathway-tagline {
+  color:
+    var(--acl-pathway-muted);
+}
+
+
+.pathway-expert .pathway-tagline {
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.8
+    );
+}
+
+
+.pathway-audience {
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    9px;
+
+  margin-bottom:
+    28px;
+}
+
+
+.pathway-audience span {
+  padding:
+    8px 11px;
+
+  border-radius:
+    999px;
+
+  font-size:
+    0.77rem;
+
+  font-weight:
+    800;
+}
+
+
+.pathway-basic .pathway-audience span {
+  color:
+    #14754e;
+
+  background:
+    rgba(
+      29,
+      166,
+      109,
+      0.09
+    );
+}
+
+
+.pathway-expert .pathway-audience span {
+  color:
+    #ffffff;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.1
+    );
+}
+
+
+.pathway-action {
+  display:
+    flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    center;
+
+  min-height:
+    58px;
+
+  margin-top:
+    auto;
+
+  padding:
+    0 18px;
+
+  border-radius:
+    17px;
+
+  font-weight:
+    1000;
+}
+
+
+.pathway-action span {
+  font-size:
+    1.4rem;
+}
+
+
+.pathway-basic .pathway-action {
+  color:
+    #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--acl-pathway-green),
+      #14754e
+    );
+}
+
+
+.pathway-expert .pathway-action {
+  color:
+    var(--acl-pathway-deep-blue);
+
+  background:
+    var(--acl-pathway-yellow);
+}
+
+
+.pathways-note {
+  margin:
+    26px 0 0;
+
+  color:
+    var(--acl-pathway-muted);
+
+  text-align:
+    center;
+
+  font-size:
+    0.9rem;
+}
+
+
+@media (
+  max-width:
+    760px
+) {
+  .pathways-shell {
+    padding:
+      36px 0 50px;
+  }
+
+
+  .pathways-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .pathway-card {
+    min-height:
+      auto;
+
+    padding:
+      26px 21px;
+  }
+
+
+  .pathway-tagline {
+    min-height:
+      auto;
+  }
+}
