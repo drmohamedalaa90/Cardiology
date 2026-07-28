@@ -456,7 +456,274 @@
       revealUnifiedHeader();
     })();
   </script>
+<div
+  id="moduleChallengeModal"
+  class="module-challenge-modal"
+  hidden
+>
+  <div
+    id="moduleChallengeBackdrop"
+    class="module-challenge-backdrop"
+  ></div>
 
+  <section
+    class="module-challenge-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="moduleChallengeTitle"
+  >
+    <header class="module-challenge-header">
+
+      <div class="module-challenge-heading-copy">
+
+        <span class="module-challenge-kicker">
+          ACL HEAD-TO-HEAD
+        </span>
+
+        <h2 id="moduleChallengeTitle">
+          Challenge your colleagues
+        </h2>
+
+        <p id="moduleChallengeModuleName">
+          Selected module
+        </p>
+
+      </div>
+
+      <button
+        id="closeModuleChallenge"
+        type="button"
+        class="module-challenge-close"
+        aria-label="Close challenge window"
+      >
+        ×
+      </button>
+
+    </header>
+
+
+    <div class="module-challenge-body">
+
+      <div class="module-challenge-intro">
+
+        <div
+          class="module-challenge-versus"
+          aria-hidden="true"
+        >
+          <span>YOU</span>
+          <strong>VS</strong>
+          <span>FRIENDS</span>
+        </div>
+
+        <p>
+          Create a private challenge and compete using the same
+          question set, confidence-adjusted scoring, and time
+          tie-breaker.
+        </p>
+
+      </div>
+
+
+      <fieldset class="module-challenge-fieldset">
+
+        <legend>
+          Who would you like to challenge?
+        </legend>
+
+        <label class="module-challenge-choice">
+
+          <input
+            type="radio"
+            name="challengeAudience"
+            value="single"
+            checked
+          >
+
+          <span class="module-challenge-choice-icon">
+            ⚔️
+          </span>
+
+          <span class="module-challenge-choice-copy">
+
+            <strong>
+              One friend
+            </strong>
+
+            <small>
+              A private one-to-one challenge.
+            </small>
+
+          </span>
+
+        </label>
+
+
+        <label class="module-challenge-choice">
+
+          <input
+            type="radio"
+            name="challengeAudience"
+            value="multiple"
+          >
+
+          <span class="module-challenge-choice-icon">
+            👥
+          </span>
+
+          <span class="module-challenge-choice-copy">
+
+            <strong>
+              Multiple friends
+            </strong>
+
+            <small>
+              Invite a private group.
+            </small>
+
+          </span>
+
+        </label>
+
+
+        <label class="module-challenge-choice">
+
+          <input
+            type="radio"
+            name="challengeAudience"
+            value="open"
+          >
+
+          <span class="module-challenge-choice-icon">
+            🔗
+          </span>
+
+          <span class="module-challenge-choice-copy">
+
+            <strong>
+              Open challenge link
+            </strong>
+
+            <small>
+              Anyone with the link can join.
+            </small>
+
+          </span>
+
+        </label>
+
+      </fieldset>
+
+
+      <div class="module-challenge-settings-grid">
+
+        <label class="module-challenge-field">
+
+          <span>
+            Challenge duration
+          </span>
+
+          <select id="moduleChallengeDuration">
+
+            <option value="24">
+              24 hours
+            </option>
+
+            <option value="72">
+              3 days
+            </option>
+
+            <option value="168">
+              7 days
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label class="module-challenge-field">
+
+          <span>
+            Maximum participants
+          </span>
+
+          <input
+            id="moduleChallengeMaximumParticipants"
+            type="number"
+            min="2"
+            max="100"
+            value="2"
+          >
+
+        </label>
+
+      </div>
+
+
+      <div class="module-challenge-rules">
+
+        <strong>
+          Challenge rules
+        </strong>
+
+        <ul>
+
+          <li>
+            Same questions for all participants.
+          </li>
+
+          <li>
+            Confidence-adjusted scoring.
+          </li>
+
+          <li>
+            Highest score wins.
+          </li>
+
+          <li>
+            Shortest completion time breaks ties.
+          </li>
+
+          <li>
+            One official challenge attempt per participant.
+          </li>
+
+        </ul>
+
+      </div>
+
+
+      <div
+        id="moduleChallengeResult"
+        class="module-challenge-result"
+        hidden
+      ></div>
+
+    </div>
+
+
+    <footer class="module-challenge-actions">
+
+      <button
+        id="cancelModuleChallenge"
+        type="button"
+        class="secondary-btn"
+      >
+        Cancel
+      </button>
+
+      <button
+        id="createModuleChallenge"
+        type="button"
+        class="primary-btn module-challenge-create"
+      >
+        ⚔️ Create challenge
+      </button>
+
+    </footer>
+
+  </section>
+</div>
 </body>
 
 </html>
