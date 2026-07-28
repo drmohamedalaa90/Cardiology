@@ -653,7 +653,50 @@ function challengeElement(
   );
 }
 
+function shuffleChallengeItems(
+  items
+) {
+  const result =
+    [
+      ...items
+    ];
 
+  for (
+    let currentIndex =
+      result.length - 1;
+
+    currentIndex > 0;
+
+    currentIndex -= 1
+  ) {
+    const randomIndex =
+      Math.floor(
+        Math.random() *
+        (
+          currentIndex +
+          1
+        )
+      );
+
+    [
+      result[
+        currentIndex
+      ],
+      result[
+        randomIndex
+      ]
+    ] = [
+      result[
+        randomIndex
+      ],
+      result[
+        currentIndex
+      ]
+    ];
+  }
+
+  return result;
+}
 function randomChallengeCode() {
   const code =
     crypto
@@ -1000,31 +1043,31 @@ async function createModuleChallenge() {
      * Find the published quiz from the module launch path.
      */
 
-    const {
-      data: quizData,
-      error: quizError
-    } =
-      await supabaseClient
-        .from(
-          "quizzes"
-        )
-        .select(`
-          id,
-          slug,
-          title,
-          module_id,
-          question_count
-        `)
-        .eq(
-          "slug",
-          quizSlug
-        )
-        .eq(
-          "status",
-          "published"
-        )
-        .maybeSingle();
-
+const {
+  data: quizData,
+  error: quizError
+} =
+  await supabaseClient
+    .from(
+      "quizzes"
+    )
+    .select(`
+      id,
+      slug,
+      title,
+      module_id,
+      question_count
+    `)
+    .eq(
+      "slug",
+      quizSlug
+    )
+    .eq(
+      "status",
+      "published"
+    )
+    .maybeSingle();
+    
     if (quizError) {
       throw quizError;
     }
@@ -1035,7 +1078,112 @@ async function createModuleChallenge() {
       );
     }
 
+/*
+ * Load all published questions belonging to this quiz.
+ * The selected IDs will be saved permanently in the
+ * challenge so every participant receives the same set.
+ */
 
+const {
+  data: questionRows,
+  error: questionsError
+} =
+  await supabaseClient
+    .from(
+      "questions"
+    )
+    .select(`
+      id,
+      order_index
+    `)
+    .eq(
+      "quiz_id",
+      quizData.id
+    )
+    .order(
+      "order_index",
+      {
+        ascending:
+          true
+      }
+    );
+
+if (questionsError) {
+  throw questionsError;
+}
+
+if (
+  !Array.isArray(
+    questionRows
+  ) ||
+  !questionRows.length
+) {
+  throw new Error(
+    "No questions are available for this challenge."
+  );
+}
+
+
+/*
+ * Preserve normal order unless this quiz is configured
+ * to select questions randomly.
+ */
+
+const shouldRandomizeQuestions =
+  Boolean(
+    quizData
+      .randomize_questions
+  ) ||
+  quizData
+    .selection_mode ===
+    "random";
+
+const challengeQuestionPool =
+  shouldRandomizeQuestions
+    ? shuffleChallengeItems(
+        questionRows
+      )
+    : [
+        ...questionRows
+      ];
+
+
+const requestedQuestionCount =
+  Math.max(
+    1,
+    Number(
+      quizData
+        .question_count ||
+      challengeQuestionPool
+        .length
+    )
+  );
+
+
+const challengeQuestionIds =
+  challengeQuestionPool
+    .slice(
+      0,
+      Math.min(
+        requestedQuestionCount,
+        challengeQuestionPool
+          .length
+      )
+    )
+    .map(
+      (question) =>
+        question.id
+    );
+
+
+if (
+  !challengeQuestionIds
+    .length
+) {
+  throw new Error(
+    "The challenge question set could not be prepared."
+  );
+}
     const audience =
       selectedChallengeAudience();
 
@@ -1098,9 +1246,9 @@ async function createModuleChallenge() {
           title:
             `${selectedChallengeModule.title} Challenge`,
 
-          question_ids:
-            [],
-
+         question_ids:
+  challengeQuestionIds,
+          
           maximum_participants:
             maximumParticipants,
 
@@ -1200,9 +1348,25 @@ async function createModuleChallenge() {
           </h3>
 
           <p>
-            Share this private challenge link with your friend
-            or group.
-          </p>
+  Share this private challenge link with your friend
+  or group.
+</p>
+
+<div class="module-challenge-created-summary">
+
+  <span>
+    Questions
+  </span>
+
+  <strong>
+    ${challengeQuestionIds.length}
+  </strong>
+
+  <small>
+    The same question set will be used for all participants.
+  </small>
+
+</div>
 
           <div class="module-challenge-code">
 
