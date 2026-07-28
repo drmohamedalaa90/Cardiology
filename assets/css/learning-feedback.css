@@ -5065,3 +5065,116 @@ body.acl-expert-learning-mode
     animation: none;
   }
 }
+/* =========================================================
+   QUIZ-WIDE LIFELINE STATUS
+========================================================= */
+
+.compact-lifeline-button {
+  position: relative;
+}
+
+.compact-lifeline-button.is-used {
+  opacity: 0.62;
+  cursor: not-allowed;
+  filter: grayscale(0.25);
+}
+
+.compact-lifeline-used-copy {
+  display: block;
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #64748b;
+}
+
+.compact-lifelines-counter {
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 900;
+  color: #0b4f91;
+  background: #eaf4ff;
+  border: 1px solid #b9dbff;
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.compact-lifelines-counter.is-empty {
+  color: #7a2d2d;
+  background: #fff0f0;
+  border-color: #f2b6b6;
+}
+
+
+/* =========================================================
+   DR. CORAZÓN LIFELINE RESPONSE
+========================================================= */
+
+.scientific-lifeline-response.is-expert-response {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  background:
+    linear-gradient(
+      135deg,
+      #f4faff,
+      #ffffff
+    );
+  border: 2px solid #80bfff;
+  border-radius: 22px;
+  padding: 14px 18px;
+  box-shadow:
+    0 14px 32px
+    rgba(19, 91, 160, 0.14);
+}
+
+.lifeline-expert-character {
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #ddecff;
+}
+
+.lifeline-expert-character img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.lifeline-response-content {
+  min-width: 0;
+}
+
+.scientific-lifeline-response.is-expert-response p {
+  margin-bottom: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .scientific-lifeline-response.is-expert-response {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .lifeline-expert-character {
+    width: 58px;
+    height: 58px;
+  }
+
+  .compact-lifeline-used-copy {
+    font-size: 8px;
+  }
+
+  .compact-lifelines-counter {
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+}
