@@ -144,7 +144,8 @@ let lifelinesState =
 
 let pendingSelectedIds =
   [];
-
+let preQuizReviewSeen =
+  false;
 
 let aclSettings =
   normalizeAclSettings(
@@ -335,7 +336,7 @@ function randomItems(
   items,
   count
 ) {
-  const pool =
+    const pool =
     [...items];
 
   const selected =
@@ -362,7 +363,82 @@ function randomItems(
 
   return selected;
 }
+async function loadPreQuizReviewConfig() {
+  if (!quiz?.id) {
+    return;
+  }
 
+  try {
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from(
+          "quizzes"
+        )
+        .select(`
+          pre_quiz_review_enabled,
+          pre_quiz_review_title,
+          pre_quiz_review_points
+        `)
+        .eq(
+          "id",
+          quiz.id
+        )
+        .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      return;
+    }
+
+    quiz.pre_quiz_review_enabled =
+      Boolean(
+        data.pre_quiz_review_enabled
+      );
+
+    quiz.pre_quiz_review_title =
+      data.pre_quiz_review_title ||
+      "Dr. Corazón recommends reviewing these points";
+
+    quiz.pre_quiz_review_points =
+      Array.isArray(
+        data.pre_quiz_review_points
+      )
+        ? data.pre_quiz_review_points
+        : [];
+  } catch (error) {
+    console.warn(
+      "PRE-QUIZ REVIEW CONFIG ERROR:",
+      error
+    );
+
+    quiz.pre_quiz_review_enabled =
+      false;
+
+    quiz.pre_quiz_review_points =
+      [];
+  }
+}
+
+
+function shouldShowPreQuizReview() {
+  return Boolean(
+    quiz?.pre_quiz_review_enabled &&
+    Array.isArray(
+      quiz?.pre_quiz_review_points
+    ) &&
+    quiz.pre_quiz_review_points.length &&
+    !preQuizReviewSeen &&
+    !reviewMode &&
+    answers.length === 0 &&
+    index === 0
+  );
+}
 
 /* =========================================================
    CONFIDENCE SCORING
@@ -496,7 +572,9 @@ function appState() {
 
     answers,
 
-    lifelinesState,
+     lifelinesState,
+
+    preQuizReviewSeen,
 
     confidenceEnabled:
       confidenceEnabled(),
@@ -2884,11 +2962,206 @@ function bindFeedback(
 /* =========================================================
    QUESTION RENDERING
 ========================================================= */
+function preQuizReviewHtml() {
+  const points =
+    Array.isArray(
+      quiz?.pre_quiz_review_points
+    )
+      ? quiz.pre_quiz_review_points
+      : [];
 
+  return `
+    <section class="pre-quiz-review">
+
+      <div class="pre-quiz-review-hero">
+
+        <div class="pre-quiz-review-mascot-stage">
+
+          <div class="pre-quiz-review-mascot-glow"></div>
+
+          <img
+            class="pre-quiz-review-mascot"
+            src="${esc(
+              HAPPY_MASCOT
+            )}"
+            alt="Dr. Corazón"
+          >
+
+        </div>
+
+
+        <div class="pre-quiz-review-heading">
+
+          <span class="pre-quiz-review-kicker">
+            Before you begin
+          </span>
+
+          <h2>
+            ${esc(
+              quiz.pre_quiz_review_title ||
+              "Dr. Corazón recommends reviewing these points"
+            )}
+          </h2>
+
+          <p>
+            A quick high-yield briefing before starting the module.
+            You may review it or proceed directly to the quiz.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="pre-quiz-review-points">
+
+        ${points
+          .map(
+            (
+              point,
+              pointIndex
+            ) => `
+              <div class="pre-quiz-review-point">
+
+                <span
+                  class="pre-quiz-review-point-number"
+                  aria-hidden="true"
+                >
+                  ${pointIndex + 1}
+                </span>
+
+                <p>
+                  ${esc(
+                    point
+                  )}
+                </p>
+
+              </div>
+            `
+          )
+          .join("")}
+
+      </div>
+
+
+      <div class="pre-quiz-review-actions">
+
+        <button
+          id="startQuizAfterReview"
+          class="primary-btn pre-quiz-primary-action"
+          type="button"
+        >
+          ✓ I’ve reviewed the points — start quiz
+        </button>
+
+        <button
+          id="skipPreQuizReview"
+          class="secondary-btn pre-quiz-skip-action"
+          type="button"
+        >
+          No need for help — I can take the quiz directly
+        </button>
+
+      </div>
+
+    </section>
+  `;
+}
+
+
+function bindPreQuizReviewActions() {
+  const proceed =
+    async () => {
+      preQuizReviewSeen =
+        true;
+
+      await persist(
+        false
+      );
+
+      render();
+
+      window.scrollTo({
+        top:
+          0,
+
+        behavior:
+          "smooth"
+      });
+    };
+
+  $("startQuizAfterReview")
+    ?.addEventListener(
+      "click",
+      proceed
+    );
+
+  $("skipPreQuizReview")
+    ?.addEventListener(
+      "click",
+      proceed
+    );
+}
 function render() {
   document.body.classList.add(
     "acl-expert-learning-mode"
   );
+
+  const quizArea =
+    $("quizArea");
+
+  const feedbackHost =
+    $("answerFeedbackHost");
+
+  const submitButton =
+    $("submitAnswer");
+
+  const nextButton =
+    $("nextQuestion");
+
+  if (
+    shouldShowPreQuizReview()
+  ) {
+    if (quizArea) {
+      quizArea.innerHTML =
+        preQuizReviewHtml();
+    }
+
+    if (feedbackHost) {
+      feedbackHost.innerHTML =
+        "";
+    }
+
+    if (submitButton) {
+      submitButton.hidden =
+        true;
+    }
+
+    if (nextButton) {
+      nextButton.hidden =
+        true;
+    }
+
+    const progressFill =
+      $("progressFill");
+
+    const questionCount =
+      $("questionCount");
+
+    if (progressFill) {
+      progressFill.style.width =
+        "0%";
+    }
+
+    if (questionCount) {
+      questionCount.textContent =
+        "Pre-quiz briefing";
+    }
+
+    bindPreQuizReviewActions();
+
+    return;
+  }
 
   const question =
     currentQuestion();
@@ -2932,8 +3205,6 @@ function render() {
   const questionCount =
     $("questionCount");
 
-  const quizArea =
-    $("quizArea");
 
   if (progressFill) {
     progressFill.style.width =
@@ -3197,9 +3468,6 @@ return `
     </article>
   `;
 
-  const feedbackHost =
-    $("answerFeedbackHost");
-
   if (feedbackHost) {
     feedbackHost.innerHTML =
       answer
@@ -3209,13 +3477,7 @@ return `
         : "";
   }
 
-  const submitButton =
-    $("submitAnswer");
-
-  const nextButton =
-    $("nextQuestion");
-
-  if (submitButton) {
+    if (submitButton) {
     submitButton.hidden =
       Boolean(
         answer
@@ -5057,8 +5319,11 @@ async function startNewAttempt() {
     finishing =
       false;
 
-    pendingSelectedIds =
+        pendingSelectedIds =
       [];
+
+    preQuizReviewSeen =
+      false;
 
     resetAllLifelines();
 
@@ -5257,8 +5522,10 @@ document.addEventListener(
       );
     }
 
-    quiz =
+       quiz =
       data;
+
+    await loadPreQuizReviewConfig();
 
     const moduleTitle =
       $("moduleTitle");
@@ -5388,6 +5655,17 @@ document.addEventListener(
         )
           ? attempt.answers
           : [];
+            preQuizReviewSeen =
+        Boolean(
+          attempt.preQuizReviewSeen ??
+          attempt.pre_quiz_review_seen ??
+          attempt.state
+            ?.preQuizReviewSeen ??
+          attempt.app_state
+            ?.preQuizReviewSeen ??
+          answers.length > 0 ||
+          index > 0
+        );
 
       restoreLifelinesState(
         attempt.lifelines ||
