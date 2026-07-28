@@ -77,7 +77,14 @@ const modulePageParameters =
   );
 
 
-const selectedEdition =
+const validEditions =
+  new Set([
+    "basic",
+    "expert"
+  ]);
+
+
+let selectedEdition =
   String(
     modulePageParameters.get(
       "edition"
@@ -88,16 +95,81 @@ const selectedEdition =
     .toLowerCase();
 
 
-const validEditions =
-  new Set([
-    "basic",
-    "expert"
-  ]);
+const savedEdition =
+  String(
+    localStorage.getItem(
+      "aclSelectedEdition"
+    ) ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+
+
+if (
+  !validEditions.has(
+    selectedEdition
+  )
+) {
+  selectedEdition =
+    savedEdition;
+}
+
+
+if (
+  !validEditions.has(
+    selectedEdition
+  )
+) {
+  window.location.replace(
+    "pathways.html"
+  );
+
+  throw new Error(
+    "No valid ACL edition selected."
+  );
+}
+
+
+localStorage.setItem(
+  "aclSelectedEdition",
+  selectedEdition
+);
 
 
 /*
- * Opening modules.html without an edition takes the user
- * back to the pathway-selection screen.
+ * Add the remembered edition to the URL without reloading.
+ */
+
+if (
+  !modulePageParameters.get(
+    "edition"
+  )
+) {
+  const updatedUrl =
+    new URL(
+      window.location.href
+    );
+
+
+  updatedUrl.searchParams.set(
+    "edition",
+    selectedEdition
+  );
+
+
+  window.history.replaceState(
+    {},
+    "",
+    updatedUrl
+  );
+}
+
+
+/*
+ * Opening modules.html without an edition uses the last
+ * selected ACL pathway. If none exists, the user returns
+ * to the pathway-selection screen.
  */
 
 if (
