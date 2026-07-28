@@ -23,3 +23,46 @@ import {
     "pathways-ready"
   );
 })();
+
+
+/* =========================================================
+   REMEMBER SELECTED EDITION
+========================================================= */
+
+document
+  .querySelectorAll(
+    "[data-edition]"
+  )
+  .forEach(
+    (pathwayControl) => {
+      pathwayControl.addEventListener(
+        "click",
+        (event) => {
+          const edition =
+            pathwayControl.dataset
+              .edition;
+
+
+          if (
+            edition !== "basic" &&
+            edition !== "expert"
+          ) {
+            return;
+          }
+
+
+          event.preventDefault();
+
+
+          localStorage.setItem(
+            "aclSelectedEdition",
+            edition
+          );
+
+
+          window.location.href =
+            `modules.html?edition=${edition}`;
+        }
+      );
+    }
+  );
