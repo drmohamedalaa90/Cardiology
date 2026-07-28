@@ -229,7 +229,47 @@ function shuffle(items) {
   return result;
 }
 
+function focusLearningContent(
+  selector,
+  behavior = "smooth"
+) {
+  window.requestAnimationFrame(
+    () => {
+      window.requestAnimationFrame(
+        () => {
+          const target =
+            document.querySelector(
+              selector
+            );
 
+          if (!target) {
+            return;
+          }
+
+          const headerOffset =
+            24;
+
+          const targetTop =
+            target
+              .getBoundingClientRect()
+              .top +
+            window.scrollY -
+            headerOffset;
+
+          window.scrollTo({
+            top:
+              Math.max(
+                targetTop,
+                0
+              ),
+
+            behavior
+          });
+        }
+      );
+    }
+  );
+}
 function currentQuestion() {
   return (
     questions[index] ||
@@ -439,7 +479,20 @@ function shouldShowPreQuizReview() {
     index === 0
   );
 }
+function resetPreQuizReviewForNewAttempt() {
+  preQuizReviewSeen =
+    false;
 
+  if (
+    quiz?.pre_quiz_review_enabled &&
+    !Array.isArray(
+      quiz.pre_quiz_review_points
+    )
+  ) {
+    quiz.pre_quiz_review_points =
+      [];
+  }
+}
 /* =========================================================
    CONFIDENCE SCORING
 ========================================================= */
@@ -3081,13 +3134,11 @@ function bindPreQuizReviewActions() {
 
       render();
 
-      window.scrollTo({
-        top:
-          0,
+          render();
 
-        behavior:
-          "smooth"
-      });
+      focusLearningContent(
+        ".expert-question-layout"
+      );
     };
 
   $("startQuizAfterReview")
@@ -5316,108 +5367,108 @@ quizArea.innerHTML = `
    NEW ATTEMPT
 ========================================================= */
 
-async function startNewAttempt() {
-  try {
-    setStatus(
-      "Preparing new attempt…"
-    );
-
-    answers =
-      [];
-
-    index =
-      0;
-
-    reviewMode =
-      false;
-
-    finishing =
-      false;
-
-    pendingSelectedIds =
-      [];
-
-    preQuizReviewSeen =
-      false;
-
-    resetAllLifelines();
-
-    /*
-     * Reload the briefing configuration so that every
-     * completely new attempt begins with Dr. Corazón's
-     * optional review screen.
-     */
-
-    await loadPreQuizReviewConfig();
-
-    attempt =
-      await createAttempt({
-        moduleId:
-          quiz.module_id,
-
-        moduleTitle:
-          quiz.module_title,
-
-        quizId:
-          quiz.id,
-
-        quizTitle:
-          quiz.title,
-
-        mode:
-          quiz.mode,
-
-        questionIds:
-          questions.map(
-            (question) =>
-              question.id
-          ),
-
-        lifelines:
-          lifelinesState
-      });
-
-    /*
-     * Keep this false after creating the cloud attempt.
-     * The candidate has not yet passed the briefing screen.
-     */
-
-    preQuizReviewSeen =
-      false;
-
-    setStatus(
-      "New learning attempt saved"
-    );
-
-    render();
-
-    window.requestAnimationFrame(
-      () => {
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth"
+  async function startNewAttempt() {
+    try {
+      setStatus(
+        "Preparing new attempt…"
+      );
+  
+      answers =
+        [];
+  
+      index =
+        0;
+  
+      reviewMode =
+        false;
+  
+      finishing =
+        false;
+  
+      pendingSelectedIds =
+        [];
+  
+      preQuizReviewSeen =
+        false;
+  
+      resetAllLifelines();
+  
+      /*
+       * Reload the briefing configuration so that every
+       * completely new attempt begins with Dr. Corazón's
+       * optional review screen.
+       */
+  
+      await loadPreQuizReviewConfig();
+  
+      attempt =
+        await createAttempt({
+          moduleId:
+            quiz.module_id,
+  
+          moduleTitle:
+            quiz.module_title,
+  
+          quizId:
+            quiz.id,
+  
+          quizTitle:
+            quiz.title,
+  
+          mode:
+            quiz.mode,
+  
+          questionIds:
+            questions.map(
+              (question) =>
+                question.id
+            ),
+  
+          lifelines:
+            lifelinesState
         });
-
-        $("quizArea")
-          ?.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
+  
+      /*
+       * Keep this false after creating the cloud attempt.
+       * The candidate has not yet passed the briefing screen.
+       */
+  
+      preQuizReviewSeen =
+        false;
+  
+      setStatus(
+        "New learning attempt saved"
+      );
+  
+      render();
+  
+      window.requestAnimationFrame(
+        () => {
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth"
           });
-      }
-    );
-  } catch (error) {
-    console.error(
-      "NEW ATTEMPT ERROR:",
-      error
-    );
-
-    setStatus(
-      error.message ||
-      "Could not create a new attempt.",
-      true
-    );
+  
+          $("quizArea")
+            ?.scrollIntoView({
+              behavior: "smooth",
+              block: "start"
+            });
+        }
+      );
+    } catch (error) {
+      console.error(
+        "NEW ATTEMPT ERROR:",
+        error
+      );
+  
+      setStatus(
+        error.message ||
+        "Could not create a new attempt.",
+        true
+      );
+    }
   }
-}
 
 /* =========================================================
    EVENTS
@@ -5454,6 +5505,21 @@ $("nextQuestion")
         return;
       }
 
+      /*
+       * During normal quiz mode, move to the next question.
+       * During review mode, allow navigation until the final
+       * reviewed question.
+       */
+
+      if (
+        isLastQuestion &&
+        reviewMode
+      ) {
+        await finish();
+
+        return;
+      }
+
       index +=
         1;
 
@@ -5465,17 +5531,11 @@ $("nextQuestion")
 
       render();
 
-      window.requestAnimationFrame(
-        () => {
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-          });
-        }
+      focusLearningContent(
+        ".expert-question-layout"
       );
     }
   );
-
 
 $("closeLearningFlashcard")
   ?.addEventListener(
