@@ -605,6 +605,38 @@ function enabledLifeline(
 ========================================================= */
 
 function defaultQuizLifelines(
+    return {
+    expert:
+      false,
+
+    filter:
+      false,
+
+    guideline:
+      false,
+
+    vault:
+      false,
+
+    usedOnQuestion:
+      {
+        expert:
+          null,
+
+        filter:
+          null,
+
+        guideline:
+          null,
+
+        vault:
+          null
+      },
+eliminatedOptionIdsByQuestion:
+      {}
+  };
+}
+
 function ensureLifelinesState() {
   if (
     !lifelinesState ||
