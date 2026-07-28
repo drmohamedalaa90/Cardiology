@@ -99,6 +99,104 @@ function nestedPath(file) {
 
 
 /* =========================================================
+   ACTIVE ACL EDITION
+========================================================= */
+
+function getActiveAclEdition() {
+  const parameters =
+    new URLSearchParams(
+      window.location.search
+    );
+
+
+  const urlEdition =
+    String(
+      parameters.get(
+        "edition"
+      ) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    urlEdition === "basic" ||
+    urlEdition === "expert"
+  ) {
+    localStorage.setItem(
+      "aclSelectedEdition",
+      urlEdition
+    );
+
+    return urlEdition;
+  }
+
+
+  const savedEdition =
+    String(
+      localStorage.getItem(
+        "aclSelectedEdition"
+      ) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    savedEdition === "basic" ||
+    savedEdition === "expert"
+  ) {
+    return savedEdition;
+  }
+
+
+  return null;
+}
+
+
+function editionAwarePath(
+  file
+) {
+  const path =
+    nestedPath(
+      file
+    );
+
+
+  const edition =
+    getActiveAclEdition();
+
+
+  if (
+    !edition ||
+    file === "pathways.html" ||
+    file === "login.html" ||
+    file === "admin.html"
+  ) {
+    return path;
+  }
+
+
+  const url =
+    new URL(
+      path,
+      window.location.href
+    );
+
+
+  url.searchParams.set(
+    "edition",
+    edition
+  );
+
+
+  return `${path.split("?")[0]}${url.search}`;
+}   
+
+
+/* =========================================================
    USER CHIP
 ========================================================= */
 
@@ -136,10 +234,9 @@ const initials =
       .toUpperCase();
 
   chip.href =
-    nestedPath(
-      "profile.html"
-    );
-
+  editionAwarePath(
+    "profile.html"
+  );
   chip.innerHTML =
     profile.avatar_url
       ? `
@@ -670,20 +767,36 @@ function closeAclDrawer() {
 
 function createRollingBrand() {
   const brand =
-    document.createElement("a");
+    document.createElement(
+      "a"
+    );
+
+
+  const edition =
+    getActiveAclEdition();
+
+
+  const editionLabel =
+    edition === "basic"
+      ? "THE BASIC EDITION"
+      : "THE EXPERT EDITION";
+
 
   brand.className =
-    "acl-unified-brand";
+    `acl-unified-brand acl-${edition || "expert"}-brand`;
+
 
   brand.href =
-    nestedPath(
+    editionAwarePath(
       "modules.html"
     );
 
+
   brand.setAttribute(
     "aria-label",
-    "Alexandria Cardiology League Expert Edition home"
+    `Alexandria Cardiology League ${editionLabel} home`
   );
+
 
   brand.innerHTML = `
     <span class="acl-brand-rolling-window">
@@ -706,13 +819,15 @@ function createRollingBrand() {
       ;
     </span>
 
-    <strong class="acl-expert-edition">
-      THE EXPERT EDITION
+    <strong class="acl-expert-edition acl-edition-title">
+      ${editionLabel}
     </strong>
   `;
 
+
   return brand;
 }
+
 function openAclSettings() {
   closeAclDrawer();
 
