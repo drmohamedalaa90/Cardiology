@@ -49,8 +49,13 @@
 
 <link
   rel="icon"
-  href="/Cardiology/assets/images/acl-icon.svg"
-  type="image/svg+xml"
+  href="/Cardiology/assets/images/acl-icon-192.png"
+  type="image/png"
+>
+
+<link
+  rel="apple-touch-icon"
+  href="/Cardiology/assets/images/acl-icon-192.png"
 >
   <link
     rel="stylesheet"
@@ -252,7 +257,57 @@
     <p class="pathways-note">
       You may switch editions at any time without creating another account.
     </p>
+<section
+  id="pwaInstallSection"
+  class="pwa-install-section"
+  hidden
+>
 
+  <div class="pwa-install-copy">
+
+    <div
+      class="pwa-install-icon"
+      aria-hidden="true"
+    >
+      📱
+    </div>
+
+    <div>
+
+      <span class="pathways-kicker">
+        ACL MOBILE APP
+      </span>
+
+      <h2>
+        Install ACL on your device
+      </h2>
+
+      <p>
+        Open the platform like a normal app from your
+        home screen or desktop.
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <button
+    id="installAclAppButton"
+    class="pwa-install-button"
+    type="button"
+  >
+    Install ACL App
+  </button>
+
+</section>
+
+
+<p
+  id="pwaInstallStatus"
+  class="pwa-install-status"
+  aria-live="polite"
+></p>
   </main>
 
 
