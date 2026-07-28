@@ -559,3 +559,220 @@
     text-align: center;
   }
 }
+/* =========================================================
+   CHALLENGE LEADERBOARD
+========================================================= */
+
+.challenge-leaderboard-description {
+  margin:
+    8px
+    0
+    0;
+  color:
+    var(--challenge-muted);
+}
+
+.challenge-refresh-button {
+  min-height:
+    40px;
+  padding:
+    0
+    16px;
+}
+
+.challenge-leaderboard-status {
+  padding:
+    26px;
+  border:
+    1px dashed
+    rgba(
+      21,
+      85,
+      145,
+      0.18
+    );
+  border-radius:
+    16px;
+  color:
+    var(--challenge-muted);
+  background:
+    var(--challenge-blue-50);
+  text-align:
+    center;
+  font-weight:
+    800;
+}
+
+.challenge-leaderboard-table {
+  display:
+    grid;
+  gap:
+    9px;
+}
+
+.challenge-leaderboard-header,
+.challenge-leaderboard-row {
+  display:
+    grid;
+  grid-template-columns:
+    70px
+    minmax(
+      220px,
+      1fr
+    )
+    90px
+    100px
+    120px;
+  gap:
+    12px;
+  align-items:
+    center;
+}
+
+.challenge-leaderboard-header {
+  padding:
+    0
+    16px
+    9px;
+  color:
+    var(--challenge-muted);
+  font-size:
+    0.72rem;
+  font-weight:
+    900;
+  letter-spacing:
+    0.06em;
+  text-transform:
+    uppercase;
+}
+
+.challenge-leaderboard-row {
+  min-height:
+    76px;
+  padding:
+    12px
+    16px;
+  border:
+    1px solid
+    rgba(
+      21,
+      85,
+      145,
+      0.1
+    );
+  border-radius:
+    16px;
+  background:
+    #ffffff;
+}
+
+.challenge-leaderboard-row.is-top-1 {
+  border-color:
+    rgba(
+      255,
+      201,
+      40,
+      0.5
+    );
+  background:
+    linear-gradient(
+      145deg,
+      #fffdf2,
+      #ffffff
+    );
+}
+
+.challenge-leaderboard-row.is-top-2,
+.challenge-leaderboard-row.is-top-3 {
+  background:
+    var(--challenge-blue-50);
+}
+
+.challenge-leaderboard-rank {
+  font-size:
+    1.25rem;
+  font-weight:
+    1000;
+  text-align:
+    center;
+}
+
+.challenge-leaderboard-person {
+  display:
+    flex;
+  gap:
+    12px;
+  align-items:
+    center;
+}
+
+.challenge-leaderboard-person > div {
+  display:
+    grid;
+  gap:
+    4px;
+}
+
+.challenge-leaderboard-person small {
+  color:
+    var(--challenge-muted);
+}
+
+.challenge-leaderboard-avatar {
+  width:
+    46px;
+  height:
+    46px;
+  flex:
+    0
+    0
+    46px;
+  border-radius:
+    50%;
+  object-fit:
+    cover;
+}
+
+.challenge-leaderboard-initials {
+  display:
+    grid;
+  place-items:
+    center;
+  color:
+    #ffffff;
+  background:
+    linear-gradient(
+      145deg,
+      var(--challenge-blue-700),
+      var(--challenge-blue-900)
+    );
+  font-size:
+    0.82rem;
+  font-weight:
+    1000;
+}
+
+.challenge-leaderboard-value {
+  color:
+    var(--challenge-blue-900);
+  text-align:
+    center;
+}
+
+@media (
+  max-width:
+    760px
+) {
+  .challenge-leaderboard-table {
+    overflow-x:
+      auto;
+    padding-bottom:
+      8px;
+  }
+
+  .challenge-leaderboard-header,
+  .challenge-leaderboard-row {
+    min-width:
+      680px;
+  }
+}
