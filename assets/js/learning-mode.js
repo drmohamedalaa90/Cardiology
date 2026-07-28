@@ -1352,7 +1352,13 @@ async function activateLifeline(
     );
   }
 
-  try {
+   try {
+    let responseConfig =
+      null;
+
+    let flashcardToOpen =
+      null;
+
     if (
       lifeline ===
       LIFELINES.filter
@@ -1360,20 +1366,25 @@ async function activateLifeline(
       await activateEvidenceFilter(
         question
       );
+
+      responseConfig = {
+        icon:
+          "✂️",
+
+        title:
+          "Evidence Filter",
+
+        message:
+          "Two incorrect options have been removed. Reassess the remaining choices carefully."
+      };
     }
 
-    markLifelineUsed(
-      question,
-      lifeline
-    );
-
-    render();
 
     if (
       lifeline ===
       LIFELINES.expert
     ) {
-      showLifelineResponse({
+      responseConfig = {
         icon:
           "🩺",
 
@@ -1384,7 +1395,7 @@ async function activateLifeline(
           expertHintFor(
             question
           )
-      });
+      };
     }
 
 
@@ -1392,7 +1403,7 @@ async function activateLifeline(
       lifeline ===
       LIFELINES.guideline
     ) {
-      showLifelineResponse({
+      responseConfig = {
         icon:
           "📘",
 
@@ -1403,24 +1414,7 @@ async function activateLifeline(
           guidelineHintFor(
             question
           )
-      });
-    }
-
-
-    if (
-      lifeline ===
-      LIFELINES.filter
-    ) {
-      showLifelineResponse({
-        icon:
-          "✂️",
-
-        title:
-          "Evidence Filter",
-
-        message:
-          "Two incorrect options have been removed. Reassess the remaining choices carefully."
-      });
+      };
     }
 
 
@@ -1428,29 +1422,41 @@ async function activateLifeline(
       lifeline ===
       LIFELINES.vault
     ) {
-      const flashcard =
+      flashcardToOpen =
         await loadFlashcard(
           question,
           null
         );
 
-      if (flashcard) {
-        openFlashcard(
-          flashcard
+      if (!flashcardToOpen) {
+        throw new Error(
+          "A review flashcard has not yet been added for this question."
         );
-      } else {
-        showLifelineResponse({
-          icon:
-            "🧠",
-
-          title:
-            "Knowledge Vault",
-
-          message:
-            "A review flashcard has not yet been added for this question."
-        });
       }
     }
+
+
+    markLifelineUsed(
+      question,
+      lifeline
+    );
+
+    render();
+
+
+    if (responseConfig) {
+      showLifelineResponse(
+        responseConfig
+      );
+    }
+
+
+    if (flashcardToOpen) {
+      openFlashcard(
+        flashcardToOpen
+      );
+    }
+
 
     await persist(
       false
@@ -1473,10 +1479,15 @@ async function activateLifeline(
         "This lifeline could not be used."
     });
 
-    render();
-  }
-}
+    if (button) {
+      button.disabled =
+        false;
 
+      button.classList.remove(
+        "is-loading"
+      );
+    }
+  }
 
 function bindCompactLifelines(
   question
