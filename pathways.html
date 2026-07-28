@@ -36,20 +36,22 @@
   name="apple-mobile-web-app-title"
   content="ACL"
 >
-
+<meta
+  name="mobile-web-app-capable"
+  content="yes"
+>
 
 <link
   rel="manifest"
-  href="manifest.json"
+  href="/Cardiology/manifest.json"
 >
 
 
 <link
   rel="icon"
-  href="assets/icons/acl-icon.svg"
+  href="/Cardiology/assets/images/acl-icon.svg"
   type="image/svg+xml"
 >
-
   <link
     rel="stylesheet"
     href="assets/css/main.css?v=2.8.13"
@@ -259,7 +261,10 @@
     src="assets/js/pathways.js?v=1.0.0"
   ></script>
   
-<!-- PWA registration temporarily disabled for reset -->
+<script
+  type="module"
+  src="assets/js/pwa.js?v=1.1.0"
+></script>
   
 </body>
 
