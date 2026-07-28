@@ -252,7 +252,160 @@
       hidden
     ></div>
 
+<!-- ===================================================
+     MODULE SEARCH AND FILTERS
+==================================================== -->
 
+<section class="module-search-panel">
+
+  <div class="module-search-heading">
+
+    <div>
+      <span class="admin-kicker">
+        Find your module
+      </span>
+
+      <h2>
+        Search the catalogue
+      </h2>
+    </div>
+
+
+    <button
+      id="clearModuleFilters"
+      class="secondary-btn module-filter-clear"
+      type="button"
+    >
+      Clear filters
+    </button>
+
+  </div>
+
+
+  <div class="module-search-controls">
+
+    <label class="module-search-field module-search-main">
+
+      <span>
+        Search
+      </span>
+
+      <input
+        id="moduleSearchInput"
+        type="search"
+        placeholder="Search by module, topic or description…"
+        autocomplete="off"
+      >
+
+    </label>
+
+
+    <label class="module-search-field">
+
+      <span>
+        Category
+      </span>
+
+      <select id="moduleCategoryFilter">
+
+        <option value="all">
+          All categories
+        </option>
+
+        <option value="ecg">
+          ECG and rhythm
+        </option>
+
+        <option value="intervention">
+          Interventional cardiology
+        </option>
+
+        <option value="imaging">
+          Imaging
+        </option>
+
+        <option value="general">
+          General cardiology
+        </option>
+
+      </select>
+
+    </label>
+
+
+    <label class="module-search-field">
+
+      <span>
+        Difficulty
+      </span>
+
+      <select id="moduleDifficultyFilter">
+
+        <option value="all">
+          All difficulties
+        </option>
+
+        <option value="basic">
+          Basic
+        </option>
+
+        <option value="intermediate">
+          Intermediate
+        </option>
+
+        <option value="advanced">
+          Advanced
+        </option>
+
+        <option value="expert">
+          Expert
+        </option>
+
+      </select>
+
+    </label>
+
+
+    <label class="module-search-field">
+
+      <span>
+        Availability
+      </span>
+
+      <select id="moduleAccessFilter">
+
+        <option value="all">
+          All modules
+        </option>
+
+        <option value="open">
+          Open modules
+        </option>
+
+        <option value="locked">
+          Locked modules
+        </option>
+
+        <option value="coming">
+          Coming soon
+        </option>
+
+      </select>
+
+    </label>
+
+  </div>
+
+
+  <p
+    id="moduleSearchSummary"
+    class="module-search-summary"
+    aria-live="polite"
+  >
+    Loading modules…
+  </p>
+
+</section>
     <!-- ===================================================
          MODULES RENDERED FROM SUPABASE
     ==================================================== -->
