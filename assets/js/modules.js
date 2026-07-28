@@ -137,7 +137,17 @@ localStorage.setItem(
   selectedEdition
 );
 
+document.body.classList.remove(
+  "acl-basic-edition",
+  "acl-expert-edition"
+);
 
+
+document.body.classList.add(
+  selectedEdition === "basic"
+    ? "acl-basic-edition"
+    : "acl-expert-edition"
+);
 /*
  * Add the remembered edition to the URL without reloading.
  */
