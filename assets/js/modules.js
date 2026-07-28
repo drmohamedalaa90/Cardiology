@@ -10,7 +10,48 @@ const stateBox =
 
 const summary =
   document.getElementById("catalogueSummary");
+/* =========================================================
+   EDITION SELECTION
+========================================================= */
 
+const modulePageParameters =
+  new URLSearchParams(
+    window.location.search
+  );
+
+
+const selectedEdition =
+  String(
+    modulePageParameters.get(
+      "edition"
+    ) ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+
+
+const validEditions =
+  new Set([
+    "basic",
+    "expert"
+  ]);
+
+
+/*
+ * Opening modules.html without an edition takes the user
+ * back to the pathway-selection screen.
+ */
+
+if (
+  !validEditions.has(
+    selectedEdition
+  )
+) {
+  window.location.replace(
+    "pathways.html"
+  );
+}
 
 /* =========================================================
    TEXT HELPERS
@@ -1803,7 +1844,30 @@ async function loadCatalogue() {
     return;
   }
 
+const editionTitle =
+  selectedEdition ===
+    "basic"
+    ? "THE BASIC EDITION"
+    : "THE EXPERT EDITION";
 
+
+document.title =
+  `${editionTitle} Modules | ACL`;
+
+
+const catalogueHeading =
+  document.querySelector(
+    ".catalogue-hero h1"
+  );
+
+
+if (catalogueHeading) {
+  catalogueHeading.textContent =
+    selectedEdition ===
+      "basic"
+      ? "Build your cardiovascular foundations"
+      : "Choose your next expert challenge";
+}
   setStatus(
     "Loading your ACL catalogue…"
   );
@@ -1816,21 +1880,25 @@ async function loadCatalogue() {
       attemptResult
     ] = await Promise.all([
 
-      supabaseClient
-        .from("modules")
-        .select("*")
-        .order(
-          "display_order",
-          {
-            ascending: true
-          }
-        )
-        .order(
-          "title",
-          {
-            ascending: true
-          }
-        ),
+    supabaseClient
+  .from("modules")
+  .select("*")
+  .eq(
+    "edition",
+    selectedEdition
+  )
+  .order(
+    "display_order",
+    {
+      ascending: true
+    }
+  )
+  .order(
+    "title",
+    {
+      ascending: true
+    }
+  ),
 
 
       supabaseClient
