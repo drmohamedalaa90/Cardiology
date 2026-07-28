@@ -7,6 +7,10 @@ import {
   protectAndRender
 } from "./session-ui.js?v=2.8.0";
 
+console.log(
+  "ACL PROFILE EDITOR v1.0.0 LOADED"
+);
+
 
 const el = (id) =>
   document.getElementById(id);
