@@ -444,7 +444,18 @@ settings: `
       />
     </svg>
   `,
-
+pathways: `
+  <svg
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <path d="M12 3v18"/>
+    <path d="M12 8 6 4"/>
+    <path d="M12 15 18 11"/>
+    <path d="M6 4v5"/>
+    <path d="M18 11v5"/>
+  </svg>
+`,
   progress: `
     <svg
       viewBox="0 0 24 24"
@@ -479,7 +490,6 @@ settings: `
     </svg>
   `
 };
-
 
 /* =========================================================
    HEADER ICON
@@ -878,7 +888,21 @@ function buildUnifiedHeader() {
     );     
   }
 
+iconNav.appendChild(
+  createHeaderLink({
+    type:
+      "pathways",
 
+    label:
+      "Choose Pathway",
+
+    href:
+      nestedPath(
+        "pathways.html"
+      )
+  })
+);
+   
   iconNav.appendChild(
     createHeaderLink({
       type: "modules",
@@ -1293,7 +1317,21 @@ menu.appendChild(
     })
   );
 
+menu.appendChild(
+  createDrawerItem({
+    type:
+      "pathways",
 
+    label:
+      "Choose Pathway",
+
+    href:
+      nestedPath(
+        "pathways.html"
+      )
+  })
+);
+   
   menu.appendChild(
     createDrawerItem({
       type: "modules",
