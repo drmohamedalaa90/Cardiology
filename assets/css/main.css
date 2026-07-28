@@ -6608,3 +6608,100 @@ body.module-challenge-open {
 .acl-connection-banner[hidden] {
   display: none;
 }
+/* =========================================================
+   PWA UPDATE NOTICE
+========================================================= */
+
+.acl-update-notice {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 10001;
+
+  display: flex;
+  width: min(
+    620px,
+    calc(100% - 34px)
+  );
+
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+
+  padding: 16px 18px;
+
+  border: 1px solid
+    rgba(
+      242,
+      181,
+      0,
+      0.5
+    );
+
+  border-radius: 18px;
+
+  color: #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #092e57,
+      #0b5791
+    );
+
+  box-shadow:
+    0 22px 52px
+    rgba(12, 43, 81, 0.28);
+
+  transform:
+    translateX(-50%);
+}
+
+
+.acl-update-notice div {
+  display: grid;
+  gap: 4px;
+}
+
+
+.acl-update-notice span {
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.76
+    );
+
+  font-size: 0.82rem;
+}
+
+
+.acl-update-notice button {
+  min-height: 44px;
+  padding: 0 17px;
+
+  border: 0;
+  border-radius: 13px;
+
+  color: #092e57;
+  background: #f2b500;
+
+  font: inherit;
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
+
+@media (max-width: 620px) {
+  .acl-update-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+
+  .acl-update-notice button {
+    width: 100%;
+  }
+}
