@@ -604,26 +604,7 @@ function enabledLifeline(
    QUIZ-WIDE LIFELINE STATE
 ========================================================= */
 
-function defaultQuizLifelines() {
-  return {
-    expert:
-      false,
-
-    filter:
-      false,
-
-    guideline:
-      false,
-
-    vault:
-      false,
-
-    eliminatedOptionIdsByQuestion:
-      {}
-  };
-}
-
-
+function defaultQuizLifelines(
 function ensureLifelinesState() {
   if (
     !lifelinesState ||
@@ -654,7 +635,62 @@ function ensureLifelinesState() {
         );
     }
   );
+  if (
+    !lifelinesState
+      .usedOnQuestion ||
+    typeof lifelinesState
+      .usedOnQuestion !==
+      "object" ||
+    Array.isArray(
+      lifelinesState
+        .usedOnQuestion
+    )
+  ) {
+    lifelinesState
+      .usedOnQuestion =
+        {
+          expert:
+            null,
 
+          filter:
+            null,
+
+          guideline:
+            null,
+
+          vault:
+            null
+        };
+  }
+
+  [
+    LIFELINES.expert,
+    LIFELINES.filter,
+    LIFELINES.guideline,
+    LIFELINES.vault
+  ].forEach(
+    (lifeline) => {
+      const questionNumber =
+        Number(
+          lifelinesState
+            .usedOnQuestion[
+              lifeline
+            ]
+        );
+
+      lifelinesState
+        .usedOnQuestion[
+          lifeline
+        ] =
+          Number.isFinite(
+            questionNumber
+          ) &&
+          questionNumber >
+            0
+            ? questionNumber
+            : null;
+    }
+  );
   if (
     !lifelinesState
       .eliminatedOptionIdsByQuestion ||
@@ -808,8 +844,6 @@ function markLifelineUsed(
   question,
   lifeline
 ) {
-  void question;
-
   const state =
     ensureLifelinesState();
 
@@ -818,10 +852,15 @@ function markLifelineUsed(
   ] =
     true;
 
+  state
+    .usedOnQuestion[
+      lifeline
+    ] =
+      index + 1;
+
   lifelinesState =
     state;
 }
-
 
 function lifelineUsedCount(
   question
@@ -1007,6 +1046,46 @@ function restoreLifelinesState(
       Boolean(
         storedState.vault
       );
+        const storedUsage =
+      storedState
+        .usedOnQuestion;
+
+    if (
+      storedUsage &&
+      typeof storedUsage ===
+        "object" &&
+      !Array.isArray(
+        storedUsage
+      )
+    ) {
+      [
+        LIFELINES.expert,
+        LIFELINES.filter,
+        LIFELINES.guideline,
+        LIFELINES.vault
+      ].forEach(
+        (lifeline) => {
+          const questionNumber =
+            Number(
+              storedUsage[
+                lifeline
+              ]
+            );
+
+          restored
+            .usedOnQuestion[
+              lifeline
+            ] =
+              Number.isFinite(
+                questionNumber
+              ) &&
+              questionNumber >
+                0
+                ? questionNumber
+                : null;
+        }
+      );
+    }
 
     const eliminatedMap =
       storedState
@@ -1148,7 +1227,9 @@ function showLifelineResponse({
   icon = "🩺",
   title =
     "Scientific Lifeline",
-  message = ""
+  message = "",
+  expert =
+    false
 } = {}) {
   const response =
     lifelineResponseElement();
@@ -1157,27 +1238,52 @@ function showLifelineResponse({
     return;
   }
 
+   response.classList.toggle(
+    "is-expert-response",
+    expert
+  );
+
   response.innerHTML = `
-    <div class="scientific-lifeline-response-head">
+    ${
+      expert
+        ? `
+          <div class="lifeline-expert-character">
 
-      <span
-        class="scientific-lifeline-response-icon"
-        aria-hidden="true"
-      >
-        ${esc(icon)}
-      </span>
+            <img
+              src="${esc(
+                HAPPY_MASCOT
+              )}"
+              alt="Dr. Corazón"
+            >
 
-      <h4>
-        ${esc(title)}
-      </h4>
+          </div>
+        `
+        : ""
+    }
+
+    <div class="lifeline-response-content">
+
+      <div class="scientific-lifeline-response-head">
+
+        <span
+          class="scientific-lifeline-response-icon"
+          aria-hidden="true"
+        >
+          ${esc(icon)}
+        </span>
+
+        <h4>
+          ${esc(title)}
+        </h4>
+
+      </div>
+
+      <p>
+        ${esc(message)}
+      </p>
 
     </div>
-
-    <p>
-      ${esc(message)}
-    </p>
   `;
-
   response.hidden =
     false;
 
@@ -1314,6 +1420,23 @@ function compactLifelineButtonHtml(
       question,
       definition.id
     );
+    const lifelineState =
+    ensureLifelinesState();
+
+  const usedOnQuestion =
+    lifelineState
+      .usedOnQuestion[
+        definition.id
+      ];
+
+  const usageLabel =
+    used
+      ? (
+          usedOnQuestion
+            ? `Used on Question ${usedOnQuestion}`
+            : "Already used in this attempt"
+        )
+      : definition.title;
 
   return `
     <button
@@ -1325,8 +1448,11 @@ function compactLifelineButtonHtml(
       data-lifeline="${esc(
         definition.id
       )}"
-      aria-label="${esc(
-        definition.title
+           aria-label="${esc(
+        usageLabel
+      )}"
+      title="${esc(
+        usageLabel
       )}"
       ${used ? "disabled" : ""}
     >
@@ -1362,19 +1488,28 @@ function compactLifelineButtonHtml(
         )}
       </span>
 
-      ${
+            ${
         used
           ? `
             <span
+              class="compact-lifeline-used-copy"
+            >
+              ${
+                usedOnQuestion
+                  ? `Used on Q${usedOnQuestion}`
+                  : "Used"
+              }
+            </span>
+
+            <span
               class="compact-lifeline-used-mark"
-              aria-label="Used"
+              aria-hidden="true"
             >
               ✓
             </span>
           `
           : ""
       }
-
     </button>
   `;
 }
@@ -1395,6 +1530,20 @@ function scientificLifelinesToolbarHtml(
 
   const definitions =
     lifelineDefinitions();
+    const usedCount =
+    lifelineUsedCount(
+      question
+    );
+
+  const totalCount =
+    enabledLifelineCount();
+
+  const remainingCount =
+    Math.max(
+      totalCount -
+      usedCount,
+      0
+    );
 
   if (
     !definitions.length
@@ -1428,10 +1577,18 @@ function scientificLifelinesToolbarHtml(
 
         </div>
 
-        <span class="compact-lifelines-counter">
-          ${lifelineUsedCount(
-            question
-          )}/${enabledLifelineCount()}
+              <span
+          class="
+            compact-lifelines-counter
+            ${
+              remainingCount === 0
+                ? "is-empty"
+                : ""
+            }
+          "
+        >
+          ${remainingCount}
+          remaining
         </span>
 
       </div>
@@ -1693,7 +1850,7 @@ async function activateLifeline(
       lifeline ===
       LIFELINES.expert
     ) {
-      responseConfig = {
+            responseConfig = {
         icon:
           "🩺",
 
@@ -1703,7 +1860,10 @@ async function activateLifeline(
         message:
           expertHintFor(
             question
-          )
+          ),
+
+        expert:
+          true
       };
     }
 
