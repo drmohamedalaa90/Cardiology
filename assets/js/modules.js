@@ -553,38 +553,826 @@ function moduleCard(
         }
 
 
-        <a
-          class="
-            module-action
+                <div class="module-card-actions">
+
+          <a
+            class="
+              module-action
+              ${
+                decision.state !==
+                "open"
+                  ? "disabled"
+                  : ""
+              }
+            "
+            href="${href}"
+
             ${
               decision.state !==
               "open"
-                ? "disabled"
+                ? `
+                  aria-disabled="true"
+                  tabindex="-1"
+                `
                 : ""
             }
-          "
-          href="${href}"
+          >
+            ${escapeHtml(
+              actionLabel
+            )}
+          </a>
+
 
           ${
-            decision.state !== "open"
+            decision.state ===
+            "open"
               ? `
-                aria-disabled="true"
-                tabindex="-1"
+                <button
+                  type="button"
+                  class="module-challenge-button"
+                  data-challenge-module-id="${escapeHtml(
+                    module.id
+                  )}"
+                  data-challenge-module-title="${escapeHtml(
+                    module.title
+                  )}"
+                  data-challenge-launch-path="${escapeHtml(
+                    module.launch_path ||
+                    ""
+                  )}"
+                >
+                  <span aria-hidden="true">
+                    ⚔️
+                  </span>
+
+                  <span>
+                    Challenge a friend
+                  </span>
+                </button>
               `
               : ""
           }
-        >
-          ${escapeHtml(
-            actionLabel
-          )}
-        </a>
+
+        </div>
 
       </div>
 
     </article>
   `;
 }
+/* =========================================================
+   MODULE CHALLENGE
+========================================================= */
 
+let selectedChallengeModule =
+  null;
+
+
+function challengeElement(
+  id
+) {
+  return document.getElementById(
+    id
+  );
+}
+
+
+function randomChallengeCode() {
+  const code =
+    crypto
+      .randomUUID()
+      .replaceAll(
+        "-",
+        ""
+      )
+      .slice(
+        0,
+        10
+      )
+      .toUpperCase();
+
+  return `ACL-${code}`;
+}
+
+
+function quizSlugFromLaunchPath(
+  launchPath
+) {
+  if (!launchPath) {
+    return "";
+  }
+
+  try {
+    const url =
+      new URL(
+        launchPath,
+        window.location.href
+      );
+
+    return (
+      url.searchParams.get(
+        "quiz"
+      ) ||
+      ""
+    );
+  } catch (error) {
+    console.warn(
+      "INVALID MODULE LAUNCH PATH:",
+      error
+    );
+
+    return "";
+  }
+}
+
+
+function openModuleChallengeModal(
+  button
+) {
+  const modal =
+    challengeElement(
+      "moduleChallengeModal"
+    );
+
+  if (!modal) {
+    window.alert(
+      "The challenge window has not yet been added to modules.html."
+    );
+
+    return;
+  }
+
+  selectedChallengeModule = {
+    id:
+      button.dataset
+        .challengeModuleId ||
+      "",
+
+    title:
+      button.dataset
+        .challengeModuleTitle ||
+      "Selected module",
+
+    launchPath:
+      button.dataset
+        .challengeLaunchPath ||
+      ""
+  };
+
+  const moduleName =
+    challengeElement(
+      "moduleChallengeModuleName"
+    );
+
+  const result =
+    challengeElement(
+      "moduleChallengeResult"
+    );
+
+  const createButton =
+    challengeElement(
+      "createModuleChallenge"
+    );
+
+  if (moduleName) {
+    moduleName.textContent =
+      selectedChallengeModule
+        .title;
+  }
+
+  if (result) {
+    result.hidden =
+      true;
+
+    result.innerHTML =
+      "";
+  }
+
+  if (createButton) {
+    createButton.hidden =
+      false;
+
+    createButton.disabled =
+      false;
+
+    createButton.textContent =
+      "Create challenge";
+  }
+
+  modal.hidden =
+    false;
+
+  document.body.classList.add(
+    "module-challenge-open"
+  );
+}
+
+
+function closeModuleChallengeModal() {
+  const modal =
+    challengeElement(
+      "moduleChallengeModal"
+    );
+
+  if (modal) {
+    modal.hidden =
+      true;
+  }
+
+  document.body.classList.remove(
+    "module-challenge-open"
+  );
+}
+
+
+function selectedChallengeAudience() {
+  return (
+    document.querySelector(
+      'input[name="challengeAudience"]:checked'
+    )?.value ||
+    "single"
+  );
+}
+
+
+function challengeMaximumParticipants(
+  audience
+) {
+  const inputValue =
+    Number(
+      challengeElement(
+        "moduleChallengeMaximumParticipants"
+      )?.value ||
+      2
+    );
+
+  if (
+    audience ===
+    "single"
+  ) {
+    return 2;
+  }
+
+  return Math.min(
+    100,
+    Math.max(
+      2,
+      inputValue
+    )
+  );
+}
+
+
+function challengeDurationHours() {
+  const value =
+    Number(
+      challengeElement(
+        "moduleChallengeDuration"
+      )?.value ||
+      24
+    );
+
+  if (
+    !Number.isFinite(
+      value
+    ) ||
+    value <= 0
+  ) {
+    return 24;
+  }
+
+  return value;
+}
+
+
+function challengeLinkFor(
+  challengeCode
+) {
+  const url =
+    new URL(
+      "challenge.html",
+      window.location.href
+    );
+
+  url.searchParams.set(
+    "code",
+    challengeCode
+  );
+
+  return url.toString();
+}
+
+
+async function copyChallengeLink(
+  value,
+  button
+) {
+  try {
+    await navigator
+      .clipboard
+      .writeText(
+        value
+      );
+
+    if (button) {
+      button.textContent =
+        "Copied ✓";
+    }
+  } catch (error) {
+    console.warn(
+      "CLIPBOARD ERROR:",
+      error
+    );
+
+    const input =
+      challengeElement(
+        "createdChallengeLink"
+      );
+
+    if (input) {
+      input.focus();
+      input.select();
+
+      document.execCommand(
+        "copy"
+      );
+
+      if (button) {
+        button.textContent =
+          "Copied ✓";
+      }
+    }
+  }
+}
+
+
+async function createModuleChallenge() {
+  if (
+    !selectedChallengeModule
+  ) {
+    return;
+  }
+
+  const result =
+    challengeElement(
+      "moduleChallengeResult"
+    );
+
+  const createButton =
+    challengeElement(
+      "createModuleChallenge"
+    );
+
+  const quizSlug =
+    quizSlugFromLaunchPath(
+      selectedChallengeModule
+        .launchPath
+    );
+
+  if (!quizSlug) {
+    if (result) {
+      result.hidden =
+        false;
+
+      result.innerHTML = `
+        <div class="module-challenge-error">
+          This module does not contain a valid learning quiz link.
+        </div>
+      `;
+    }
+
+    return;
+  }
+
+  if (createButton) {
+    createButton.disabled =
+      true;
+
+    createButton.textContent =
+      "Creating challenge…";
+  }
+
+  try {
+    /*
+     * Find the signed-in user.
+     */
+
+    const {
+      data: userData,
+      error: userError
+    } =
+      await supabaseClient
+        .auth
+        .getUser();
+
+    if (userError) {
+      throw userError;
+    }
+
+    const user =
+      userData?.user;
+
+    if (!user) {
+      throw new Error(
+        "Please sign in before creating a challenge."
+      );
+    }
+
+
+    /*
+     * Find the published quiz from the module launch path.
+     */
+
+    const {
+      data: quizData,
+      error: quizError
+    } =
+      await supabaseClient
+        .from(
+          "quizzes"
+        )
+        .select(`
+          id,
+          slug,
+          title,
+          module_id,
+          question_count
+        `)
+        .eq(
+          "slug",
+          quizSlug
+        )
+        .eq(
+          "status",
+          "published"
+        )
+        .maybeSingle();
+
+    if (quizError) {
+      throw quizError;
+    }
+
+    if (!quizData) {
+      throw new Error(
+        "The published quiz linked to this module could not be found."
+      );
+    }
+
+
+    const audience =
+      selectedChallengeAudience();
+
+    const durationHours =
+      challengeDurationHours();
+
+    const maximumParticipants =
+      challengeMaximumParticipants(
+        audience
+      );
+
+    const challengeCode =
+      randomChallengeCode();
+
+    const startsAt =
+      new Date();
+
+    const endsAt =
+      new Date(
+        startsAt.getTime() +
+        (
+          durationHours *
+          60 *
+          60 *
+          1000
+        )
+      );
+
+
+    /*
+     * Create the challenge.
+     *
+     * question_ids stays empty during this first stage.
+     * We will populate the fixed challenge question set
+     * when challenge.html is added.
+     */
+
+    const {
+      data: challenge,
+      error: challengeError
+    } =
+      await supabaseClient
+        .from(
+          "module_challenges"
+        )
+        .insert({
+          module_id:
+            selectedChallengeModule
+              .id,
+
+          quiz_id:
+            quizData.id,
+
+          creator_id:
+            user.id,
+
+          challenge_code:
+            challengeCode,
+
+          title:
+            `${selectedChallengeModule.title} Challenge`,
+
+          question_ids:
+            [],
+
+          maximum_participants:
+            maximumParticipants,
+
+          starts_at:
+            startsAt
+              .toISOString(),
+
+          ends_at:
+            endsAt
+              .toISOString(),
+
+          status:
+            "open"
+        })
+        .select(`
+          id,
+          challenge_code,
+          title,
+          starts_at,
+          ends_at,
+          maximum_participants
+        `)
+        .single();
+
+    if (challengeError) {
+      throw challengeError;
+    }
+
+
+    /*
+     * Add the creator as the first participant.
+     */
+
+    const {
+      error: participantError
+    } =
+      await supabaseClient
+        .from(
+          "module_challenge_participants"
+        )
+        .upsert(
+          {
+            challenge_id:
+              challenge.id,
+
+            user_id:
+              user.id,
+
+            invitation_status:
+              "joined"
+          },
+          {
+            onConflict:
+              "challenge_id,user_id"
+          }
+        );
+
+    if (participantError) {
+      throw participantError;
+    }
+
+
+    const challengeUrl =
+      challengeLinkFor(
+        challenge
+          .challenge_code
+      );
+
+    const whatsappMessage =
+      [
+        "⚔️ ACL Expert Edition Challenge",
+        "",
+        `I challenge you to the ${selectedChallengeModule.title} module!`,
+        "",
+        "Highest confidence-adjusted score wins.",
+        "Ties are decided by the shortest completion time.",
+        "",
+        challengeUrl
+      ].join(
+        "\n"
+      );
+
+
+    if (result) {
+      result.hidden =
+        false;
+
+      result.innerHTML = `
+        <div class="module-challenge-success">
+
+          <span class="module-challenge-success-icon">
+            ⚔️
+          </span>
+
+          <h3>
+            Challenge created!
+          </h3>
+
+          <p>
+            Share this private challenge link with your friend
+            or group.
+          </p>
+
+          <div class="module-challenge-code">
+
+            <span>
+              Challenge code
+            </span>
+
+            <strong>
+              ${escapeHtml(
+                challenge.challenge_code
+              )}
+            </strong>
+
+          </div>
+
+          <label class="module-challenge-link-field">
+
+            <span>
+              Challenge link
+            </span>
+
+            <input
+              id="createdChallengeLink"
+              type="text"
+              value="${escapeHtml(
+                challengeUrl
+              )}"
+              readonly
+            >
+
+          </label>
+
+          <div class="module-challenge-share-actions">
+
+            <button
+              id="copyCreatedChallenge"
+              type="button"
+              class="secondary-btn"
+            >
+              Copy challenge link
+            </button>
+
+            <a
+              class="primary-btn"
+              href="https://wa.me/?text=${encodeURIComponent(
+                whatsappMessage
+              )}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Share on WhatsApp
+            </a>
+
+          </div>
+
+        </div>
+      `;
+    }
+
+    const copyButton =
+      challengeElement(
+        "copyCreatedChallenge"
+      );
+
+    copyButton
+      ?.addEventListener(
+        "click",
+        async () => {
+          await copyChallengeLink(
+            challengeUrl,
+            copyButton
+          );
+        }
+      );
+
+    if (createButton) {
+      createButton.hidden =
+        true;
+    }
+  } catch (error) {
+    console.error(
+      "CREATE MODULE CHALLENGE ERROR:",
+      error
+    );
+
+    if (result) {
+      result.hidden =
+        false;
+
+      result.innerHTML = `
+        <div class="module-challenge-error">
+
+          <strong>
+            Challenge could not be created
+          </strong>
+
+          <p>
+            ${escapeHtml(
+              error.message ||
+              "Please try again."
+            )}
+          </p>
+
+        </div>
+      `;
+    }
+  } finally {
+    if (createButton) {
+      createButton.disabled =
+        false;
+
+      if (
+        !createButton.hidden
+      ) {
+        createButton.textContent =
+          "Create challenge";
+      }
+    }
+  }
+}
+
+
+/*
+ * Delegated event listener because module cards
+ * are generated dynamically after Supabase loads.
+ */
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const challengeButton =
+      event.target.closest(
+        "[data-challenge-module-id]"
+      );
+
+    if (
+      challengeButton
+    ) {
+      event.preventDefault();
+
+      openModuleChallengeModal(
+        challengeButton
+      );
+
+      return;
+    }
+
+
+    if (
+      event.target.closest(
+        "#closeModuleChallenge"
+      ) ||
+      event.target.closest(
+        "#cancelModuleChallenge"
+      ) ||
+      event.target.closest(
+        "#moduleChallengeBackdrop"
+      )
+    ) {
+      closeModuleChallengeModal();
+
+      return;
+    }
+
+
+    if (
+      event.target.closest(
+        "#createModuleChallenge"
+      )
+    ) {
+      void createModuleChallenge();
+    }
+  }
+);
+
+
+document.addEventListener(
+  "keydown",
+  (event) => {
+    if (
+      event.key ===
+      "Escape"
+    ) {
+      closeModuleChallengeModal();
+    }
+  }
+);
 
 /* =========================================================
    LOAD MODULE CATALOGUE
