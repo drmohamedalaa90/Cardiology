@@ -6705,3 +6705,76 @@ body.module-challenge-open {
     width: 100%;
   }
 }
+/* =========================================================
+   BASIC EDITION THEME
+========================================================= */
+
+body.acl-basic-edition .topbar,
+body.acl-basic-edition .acl-unified-header {
+  background:
+    linear-gradient(
+      135deg,
+      #063f34 0%,
+      #075c49 55%,
+      #08705a 100%
+    );
+}
+
+
+body.acl-basic-edition .topbar {
+  border-bottom-color:
+    #9bd452;
+}
+
+
+body.acl-basic-edition .acl-header-icon,
+body.acl-basic-edition .acl-menu-button {
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.34
+    );
+
+  color: #ffffff;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.06
+    );
+}
+
+
+body.acl-basic-edition .acl-header-icon:hover,
+body.acl-basic-edition .acl-menu-button:hover {
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.58
+    );
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.13
+    );
+}
+
+
+body.acl-basic-edition .acl-edition-title {
+  color: #b8e85d;
+}
+
+
+body.acl-basic-edition .acl-brand-name,
+body.acl-basic-edition .acl-brand-separator {
+  color: #ffffff;
+}
