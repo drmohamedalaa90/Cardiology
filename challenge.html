@@ -248,6 +248,58 @@
         Open my challenge attempt
       </a>
     </section>
+    <!-- =====================================================
+     CHALLENGE LEADERBOARD
+===================================================== -->
+
+<section
+  id="challengeLeaderboardSection"
+  class="challenge-panel challenge-leaderboard-section"
+>
+  <div class="challenge-panel-heading">
+
+    <div>
+      <p class="challenge-step-label">
+        ACL HEAD-TO-HEAD
+      </p>
+
+      <h2>
+        Challenge leaderboard
+      </h2>
+
+      <p class="challenge-leaderboard-description">
+        Ranked by challenge wins, total score, then average completion time.
+      </p>
+    </div>
+
+    <button
+      id="refreshChallengeLeaderboard"
+      class="challenge-secondary-button challenge-refresh-button"
+      type="button"
+    >
+      Refresh
+    </button>
+
+  </div>
+
+
+  <div
+    id="challengeLeaderboardStatus"
+    class="challenge-leaderboard-status"
+    aria-live="polite"
+  >
+    Loading leaderboard…
+  </div>
+
+
+  <div
+    id="challengeLeaderboardTable"
+    class="challenge-leaderboard-table"
+    hidden
+  ></div>
+
+</section>
+    
   </main>
 
   <script src="assets/js/challenge.js"></script>
