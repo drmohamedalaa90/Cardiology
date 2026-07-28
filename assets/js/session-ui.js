@@ -60,7 +60,14 @@ export async function loadProfile() {
 
     email:
       user.email,
-
+display_name:
+  data?.display_name ||
+  data?.full_name ||
+  metadata.display_name ||
+  metadata.full_name ||
+  data?.username ||
+  "",
+     
     full_name:
       data?.full_name ||
       metadata.full_name ||
@@ -110,11 +117,15 @@ export function renderUserChip(
     return;
   }
 
-  const initials =
-    (
-      profile.full_name ||
-      "ACL"
-    )
+ const displayName =
+  profile.display_name ||
+  profile.full_name ||
+  profile.username ||
+  "ACL User";
+
+
+const initials =
+  displayName
       .split(/\s+/)
       .slice(0, 2)
       .map(
@@ -139,7 +150,7 @@ export function renderUserChip(
 
         <span class="user-chip-copy">
           <span class="user-name">
-            ${profile.full_name || "ACL User"}
+           ${displayName}
           </span>
 
           <span class="edit-profile-link">
@@ -154,8 +165,8 @@ export function renderUserChip(
 
         <span class="user-chip-copy">
           <span class="user-name">
-            ${profile.full_name || "ACL User"}
-          </span>
+${displayName}
+</span>
 
           <span class="edit-profile-link">
             / Edit profile
@@ -1110,14 +1121,13 @@ function buildDrawer(
   avatar.className =
     "acl-drawer-avatar";
 
-
-  const candidateName =
-    profile?.full_name ||
-    profile?.display_name ||
-    profile?.name ||
-    profile?.username ||
-    profile?.email ||
-    "Signed-in user";
+const candidateName =
+  profile?.display_name ||
+  profile?.full_name ||
+  profile?.name ||
+  profile?.username ||
+  profile?.email ||
+  "Signed-in user";
 
 
   const avatarUrl =
