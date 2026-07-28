@@ -851,6 +851,28 @@ function buildUnifiedHeader() {
   if (!topbar) {
     return;
   }
+   const activeEdition =
+  getActiveAclEdition();
+
+
+document.body.classList.remove(
+  "acl-basic-edition",
+  "acl-expert-edition"
+);
+
+
+if (
+  activeEdition ===
+  "basic"
+) {
+  document.body.classList.add(
+    "acl-basic-edition"
+  );
+} else {
+  document.body.classList.add(
+    "acl-expert-edition"
+  );
+}
 
   const oldNav =
     topbar.querySelector(
