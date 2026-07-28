@@ -61,9 +61,36 @@ const quizSlug =
 
 const requestedModuleId =
   params.get("module");
+/* =========================================================
+   CHALLENGE MODE URL PARAMETERS
+========================================================= */
+
 const challengeId =
   params.get("challenge");
 
+
+const challengeRole =
+  params.get("challenge_role");
+
+
+const challengeQuestionCount =
+  Number(
+    params.get("question_count") ||
+    0
+  );
+
+
+function isChallengeAttempt() {
+  return Boolean(
+    challengeId &&
+    (
+      challengeRole ===
+        "challenger" ||
+      challengeRole ===
+        "opponent"
+    )
+  );
+}
 
 /* =========================================================
    MASCOT ASSETS
@@ -6515,20 +6542,45 @@ if (challengeId) {
         );
     }
 
-    questions =
-      pool.slice(
-        0,
-        Math.min(
-          Number(
-            quiz.question_count ||
-            pool.length
-          ),
-          pool.length
-        )
+   /*
+ * Determine how many questions should be loaded.
+ *
+ * Normal attempt:
+ * Use quiz.question_count.
+ *
+ * Challenge attempt:
+ * Use the number received in the challenge URL.
+ */
+
+const requestedQuestionCount =
+  isChallengeAttempt() &&
+  challengeQuestionCount > 0
+    ? challengeQuestionCount
+    : Number(
+        quiz.question_count ||
+        pool.length
       );
+
+
+questions =
+  pool.slice(
+    0,
+    Math.min(
+      requestedQuestionCount,
+      pool.length
+    )
+  );
+
+
+/*
+ * When the challenge already contains fixed question IDs,
+ * replace the randomized selection with those exact questions.
+ */
+
 if (challengeId) {
   applyChallengeQuestionSet();
 }
+    
     if (!questions.length) {
       throw new Error(
         "No questions are available in this quiz."
