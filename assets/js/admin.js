@@ -1,5 +1,5 @@
 import { supabaseClient } from "./supabase-client.js";
-import { protectAndRender } from "./session-ui.js?v=2.7.12";
+import { protectAndRender } from "./session-ui.js?v=3.0.0";
 
 const byId = (id) => document.getElementById(id);
 
