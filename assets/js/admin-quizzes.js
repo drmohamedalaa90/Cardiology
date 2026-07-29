@@ -1,2216 +1,679 @@
-import {
-  supabaseClient
-} from "./supabase-client.js";
-
-
-import {
-  protectAndRender,
-  resolveAclEdition,
-  aclUrl
-} from "./session-ui.js?v=4.6.0";
-
-
-console.log(
-  "ACL ADMIN QUIZZES v3.1.0 LOADED"
-);
-
-
 /* =========================================================
-   EDITION
+   ACL PWA REGISTRATION AND INSTALLATION
+   Version: 1.7.0
 ========================================================= */
 
-const selectedEdition =
-  resolveAclEdition();
+const ACL_BASE_PATH =
+  "/Cardiology";
 
 
-/* =========================================================
-   PAGE STATE
-========================================================= */
-
-const byId =
-  (id) =>
-    document.getElementById(
-      id
-    );
+const ACL_SERVICE_WORKER_URL =
+  `${ACL_BASE_PATH}/service-worker.js`;
 
 
-let modules =
-  [];
+const ACL_SERVICE_WORKER_SCOPE =
+  `${ACL_BASE_PATH}/`;
 
 
-let questions =
-  [];
-
-
-let quizzes =
-  [];
-
-
-let adminProfile =
+let deferredInstallPrompt =
   null;
 
 
-let isLoading =
+let serviceWorkerRegistration =
+  null;
+
+
+let controllerReloadPending =
   false;
 
 
-let isSaving =
-  false;
+/* =========================================================
+   DEVICE AND DISPLAY STATE
+========================================================= */
+
+const isIosDevice =
+  /iphone|ipad|ipod/i.test(
+    navigator.userAgent
+  );
+
+
+const isSafariBrowser =
+  /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(
+    navigator.userAgent
+  );
+
+
+const runningStandalone =
+  window.matchMedia(
+    "(display-mode: standalone)"
+  ).matches ||
+  window.navigator.standalone ===
+    true;
+
+
+/* =========================================================
+   PAGE ELEMENTS
+========================================================= */
+
+const installSection =
+  document.getElementById(
+    "pwaInstallSection"
+  );
+
+
+const installButton =
+  document.getElementById(
+    "installAclAppButton"
+  );
+
+
+const installStatus =
+  document.getElementById(
+    "pwaInstallStatus"
+  );
 
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function escapeHtml(
-  value = ""
+function setInstallStatus(
+  message = ""
 ) {
-  return String(
-    value ??
-    ""
-  ).replace(
-    /[&<>"']/g,
-    (character) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      })[
-        character
-      ]
-  );
+  if (installStatus) {
+    installStatus.textContent =
+      message;
+  }
 }
 
 
-function titleCase(
-  value
-) {
-  return String(
-    value ||
-    ""
-  )
-    .replaceAll(
-      "_",
-      " "
-    )
-    .replace(
-      /\b\w/g,
-      (character) =>
-        character.toUpperCase()
-    );
-}
-
-
-function numberValue(
-  value,
-  fallback = 0
-) {
-  const parsed =
-    Number(
-      value
-    );
-
-
-  return Number.isFinite(
-    parsed
-  )
-    ? parsed
-    : fallback;
-}
-
-
-function slugify(
-  value
-) {
-  return String(
-    value ||
-    ""
-  )
-    .trim()
-    .toLowerCase()
-    .replace(
-      /[^a-z0-9]+/g,
-      "-"
-    )
-    .replace(
-      /^-+|-+$/g,
-      ""
-    );
-}
-
-
-function normalizeStatus(
-  value
-) {
-  const status =
-    String(
-      value ||
-      "draft"
-    )
-      .trim()
-      .toLowerCase();
-
-
-  return [
-    "draft",
-    "published",
-    "archived"
-  ].includes(
-    status
-  )
-    ? status
-    : "draft";
-}
-
-
-function normalizeMode(
-  value
-) {
-  const mode =
-    String(
-      value ||
-      "learning"
-    )
-      .trim()
-      .toLowerCase();
-
-
-  return [
-    "learning",
-    "practice",
-    "competition"
-  ].includes(
-    mode
-  )
-    ? mode
-    : "learning";
-}
-
-
-function normalizeSelectionMode(
-  value
-) {
-  return String(
-    value ||
-    "fixed"
-  )
-    .trim()
-    .toLowerCase() ===
-    "random"
-    ? "random"
-    : "fixed";
-}
-
-
-function isAdminProfile(
-  profile
-) {
-  const role =
-    String(
-      profile?.role ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  return Boolean(
-    profile?.is_admin ||
-    role === "admin" ||
-    role === "administrator"
-  );
-}
-
-
-function setStatus(
-  message = "",
-  type = ""
-) {
-  const box =
-    byId(
-      "quizBuilderStatus"
-    );
-
-
-  if (!box) {
+function setInstallButtonState({
+  hidden = false,
+  disabled = false,
+  text = "Install ACL App"
+} = {}) {
+  if (!installButton) {
     return;
   }
 
 
-  box.textContent =
-    message;
+  installButton.hidden =
+    hidden;
 
 
-  box.className =
-    `status-box ${type}`.trim();
+  installButton.disabled =
+    disabled;
 
 
-  box.hidden =
-    !message;
+  installButton.textContent =
+    text;
 }
 
 
-function setButtonBusy(
-  button,
-  busy,
-  busyText,
-  normalText
+function exposeRegistration(
+  registration
 ) {
-  if (!button) {
-    return;
-  }
+  serviceWorkerRegistration =
+    registration;
 
 
-  button.disabled =
-    busy;
+  window.aclServiceWorkerRegistration =
+    registration;
 
 
-  button.textContent =
-    busy
-      ? busyText
-      : normalText;
-}
-
-
-function moduleIds() {
-  return modules
-    .map(
-      (module) =>
-        module.id
-    )
-    .filter(
-      Boolean
-    );
-}
-
-
-function selectedQuestionIds() {
-  return [
-    ...document.querySelectorAll(
-      ".picker-check:checked"
-    )
-  ].map(
-    (input) =>
-      input.value
-  );
-}
-
-
-function updateSelectedCount() {
-  const counter =
-    byId(
-      "selectedQuestionCount"
-    );
-
-
-  if (counter) {
-    counter.textContent =
-      `${
-        selectedQuestionIds().length
-      } selected`;
-  }
-}
-
-
-/* =========================================================
-   EDITION CONTEXT
-========================================================= */
-
-function applyEditionContext() {
-  const isBasic =
-    selectedEdition ===
-    "basic";
-
-
-  const badge =
-    byId(
-      "adminQuizzesEditionBadge"
-    );
-
-
-  const themeColor =
-    byId(
-      "adminQuizzesThemeColor"
-    );
-
-
-  if (badge) {
-    badge.textContent =
-      isBasic
-        ? "BASIC EDITION"
-        : "EXPERT EDITION";
-  }
-
-
-  if (themeColor) {
-    themeColor.content =
-      isBasic
-        ? "#105541"
-        : "#123f72";
-  }
-
-
-  const links = {
-    adminQuizzesDashboardLink:
-      "admin.html",
-
-    adminQuizzesQuestionsLink:
-      "admin-questions.html"
-  };
-
-
-  Object.entries(
-    links
-  ).forEach(
-    (
-      [
-        id,
-        path
-      ]
-    ) => {
-      const link =
-        byId(
-          id
-        );
-
-
-      if (link) {
-        link.href =
-          aclUrl(
-            path,
-            selectedEdition
-          );
+  window.dispatchEvent(
+    new CustomEvent(
+      "acl-service-worker-ready",
+      {
+        detail: {
+          registration
+        }
       }
-    }
+    )
   );
 
 
-  document.title =
-    `Quiz Builder | ACL ${
-      isBasic
-        ? "Basic Edition"
-        : "Expert Edition"
-    } Admin`;
+  return registration;
+}
 
 
-  const url =
-    new URL(
-      window.location.href
+/* =========================================================
+   CONNECTION STATUS
+========================================================= */
+
+function createConnectionBanner() {
+  let banner =
+    document.getElementById(
+      "aclConnectionBanner"
     );
 
 
-  url.searchParams.set(
-    "edition",
-    selectedEdition
+  if (banner) {
+    return banner;
+  }
+
+
+  banner =
+    document.createElement(
+      "div"
+    );
+
+
+  banner.id =
+    "aclConnectionBanner";
+
+
+  banner.className =
+    "acl-connection-banner";
+
+
+  banner.setAttribute(
+    "role",
+    "status"
   );
 
 
-  window.history.replaceState(
-    {},
-    "",
-    url
+  banner.setAttribute(
+    "aria-live",
+    "polite"
   );
-}
 
 
-/* =========================================================
-   LOAD MODULES
-========================================================= */
-
-async function loadModules() {
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from(
-        "modules"
-      )
-      .select(`
-        id,
-        title,
-        status,
-        display_order,
-        edition
-      `)
-      .eq(
-        "edition",
-        selectedEdition
-      )
-      .order(
-        "display_order",
-        {
-          ascending:
-            true
-        }
-      )
-      .order(
-        "title",
-        {
-          ascending:
-            true
-        }
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  modules =
-    data ||
-    [];
-
-
-  const options =
-    modules
-      .map(
-        (module) => `
-          <option value="${escapeHtml(
-            module.id
-          )}">
-            ${escapeHtml(
-              module.title
-            )}
-          </option>
-        `
-      )
-      .join(
-        ""
-      );
-
-
-  byId(
-    "quizModule"
-  ).innerHTML =
-    options ||
-    `
-      <option value="">
-        No modules available
-      </option>
-    `;
-
-
-  byId(
-    "quizModuleFilter"
-  ).innerHTML = `
-    <option value="all">
-      All modules
-    </option>
-
-    ${options}
-  `;
-}
-
-
-/* =========================================================
-   LOAD QUESTIONS
-========================================================= */
-
-async function loadQuestions() {
-  const ids =
-    moduleIds();
-
-
-  if (!ids.length) {
-    questions =
-      [];
-
-
-    return;
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from(
-        "questions"
-      )
-      .select(`
-        id,
-        module_id,
-        stem,
-        topic,
-        difficulty,
-        status,
-        display_order
-      `)
-      .in(
-        "module_id",
-        ids
-      )
-      .neq(
-        "status",
-        "archived"
-      )
-      .order(
-        "display_order",
-        {
-          ascending:
-            true
-        }
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  questions =
-    data ||
-    [];
-}
-
-
-/* =========================================================
-   LOAD QUIZZES
-========================================================= */
-
-async function loadQuizzes() {
-  if (isLoading) {
-    return;
-  }
-
-
-  isLoading =
+  banner.hidden =
     true;
 
 
-  const refreshButton =
-    byId(
-      "refreshQuizzes"
-    );
-
-
-  setButtonBusy(
-    refreshButton,
-    true,
-    "Refreshing…",
-    "Refresh"
+  document.body.appendChild(
+    banner
   );
 
 
-  setStatus(
-    "Loading quizzes…"
-  );
+  return banner;
+}
 
 
-  byId(
-    "quizList"
-  ).innerHTML = `
-    <div class="empty-state">
-      Loading quizzes…
-    </div>
-  `;
+function updateConnectionStatus() {
+  const banner =
+    createConnectionBanner();
 
 
-  try {
-    const ids =
-      moduleIds();
+  if (!navigator.onLine) {
+    banner.textContent =
+      "You are offline. Saved pages remain available, but new progress cannot synchronize.";
 
 
-    if (!ids.length) {
-      quizzes =
-        [];
-
-
-      renderStats();
-      filterList();
-
-
-      setStatus(
-        "No modules are available in this edition.",
-        "warning"
-      );
-
-
-      return;
-    }
-
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from(
-          "quizzes"
-        )
-        .select(`
-          *,
-          quiz_questions (
-            question_id,
-            display_order
-          )
-        `)
-        .eq(
-          "edition",
-          selectedEdition
-        )
-        .in(
-          "module_id",
-          ids
-        )
-        .order(
-          "display_order",
-          {
-            ascending:
-              true
-          }
-        )
-        .order(
-          "created_at",
-          {
-            ascending:
-              true
-          }
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    quizzes =
-      (
-        data ||
-        []
-      ).map(
-        (quiz) => ({
-          ...quiz,
-
-          status:
-            normalizeStatus(
-              quiz.status
-            ),
-
-          mode:
-            normalizeMode(
-              quiz.mode
-            ),
-
-          selection_mode:
-            normalizeSelectionMode(
-              quiz.selection_mode
-            ),
-
-          quiz_questions:
-            (
-              quiz.quiz_questions ||
-              []
-            ).sort(
-              (
-                first,
-                second
-              ) =>
-                numberValue(
-                  first.display_order
-                ) -
-                numberValue(
-                  second.display_order
-                )
-            )
-        })
-      );
-
-
-    renderStats();
-    filterList();
-
-
-    setStatus(
-      ""
-    );
-  } catch (error) {
-    console.error(
-      "QUIZ LOAD ERROR:",
-      error
+    banner.classList.add(
+      "offline"
     );
 
 
-    quizzes =
-      [];
-
-
-    renderStats();
-
-
-    byId(
-      "quizList"
-    ).innerHTML = `
-      <div class="empty-state">
-        Quizzes could not be loaded.
-      </div>
-    `;
-
-
-    setStatus(
-      error.message ||
-      "Quizzes could not be loaded.",
-      "error"
+    banner.classList.remove(
+      "online"
     );
-  } finally {
-    isLoading =
+
+
+    banner.hidden =
       false;
-
-
-    setButtonBusy(
-      refreshButton,
-      false,
-      "Refreshing…",
-      "Refresh"
-    );
-  }
-}
-
-
-/* =========================================================
-   STATISTICS
-========================================================= */
-
-function renderStats() {
-  byId(
-    "quizTotal"
-  ).textContent =
-    String(
-      quizzes.length
-    );
-
-
-  byId(
-    "quizPublished"
-  ).textContent =
-    String(
-      quizzes.filter(
-        (quiz) =>
-          normalizeStatus(
-            quiz.status
-          ) ===
-          "published"
-      ).length
-    );
-
-
-  byId(
-    "quizDraft"
-  ).textContent =
-    String(
-      quizzes.filter(
-        (quiz) =>
-          normalizeStatus(
-            quiz.status
-          ) ===
-          "draft"
-      ).length
-    );
-
-
-  byId(
-    "quizAssigned"
-  ).textContent =
-    String(
-      quizzes.reduce(
-        (
-          total,
-          quiz
-        ) =>
-          total +
-          (
-            quiz.quiz_questions
-              ?.length ||
-            0
-          ),
-        0
-      )
-    );
-}
-
-
-/* =========================================================
-   QUIZ CARD
-========================================================= */
-
-function quizCardHtml(
-  quiz
-) {
-  const module =
-    modules.find(
-      (item) =>
-        String(
-          item.id
-        ) ===
-        String(
-          quiz.module_id
-        )
-    );
-
-
-  const status =
-    normalizeStatus(
-      quiz.status
-    );
-
-
-  const mode =
-    normalizeMode(
-      quiz.mode
-    );
-
-
-  const selectionMode =
-    normalizeSelectionMode(
-      quiz.selection_mode
-    );
-
-
-  return `
-    <article
-      class="quiz-admin-card"
-      data-id="${escapeHtml(
-        quiz.id
-      )}"
-    >
-
-      <div class="module-admin-head">
-
-        <div>
-
-          <span
-            class="
-              status-pill
-              ${escapeHtml(
-                status
-              )}
-            "
-          >
-            ${escapeHtml(
-              titleCase(
-                status
-              )
-            )}
-          </span>
-
-
-          <span class="difficulty-pill intermediate">
-            ${escapeHtml(
-              titleCase(
-                mode
-              )
-            )}
-          </span>
-
-        </div>
-
-
-        <span class="order-badge">
-          #${numberValue(
-            quiz.display_order,
-            100
-          )}
-        </span>
-
-      </div>
-
-
-      <h2>
-        ${escapeHtml(
-          quiz.title ||
-          "Untitled quiz"
-        )}
-      </h2>
-
-
-      <p>
-        ${escapeHtml(
-          quiz.description ||
-          "No description"
-        )}
-      </p>
-
-
-      <div class="module-admin-meta">
-
-        <span>
-          ${escapeHtml(
-            module?.title ||
-            "Unassigned module"
-          )}
-        </span>
-
-        <span>
-          ${
-            quiz.quiz_questions
-              ?.length ||
-            0
-          }
-          in pool
-        </span>
-
-        <span>
-          ${numberValue(
-            quiz.question_count,
-            1
-          )}
-          delivered
-        </span>
-
-        <span>
-          ${escapeHtml(
-            titleCase(
-              selectionMode
-            )
-          )}
-        </span>
-
-      </div>
-
-
-      <div class="quiz-admin-actions">
-
-        <button
-          class="secondary-btn edit-quiz"
-          type="button"
-        >
-          Edit
-        </button>
-
-
-        <button
-          class="secondary-btn duplicate-quiz-card"
-          type="button"
-        >
-          Duplicate
-        </button>
-
-
-        <button
-          class="secondary-btn quick-quiz-status"
-          type="button"
-          data-status="${
-            status === "published"
-              ? "draft"
-              : "published"
-          }"
-        >
-          ${
-            status === "published"
-              ? "Unpublish"
-              : "Publish"
-          }
-        </button>
-
-      </div>
-
-    </article>
-  `;
-}
-
-
-/* =========================================================
-   FILTER QUIZZES
-========================================================= */
-
-function filterList() {
-  const search =
-    byId(
-      "quizSearch"
-    )
-      .value
-      .trim()
-      .toLowerCase();
-
-
-  const moduleId =
-    byId(
-      "quizModuleFilter"
-    ).value;
-
-
-  const selectedStatus =
-    byId(
-      "quizStatusFilter"
-    ).value;
-
-
-  const filtered =
-    quizzes.filter(
-      (quiz) => {
-        const module =
-          modules.find(
-            (item) =>
-              String(
-                item.id
-              ) ===
-              String(
-                quiz.module_id
-              )
-          );
-
-
-        const matchesModule =
-          moduleId === "all" ||
-          String(
-            quiz.module_id
-          ) ===
-          String(
-            moduleId
-          );
-
-
-        const matchesStatus =
-          selectedStatus === "all" ||
-          normalizeStatus(
-            quiz.status
-          ) ===
-          selectedStatus;
-
-
-        const searchableText = [
-          quiz.title,
-          quiz.slug,
-          quiz.description,
-          module?.title
-        ]
-          .map(
-            (value) =>
-              String(
-                value ||
-                ""
-              )
-          )
-          .join(
-            " "
-          )
-          .toLowerCase();
-
-
-        const matchesSearch =
-          !search ||
-          searchableText.includes(
-            search
-          );
-
-
-        return (
-          matchesModule &&
-          matchesStatus &&
-          matchesSearch
-        );
-      }
-    );
-
-
-  byId(
-    "quizList"
-  ).innerHTML =
-    filtered.length
-      ? filtered
-          .map(
-            quizCardHtml
-          )
-          .join(
-            ""
-          )
-      : `
-        <div class="empty-state">
-          No quizzes match these filters.
-        </div>
-      `;
-}
-
-
-/* =========================================================
-   QUESTION PICKER
-========================================================= */
-
-function renderPicker(
-  chosenIds = null
-) {
-  const currentlySelected =
-    (
-      chosenIds ||
-      selectedQuestionIds()
-    ).map(
-      String
-    );
-
-
-  const moduleId =
-    byId(
-      "quizModule"
-    ).value;
-
-
-  const search =
-    byId(
-      "pickerSearch"
-    )
-      .value
-      .trim()
-      .toLowerCase();
-
-
-  if (!moduleId) {
-    byId(
-      "questionPicker"
-    ).innerHTML = `
-      <div class="empty-state">
-        Select a module to load questions.
-      </div>
-    `;
-
-
-    updateSelectedCount();
 
 
     return;
   }
 
 
-  const filtered =
-    questions.filter(
-      (question) => {
-        const matchesModule =
-          String(
-            question.module_id
-          ) ===
-          String(
-            moduleId
-          );
+  banner.textContent =
+    "Connection restored.";
 
 
-        const searchableText = [
-          question.stem,
-          question.topic,
-          question.difficulty
-        ]
-          .map(
-            (value) =>
-              String(
-                value ||
-                ""
-              )
-          )
-          .join(
-            " "
-          )
-          .toLowerCase();
+  banner.classList.remove(
+    "offline"
+  );
 
 
-        const matchesSearch =
-          !search ||
-          searchableText.includes(
-            search
-          );
+  banner.classList.add(
+    "online"
+  );
 
 
-        return (
-          matchesModule &&
-          matchesSearch
-        );
-      }
-    );
+  banner.hidden =
+    false;
 
 
-  byId(
-    "questionPicker"
-  ).innerHTML =
-    filtered.length
-      ? filtered
-          .map(
-            (question) => {
-              const stem =
-                question.stem ||
-                "Untitled question";
+  window.setTimeout(
+    () => {
+      banner.hidden =
+        true;
+    },
+    2500
+  );
+}
 
 
-              const order =
-                numberValue(
-                  question.display_order,
-                  0
-                );
+window.addEventListener(
+  "offline",
+  updateConnectionStatus
+);
 
 
-              return `
-                <label class="question-picker-item picker-question">
-
-                  <input
-                    class="picker-check"
-                    type="checkbox"
-                    value="${escapeHtml(
-                      question.id
-                    )}"
-                    ${
-                      currentlySelected.includes(
-                        String(
-                          question.id
-                        )
-                      )
-                        ? "checked"
-                        : ""
-                    }
-                  >
+window.addEventListener(
+  "online",
+  updateConnectionStatus
+);
 
 
-                  <span>
-
-                    <strong>
-                      ${escapeHtml(
-                        stem
-                      )}
-                    </strong>
-
-                    <p>
-                      ${escapeHtml(
-                        question.topic ||
-                        "No topic"
-                      )}
-                      ·
-                      ${escapeHtml(
-                        titleCase(
-                          question.difficulty
-                        )
-                      )}
-                      ·
-                      ${escapeHtml(
-                        titleCase(
-                          question.status
-                        )
-                      )}
-                    </p>
-
-                  </span>
-
-
-                  <span class="picker-order">
-                    #${order}
-                  </span>
-
-                </label>
-              `;
-            }
-          )
-          .join(
-            ""
-          )
-      : `
-        <div class="empty-state">
-          No questions are available for this module.
-        </div>
-      `;
-
-
-  updateSelectedCount();
+if (!navigator.onLine) {
+  updateConnectionStatus();
 }
 
 
 /* =========================================================
-   QUIZ FORM
+   UPDATE NOTICE
 ========================================================= */
 
-function fillForm(
-  quiz = null,
-  duplicate = false
+function showAppUpdateNotice(
+  registration
 ) {
-  const form =
-    byId(
-      "quizForm"
+  if (
+    document.getElementById(
+      "aclUpdateNotice"
+    )
+  ) {
+    return;
+  }
+
+
+  const notice =
+    document.createElement(
+      "section"
     );
 
 
-  form.reset();
+  notice.id =
+    "aclUpdateNotice";
 
 
-  const source =
-    quiz ||
+  notice.className =
+    "acl-update-notice";
+
+
+  notice.setAttribute(
+    "role",
+    "status"
+  );
+
+
+  notice.setAttribute(
+    "aria-live",
+    "polite"
+  );
+
+
+  notice.innerHTML = `
+    <div>
+      <strong>
+        A new ACL version is available
+      </strong>
+
+      <span>
+        Update now to receive the latest improvements.
+      </span>
+    </div>
+
+    <button
+      id="applyAclUpdate"
+      type="button"
+    >
+      Update now
+    </button>
+  `;
+
+
+  document.body.appendChild(
+    notice
+  );
+
+
+  document
+    .getElementById(
+      "applyAclUpdate"
+    )
+    ?.addEventListener(
+      "click",
+      async (
+        event
+      ) => {
+        const button =
+          event.currentTarget;
+
+
+        button.disabled =
+          true;
+
+
+        button.textContent =
+          "Updating…";
+
+
+        try {
+          await registration.update();
+
+
+          const waitingWorker =
+            registration.waiting;
+
+
+          if (waitingWorker) {
+            waitingWorker.postMessage({
+              type:
+                "SKIP_WAITING"
+            });
+
+
+            return;
+          }
+
+
+          const installingWorker =
+            registration.installing;
+
+
+          if (installingWorker) {
+            installingWorker.addEventListener(
+              "statechange",
+              () => {
+                if (
+                  installingWorker.state ===
+                  "installed"
+                ) {
+                  installingWorker.postMessage({
+                    type:
+                      "SKIP_WAITING"
+                  });
+                }
+              }
+            );
+
+
+            return;
+          }
+
+
+          window.location.reload();
+        } catch (error) {
+          console.error(
+            "ACL APP UPDATE ERROR:",
+            error
+          );
+
+
+          button.disabled =
+            false;
+
+
+          button.textContent =
+            "Reload manually";
+        }
+      }
+    );
+}
+
+
+/* =========================================================
+   SERVICE WORKER MESSAGES
+========================================================= */
+
+function handleServiceWorkerMessage(
+  event
+) {
+  const message =
+    event.data ||
     {};
 
 
-  byId(
-    "quizDialogTitle"
-  ).textContent =
-    duplicate
-      ? "Duplicate Quiz"
-      : quiz
-        ? "Edit Quiz"
-        : "Create Quiz";
-
-
-  byId(
-    "quizId"
-  ).value =
-    duplicate
-      ? ""
-      : source.id ||
-        "";
-
-
-  byId(
-    "quizModule"
-  ).value =
-    source.module_id ||
-    modules[
-      0
-    ]?.id ||
-    "";
-
-
-  byId(
-    "quizTitle"
-  ).value =
-    duplicate
-      ? `${source.title || ""} Copy`
-      : source.title ||
-        "";
-
-
-  byId(
-    "quizSlug"
-  ).value =
-    duplicate
-      ? slugify(
-          `${source.slug || source.title || "quiz"}-copy`
-        )
-      : source.slug ||
-        "";
-
-
-  byId(
-    "quizStatus"
-  ).value =
-    duplicate
-      ? "draft"
-      : normalizeStatus(
-          source.status
-        );
-
-
-  byId(
-    "quizMode"
-  ).value =
-    normalizeMode(
-      source.mode
-    );
-
-
-  byId(
-    "quizSelection"
-  ).value =
-    normalizeSelectionMode(
-      source.selection_mode
-    );
-
-
-  byId(
-    "quizQuestionCount"
-  ).value =
-    numberValue(
-      source.question_count,
-      10
-    );
-
-
-  byId(
-    "quizTimeLimit"
-  ).value =
-    source.time_limit_seconds
-      ? Math.round(
-          numberValue(
-            source.time_limit_seconds
-          ) /
-          60
-        )
-      : "";
-
-
-  byId(
-    "quizPassing"
-  ).value =
-    numberValue(
-      source.passing_percentage,
-      70
-    );
-
-
-  byId(
-    "quizOrder"
-  ).value =
-    numberValue(
-      source.display_order,
-      100
-    );
-
-
-  byId(
-    "quizDescription"
-  ).value =
-    source.description ||
-    "";
-
-
-  byId(
-    "quizRandomQuestions"
-  ).checked =
-    Boolean(
-      source.randomize_questions
-    );
-
-
-  byId(
-    "quizRandomOptions"
-  ).checked =
-    source.randomize_options ??
-    true;
-
-
-  byId(
-    "quizAllowReview"
-  ).checked =
-    source.allow_review ??
-    true;
-
-
-  byId(
-    "quizShowExplanations"
-  ).checked =
-    source.show_explanations ??
-    true;
-
-
-  byId(
-    "pickerSearch"
-  ).value =
-    "";
-
-
-  const selectedIds =
-    (
-      source.quiz_questions ||
-      []
-    ).map(
-      (item) =>
-        String(
-          item.question_id
-        )
-    );
-
-
-  renderPicker(
-    selectedIds
-  );
-
-
-  byId(
-    "duplicateQuizButton"
-  ).hidden =
-    !quiz ||
-    duplicate;
-
-
-  byId(
-    "archiveQuizButton"
-  ).hidden =
-    !quiz ||
-    duplicate;
-
-
-  byId(
-    "quizDialog"
-  ).showModal();
-}
-
-
-/* =========================================================
-   PAYLOAD
-========================================================= */
-
-function buildPayload() {
-  const title =
-    byId(
-      "quizTitle"
-    ).value.trim();
-
-
-  const slug =
-    slugify(
-      byId(
-        "quizSlug"
-      ).value ||
-      title
-    );
-
-
-  const minutes =
-    Math.max(
-      0,
-      numberValue(
-        byId(
-          "quizTimeLimit"
-        ).value,
-        0
+  if (
+    message.type ===
+    "ACL_PUSH_RECEIVED"
+  ) {
+    window.dispatchEvent(
+      new CustomEvent(
+        "acl-push-received",
+        {
+          detail:
+            message.payload ||
+            {}
+        }
       )
     );
 
 
-  return {
-    module_id:
-      byId(
-        "quizModule"
-      ).value,
-
-    edition:
-      selectedEdition,
-
-    title,
-
-    slug,
-
-    description:
-      byId(
-        "quizDescription"
-      ).value.trim() ||
-      null,
-
-    mode:
-      normalizeMode(
-        byId(
-          "quizMode"
-        ).value
-      ),
-
-    selection_mode:
-      normalizeSelectionMode(
-        byId(
-          "quizSelection"
-        ).value
-      ),
-
-    question_count:
-      Math.max(
-        1,
-        numberValue(
-          byId(
-            "quizQuestionCount"
-          ).value,
-          1
-        )
-      ),
-
-    time_limit_seconds:
-      minutes > 0
-        ? minutes * 60
-        : null,
-
-    randomize_questions:
-      byId(
-        "quizRandomQuestions"
-      ).checked,
-
-    randomize_options:
-      byId(
-        "quizRandomOptions"
-      ).checked,
-
-    allow_review:
-      byId(
-        "quizAllowReview"
-      ).checked,
-
-    show_explanations:
-      byId(
-        "quizShowExplanations"
-      ).checked,
-
-    passing_percentage:
-      Math.min(
-        100,
-        Math.max(
-          0,
-          numberValue(
-            byId(
-              "quizPassing"
-            ).value,
-            70
-          )
-        )
-      ),
-
-    status:
-      normalizeStatus(
-        byId(
-          "quizStatus"
-        ).value
-      ),
-
-    display_order:
-      numberValue(
-        byId(
-          "quizOrder"
-        ).value,
-        100
-      )
-  };
-}
-
-
-/* =========================================================
-   VALIDATION
-========================================================= */
-
-function validateQuiz(
-  payload,
-  selectedIds
-) {
-  if (!payload.module_id) {
-    throw new Error(
-      "Select a module."
-    );
-  }
-
-
-  if (
-    !modules.some(
-      (module) =>
-        String(
-          module.id
-        ) ===
-        String(
-          payload.module_id
-        )
-    )
-  ) {
-    throw new Error(
-      "The selected module does not belong to this edition."
-    );
-  }
-
-
-  if (!payload.title) {
-    throw new Error(
-      "Quiz title is required."
-    );
-  }
-
-
-  if (!payload.slug) {
-    throw new Error(
-      "Quiz slug is required."
-    );
-  }
-
-
-  if (
-    !/^[a-z0-9-]+$/.test(
-      payload.slug
-    )
-  ) {
-    throw new Error(
-      "The slug may contain only lowercase letters, numbers, and hyphens."
-    );
-  }
-
-
-  if (!selectedIds.length) {
-    throw new Error(
-      "Select at least one question."
-    );
-  }
-
-
-  const validQuestionIds =
-    new Set(
-      questions
-        .filter(
-          (question) =>
-            String(
-              question.module_id
-            ) ===
-            String(
-              payload.module_id
-            )
-        )
-        .map(
-          (question) =>
-            String(
-              question.id
-            )
-        )
-    );
-
-
-  const containsInvalidQuestion =
-    selectedIds.some(
-      (id) =>
-        !validQuestionIds.has(
-          String(
-            id
-          )
-        )
-    );
-
-
-  if (containsInvalidQuestion) {
-    throw new Error(
-      "One or more selected questions do not belong to this module."
-    );
-  }
-
-
-  if (
-    payload.question_count >
-    selectedIds.length
-  ) {
-    throw new Error(
-      "Questions delivered cannot exceed the selected question pool."
-    );
-  }
-
-
-  return true;
-}
-
-
-/* =========================================================
-   SAVE QUIZ QUESTIONS
-========================================================= */
-
-async function saveQuizQuestions(
-  quizId,
-  selectedIds
-) {
-  const {
-    error: deleteError
-  } =
-    await supabaseClient
-      .from(
-        "quiz_questions"
-      )
-      .delete()
-      .eq(
-        "quiz_id",
-        quizId
-      );
-
-
-  if (deleteError) {
-    throw deleteError;
-  }
-
-
-  const rows =
-    selectedIds.map(
-      (
-        questionId,
-        index
-      ) => ({
-        quiz_id:
-          quizId,
-
-        question_id:
-          questionId,
-
-        display_order:
-          index +
-          1
-      })
-    );
-
-
-  if (!rows.length) {
     return;
   }
 
 
-  const {
-    error: insertError
-  } =
-    await supabaseClient
-      .from(
-        "quiz_questions"
+  if (
+    message.type ===
+    "ACL_PUSH_SUBSCRIPTION_CHANGED"
+  ) {
+    window.dispatchEvent(
+      new CustomEvent(
+        "acl-push-subscription-changed",
+        {
+          detail:
+            message
+        }
       )
-      .insert(
-        rows
-      );
+    );
 
 
-  if (insertError) {
-    throw insertError;
+    return;
+  }
+
+
+  if (
+    message.type ===
+    "ACL_NOTIFICATION_CLOSED"
+  ) {
+    window.dispatchEvent(
+      new CustomEvent(
+        "acl-notification-closed",
+        {
+          detail:
+            message
+        }
+      )
+    );
   }
 }
 
 
 /* =========================================================
-   SAVE QUIZ
+   REGISTER SERVICE WORKER
 ========================================================= */
 
-async function saveQuiz() {
-  if (isSaving) {
-    return;
-  }
-
-
-  const payload =
-    buildPayload();
-
-
-  const selectedIds =
-    selectedQuestionIds();
-
-
-  validateQuiz(
-    payload,
-    selectedIds
-  );
-
-
-  isSaving =
-    true;
-
-
-  const saveButton =
-    byId(
-      "quizForm"
-    ).querySelector(
-      'button[type="submit"]'
+async function registerAclServiceWorker() {
+  if (
+    !(
+      "serviceWorker" in
+      navigator
+    )
+  ) {
+    setInstallStatus(
+      "This browser does not support installation or background notifications."
     );
 
 
-  setButtonBusy(
-    saveButton,
-    true,
-    "Saving…",
-    "Save Quiz"
-  );
-
-
-  setStatus(
-    "Saving quiz…"
-  );
+    return null;
+  }
 
 
   try {
-    const existingId =
-      byId(
-        "quizId"
-      ).value;
+    navigator.serviceWorker.addEventListener(
+      "message",
+      handleServiceWorkerMessage
+    );
 
 
-    let quizId =
-      existingId;
+    navigator.serviceWorker.addEventListener(
+      "controllerchange",
+      () => {
+        if (
+          controllerReloadPending
+        ) {
+          return;
+        }
 
 
-    if (existingId) {
-      const {
-        error
-      } =
-        await supabaseClient
-          .from(
-            "quizzes"
-          )
-          .update(
-            payload
-          )
-          .eq(
-            "id",
-            existingId
-          )
-          .eq(
-            "edition",
-            selectedEdition
-          );
+        controllerReloadPending =
+          true;
 
 
-      if (error) {
-        throw error;
+        window.location.reload();
       }
-    } else {
-      const insertPayload = {
-        ...payload,
-
-        created_by:
-          adminProfile.id
-      };
+    );
 
 
-      const {
-        data,
-        error
-      } =
-        await supabaseClient
-          .from(
-            "quizzes"
-          )
-          .insert(
-            insertPayload
-          )
-          .select(
-            "id"
-          )
-          .single();
+    const registration =
+      await navigator.serviceWorker.register(
+        ACL_SERVICE_WORKER_URL,
+        {
+          scope:
+            ACL_SERVICE_WORKER_SCOPE,
+
+          updateViaCache:
+            "none"
+        }
+      );
 
 
-      if (error) {
-        throw error;
+    exposeRegistration(
+      registration
+    );
+
+
+    console.log(
+      "ACL PWA registered:",
+      registration.scope
+    );
+
+
+    registration.addEventListener(
+      "updatefound",
+      () => {
+        const installingWorker =
+          registration.installing;
+
+
+        if (!installingWorker) {
+          return;
+        }
+
+
+        installingWorker.addEventListener(
+          "statechange",
+          () => {
+            if (
+              installingWorker.state ===
+                "installed" &&
+              navigator.serviceWorker
+                .controller
+            ) {
+              showAppUpdateNotice(
+                registration
+              );
+            }
+          }
+        );
       }
+    );
 
 
-      quizId =
-        data.id;
+    if (registration.waiting) {
+      showAppUpdateNotice(
+        registration
+      );
     }
 
 
-    await saveQuizQuestions(
-      quizId,
-      selectedIds
+    registration
+      .update()
+      .catch(
+        (
+          error
+        ) => {
+          console.warn(
+            "ACL PWA update check failed:",
+            error
+          );
+        }
+      );
+
+
+    const readyRegistration =
+      await navigator.serviceWorker.ready;
+
+
+    exposeRegistration(
+      readyRegistration
     );
 
 
-    byId(
-      "quizDialog"
-    ).close();
-
-
-    await loadQuizzes();
-
-
-    setStatus(
-      payload.status === "published"
-        ? "Quiz saved and published."
-        : "Quiz saved successfully.",
-      "success"
-    );
+    return readyRegistration;
   } catch (error) {
     console.error(
-      "QUIZ SAVE ERROR:",
+      "ACL PWA registration failed:",
       error
     );
 
 
-    setStatus(
-      error.message ||
-      "The quiz could not be saved.",
-      "error"
+    setInstallStatus(
+      "App installation and background notifications are temporarily unavailable."
     );
-  } finally {
-    isSaving =
-      false;
 
 
-    setButtonBusy(
-      saveButton,
-      false,
-      "Saving…",
-      "Save Quiz"
-    );
+    return null;
   }
 }
 
 
-/* =========================================================
-   PREVIEW
-========================================================= */
-
-function previewQuiz() {
-  const ids =
-    selectedQuestionIds();
+const serviceWorkerReadyPromise =
+  registerAclServiceWorker();
 
 
-  const picked =
-    ids
-      .map(
-        (id) =>
-          questions.find(
-            (question) =>
-              String(
-                question.id
-              ) ===
-              String(
-                id
-              )
-          )
-      )
-      .filter(
-        Boolean
-      );
-
-
-  byId(
-    "quizPreviewContent"
-  ).innerHTML = `
-    <span class="admin-kicker">
-      QUIZ PREVIEW
-    </span>
-
-
-    <h2>
-      ${escapeHtml(
-        byId(
-          "quizTitle"
-        ).value ||
-        "Untitled quiz"
-      )}
-    </h2>
-
-
-    <p>
-      ${escapeHtml(
-        byId(
-          "quizDescription"
-        ).value ||
-        ""
-      )}
-    </p>
-
-
-    <div class="module-admin-meta">
-
-      <span>
-        ${escapeHtml(
-          titleCase(
-            byId(
-              "quizMode"
-            ).value
-          )
-        )}
-      </span>
-
-      <span>
-        ${picked.length}
-        selected
-      </span>
-
-      <span>
-        ${numberValue(
-          byId(
-            "quizQuestionCount"
-          ).value,
-          1
-        )}
-        delivered
-      </span>
-
-      <span>
-        ${
-          byId(
-            "quizTimeLimit"
-          ).value ||
-          "No"
-        }
-        min limit
-      </span>
-
-    </div>
-
-
-    <ol class="preview-question-list">
-
-      ${picked
-        .map(
-          (question) => `
-            <li>
-
-              <strong>
-                ${escapeHtml(
-                  question.stem ||
-                  "Untitled question"
-                )}
-              </strong>
-
-              <small>
-                ${escapeHtml(
-                  question.topic ||
-                  "No topic"
-                )}
-                ·
-                ${escapeHtml(
-                  titleCase(
-                    question.difficulty
-                  )
-                )}
-              </small>
-
-            </li>
-          `
-        )
-        .join(
-          ""
-        )}
-
-    </ol>
-  `;
-
-
-  byId(
-    "quizPreviewDialog"
-  ).showModal();
-}
+window.aclServiceWorkerReady =
+  serviceWorkerReadyPromise;
 
 
 /* =========================================================
-   ARCHIVE QUIZ
+   INSTALL INSTRUCTIONS
 ========================================================= */
 
-async function archiveQuiz() {
-  const id =
-    byId(
-      "quizId"
-    ).value;
-
-
-  if (!id) {
-    return;
-  }
-
-
-  const confirmed =
-    window.confirm(
-      "Archive this quiz?"
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  setStatus(
-    "Archiving quiz…"
+function showIosInstallInstructions() {
+  window.alert(
+    "To install ACL on iPhone or iPad:\n\n" +
+    "1. Open ACL in Safari.\n" +
+    "2. Tap the Share button.\n" +
+    "3. Scroll down and tap Add to Home Screen.\n" +
+    "4. Tap Add.\n" +
+    "5. Open ACL from the new Home Screen icon."
   );
+}
 
 
-  const {
-    error
-  } =
-    await supabaseClient
-      .from(
-        "quizzes"
-      )
-      .update({
-        status:
-          "archived"
-      })
-      .eq(
-        "id",
-        id
-      )
-      .eq(
-        "edition",
-        selectedEdition
-      );
+async function handleInstallButtonClick() {
+  if (
+    isIosDevice &&
+    isSafariBrowser &&
+    !runningStandalone
+  ) {
+    showIosInstallInstructions();
 
 
-  if (error) {
-    setStatus(
-      error.message,
-      "error"
+    return;
+  }
+
+
+  if (!deferredInstallPrompt) {
+    setInstallStatus(
+      "Open your browser menu and choose Install App or Add to Home Screen."
     );
 
 
@@ -2218,538 +681,297 @@ async function archiveQuiz() {
   }
 
 
-  byId(
-    "quizDialog"
-  ).close();
+  setInstallButtonState({
+    disabled:
+      true,
 
-
-  await loadQuizzes();
-
-
-  setStatus(
-    "Quiz archived.",
-    "success"
-  );
-}
-
-
-/* =========================================================
-   QUICK STATUS
-========================================================= */
-
-async function updateQuizStatus(
-  quiz,
-  nextStatus,
-  button
-) {
-  const normalText =
-    button.textContent.trim();
-
-
-  setButtonBusy(
-    button,
-    true,
-    "Updating…",
-    normalText
-  );
+    text:
+      "Opening installer…"
+  });
 
 
   try {
-    const {
-      error
-    } =
-      await supabaseClient
-        .from(
-          "quizzes"
-        )
-        .update({
-          status:
-            normalizeStatus(
-              nextStatus
-            )
-        })
-        .eq(
-          "id",
-          quiz.id
-        )
-        .eq(
-          "edition",
-          selectedEdition
-        );
+    await deferredInstallPrompt.prompt();
 
 
-    if (error) {
-      throw error;
-    }
-
-
-    await loadQuizzes();
-
-
-    setStatus(
-      nextStatus === "published"
-        ? "Quiz published."
-        : "Quiz moved to draft.",
-      "success"
-    );
-  } catch (error) {
-    setStatus(
-      error.message ||
-      "Quiz status could not be updated.",
-      "error"
-    );
-  } finally {
-    setButtonBusy(
-      button,
-      false,
-      "Updating…",
-      normalText
-    );
-  }
-}
-
-
-/* =========================================================
-   EVENTS
-========================================================= */
-
-function bindEvents() {
-  byId(
-    "quizForm"
-  )?.addEventListener(
-    "submit",
-    async (event) => {
-      event.preventDefault();
-
-
-      await saveQuiz();
-    }
-  );
-
-
-  byId(
-    "newQuizButton"
-  )?.addEventListener(
-    "click",
-    () => {
-      if (!modules.length) {
-        setStatus(
-          "Create a module before creating a quiz.",
-          "warning"
-        );
-
-
-        return;
-      }
-
-
-      fillForm();
-    }
-  );
-
-
-  byId(
-    "closeQuizDialog"
-  )?.addEventListener(
-    "click",
-    () => {
-      byId(
-        "quizDialog"
-      ).close();
-    }
-  );
-
-
-  byId(
-    "cancelQuizButton"
-  )?.addEventListener(
-    "click",
-    () => {
-      byId(
-        "quizDialog"
-      ).close();
-    }
-  );
-
-
-  byId(
-    "quizTitle"
-  )?.addEventListener(
-    "input",
-    () => {
-      if (
-        !byId(
-          "quizId"
-        ).value
-      ) {
-        byId(
-          "quizSlug"
-        ).value =
-          slugify(
-            byId(
-              "quizTitle"
-            ).value
-          );
-      }
-    }
-  );
-
-
-  byId(
-    "quizModule"
-  )?.addEventListener(
-    "change",
-    () => {
-      byId(
-        "pickerSearch"
-      ).value =
-        "";
-
-
-      renderPicker(
-        []
-      );
-    }
-  );
-
-
-  byId(
-    "pickerSearch"
-  )?.addEventListener(
-    "input",
-    () => {
-      renderPicker(
-        selectedQuestionIds()
-      );
-    }
-  );
-
-
-  byId(
-    "questionPicker"
-  )?.addEventListener(
-    "change",
-    updateSelectedCount
-  );
-
-
-  byId(
-    "selectAllQuestions"
-  )?.addEventListener(
-    "click",
-    () => {
-      document
-        .querySelectorAll(
-          ".picker-check"
-        )
-        .forEach(
-          (input) => {
-            input.checked =
-              true;
-          }
-        );
-
-
-      updateSelectedCount();
-    }
-  );
-
-
-  byId(
-    "clearQuestions"
-  )?.addEventListener(
-    "click",
-    () => {
-      document
-        .querySelectorAll(
-          ".picker-check"
-        )
-        .forEach(
-          (input) => {
-            input.checked =
-              false;
-          }
-        );
-
-
-      updateSelectedCount();
-    }
-  );
-
-
-  byId(
-    "previewQuizButton"
-  )?.addEventListener(
-    "click",
-    previewQuiz
-  );
-
-
-  byId(
-    "refreshQuizzes"
-  )?.addEventListener(
-    "click",
-    async () => {
-      try {
-        await loadQuestions();
-        await loadQuizzes();
-      } catch (error) {
-        console.error(
-          "QUIZ REFRESH ERROR:",
-          error
-        );
-
-
-        setStatus(
-          error.message ||
-          "Quizzes could not be refreshed.",
-          "error"
-        );
-      }
-    }
-  );
-
-
-  byId(
-    "quizSearch"
-  )?.addEventListener(
-    "input",
-    filterList
-  );
-
-
-  byId(
-    "quizModuleFilter"
-  )?.addEventListener(
-    "change",
-    filterList
-  );
-
-
-  byId(
-    "quizStatusFilter"
-  )?.addEventListener(
-    "change",
-    filterList
-  );
-
-
-  byId(
-    "quizList"
-  )?.addEventListener(
-    "click",
-    async (event) => {
-      const card =
-        event.target.closest(
-          ".quiz-admin-card"
-        );
-
-
-      if (!card) {
-        return;
-      }
-
-
-      const quiz =
-        quizzes.find(
-          (item) =>
-            String(
-              item.id
-            ) ===
-            String(
-              card.dataset.id
-            )
-        );
-
-
-      if (!quiz) {
-        return;
-      }
-
-
-      if (
-        event.target.closest(
-          ".edit-quiz"
-        )
-      ) {
-        fillForm(
-          quiz
-        );
-
-
-        return;
-      }
-
-
-      if (
-        event.target.closest(
-          ".duplicate-quiz-card"
-        )
-      ) {
-        fillForm(
-          quiz,
-          true
-        );
-
-
-        return;
-      }
-
-
-      const quickButton =
-        event.target.closest(
-          ".quick-quiz-status"
-        );
-
-
-      if (quickButton) {
-        await updateQuizStatus(
-          quiz,
-          quickButton.dataset.status,
-          quickButton
-        );
-      }
-    }
-  );
-
-
-  byId(
-    "duplicateQuizButton"
-  )?.addEventListener(
-    "click",
-    () => {
-      const quiz =
-        quizzes.find(
-          (item) =>
-            String(
-              item.id
-            ) ===
-            String(
-              byId(
-                "quizId"
-              ).value
-            )
-        );
-
-
-      if (quiz) {
-        fillForm(
-          quiz,
-          true
-        );
-      }
-    }
-  );
-
-
-  byId(
-    "archiveQuizButton"
-  )?.addEventListener(
-    "click",
-    archiveQuiz
-  );
-
-
-  byId(
-    "quizDialog"
-  )?.addEventListener(
-    "click",
-    (event) => {
-      if (
-        event.target ===
-        byId(
-          "quizDialog"
-        )
-      ) {
-        byId(
-          "quizDialog"
-        ).close();
-      }
-    }
-  );
-}
-
-
-/* =========================================================
-   INITIALIZATION
-========================================================= */
-
-async function initializeAdminQuizzes() {
-  try {
-    applyEditionContext();
-
-
-    adminProfile =
-      await protectAndRender(
-        "login.html"
-      );
-
-
-    if (!adminProfile) {
-      return;
-    }
+    const choice =
+      await deferredInstallPrompt
+        .userChoice;
 
 
     if (
-      !isAdminProfile(
-        adminProfile
-      )
+      choice.outcome ===
+      "accepted"
     ) {
-      window.location.replace(
-        aclUrl(
-          "modules.html",
-          selectedEdition
-        )
+      setInstallStatus(
+        "ACL installation started."
       );
-
-
-      return;
+    } else {
+      setInstallStatus(
+        "Installation was cancelled."
+      );
     }
-
-
-    bindEvents();
-
-
-    await loadModules();
-    await loadQuestions();
-    await loadQuizzes();
   } catch (error) {
     console.error(
-      "ADMIN QUIZZES INITIALIZATION ERROR:",
+      "ACL INSTALL ERROR:",
       error
     );
 
 
-    setStatus(
-      error.message ||
-      "The quiz builder could not be initialized.",
-      "error"
+    setInstallStatus(
+      "The app could not be installed. Try the browser menu."
     );
+  } finally {
+    deferredInstallPrompt =
+      null;
 
 
-    byId(
-      "quizList"
-    ).innerHTML = `
-      <div class="empty-state">
-        Quiz management could not be loaded.
-      </div>
-    `;
+    setInstallButtonState({
+      disabled:
+        false,
+
+      text:
+        "Install ACL App"
+    });
   }
 }
 
 
+/* =========================================================
+   IOS INSTALL DISPLAY
+========================================================= */
+
 if (
-  document.readyState ===
-  "loading"
+  isIosDevice &&
+  isSafariBrowser &&
+  !runningStandalone
 ) {
-  document.addEventListener(
-    "DOMContentLoaded",
-    initializeAdminQuizzes,
-    {
-      once:
-        true
-    }
+  if (installSection) {
+    installSection.hidden =
+      false;
+  }
+
+
+  setInstallButtonState({
+    text:
+      "How to install on iPhone"
+  });
+
+
+  setInstallStatus(
+    "On iPhone, install ACL from Safari before enabling push notifications."
   );
-} else {
-  void initializeAdminQuizzes();
 }
+
+
+/* =========================================================
+   BROWSER INSTALL PROMPT
+========================================================= */
+
+window.addEventListener(
+  "beforeinstallprompt",
+  (
+    event
+  ) => {
+    event.preventDefault();
+
+
+    deferredInstallPrompt =
+      event;
+
+
+    if (installSection) {
+      installSection.hidden =
+        false;
+    }
+
+
+    setInstallButtonState({
+      hidden:
+        false,
+
+      disabled:
+        false,
+
+      text:
+        "Install ACL App"
+    });
+
+
+    setInstallStatus(
+      "ACL can now be installed on this device."
+    );
+  }
+);
+
+
+installButton
+  ?.addEventListener(
+    "click",
+    handleInstallButtonClick
+  );
+
+
+/* =========================================================
+   INSTALL COMPLETED
+========================================================= */
+
+window.addEventListener(
+  "appinstalled",
+  () => {
+    deferredInstallPrompt =
+      null;
+
+
+    if (installSection) {
+      installSection.hidden =
+        true;
+    }
+
+
+    setInstallButtonState({
+      hidden:
+        true
+    });
+
+
+    setInstallStatus(
+      "ACL has been installed successfully."
+    );
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "acl-app-installed"
+      )
+    );
+  }
+);
+
+
+/* =========================================================
+   STANDALONE MODE
+========================================================= */
+
+if (runningStandalone) {
+  if (installSection) {
+    installSection.hidden =
+      true;
+  }
+
+
+  setInstallButtonState({
+    hidden:
+      true
+  });
+
+
+  setInstallStatus(
+    ""
+  );
+
+
+  document.body.classList.add(
+    "acl-running-standalone"
+  );
+}
+
+
+/* =========================================================
+   PUBLIC PWA API
+========================================================= */
+
+window.aclPwa = {
+  basePath:
+    ACL_BASE_PATH,
+
+  serviceWorkerUrl:
+    ACL_SERVICE_WORKER_URL,
+
+  serviceWorkerScope:
+    ACL_SERVICE_WORKER_SCOPE,
+
+  isIosDevice,
+
+  isSafariBrowser,
+
+  isStandalone:
+    runningStandalone,
+
+  async getRegistration() {
+    if (serviceWorkerRegistration) {
+      return serviceWorkerRegistration;
+    }
+
+
+    return serviceWorkerReadyPromise;
+  },
+
+  async checkForUpdate() {
+    const registration =
+      await this.getRegistration();
+
+
+    if (!registration) {
+      return false;
+    }
+
+
+    await registration.update();
+
+
+    return true;
+  },
+
+  async clearCache() {
+    const registration =
+      await this.getRegistration();
+
+
+    const worker =
+      registration?.active ||
+      navigator.serviceWorker
+        .controller;
+
+
+    worker?.postMessage({
+      type:
+        "CLEAR_ACL_CACHE"
+    });
+  },
+
+  async showLocalNotification(
+    payload = {}
+  ) {
+    const registration =
+      await this.getRegistration();
+
+
+    if (!registration) {
+      throw new Error(
+        "The ACL service worker is unavailable."
+      );
+    }
+
+
+    const worker =
+      registration.active ||
+      navigator.serviceWorker
+        .controller;
+
+
+    if (!worker) {
+      throw new Error(
+        "The ACL service worker is not active yet."
+      );
+    }
+
+
+    worker.postMessage({
+      type:
+        "SHOW_NOTIFICATION",
+
+      payload
+    });
+  }
+};
