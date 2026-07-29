@@ -15,7 +15,7 @@ import {
 
 
 console.log(
-  "ACL NOTIFICATIONS v2.0.2 LOADED"
+  "ACL NOTIFICATIONS v2.0.3 LOADED"
 );
 
 
