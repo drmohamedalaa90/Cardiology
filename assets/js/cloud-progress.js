@@ -3,20 +3,30 @@ import {
 } from "./supabase-client.js";
 
 
+/* =========================================================
+   CURRENT USER
+========================================================= */
+
 async function currentUser() {
   const {
     data,
     error
   } =
-    await supabaseClient.auth
+    await supabaseClient
+      .auth
       .getSession();
+
 
   if (error) {
     throw error;
   }
 
+
   const user =
-    data.session?.user;
+    data
+      ?.session
+      ?.user;
+
 
   if (!user) {
     throw new Error(
@@ -24,9 +34,14 @@ async function currentUser() {
     );
   }
 
+
   return user;
 }
 
+
+/* =========================================================
+   ATTEMPT STATE NORMALIZATION
+========================================================= */
 
 function normalizeAttemptState(
   state = {},
@@ -37,15 +52,19 @@ function normalizeAttemptState(
     typeof lifelinesOverride ===
       "object"
       ? lifelinesOverride
+
       : state.lifelinesState &&
-          typeof state.lifelinesState ===
-            "object"
+        typeof state.lifelinesState ===
+          "object"
         ? state.lifelinesState
+
         : state.lifelines &&
-            typeof state.lifelines ===
-              "object"
+          typeof state.lifelines ===
+            "object"
           ? state.lifelines
+
           : {};
+
 
   return {
     questionIds:
@@ -54,6 +73,7 @@ function normalizeAttemptState(
       )
         ? state.questionIds
         : [],
+
 
     currentIndex:
       Number.isFinite(
@@ -66,12 +86,14 @@ function normalizeAttemptState(
           )
         : 0,
 
+
     answers:
       Array.isArray(
         state.answers
       )
         ? state.answers
         : [],
+
 
     score:
       Number.isFinite(
@@ -84,6 +106,7 @@ function normalizeAttemptState(
           )
         : 0,
 
+
     correctCount:
       Number.isFinite(
         Number(
@@ -94,6 +117,7 @@ function normalizeAttemptState(
             state.correctCount
           )
         : 0,
+
 
     incorrectCount:
       Number.isFinite(
@@ -106,6 +130,7 @@ function normalizeAttemptState(
           )
         : 0,
 
+
     timedOutCount:
       Number.isFinite(
         Number(
@@ -117,15 +142,213 @@ function normalizeAttemptState(
           )
         : 0,
 
+
     confidenceEnabled:
       Boolean(
         state.confidenceEnabled
       ),
 
+
     lifelines
   };
 }
 
+
+/* =========================================================
+   EDITION HELPERS
+========================================================= */
+
+function normalizeEdition(
+  value
+) {
+  const edition =
+    String(
+      value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  return (
+    edition === "basic" ||
+    edition === "expert"
+  )
+    ? edition
+    : null;
+}
+
+
+function activeEdition() {
+  const parameters =
+    new URLSearchParams(
+      window.location.search
+    );
+
+
+  const urlEdition =
+    normalizeEdition(
+      parameters.get(
+        "edition"
+      )
+    );
+
+
+  if (urlEdition) {
+    return urlEdition;
+  }
+
+
+  return normalizeEdition(
+    localStorage.getItem(
+      "aclSelectedEdition"
+    )
+  );
+}
+
+
+/* =========================================================
+   MODULE EDITION MAP
+========================================================= */
+
+async function loadModuleEditionMap() {
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from(
+        "modules"
+      )
+      .select(`
+        id,
+        slug,
+        title,
+        edition
+      `);
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  const map =
+    new Map();
+
+
+  for (
+    const module of
+    data ||
+    []
+  ) {
+    const edition =
+      normalizeEdition(
+        module.edition
+      );
+
+
+    if (!edition) {
+      continue;
+    }
+
+
+    if (module.id) {
+      map.set(
+        String(
+          module.id
+        ),
+        {
+          edition,
+          title:
+            module.title ||
+            "",
+          id:
+            module.id,
+          slug:
+            module.slug ||
+            ""
+        }
+      );
+    }
+
+
+    if (module.slug) {
+      map.set(
+        String(
+          module.slug
+        ),
+        {
+          edition,
+          title:
+            module.title ||
+            "",
+          id:
+            module.id,
+          slug:
+            module.slug
+        }
+      );
+    }
+  }
+
+
+  return map;
+}
+
+
+/* =========================================================
+   ENRICH ATTEMPTS WITH EDITION
+========================================================= */
+
+function enrichAttempt(
+  attempt,
+  moduleMap
+) {
+  const moduleKey =
+    String(
+      attempt?.module_id ||
+      ""
+    );
+
+
+  const matchedModule =
+    moduleMap.get(
+      moduleKey
+    );
+
+
+  const existingEdition =
+    normalizeEdition(
+      attempt?.module_edition ||
+      attempt?.edition ||
+      attempt?.modules?.edition
+    );
+
+
+  return {
+    ...attempt,
+
+    module_edition:
+      existingEdition ||
+      matchedModule?.edition ||
+      null,
+
+    module_title:
+      attempt?.module_title ||
+      matchedModule?.title ||
+      "ACL Module",
+
+    module_slug:
+      matchedModule?.slug ||
+      null
+  };
+}
+
+
+/* =========================================================
+   GET OPEN ATTEMPT
+========================================================= */
 
 export async function getOpenAttempt(
   moduleId,
@@ -133,6 +356,7 @@ export async function getOpenAttempt(
 ) {
   const user =
     await currentUser();
+
 
   let query =
     supabaseClient
@@ -155,6 +379,7 @@ export async function getOpenAttempt(
         "in_progress"
       );
 
+
   if (quizId) {
     query =
       query.eq(
@@ -169,6 +394,7 @@ export async function getOpenAttempt(
       );
   }
 
+
   const {
     data,
     error
@@ -177,19 +403,50 @@ export async function getOpenAttempt(
       .order(
         "updated_at",
         {
-          ascending: false
+          ascending:
+            false
         }
       )
-      .limit(1)
+      .limit(
+        1
+      )
       .maybeSingle();
+
 
   if (error) {
     throw error;
   }
 
-  return data;
+
+  if (!data) {
+    return null;
+  }
+
+
+  try {
+    const moduleMap =
+      await loadModuleEditionMap();
+
+
+    return enrichAttempt(
+      data,
+      moduleMap
+    );
+  } catch (error) {
+    console.warn(
+      "Could not attach module edition to open attempt:",
+      error
+    );
+
+
+    return data;
+  }
 }
 
+
+/* =========================================================
+   CREATE ATTEMPT
+========================================================= */
 
 export async function createAttempt({
   moduleId,
@@ -203,6 +460,7 @@ export async function createAttempt({
   const user =
     await currentUser();
 
+
   const safeQuestionIds =
     Array.isArray(
       questionIds
@@ -210,36 +468,47 @@ export async function createAttempt({
       ? questionIds
       : [];
 
+
   const row = {
     user_id:
       user.id,
 
+
     module_id:
       moduleId,
+
 
     module_title:
       moduleTitle,
 
+
     quiz_id:
       quizId,
+
 
     quiz_title:
       quizTitle ||
       moduleTitle,
 
+
     mode,
+
 
     question_count:
       safeQuestionIds.length,
 
+
     question_ids:
       safeQuestionIds,
+
 
     current_question_index:
       0,
 
+
     answers:
       [],
+
 
     lifelines:
       lifelines &&
@@ -248,12 +517,15 @@ export async function createAttempt({
         ? lifelines
         : {},
 
+
     score:
       0,
+
 
     status:
       "in_progress"
   };
+
 
   const {
     data,
@@ -271,6 +543,7 @@ export async function createAttempt({
       )
       .single();
 
+
   if (error) {
     if (
       error.code ===
@@ -282,12 +555,35 @@ export async function createAttempt({
       );
     }
 
+
     throw error;
   }
 
-  return data;
+
+  try {
+    const moduleMap =
+      await loadModuleEditionMap();
+
+
+    return enrichAttempt(
+      data,
+      moduleMap
+    );
+  } catch (editionError) {
+    console.warn(
+      "Attempt created, but its module edition could not be attached:",
+      editionError
+    );
+
+
+    return data;
+  }
 }
 
+
+/* =========================================================
+   SAVE ATTEMPT
+========================================================= */
 
 export async function saveAttempt(
   attemptId,
@@ -300,6 +596,7 @@ export async function saveAttempt(
       lifelinesOverride
     );
 
+
   const {
     data,
     error
@@ -310,24 +607,24 @@ export async function saveAttempt(
       )
       .update({
         question_ids:
-          normalized
-            .questionIds,
+          normalized.questionIds,
+
 
         current_question_index:
-          normalized
-            .currentIndex,
+          normalized.currentIndex,
+
 
         answers:
-          normalized
-            .answers,
+          normalized.answers,
+
 
         score:
-          normalized
-            .score,
+          normalized.score,
+
 
         lifelines:
-          normalized
-            .lifelines,
+          normalized.lifelines,
+
 
         status:
           "in_progress"
@@ -341,13 +638,19 @@ export async function saveAttempt(
       )
       .single();
 
+
   if (error) {
     throw error;
   }
 
+
   return data;
 }
 
+
+/* =========================================================
+   COMPLETE ATTEMPT
+========================================================= */
 
 export async function completeAttempt(
   attemptId,
@@ -360,6 +663,7 @@ export async function completeAttempt(
       lifelinesOverride
     );
 
+
   const {
     data,
     error
@@ -370,27 +674,28 @@ export async function completeAttempt(
       )
       .update({
         question_ids:
-          normalized
-            .questionIds,
+          normalized.questionIds,
+
 
         current_question_index:
-          normalized
-            .currentIndex,
+          normalized.currentIndex,
+
 
         answers:
-          normalized
-            .answers,
+          normalized.answers,
+
 
         score:
-          normalized
-            .score,
+          normalized.score,
+
 
         lifelines:
-          normalized
-            .lifelines,
+          normalized.lifelines,
+
 
         status:
           "completed",
+
 
         completed_at:
           new Date()
@@ -405,43 +710,114 @@ export async function completeAttempt(
       )
       .single();
 
+
   if (error) {
     throw error;
   }
+
 
   return data;
 }
 
 
-export async function listAttempts() {
+/* =========================================================
+   LIST ATTEMPTS
+========================================================= */
+
+export async function listAttempts({
+  edition = activeEdition(),
+  includeUnmatched = false
+} = {}) {
   const user =
     await currentUser();
 
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from(
-        "quiz_attempts"
-      )
-      .select(
-        "*"
-      )
-      .eq(
-        "user_id",
-        user.id
-      )
-      .order(
-        "updated_at",
-        {
-          ascending: false
-        }
-      );
 
-  if (error) {
-    throw error;
+  const [
+    attemptResult,
+    moduleMapResult
+  ] =
+    await Promise.all([
+      supabaseClient
+        .from(
+          "quiz_attempts"
+        )
+        .select(
+          "*"
+        )
+        .eq(
+          "user_id",
+          user.id
+        )
+        .order(
+          "updated_at",
+          {
+            ascending:
+              false
+          }
+        ),
+
+      loadModuleEditionMap()
+    ]);
+
+
+  if (
+    attemptResult.error
+  ) {
+    throw attemptResult.error;
   }
 
-  return data || [];
+
+  const selectedEdition =
+    normalizeEdition(
+      edition
+    );
+
+
+  const enrichedAttempts =
+    (
+      attemptResult.data ||
+      []
+    ).map(
+      (attempt) =>
+        enrichAttempt(
+          attempt,
+          moduleMapResult
+        )
+    );
+
+
+  /*
+   * No valid edition supplied:
+   * return every attempt.
+   */
+
+  if (!selectedEdition) {
+    return enrichedAttempts;
+  }
+
+
+  /*
+   * Current pathway:
+   * return only attempts belonging to that edition.
+   */
+
+  return enrichedAttempts.filter(
+    (attempt) => {
+      const attemptEdition =
+        normalizeEdition(
+          attempt.module_edition
+        );
+
+
+      if (!attemptEdition) {
+        return includeUnmatched;
+      }
+
+
+      return (
+        attemptEdition ===
+        selectedEdition
+      );
+    }
+  );
 }
