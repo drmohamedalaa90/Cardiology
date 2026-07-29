@@ -11,7 +11,7 @@ import {
 
 
 console.log(
-  "ACL ADMIN QUIZZES v3.0.0 LOADED"
+  "ACL ADMIN QUIZZES v3.1.0 LOADED"
 );
 
 
@@ -66,7 +66,8 @@ function escapeHtml(
   value = ""
 ) {
   return String(
-    value
+    value ??
+    ""
   ).replace(
     /[&<>"']/g,
     (character) =>
@@ -485,7 +486,12 @@ async function loadModules() {
   byId(
     "quizModule"
   ).innerHTML =
-    options;
+    options ||
+    `
+      <option value="">
+        No modules available
+      </option>
+    `;
 
 
   byId(
@@ -530,12 +536,10 @@ async function loadQuestions() {
         id,
         module_id,
         stem,
-        question_text,
         topic,
         difficulty,
         status,
-        display_order,
-        order_index
+        display_order
       `)
       .in(
         "module_id",
@@ -937,7 +941,6 @@ function quizCardHtml(
         <span>
           ${escapeHtml(
             module?.title ||
-            quiz.module_id ||
             "Unassigned module"
           )}
         </span>
@@ -1132,8 +1135,12 @@ function renderPicker(
   chosenIds = null
 ) {
   const currentlySelected =
-    chosenIds ||
-    selectedQuestionIds();
+    (
+      chosenIds ||
+      selectedQuestionIds()
+    ).map(
+      String
+    );
 
 
   const moduleId =
@@ -1151,6 +1158,23 @@ function renderPicker(
       .toLowerCase();
 
 
+  if (!moduleId) {
+    byId(
+      "questionPicker"
+    ).innerHTML = `
+      <div class="empty-state">
+        Select a module to load questions.
+      </div>
+    `;
+
+
+    updateSelectedCount();
+
+
+    return;
+  }
+
+
   const filtered =
     questions.filter(
       (question) => {
@@ -1165,7 +1189,6 @@ function renderPicker(
 
         const searchableText = [
           question.stem,
-          question.question_text,
           question.topic,
           question.difficulty
         ]
@@ -1206,14 +1229,12 @@ function renderPicker(
             (question) => {
               const stem =
                 question.stem ||
-                question.question_text ||
                 "Untitled question";
 
 
               const order =
                 numberValue(
-                  question.display_order ??
-                  question.order_index,
+                  question.display_order,
                   0
                 );
 
@@ -1464,6 +1485,12 @@ function fillForm(
     true;
 
 
+  byId(
+    "pickerSearch"
+  ).value =
+    "";
+
+
   const selectedIds =
     (
       source.quiz_questions ||
@@ -1629,10 +1656,7 @@ function buildPayload() {
           "quizOrder"
         ).value,
         100
-      ),
-
-    created_by:
-      adminProfile.id
+      )
   };
 }
 
@@ -1648,6 +1672,23 @@ function validateQuiz(
   if (!payload.module_id) {
     throw new Error(
       "Select a module."
+    );
+  }
+
+
+  if (
+    !modules.some(
+      (module) =>
+        String(
+          module.id
+        ) ===
+        String(
+          payload.module_id
+        )
+    )
+  ) {
+    throw new Error(
+      "The selected module does not belong to this edition."
     );
   }
 
@@ -1783,6 +1824,11 @@ async function saveQuizQuestions(
     );
 
 
+  if (!rows.length) {
+    return;
+  }
+
+
   const {
     error: insertError
   } =
@@ -1886,6 +1932,14 @@ async function saveQuiz() {
         throw error;
       }
     } else {
+      const insertPayload = {
+        ...payload,
+
+        created_by:
+          adminProfile.id
+      };
+
+
       const {
         data,
         error
@@ -1895,7 +1949,7 @@ async function saveQuiz() {
             "quizzes"
           )
           .insert(
-            payload
+            insertPayload
           )
           .select(
             "id"
@@ -2066,7 +2120,6 @@ function previewQuiz() {
               <strong>
                 ${escapeHtml(
                   question.stem ||
-                  question.question_text ||
                   "Untitled question"
                 )}
               </strong>
@@ -2128,6 +2181,11 @@ async function archiveQuiz() {
   }
 
 
+  setStatus(
+    "Archiving quiz…"
+  );
+
+
   const {
     error
   } =
@@ -2185,7 +2243,7 @@ async function updateQuizStatus(
   button
 ) {
   const normalText =
-    button.textContent;
+    button.textContent.trim();
 
 
   setButtonBusy(
@@ -2274,6 +2332,17 @@ function bindEvents() {
   )?.addEventListener(
     "click",
     () => {
+      if (!modules.length) {
+        setStatus(
+          "Create a module before creating a quiz.",
+          "warning"
+        );
+
+
+        return;
+      }
+
+
       fillForm();
     }
   );
@@ -2331,6 +2400,12 @@ function bindEvents() {
   )?.addEventListener(
     "change",
     () => {
+      byId(
+        "pickerSearch"
+      ).value =
+        "";
+
+
       renderPicker(
         []
       );
@@ -2414,7 +2489,24 @@ function bindEvents() {
     "refreshQuizzes"
   )?.addEventListener(
     "click",
-    loadQuizzes
+    async () => {
+      try {
+        await loadQuestions();
+        await loadQuizzes();
+      } catch (error) {
+        console.error(
+          "QUIZ REFRESH ERROR:",
+          error
+        );
+
+
+        setStatus(
+          error.message ||
+          "Quizzes could not be refreshed.",
+          "error"
+        );
+      }
+    }
   );
 
 
