@@ -9,11 +9,11 @@
     content="strict-origin-when-cross-origin"
   >
 
-  <   
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
+  
   <meta
     id="analyticsThemeColor"
     name="theme-color"
@@ -816,6 +816,11 @@
   </header>
 
   <main class="analytics-shell">
+    
+    <section
+  data-admin-shell
+  data-active="analytics"
+></section>
 
     <section class="analytics-hero">
 
@@ -1367,14 +1372,24 @@
   </main>
 
   <script
-    type="module"
-    src="assets/js/admin-analytics.js?v=3.0.0"
-  ></script>
+  type="module"
+  src="assets/js/admin-analytics.js?v=3.0.0"
+></script>
 
-  <script
-    type="module"
-    src="assets/js/pwa.js?v=1.6.0"
-  ></script>
+<script
+  type="module"
+  src="assets/js/session-ui.js?v=4.6.0"
+></script>
+
+<script
+  type="module"
+  src="assets/js/admin-shell.js?v=3.0.0"
+></script>
+
+<script
+  type="module"
+  src="assets/js/pwa.js?v=1.6.0"
+></script>
 
 </body>
 
