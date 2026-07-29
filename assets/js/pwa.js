@@ -258,21 +258,92 @@ function showAppUpdateNotice(
   );
 
 
-  document
-    .getElementById(
-      "applyAclUpdate"
-    )
-    ?.addEventListener(
-      "click",
-      () => {
-        registration
-          .waiting
-          ?.postMessage({
-            type:
-              "SKIP_WAITING"
-          });
+document
+  .getElementById(
+    "applyAclUpdate"
+  )
+  ?.addEventListener(
+    "click",
+    async (event) => {
+      const button =
+        event.currentTarget;
+
+
+      button.disabled =
+        true;
+
+
+      button.textContent =
+        "Updating…";
+
+
+      try {
+        await registration.update();
+
+
+        if (
+          registration.waiting
+        ) {
+          registration.waiting
+            .postMessage({
+              type:
+                "SKIP_WAITING"
+            });
+        }
+
+
+        const cacheNames =
+          await caches.keys();
+
+
+        await Promise.all(
+          cacheNames
+            .filter(
+              (cacheName) =>
+                cacheName.startsWith(
+                  "acl-pwa-"
+                )
+            )
+            .map(
+              (cacheName) =>
+                caches.delete(
+                  cacheName
+                )
+            )
+        );
+
+
+        const refreshedUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        refreshedUrl.searchParams.set(
+          "acl_refresh",
+          Date.now().toString()
+        );
+
+
+        window.location.replace(
+          refreshedUrl.toString()
+        );
+      } catch (error) {
+        console.error(
+          "ACL APP UPDATE ERROR:",
+          error
+        );
+
+
+        button.disabled =
+          false;
+
+
+        button.textContent =
+          "Reload manually";
       }
-    );
+    }
+  );
 }
 
 /* =========================================================
