@@ -5,8 +5,7 @@ import {
 
 import {
   ACL_CONFIG
-} from "./config.js";
-
+} from "./config.js?v=1.1.0";
 
 import {
   protectAndRender,
