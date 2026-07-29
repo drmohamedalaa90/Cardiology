@@ -1,29 +1,2483 @@
-<!doctype html><html lang="en"><head>
-<meta name="referrer" content="strict-origin-when-cross-origin"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Manage Modules | ACL Admin</title>
-<link rel="stylesheet" href="assets/css/main.css?v=2.8.7"><link rel="stylesheet" href="assets/css/auth.css?v=2.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header class="topbar"><a class="brand brand-link" href="modules.html">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container">
-<section data-admin-shell data-active="modules"></section>
-<section class="card admin-hero"><div><span class="admin-kicker">PHASE 2 MODULE CONTROL</span><h1>Manage Modules</h1><p class="muted">Create, organize, schedule, publish, lock, and preview the ACL learning catalogue without editing GitHub files.</p></div><div class="admin-hero-actions"><a class="secondary-btn" href="admin.html">Students</a><a class="secondary-btn" href="admin-questions.html">Question Bank</a><button id="newModuleButton" class="primary-btn" type="button">+ New module</button></div></section>
-<section class="admin-stats"><div class="stat-card"><span>All modules</span><strong id="moduleTotal">—</strong></div><div class="stat-card"><span>Published</span><strong id="modulePublished">—</strong></div><div class="stat-card"><span>Coming soon</span><strong id="moduleComing">—</strong></div><div class="stat-card"><span>Draft / archived</span><strong id="moduleHidden">—</strong></div></section>
-<section class="card admin-toolbar"><div class="field"><label for="moduleSearch">Search</label><input id="moduleSearch" type="search" placeholder="Title, category, description or slug"></div><div class="field"><label for="moduleStatusFilter">Status</label><select id="moduleStatusFilter"><option value="all">All statuses</option><option value="published">Published</option><option value="coming_soon">Coming soon</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div><button id="refreshModules" class="secondary-btn" type="button">Refresh</button></section>
-<div id="adminModulesStatus" class="status-box" hidden></div>
-<section id="adminModulesGrid" class="admin-module-grid"><div class="empty-state">Loading modules…</div></section>
-</main>
-<dialog id="moduleDialog" class="module-dialog"><form id="moduleForm" method="dialog"><div class="dialog-title-row"><div><span class="admin-kicker">MODULE EDITOR</span><h2 id="moduleDialogTitle">Create module</h2></div><button type="button" id="closeModuleDialog" class="dialog-close" aria-label="Close">×</button></div>
-<input id="moduleOriginalId" type="hidden">
-<div class="form-grid">
-<div class="field"><label for="moduleTitle">Title *</label><input id="moduleTitle" required maxlength="120"></div><div class="field"><label for="moduleSlug">Slug / ID *</label><input id="moduleSlug" required pattern="[a-z0-9-]+" placeholder="acute-coronary-syndromes"></div>
-<div class="field span-2"><label for="moduleShortDescription">Short description *</label><textarea id="moduleShortDescription" required rows="2" maxlength="240"></textarea></div>
-<div class="field span-2"><label for="moduleFullDescription">Full description</label><textarea id="moduleFullDescription" rows="3"></textarea></div>
-<div class="field"><label for="moduleCategory">Category</label><input id="moduleCategory" value="General Cardiology"></div><div class="field"><label for="moduleDifficulty">Difficulty</label><select id="moduleDifficulty"><option value="foundation">Foundation</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>
-<div class="field"><label for="moduleStatus">Status</label><select id="moduleStatus"><option value="draft">Draft</option><option value="published">Published</option><option value="coming_soon">Coming soon</option><option value="archived">Archived</option></select></div><div class="field"><label for="moduleAccessType">Access</label><select id="moduleAccessType"><option value="open">Open</option><option value="passcode">Passcode</option><option value="minimum_score">Minimum score</option><option value="admin_assigned">Admin assigned</option></select></div>
-<div class="field"><label for="moduleMinimumScore">Minimum score</label><input id="moduleMinimumScore" type="number" min="0" step="1" value="0"></div><div class="field"><label for="moduleEstimatedMinutes">Estimated minutes</label><input id="moduleEstimatedMinutes" type="number" min="1" value="10"></div>
-<div class="field"><label for="moduleQuestionCount">Question count</label><input id="moduleQuestionCount" type="number" min="0" value="0"></div><div class="field"><label for="moduleDisplayOrder">Display order</label><input id="moduleDisplayOrder" type="number" value="100"></div>
-<div class="field"><label for="moduleOpensAt">Opens at</label><input id="moduleOpensAt" type="datetime-local"></div><div class="field"><label for="moduleClosesAt">Closes at</label><input id="moduleClosesAt" type="datetime-local"></div>
-<div class="field span-2"><label for="moduleCoverUrl">Cover image URL</label><input id="moduleCoverUrl" type="url" placeholder="https://..."></div><div class="field span-2"><label for="moduleLaunchPath">Launch path</label><input id="moduleLaunchPath" placeholder="modules/ppci/"><small>Leave empty until the module content is ready.</small></div>
-</div>
-<div class="toggle-grid"><label><input id="moduleLearning" type="checkbox" checked> Learning mode</label><label><input id="moduleCompetition" type="checkbox"> Competition mode</label><label><input id="moduleFeatured" type="checkbox"> Featured module</label></div>
-<div class="dialog-actions"><button id="deleteModuleButton" type="button" class="danger-btn" hidden>Archive module</button><button type="button" id="cancelModuleButton" class="secondary-btn">Cancel</button><button type="submit" class="primary-btn">Save module</button></div>
-</form></dialog>
-<script type="module" src="assets/js/admin-modules.js?v=2.8.0"></script><script type="module" src="assets/js/session-ui.js?v=2.7.12"></script><script type="module" src="assets/js/admin-shell.js?v=3.0.0"></script></body></html>
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    id="adminModulesThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <title>
+    Manage Modules | ACL Admin
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=2.1"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const requestedEdition =
+        String(
+          parameters.get(
+            "edition"
+          ) ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        (
+          requestedEdition ===
+            "basic" ||
+          requestedEdition ===
+            "expert"
+        )
+          ? requestedEdition
+          : (
+              storedEdition ===
+                "basic" ||
+              storedEdition ===
+                "expert"
+            )
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+
+      document.documentElement.classList.add(
+        edition ===
+          "basic"
+          ? "acl-admin-modules-basic"
+          : "acl-admin-modules-expert"
+      );
+
+
+      if (
+        !parameters.get(
+          "edition"
+        )
+      ) {
+        const updatedUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        updatedUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          updatedUrl
+        );
+      }
+    })();
+  </script>
+
+
+  <style>
+    :root {
+      --modules-primary:
+        #123f72;
+
+      --modules-secondary:
+        #176aa1;
+
+      --modules-soft:
+        #eaf5ff;
+
+      --modules-soft-2:
+        #f7fbff;
+
+      --modules-accent:
+        #ffc928;
+
+      --modules-success:
+        #168067;
+
+      --modules-danger:
+        #b33443;
+
+      --modules-warning:
+        #b97a00;
+
+      --modules-text:
+        #17324d;
+
+      --modules-muted:
+        #687d90;
+
+      --modules-border:
+        #d9e6f2;
+
+      --modules-card:
+        #ffffff;
+
+      --modules-shadow:
+        0 18px 45px
+        rgba(
+          18,
+          63,
+          114,
+          0.12
+        );
+    }
+
+
+    html.acl-admin-modules-basic {
+      --modules-primary:
+        #105541;
+
+      --modules-secondary:
+        #168067;
+
+      --modules-soft:
+        #eaf8f2;
+
+      --modules-soft-2:
+        #f8fcfa;
+
+      --modules-text:
+        #173e34;
+
+      --modules-shadow:
+        0 18px 45px
+        rgba(
+          16,
+          85,
+          65,
+          0.12
+        );
+    }
+
+
+    html.acl-admin-modules-expert {
+      --modules-primary:
+        #123f72;
+
+      --modules-secondary:
+        #176aa1;
+
+      --modules-soft:
+        #eaf5ff;
+
+      --modules-soft-2:
+        #f7fbff;
+
+      --modules-text:
+        #17324d;
+    }
+
+
+    * {
+      box-sizing:
+        border-box;
+    }
+
+
+    html,
+    body {
+      min-height:
+        100%;
+    }
+
+
+    body {
+      margin:
+        0;
+
+      padding-top:
+        92px;
+
+      color:
+        var(
+          --modules-text
+        );
+
+      background:
+        radial-gradient(
+          circle at 10% 6%,
+          rgba(
+            255,
+            201,
+            40,
+            0.13
+          ),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 8%,
+          color-mix(
+            in srgb,
+            var(
+              --modules-secondary
+            )
+            12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(
+            --modules-soft
+          )
+        );
+    }
+
+
+    button,
+    input,
+    textarea,
+    select {
+      font:
+        inherit;
+    }
+
+
+    .topbar.acl-header-pending {
+      opacity:
+        0;
+
+      visibility:
+        hidden;
+
+      pointer-events:
+        none;
+    }
+
+
+    .topbar.acl-unified-header {
+      opacity:
+        1;
+
+      visibility:
+        visible;
+
+      pointer-events:
+        auto;
+    }
+
+
+    .admin-modules-shell {
+      width:
+        min(
+          1280px,
+          calc(
+            100% - 28px
+          )
+        );
+
+      margin:
+        0 auto;
+
+      padding:
+        30px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .admin-modules-hero {
+      position:
+        relative;
+
+      overflow:
+        hidden;
+
+      display:
+        flex;
+
+      align-items:
+        flex-end;
+
+      justify-content:
+        space-between;
+
+      gap:
+        24px;
+
+      margin-top:
+        20px;
+
+      padding:
+        clamp(
+          28px,
+          5vw,
+          46px
+        );
+
+      border-radius:
+        28px;
+
+      color:
+        #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(
+            --modules-primary
+          ),
+          var(
+            --modules-secondary
+          )
+        );
+
+      box-shadow:
+        var(
+          --modules-shadow
+        );
+    }
+
+
+    .admin-modules-hero::after {
+      content:
+        "📚";
+
+      position:
+        absolute;
+
+      top:
+        50%;
+
+      right:
+        4%;
+
+      transform:
+        translateY(
+          -50%
+        )
+        rotate(
+          -8deg
+        );
+
+      opacity:
+        0.1;
+
+      font-size:
+        clamp(
+          110px,
+          18vw,
+          210px
+        );
+
+      pointer-events:
+        none;
+    }
+
+
+    .admin-modules-hero-copy {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      max-width:
+        760px;
+    }
+
+
+    .admin-modules-hero-top {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        10px;
+    }
+
+
+    .admin-kicker,
+    .admin-modules-edition-badge {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      min-height:
+        31px;
+
+      padding:
+        7px 12px;
+
+      border:
+        1px solid
+        rgba(
+          255,
+          255,
+          255,
+          0.3
+        );
+
+      border-radius:
+        999px;
+
+      color:
+        #ffffff;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.12
+        );
+
+      font-size:
+        0.72rem;
+
+      font-weight:
+        900;
+
+      letter-spacing:
+        0.08em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .admin-modules-edition-badge {
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.21
+        );
+    }
+
+
+    .admin-modules-hero h1 {
+      margin:
+        15px 0 10px;
+
+      color:
+        #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4rem
+        );
+
+      line-height:
+        1;
+    }
+
+
+    .admin-modules-hero p {
+      margin:
+        0;
+
+      color:
+        rgba(
+          255,
+          255,
+          255,
+          0.88
+        );
+
+      font-size:
+        clamp(
+          0.96rem,
+          2vw,
+          1.06rem
+        );
+
+      line-height:
+        1.65;
+    }
+
+
+    .admin-modules-hero-actions {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        flex-end;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        9px;
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        43px;
+
+      padding:
+        9px 15px;
+
+      border-radius:
+        11px;
+
+      cursor:
+        pointer;
+
+      font-weight:
+        900;
+
+      text-decoration:
+        none;
+    }
+
+
+    .primary-btn {
+      border:
+        0;
+
+      color:
+        #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(
+            --modules-primary
+          ),
+          var(
+            --modules-secondary
+          )
+        );
+    }
+
+
+    .admin-modules-hero
+    .primary-btn {
+      color:
+        var(
+          --modules-primary
+        );
+
+      background:
+        #ffffff;
+    }
+
+
+    .secondary-btn {
+      border:
+        1px solid
+        var(
+          --modules-border
+        );
+
+      color:
+        var(
+          --modules-primary
+        );
+
+      background:
+        #ffffff;
+    }
+
+
+    .admin-modules-hero
+    .secondary-btn {
+      border-color:
+        rgba(
+          255,
+          255,
+          255,
+          0.32
+        );
+
+      color:
+        #ffffff;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.12
+        );
+    }
+
+
+    .danger-btn {
+      border:
+        1px solid
+        #f0c6cc;
+
+      color:
+        var(
+          --modules-danger
+        );
+
+      background:
+        #fff5f6;
+    }
+
+
+    .primary-btn:disabled,
+    .secondary-btn:disabled,
+    .danger-btn:disabled {
+      cursor:
+        wait;
+
+      opacity:
+        0.65;
+    }
+
+
+    /* =====================================================
+       STATS
+    ===================================================== */
+
+    .admin-stats {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          4,
+          minmax(
+            0,
+            1fr
+          )
+        );
+
+      gap:
+        15px;
+
+      margin-top:
+        18px;
+    }
+
+
+    .stat-card {
+      padding:
+        19px;
+
+      border:
+        1px solid
+        var(
+          --modules-border
+        );
+
+      border-radius:
+        18px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.98
+        );
+
+      box-shadow:
+        0 11px 28px
+        rgba(
+          18,
+          63,
+          114,
+          0.06
+        );
+    }
+
+
+    .stat-card span {
+      display:
+        block;
+
+      color:
+        var(
+          --modules-muted
+        );
+
+      font-size:
+        0.72rem;
+
+      font-weight:
+        850;
+
+      letter-spacing:
+        0.05em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .stat-card strong {
+      display:
+        block;
+
+      margin-top:
+        8px;
+
+      color:
+        var(
+          --modules-primary
+        );
+
+      font-size:
+        2rem;
+
+      font-weight:
+        950;
+
+      line-height:
+        1;
+    }
+
+
+    /* =====================================================
+       TOOLBAR
+    ===================================================== */
+
+    .admin-toolbar {
+      display:
+        grid;
+
+      grid-template-columns:
+        minmax(
+          240px,
+          1fr
+        )
+        minmax(
+          180px,
+          0.45fr
+        )
+        auto;
+
+      gap:
+        12px;
+
+      align-items:
+        end;
+
+      margin-top:
+        18px;
+
+      padding:
+        18px;
+
+      border:
+        1px solid
+        var(
+          --modules-border
+        );
+
+      border-radius:
+        19px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.98
+        );
+
+      box-shadow:
+        0 12px 30px
+        rgba(
+          18,
+          63,
+          114,
+          0.07
+        );
+    }
+
+
+    .field {
+      display:
+        grid;
+
+      gap:
+        6px;
+    }
+
+
+    .field label {
+      color:
+        var(
+          --modules-muted
+        );
+
+      font-size:
+        0.72rem;
+
+      font-weight:
+        850;
+
+      letter-spacing:
+        0.05em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .field input,
+    .field textarea,
+    .field select {
+      width:
+        100%;
+
+      min-height:
+        43px;
+
+      padding:
+        10px 12px;
+
+      border:
+        1px solid
+        var(
+          --modules-border
+        );
+
+      border-radius:
+        11px;
+
+      color:
+        var(
+          --modules-text
+        );
+
+      background:
+        #ffffff;
+
+      outline:
+        none;
+    }
+
+
+    .field textarea {
+      resize:
+        vertical;
+
+      line-height:
+        1.5;
+    }
+
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color:
+        var(
+          --modules-secondary
+        );
+
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(
+            --modules-secondary
+          )
+          14%,
+          transparent
+        );
+    }
+
+
+    .field small {
+      color:
+        var(
+          --modules-muted
+        );
+
+      font-size:
+        0.7rem;
+
+      line-height:
+        1.45;
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .status-box {
+      margin-top:
+        15px;
+
+      padding:
+        14px 16px;
+
+      border:
+        1px solid
+        var(
+          --modules-border
+        );
+
+      border-radius:
+        13px;
+
+      color:
+        var(
+          --modules-muted
+        );
+
+      background:
+        #ffffff;
+
+      font-weight:
+        750;
+    }
+
+
+    .status-box.success {
+      border-color:
+        #bfe7d6;
+
+      color:
+        var(
+          --modules-success
+        );
+
+      background:
+        #f2fbf7;
+    }
+
+
+    .status-box.error {
+      border-color:
+        #f0c6cc;
+
+      color:
+        var(
+          --modules-danger
+        );
+
+      background:
+        #fff5f6;
+    }
+
+
+    .status-box.warning {
+      border-color:
+        #f4d8a2;
+
+      color:
+        var(
+          --modules-warning
+        );
+
+      background:
+        #fffaf0;
+    }
+
+
+    /* =====================================================
+       MODULE GRID
+    ===================================================== */
+
+    .admin-module-grid {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(
+            0,
+            1fr
+          )
+        );
+
+      gap:
+        16px;
+
+      margin-top:
+        18px;
+    }
+
+
+    .admin-module-card {
+      position:
+        relative;
+
+      overflow:
+        hidden;
+
+      min-height:
+        270px;
+
+      padding:
+        20px;
+
+      border:
+        1px solid
+        var(
+          --modules-border
+        );
+
+      border-radius:
+        20px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.98
+        );
+
+      box-shadow:
+        0 12px 30px
+        rgba(
+          18,
+          63,
+          114,
+          0.07
+        );
+    }
+
+
+    .admin-module-card::after {
+      content:
+        "";
+
+      position:
+        absolute;
+
+      right:
+        -34px;
+
+      bottom:
+        -44px;
+
+      width:
+        130px;
+
+      height:
+        130px;
+
+      border-radius:
+        50%;
+
+      background:
+        color-mix(
+          in srgb,
+          var(
+            --modules-secondary
+          )
+          8%,
+          transparent
+        );
+    }
+
+
+    .admin-module-card-head,
+    .admin-module-card-body,
+    .admin-module-card-actions {
+      position:
+        relative;
+
+      z-index:
+        1;
+    }
+
+
+    .admin-module-card-head {
+      display:
+        flex;
+
+      align-items:
+        flex-start;
+
+      justify-content:
+        space-between;
+
+      gap:
+        12px;
+    }
+
+
+    .admin-module-card h2,
+    .admin-module-card h3 {
+      margin:
+        0;
+
+      color:
+        var(
+          --modules-primary
+        );
+    }
+
+
+    .admin-module-card p {
+      color:
+        var(
+          --modules-muted
+        );
+
+      font-size:
+        0.82rem;
+
+      line-height:
+        1.5;
+    }
+
+
+    .admin-module-card-actions {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        8px;
+
+      margin-top:
+        16px;
+    }
+
+
+    .empty-state {
+      grid-column:
+        1 / -1;
+
+      padding:
+        52px 20px;
+
+      border:
+        1px dashed
+        var(
+          --modules-border
+        );
+
+      border-radius:
+        20px;
+
+      color:
+        var(
+          --modules-muted
+        );
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.9
+        );
+
+      text-align:
+        center;
+    }
+
+
+    /* =====================================================
+       DIALOG
+    ===================================================== */
+
+    .module-dialog {
+      width:
+        min(
+          880px,
+          calc(
+            100% - 24px
+          )
+        );
+
+      max-height:
+        calc(
+          100vh - 28px
+        );
+
+      padding:
+        0;
+
+      border:
+        1px solid
+        var(
+          --modules-border
+        );
+
+      border-radius:
+        22px;
+
+      color:
+        var(
+          --modules-text
+        );
+
+      background:
+        #ffffff;
+
+      box-shadow:
+        0 28px 80px
+        rgba(
+          16,
+          43,
+          72,
+          0.28
+        );
+    }
+
+
+    .module-dialog::backdrop {
+      background:
+        rgba(
+          10,
+          29,
+          50,
+          0.62
+        );
+
+      backdrop-filter:
+        blur(
+          4px
+        );
+    }
+
+
+    #moduleForm {
+      padding:
+        22px;
+    }
+
+
+    .dialog-title-row {
+      display:
+        flex;
+
+      align-items:
+        flex-start;
+
+      justify-content:
+        space-between;
+
+      gap:
+        14px;
+
+      margin-bottom:
+        18px;
+    }
+
+
+    .dialog-title-row h2 {
+      margin:
+        7px 0 0;
+
+      color:
+        var(
+          --modules-primary
+        );
+    }
+
+
+    .dialog-title-row
+    .admin-kicker {
+      border-color:
+        var(
+          --modules-border
+        );
+
+      color:
+        var(
+          --modules-secondary
+        );
+
+      background:
+        var(
+          --modules-soft
+        );
+    }
+
+
+    .dialog-close {
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      width:
+        40px;
+
+      min-width:
+        40px;
+
+      height:
+        40px;
+
+      border:
+        1px solid
+        var(
+          --modules-border
+        );
+
+      border-radius:
+        11px;
+
+      color:
+        var(
+          --modules-primary
+        );
+
+      background:
+        #ffffff;
+
+      cursor:
+        pointer;
+
+      font-size:
+        1.4rem;
+    }
+
+
+    .form-grid {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(
+            0,
+            1fr
+          )
+        );
+
+      gap:
+        14px;
+    }
+
+
+    .span-2 {
+      grid-column:
+        1 / -1;
+    }
+
+
+    .toggle-grid {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(
+            0,
+            1fr
+          )
+        );
+
+      gap:
+        10px;
+
+      margin-top:
+        18px;
+    }
+
+
+    .toggle-grid label {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        8px;
+
+      min-height:
+        48px;
+
+      padding:
+        11px 12px;
+
+      border:
+        1px solid
+        var(
+          --modules-border
+        );
+
+      border-radius:
+        12px;
+
+      color:
+        var(
+          --modules-text
+        );
+
+      background:
+        var(
+          --modules-soft-2
+        );
+
+      font-size:
+        0.8rem;
+
+      font-weight:
+        800;
+    }
+
+
+    .toggle-grid input {
+      width:
+        17px;
+
+      height:
+        17px;
+
+      accent-color:
+        var(
+          --modules-secondary
+        );
+    }
+
+
+    .dialog-actions {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        flex-end;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        9px;
+
+      margin-top:
+        20px;
+
+      padding-top:
+        17px;
+
+      border-top:
+        1px solid
+        var(
+          --modules-border
+        );
+    }
+
+
+    [hidden] {
+      display:
+        none !important;
+    }
+
+
+    @media (
+      max-width:
+      1050px
+    ) {
+      .admin-module-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(
+              0,
+              1fr
+            )
+          );
+      }
+
+
+      .admin-stats {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(
+              0,
+              1fr
+            )
+          );
+      }
+    }
+
+
+    @media (
+      max-width:
+      760px
+    ) {
+      body {
+        padding-top:
+          82px;
+      }
+
+
+      .admin-modules-shell {
+        width:
+          min(
+            calc(
+              100% - 18px
+            ),
+            1280px
+          );
+
+        padding-top:
+          18px;
+      }
+
+
+      .admin-modules-hero {
+        align-items:
+          stretch;
+
+        flex-direction:
+          column;
+      }
+
+
+      .admin-modules-hero-actions {
+        justify-content:
+          flex-start;
+      }
+
+
+      .admin-toolbar {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .admin-toolbar button {
+        width:
+          100%;
+      }
+
+
+      .form-grid,
+      .toggle-grid {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .span-2 {
+        grid-column:
+          auto;
+      }
+
+
+      .dialog-actions {
+        align-items:
+          stretch;
+
+        flex-direction:
+          column-reverse;
+      }
+
+
+      .dialog-actions button {
+        width:
+          100%;
+      }
+    }
+
+
+    @media (
+      max-width:
+      560px
+    ) {
+      .admin-module-grid,
+      .admin-stats {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .admin-modules-hero-actions {
+        display:
+          grid;
+
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .admin-modules-hero-actions a,
+      .admin-modules-hero-actions button {
+        width:
+          100%;
+      }
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="admin-modules-shell">
+
+    <section
+      data-admin-shell
+      data-active="modules"
+    ></section>
+
+
+    <section class="admin-modules-hero">
+
+      <div class="admin-modules-hero-copy">
+
+        <div class="admin-modules-hero-top">
+
+          <span class="admin-kicker">
+            PHASE 2 MODULE CONTROL
+          </span>
+
+
+          <span
+            id="adminModulesEditionBadge"
+            class="admin-modules-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
+
+        <h1>
+          Manage Modules
+        </h1>
+
+
+        <p>
+          Create, organize, schedule, publish, lock, and preview the ACL
+          learning catalogue without editing GitHub files.
+        </p>
+
+      </div>
+
+
+      <div class="admin-modules-hero-actions">
+
+        <a
+          id="adminModulesStudentsLink"
+          class="secondary-btn"
+          href="admin.html"
+        >
+          Students
+        </a>
+
+
+        <a
+          id="adminModulesQuestionsLink"
+          class="secondary-btn"
+          href="admin-questions.html"
+        >
+          Question Bank
+        </a>
+
+
+        <button
+          id="newModuleButton"
+          class="primary-btn"
+          type="button"
+        >
+          + New module
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <section
+      class="admin-stats"
+      aria-label="Module statistics"
+    >
+
+      <article class="stat-card">
+
+        <span>
+          All modules
+        </span>
+
+        <strong id="moduleTotal">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <span>
+          Published
+        </span>
+
+        <strong id="modulePublished">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <span>
+          Coming soon
+        </span>
+
+        <strong id="moduleComing">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <span>
+          Draft / archived
+        </span>
+
+        <strong id="moduleHidden">
+          —
+        </strong>
+
+      </article>
+
+    </section>
+
+
+    <section
+      class="admin-toolbar"
+      aria-label="Module filters"
+    >
+
+      <div class="field">
+
+        <label for="moduleSearch">
+          Search
+        </label>
+
+        <input
+          id="moduleSearch"
+          type="search"
+          placeholder="Title, category, description or slug"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="moduleStatusFilter">
+          Status
+        </label>
+
+        <select id="moduleStatusFilter">
+
+          <option value="all">
+            All statuses
+          </option>
+
+          <option value="published">
+            Published
+          </option>
+
+          <option value="coming_soon">
+            Coming soon
+          </option>
+
+          <option value="draft">
+            Draft
+          </option>
+
+          <option value="archived">
+            Archived
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <button
+        id="refreshModules"
+        class="secondary-btn"
+        type="button"
+      >
+        Refresh
+      </button>
+
+    </section>
+
+
+    <div
+      id="adminModulesStatus"
+      class="status-box"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <section
+      id="adminModulesGrid"
+      class="admin-module-grid"
+      aria-label="Managed modules"
+    >
+
+      <div class="empty-state">
+        Loading modules…
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <dialog
+    id="moduleDialog"
+    class="module-dialog"
+  >
+
+    <form
+      id="moduleForm"
+      method="dialog"
+      novalidate
+    >
+
+      <div class="dialog-title-row">
+
+        <div>
+
+          <span class="admin-kicker">
+            MODULE EDITOR
+          </span>
+
+
+          <h2 id="moduleDialogTitle">
+            Create module
+          </h2>
+
+        </div>
+
+
+        <button
+          type="button"
+          id="closeModuleDialog"
+          class="dialog-close"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <input
+        id="moduleOriginalId"
+        type="hidden"
+      >
+
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label for="moduleTitle">
+            Title *
+          </label>
+
+          <input
+            id="moduleTitle"
+            required
+            maxlength="120"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleSlug">
+            Slug / ID *
+          </label>
+
+          <input
+            id="moduleSlug"
+            required
+            pattern="[a-z0-9-]+"
+            placeholder="acute-coronary-syndromes"
+          >
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="moduleShortDescription">
+            Short description *
+          </label>
+
+          <textarea
+            id="moduleShortDescription"
+            required
+            rows="2"
+            maxlength="240"
+          ></textarea>
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="moduleFullDescription">
+            Full description
+          </label>
+
+          <textarea
+            id="moduleFullDescription"
+            rows="3"
+          ></textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleCategory">
+            Category
+          </label>
+
+          <input
+            id="moduleCategory"
+            value="General Cardiology"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleDifficulty">
+            Difficulty
+          </label>
+
+          <select id="moduleDifficulty">
+
+            <option value="foundation">
+              Foundation
+            </option>
+
+            <option value="intermediate">
+              Intermediate
+            </option>
+
+            <option value="advanced">
+              Advanced
+            </option>
+
+            <option value="expert">
+              Expert
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleStatus">
+            Status
+          </label>
+
+          <select id="moduleStatus">
+
+            <option value="draft">
+              Draft
+            </option>
+
+            <option value="published">
+              Published
+            </option>
+
+            <option value="coming_soon">
+              Coming soon
+            </option>
+
+            <option value="archived">
+              Archived
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleAccessType">
+            Access
+          </label>
+
+          <select id="moduleAccessType">
+
+            <option value="open">
+              Open
+            </option>
+
+            <option value="passcode">
+              Passcode
+            </option>
+
+            <option value="minimum_score">
+              Minimum score
+            </option>
+
+            <option value="admin_assigned">
+              Admin assigned
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleMinimumScore">
+            Minimum score
+          </label>
+
+          <input
+            id="moduleMinimumScore"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleEstimatedMinutes">
+            Estimated minutes
+          </label>
+
+          <input
+            id="moduleEstimatedMinutes"
+            type="number"
+            min="1"
+            value="10"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleQuestionCount">
+            Question count
+          </label>
+
+          <input
+            id="moduleQuestionCount"
+            type="number"
+            min="0"
+            value="0"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleDisplayOrder">
+            Display order
+          </label>
+
+          <input
+            id="moduleDisplayOrder"
+            type="number"
+            value="100"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleOpensAt">
+            Opens at
+          </label>
+
+          <input
+            id="moduleOpensAt"
+            type="datetime-local"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="moduleClosesAt">
+            Closes at
+          </label>
+
+          <input
+            id="moduleClosesAt"
+            type="datetime-local"
+          >
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="moduleCoverUrl">
+            Cover image URL
+          </label>
+
+          <input
+            id="moduleCoverUrl"
+            type="url"
+            placeholder="https://..."
+          >
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="moduleLaunchPath">
+            Launch path
+          </label>
+
+          <input
+            id="moduleLaunchPath"
+            placeholder="modules/ppci/"
+          >
+
+          <small>
+            Leave empty until the module content is ready.
+          </small>
+
+        </div>
+
+      </div>
+
+
+      <div class="toggle-grid">
+
+        <label>
+
+          <input
+            id="moduleLearning"
+            type="checkbox"
+            checked
+          >
+
+          Learning mode
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="moduleCompetition"
+            type="checkbox"
+          >
+
+          Competition mode
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="moduleFeatured"
+            type="checkbox"
+          >
+
+          Featured module
+
+        </label>
+
+      </div>
+
+
+      <div class="dialog-actions">
+
+        <button
+          id="deleteModuleButton"
+          type="button"
+          class="danger-btn"
+          hidden
+        >
+          Archive module
+        </button>
+
+
+        <button
+          type="button"
+          id="cancelModuleButton"
+          class="secondary-btn"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          type="submit"
+          class="primary-btn"
+        >
+          Save module
+        </button>
+
+      </div>
+
+    </form>
+
+  </dialog>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const edition =
+        parameters.get(
+          "edition"
+        ) ===
+        "basic"
+          ? "basic"
+          : "expert";
+
+
+      const badge =
+        document.getElementById(
+          "adminModulesEditionBadge"
+        );
+
+
+      if (badge) {
+        badge.textContent =
+          edition ===
+            "basic"
+            ? "BASIC EDITION"
+            : "EXPERT EDITION";
+      }
+
+
+      const themeColor =
+        document.getElementById(
+          "adminModulesThemeColor"
+        );
+
+
+      if (themeColor) {
+        themeColor.content =
+          edition ===
+            "basic"
+            ? "#105541"
+            : "#123f72";
+      }
+
+
+      const links = {
+        adminModulesStudentsLink:
+          "admin.html",
+
+        adminModulesQuestionsLink:
+          "admin-questions.html"
+      };
+
+
+      Object.entries(
+        links
+      ).forEach(
+        (
+          [
+            id,
+            path
+          ]
+        ) => {
+          const link =
+            document.getElementById(
+              id
+            );
+
+
+          if (link) {
+            link.href =
+              `${path}?edition=${encodeURIComponent(
+                edition
+              )}`;
+          }
+        }
+      );
+
+
+      document.title =
+        `Manage Modules | ACL ${
+          edition ===
+            "basic"
+            ? "Basic Edition"
+            : "Expert Edition"
+        } Admin`;
+    })();
+  </script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-modules.js?v=2.8.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/session-ui.js?v=4.6.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-shell.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
+</body>
+
+</html>
