@@ -1,7 +1,1120 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Access Engine | ACL Admin</title><link rel="stylesheet" href="assets/css/main.css?v=2.8.0"><link rel="stylesheet" href="assets/css/auth.css?v=1.5.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header class="topbar"><a class="brand brand-link" href="modules.html">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="admin.html">Admin</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container">
-<section data-admin-shell data-active="access"></section><section class="card admin-hero"><div><span class="admin-kicker">PHASE 2.6</span><h1>Adaptive Access Engine</h1><p class="muted">Create prerequisite, score, academic-position, or manual-assignment rules.</p></div></section><div id="accessStatus" class="status-box"></div>
-<section class="card"><h2>Add unlock rule</h2><form id="ruleForm" class="form-grid"><div class="field"><label>Module</label><select id="moduleId" required></select></div><div class="field"><label>Rule type</label><select id="ruleType"><option value="prerequisite_module">Prerequisite module</option><option value="minimum_total_score">Minimum total score</option><option value="academic_position">Academic position</option><option value="manual_assignment">Manual assignment</option></select></div><div class="field"><label>Prerequisite module</label><select id="prerequisiteId"><option value="">None</option></select></div><div class="field"><label>Minimum score</label><input id="minimumValue" type="number" min="0" value="0"></div><div class="field"><label>Allowed positions (comma-separated)</label><input id="allowedPositions" placeholder="Resident, Intern, Medical Student"></div><button class="primary-btn" type="submit">Save rule</button></form></section>
-<section class="card"><h2>Current rules</h2><div class="table-wrap"><table class="admin-table"><thead><tr><th>Module</th><th>Rule</th><th>Requirement</th><th>Action</th></tr></thead><tbody id="rulesBody"></tbody></table></div></section></main>
-<script type="module" src="assets/js/admin-access.js?v=2.8.0"></script><script type="module" src="assets/js/session-ui.js?v=2.7.12"></script><script type="module" src="assets/js/admin-shell.js?v=3.0.0"></script></script></body></html>
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    id="adminAccessThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <title>
+    Access Engine | ACL Admin
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=2.2"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const requestedEdition =
+        String(
+          parameters.get("edition") || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        requestedEdition === "basic" ||
+        requestedEdition === "expert"
+          ? requestedEdition
+          : storedEdition === "basic" ||
+            storedEdition === "expert"
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+
+      document.documentElement.classList.add(
+        edition === "basic"
+          ? "acl-admin-access-basic"
+          : "acl-admin-access-expert"
+      );
+
+
+      if (!parameters.get("edition")) {
+        const currentUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        currentUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          currentUrl
+        );
+      }
+    })();
+  </script>
+
+
+  <style>
+    :root {
+      --access-primary: #123f72;
+      --access-secondary: #176aa1;
+      --access-soft: #eaf5ff;
+      --access-soft-2: #f7fbff;
+      --access-success: #168067;
+      --access-danger: #b33443;
+      --access-warning: #b97a00;
+      --access-text: #17324d;
+      --access-muted: #687d90;
+      --access-border: #d9e6f2;
+      --access-card: #ffffff;
+      --access-shadow:
+        0 18px 45px
+        rgba(18, 63, 114, 0.12);
+    }
+
+
+    html.acl-admin-access-basic {
+      --access-primary: #105541;
+      --access-secondary: #168067;
+      --access-soft: #eaf8f2;
+      --access-soft-2: #f8fcfa;
+      --access-text: #173e34;
+      --access-shadow:
+        0 18px 45px
+        rgba(16, 85, 65, 0.12);
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
+    body {
+      margin: 0;
+      padding-top: 92px;
+
+      color:
+        var(--access-text);
+
+      background:
+        radial-gradient(
+          circle at 10% 6%,
+          rgba(255, 201, 40, 0.13),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 8%,
+          color-mix(
+            in srgb,
+            var(--access-secondary) 12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--access-soft)
+        );
+    }
+
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+
+    .topbar.acl-header-pending {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+
+    .topbar.acl-unified-header {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+
+    .admin-access-shell {
+      width:
+        min(
+          1280px,
+          calc(100% - 28px)
+        );
+
+      margin: 0 auto;
+      padding: 30px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .admin-access-hero {
+      position: relative;
+      overflow: hidden;
+
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+
+      margin-top: 20px;
+
+      padding:
+        clamp(
+          28px,
+          5vw,
+          46px
+        );
+
+      border-radius: 28px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(--access-primary),
+          var(--access-secondary)
+        );
+
+      box-shadow:
+        var(--access-shadow);
+    }
+
+
+    .admin-access-hero::after {
+      content: "🔐";
+
+      position: absolute;
+      top: 50%;
+      right: 4%;
+
+      transform:
+        translateY(-50%)
+        rotate(-8deg);
+
+      opacity: 0.1;
+
+      font-size:
+        clamp(
+          110px,
+          18vw,
+          210px
+        );
+
+      pointer-events: none;
+    }
+
+
+    .admin-access-hero-copy {
+      position: relative;
+      z-index: 1;
+
+      max-width: 760px;
+    }
+
+
+    .admin-access-hero-top {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+
+    .admin-kicker,
+    .admin-access-edition-badge {
+      display: inline-flex;
+      align-items: center;
+
+      min-height: 31px;
+      padding: 7px 12px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+
+    .admin-access-edition-badge {
+      background:
+        rgba(255, 255, 255, 0.21);
+    }
+
+
+    .admin-access-hero h1 {
+      margin: 15px 0 10px;
+
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4rem
+        );
+
+      line-height: 1;
+    }
+
+
+    .admin-access-hero p {
+      margin: 0;
+
+      color:
+        rgba(255, 255, 255, 0.88);
+
+      font-size:
+        clamp(
+          0.96rem,
+          2vw,
+          1.06rem
+        );
+
+      line-height: 1.65;
+    }
+
+
+    .admin-access-hero-actions {
+      position: relative;
+      z-index: 1;
+
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+
+    /* =====================================================
+       CARDS
+    ===================================================== */
+
+    .access-card {
+      margin-top: 18px;
+      padding: 21px;
+
+      border:
+        1px solid
+        var(--access-border);
+
+      border-radius: 21px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 32px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .access-card-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+
+      margin-bottom: 17px;
+    }
+
+
+    .access-card h2 {
+      margin: 0;
+
+      color:
+        var(--access-primary);
+    }
+
+
+    .access-card p {
+      margin: 6px 0 0;
+
+      color:
+        var(--access-muted);
+
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 43px;
+      padding: 9px 15px;
+
+      border-radius: 11px;
+
+      cursor: pointer;
+
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+
+    .primary-btn {
+      border: 0;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--access-primary),
+          var(--access-secondary)
+        );
+    }
+
+
+    .secondary-btn {
+      border:
+        1px solid
+        var(--access-border);
+
+      color:
+        var(--access-primary);
+
+      background: #ffffff;
+    }
+
+
+    .danger-btn {
+      border: 1px solid #f0c6cc;
+
+      color:
+        var(--access-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .admin-access-hero
+    .secondary-btn {
+      border-color:
+        rgba(255, 255, 255, 0.32);
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+    }
+
+
+    .primary-btn:disabled,
+    .secondary-btn:disabled,
+    .danger-btn:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .status-box {
+      margin-top: 15px;
+      padding: 14px 16px;
+
+      border:
+        1px solid
+        var(--access-border);
+
+      border-radius: 13px;
+
+      color:
+        var(--access-muted);
+
+      background: #ffffff;
+
+      font-weight: 750;
+    }
+
+
+    .status-box.success {
+      border-color: #bfe7d6;
+
+      color:
+        var(--access-success);
+
+      background: #f2fbf7;
+    }
+
+
+    .status-box.error {
+      border-color: #f0c6cc;
+
+      color:
+        var(--access-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .status-box.warning {
+      border-color: #f4d8a2;
+
+      color:
+        var(--access-warning);
+
+      background: #fffaf0;
+    }
+
+
+    /* =====================================================
+       RULE FORM
+    ===================================================== */
+
+    .access-rule-form {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 14px;
+      align-items: end;
+    }
+
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+
+    .field label {
+      color:
+        var(--access-muted);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-height: 43px;
+      padding: 10px 12px;
+
+      border:
+        1px solid
+        var(--access-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--access-text);
+
+      background: #ffffff;
+      outline: none;
+    }
+
+
+    .field input:focus,
+    .field select:focus {
+      border-color:
+        var(--access-secondary);
+
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--access-secondary) 14%,
+          transparent
+        );
+    }
+
+
+    .access-rule-form
+    .primary-btn {
+      min-height: 45px;
+    }
+
+
+    /* =====================================================
+       TABLE
+    ===================================================== */
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+
+    .admin-table {
+      width: 100%;
+
+      border-collapse: collapse;
+      border-spacing: 0;
+    }
+
+
+    .admin-table th,
+    .admin-table td {
+      padding: 13px 12px;
+
+      border-bottom:
+        1px solid
+        var(--access-border);
+
+      text-align: left;
+      vertical-align: middle;
+    }
+
+
+    .admin-table th {
+      color:
+        var(--access-muted);
+
+      background:
+        var(--access-soft-2);
+
+      font-size: 0.7rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .admin-table td {
+      color:
+        var(--access-text);
+
+      font-size: 0.82rem;
+    }
+
+
+    .rule-type-badge {
+      display: inline-flex;
+      align-items: center;
+
+      padding: 6px 9px;
+
+      border-radius: 999px;
+
+      color:
+        var(--access-primary);
+
+      background:
+        var(--access-soft);
+
+      font-size: 0.7rem;
+      font-weight: 850;
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
+
+    @media (max-width: 760px) {
+      body {
+        padding-top: 82px;
+      }
+
+
+      .admin-access-shell {
+        width:
+          min(
+            calc(100% - 18px),
+            1280px
+          );
+
+        padding-top: 18px;
+      }
+
+
+      .admin-access-hero {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+
+      .admin-access-hero-actions {
+        justify-content: flex-start;
+      }
+
+
+      .access-rule-form {
+        grid-template-columns: 1fr;
+      }
+
+
+      .access-rule-form
+      .primary-btn {
+        width: 100%;
+      }
+    }
+
+
+    @media (max-width: 560px) {
+      .admin-access-hero-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-access-hero-actions a {
+        width: 100%;
+      }
+
+
+      .access-card {
+        padding: 16px;
+      }
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="admin-access-shell">
+
+    <section
+      data-admin-shell
+      data-active="access"
+    ></section>
+
+
+    <section class="admin-access-hero">
+
+      <div class="admin-access-hero-copy">
+
+        <div class="admin-access-hero-top">
+
+          <span class="admin-kicker">
+            PHASE 2.6 ACCESS CONTROL
+          </span>
+
+
+          <span
+            id="adminAccessEditionBadge"
+            class="admin-access-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
+
+        <h1>
+          Adaptive Access Engine
+        </h1>
+
+
+        <p>
+          Create prerequisite, score, academic-position, and
+          manual-assignment rules for modules in the selected edition.
+        </p>
+
+      </div>
+
+
+      <div class="admin-access-hero-actions">
+
+        <a
+          id="adminAccessDashboardLink"
+          class="secondary-btn"
+          href="admin.html"
+        >
+          Admin Dashboard
+        </a>
+
+
+        <a
+          id="adminAccessModulesLink"
+          class="secondary-btn"
+          href="admin-modules.html"
+        >
+          Manage Modules
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <div
+      id="accessStatus"
+      class="status-box"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <section class="access-card">
+
+      <div class="access-card-heading">
+
+        <div>
+
+          <h2>
+            Add unlock rule
+          </h2>
+
+          <p>
+            Each rule applies only to a module inside the currently
+            selected ACL edition.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <form
+        id="ruleForm"
+        class="access-rule-form"
+        novalidate
+      >
+
+        <div class="field">
+
+          <label for="moduleId">
+            Module
+          </label>
+
+          <select
+            id="moduleId"
+            required
+          ></select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="ruleType">
+            Rule type
+          </label>
+
+          <select id="ruleType">
+
+            <option value="prerequisite_module">
+              Prerequisite module
+            </option>
+
+            <option value="minimum_total_score">
+              Minimum total score
+            </option>
+
+            <option value="academic_position">
+              Academic position
+            </option>
+
+            <option value="manual_assignment">
+              Manual assignment
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div
+          id="prerequisiteField"
+          class="field"
+        >
+
+          <label for="prerequisiteId">
+            Prerequisite module
+          </label>
+
+          <select id="prerequisiteId">
+
+            <option value="">
+              None
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div
+          id="minimumScoreField"
+          class="field"
+          hidden
+        >
+
+          <label for="minimumValue">
+            Minimum score
+          </label>
+
+          <input
+            id="minimumValue"
+            type="number"
+            min="0"
+            value="0"
+          >
+
+        </div>
+
+
+        <div
+          id="positionsField"
+          class="field"
+          hidden
+        >
+
+          <label for="allowedPositions">
+            Allowed positions
+          </label>
+
+          <input
+            id="allowedPositions"
+            placeholder="Resident, Intern, Medical Student"
+          >
+
+        </div>
+
+
+        <button
+          id="saveRuleButton"
+          class="primary-btn"
+          type="submit"
+        >
+          Save rule
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <section class="access-card">
+
+      <div class="access-card-heading">
+
+        <div>
+
+          <h2>
+            Current rules
+          </h2>
+
+          <p>
+            Rules belonging to modules in this edition are shown below.
+          </p>
+
+        </div>
+
+
+        <button
+          id="refreshRules"
+          class="secondary-btn"
+          type="button"
+        >
+          Refresh
+        </button>
+
+      </div>
+
+
+      <div class="table-wrap">
+
+        <table class="admin-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Module
+              </th>
+
+              <th>
+                Rule
+              </th>
+
+              <th>
+                Requirement
+              </th>
+
+              <th>
+                Action
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="rulesBody">
+
+            <tr>
+
+              <td colspan="4">
+                Loading rules…
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-access.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/session-ui.js?v=4.6.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-shell.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
+</body>
+
+</html>
