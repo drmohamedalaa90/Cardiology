@@ -2,12 +2,12 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-
   <meta
     name="referrer"
     content="strict-origin-when-cross-origin"
   >
+
+  <meta charset="utf-8">
 
   <meta
     name="viewport"
@@ -15,13 +15,13 @@
   >
 
   <title>
-    My Profile | ACL
+    My Profile | Alexandria Cardiology League
   </title>
 
 
   <link
     rel="stylesheet"
-    href="assets/css/main.css?v=2.9.3"
+    href="assets/css/main.css?v=3.6.0"
   >
 
   <link
@@ -35,58 +35,360 @@
 
   <style>
     /* =====================================================
-       PROFILE PAGE SPACING
+       PROFILE PAGE LAYOUT
     ===================================================== */
 
     body {
-      padding-top: 92px;
+      padding-top:
+        92px;
     }
 
 
     .profile-page {
-      padding-top: 28px;
-      padding-bottom: 60px;
+      padding-top:
+        28px;
+
+      padding-bottom:
+        60px;
     }
 
 
-    .profile-page h1 {
-      margin-top: 0;
+    .profile-page h1,
+    .profile-page h2 {
+      margin-top:
+        0;
     }
 
 
     .profile-readonly-note {
-      display: block;
-      margin-top: 7px;
-      color: #647f96;
-      font-size: 0.84rem;
-      line-height: 1.45;
+      display:
+        block;
+
+      margin-top:
+        7px;
+
+      color:
+        #647f96;
+
+      font-size:
+        0.84rem;
+
+      line-height:
+        1.45;
     }
 
 
     .profile-avatar-upload {
-      margin-top: 18px;
+      margin-top:
+        18px;
     }
 
 
     .profile-avatar-upload input {
-      width: 100%;
+      width:
+        100%;
     }
 
 
     #profileStatus:empty,
-    #passwordStatus:empty {
-      display: none;
+    #passwordStatus:empty,
+    #profileTrophiesStatus:empty {
+      display:
+        none;
     }
 
 
-    @media (max-width: 760px) {
+    /* =====================================================
+       PROFILE HERO
+    ===================================================== */
+
+    .profile-page-hero {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        22px;
+
+      margin-bottom:
+        20px;
+    }
+
+
+    .profile-page-hero-copy {
+      min-width:
+        0;
+    }
+
+
+    .profile-page-hero-copy h1 {
+      margin-bottom:
+        8px;
+    }
+
+
+    .profile-page-hero-copy p {
+      margin:
+        0;
+    }
+
+
+    /* =====================================================
+       CURRENT PATHWAY CARD
+    ===================================================== */
+
+    .profile-pathway-card {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        20px;
+
+      margin-bottom:
+        20px;
+
+      padding:
+        20px 22px;
+    }
+
+
+    .profile-pathway-main {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        15px;
+
+      min-width:
+        0;
+    }
+
+
+    .profile-pathway-icon {
+      display:
+        grid;
+
+      flex:
+        0 0 auto;
+
+      width:
+        48px;
+
+      height:
+        48px;
+
+      place-items:
+        center;
+
+      border-radius:
+        15px;
+
+      background:
+        rgba(
+          20,
+          86,
+          125,
+          0.09
+        );
+
+      font-size:
+        1.45rem;
+    }
+
+
+    .profile-pathway-copy {
+      min-width:
+        0;
+    }
+
+
+    .profile-pathway-label {
+      display:
+        block;
+
+      margin-bottom:
+        4px;
+
+      color:
+        #657d91;
+
+      font-size:
+        0.74rem;
+
+      font-weight:
+        800;
+
+      letter-spacing:
+        0.09em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .profile-pathway-name {
+      display:
+        block;
+
+      color:
+        #173d5e;
+
+      font-size:
+        1.13rem;
+
+      font-weight:
+        900;
+    }
+
+
+    .profile-pathway-actions {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        10px;
+
+      flex-wrap:
+        wrap;
+    }
+
+
+    .profile-edition-badge {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      min-height:
+        31px;
+
+      padding:
+        6px 12px;
+
+      border-radius:
+        999px;
+
+      font-size:
+        0.73rem;
+
+      font-weight:
+        850;
+
+      letter-spacing:
+        0.07em;
+    }
+
+
+    body.acl-theme-basic
+    .profile-edition-badge {
+      color:
+        #ffffff;
+
+      background:
+        #146b54;
+    }
+
+
+    body.acl-theme-expert
+    .profile-edition-badge {
+      color:
+        #ffffff;
+
+      background:
+        #123f72;
+    }
+
+
+    body.acl-theme-basic
+    .profile-pathway-icon {
+      color:
+        #146b54;
+
+      background:
+        rgba(
+          20,
+          107,
+          84,
+          0.11
+        );
+    }
+
+
+    body.acl-theme-expert
+    .profile-pathway-icon {
+      color:
+        #123f72;
+
+      background:
+        rgba(
+          18,
+          63,
+          114,
+          0.11
+        );
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ===================================================== */
+
+    @media (
+      max-width:
+      760px
+    ) {
       body {
-        padding-top: 82px;
+        padding-top:
+          82px;
       }
 
 
       .profile-page {
-        padding-top: 20px;
+        padding-top:
+          20px;
+      }
+
+
+      .profile-page-hero,
+      .profile-pathway-card {
+        align-items:
+          stretch;
+
+        flex-direction:
+          column;
+      }
+
+
+      .profile-pathway-actions {
+        width:
+          100%;
+      }
+
+
+      .profile-pathway-actions a {
+        flex:
+          1;
+
+        justify-content:
+          center;
       }
     }
   </style>
@@ -98,8 +400,8 @@
   <!-- =====================================================
        FALLBACK HEADER
 
-       profile-editor.js imports session-ui.js, which converts
-       this fallback into the unified ACL header.
+       Hidden initially to prevent the old-header flash.
+       session-ui.js converts it into the unified header.
   ====================================================== -->
 
   <header class="topbar acl-header-pending">
@@ -107,10 +409,9 @@
     <a
       class="brand brand-link"
       href="pathways.html"
-      aria-label="ACL pathway selection"
+      aria-label="Alexandria Cardiology League"
     >
-      Alexandria Cardiology League;
-      <b>THE EXPERT EDITION</b>
+      Alexandria Cardiology League
     </a>
 
 
@@ -128,13 +429,13 @@
         class="nav-btn"
         href="pathways.html"
       >
-        Pathways
+        Switch Edition
       </a>
 
 
       <a
         class="nav-btn"
-        href="modules.html?edition=expert"
+        href="modules.html"
       >
         Modules
       </a>
@@ -164,15 +465,102 @@
   <main class="container profile-page">
 
     <!-- ===================================================
+         PAGE HERO
+    ==================================================== -->
+
+    <section class="card profile-page-hero">
+
+      <div class="profile-page-hero-copy">
+
+        <span class="admin-kicker">
+          PERSONAL ACCOUNT
+        </span>
+
+        <h1>
+          My Profile
+        </h1>
+
+        <p class="muted">
+          Manage your personal information, profile photo,
+          achievements, and account security.
+        </p>
+
+      </div>
+
+
+      <a
+        id="profileModulesLink"
+        class="secondary-btn"
+        href="modules.html"
+      >
+        Back to modules
+      </a>
+
+    </section>
+
+
+    <!-- ===================================================
+         CURRENT PATHWAY
+    ==================================================== -->
+
+    <section class="card profile-pathway-card">
+
+      <div class="profile-pathway-main">
+
+        <div
+          class="profile-pathway-icon"
+          aria-hidden="true"
+        >
+          🧭
+        </div>
+
+
+        <div class="profile-pathway-copy">
+
+          <span class="profile-pathway-label">
+            Current pathway
+          </span>
+
+          <strong
+            id="profileEditionName"
+            class="profile-pathway-name"
+          >
+            Loading edition…
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="profile-pathway-actions">
+
+        <span
+          id="profileEditionBadge"
+          class="profile-edition-badge"
+        >
+          EDITION
+        </span>
+
+
+        <a
+          id="profileSwitchEdition"
+          class="secondary-btn"
+          href="pathways.html"
+        >
+          Switch Edition
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
          PROFILE DETAILS
     ==================================================== -->
 
     <section class="card">
-
-      <h1>
-        My Profile
-      </h1>
-
 
       <div class="profile-layout">
 
@@ -237,7 +625,7 @@
             <div class="field full">
 
               <label for="displayName">
-                Display Name
+                Display name
               </label>
 
               <input
@@ -411,199 +799,216 @@
 
     </section>
 
-<!-- ===================================================
-     TROPHIES AND ACHIEVEMENTS
-==================================================== -->
 
-<section
-  class="card profile-trophies-card"
-  style="margin-top: 20px"
->
+    <!-- ===================================================
+         TROPHIES AND ACHIEVEMENTS
+    ==================================================== -->
 
-  <div class="profile-trophies-heading">
-
-    <div>
-      <span class="admin-kicker">
-        ACL ACHIEVEMENTS
-      </span>
-
-      <h2>
-        My Trophies
-      </h2>
-
-      <p class="muted">
-        Your learning, competition and activity achievements.
-      </p>
-    </div>
-
-    <button
-      id="refreshProfileTrophies"
-      class="secondary-btn"
-      type="button"
+    <section
+      class="card profile-trophies-card"
+      style="margin-top: 20px"
     >
-      Refresh
-    </button>
 
-  </div>
+      <div class="profile-trophies-heading">
 
+        <div>
 
-  <div
-    id="profileTrophiesStatus"
-    class="status-box"
-    role="status"
-    aria-live="polite"
-  >
-    Loading trophies…
-  </div>
-
-
-  <div
-    id="profileTrophiesGrid"
-    class="profile-trophies-grid"
-    hidden
-  >
-
-    <article class="profile-trophy trophy-gold">
-
-      <span
-        class="profile-trophy-icon"
-        aria-hidden="true"
-      >
-        🏆
-      </span>
-
-      <div>
-        <span>
-          Challenges Won
-        </span>
-
-        <strong id="trophyChallengeWins">
-          0
-        </strong>
-      </div>
-
-    </article>
-
-
-    <article class="profile-trophy trophy-blue">
-
-      <span
-        class="profile-trophy-icon"
-        aria-hidden="true"
-      >
-        📚
-      </span>
-
-      <div>
-        <span>
-          Modules Completed
-        </span>
-
-        <strong id="trophyModulesCompleted">
-          0
-        </strong>
-      </div>
-
-    </article>
-
-
-    <article class="profile-trophy trophy-orange">
-
-      <span
-        class="profile-trophy-icon"
-        aria-hidden="true"
-      >
-        🔥
-      </span>
-
-      <div>
-        <span>
-          Current Streak
-        </span>
-
-        <strong>
-          <span id="trophyCurrentStreak">
-            0
+          <span class="admin-kicker">
+            ACL ACHIEVEMENTS
           </span>
-          days
-        </strong>
+
+          <h2>
+            My Trophies
+          </h2>
+
+          <p class="muted">
+            Your learning, competition and activity achievements.
+          </p>
+
+        </div>
+
+
+        <button
+          id="refreshProfileTrophies"
+          class="secondary-btn"
+          type="button"
+        >
+          Refresh
+        </button>
+
       </div>
 
-    </article>
 
-
-    <article class="profile-trophy trophy-purple">
-
-      <span
-        class="profile-trophy-icon"
-        aria-hidden="true"
+      <div
+        id="profileTrophiesStatus"
+        class="status-box"
+        role="status"
+        aria-live="polite"
       >
-        ⚡
-      </span>
+        Loading trophies…
+      </div>
 
-      <div>
-        <span>
-          Best Streak
-        </span>
 
-        <strong>
-          <span id="trophyBestStreak">
-            0
+      <div
+        id="profileTrophiesGrid"
+        class="profile-trophies-grid"
+        hidden
+      >
+
+        <article class="profile-trophy trophy-gold">
+
+          <span
+            class="profile-trophy-icon"
+            aria-hidden="true"
+          >
+            🏆
           </span>
-          days
-        </strong>
+
+          <div>
+
+            <span>
+              Challenges Won
+            </span>
+
+            <strong id="trophyChallengeWins">
+              0
+            </strong>
+
+          </div>
+
+        </article>
+
+
+        <article class="profile-trophy trophy-blue">
+
+          <span
+            class="profile-trophy-icon"
+            aria-hidden="true"
+          >
+            📚
+          </span>
+
+          <div>
+
+            <span>
+              Modules Completed
+            </span>
+
+            <strong id="trophyModulesCompleted">
+              0
+            </strong>
+
+          </div>
+
+        </article>
+
+
+        <article class="profile-trophy trophy-orange">
+
+          <span
+            class="profile-trophy-icon"
+            aria-hidden="true"
+          >
+            🔥
+          </span>
+
+          <div>
+
+            <span>
+              Current Streak
+            </span>
+
+            <strong>
+              <span id="trophyCurrentStreak">
+                0
+              </span>
+              days
+            </strong>
+
+          </div>
+
+        </article>
+
+
+        <article class="profile-trophy trophy-purple">
+
+          <span
+            class="profile-trophy-icon"
+            aria-hidden="true"
+          >
+            ⚡
+          </span>
+
+          <div>
+
+            <span>
+              Best Streak
+            </span>
+
+            <strong>
+              <span id="trophyBestStreak">
+                0
+              </span>
+              days
+            </strong>
+
+          </div>
+
+        </article>
+
+
+        <article class="profile-trophy trophy-green">
+
+          <span
+            class="profile-trophy-icon"
+            aria-hidden="true"
+          >
+            ✅
+          </span>
+
+          <div>
+
+            <span>
+              Completed Attempts
+            </span>
+
+            <strong id="trophyCompletedAttempts">
+              0
+            </strong>
+
+          </div>
+
+        </article>
+
+
+        <article class="profile-trophy trophy-red">
+
+          <span
+            class="profile-trophy-icon"
+            aria-hidden="true"
+          >
+            🎯
+          </span>
+
+          <div>
+
+            <span>
+              Perfect Scores
+            </span>
+
+            <strong id="trophyPerfectScores">
+              0
+            </strong>
+
+          </div>
+
+        </article>
+
       </div>
 
-    </article>
+    </section>
 
 
-    <article class="profile-trophy trophy-green">
-
-      <span
-        class="profile-trophy-icon"
-        aria-hidden="true"
-      >
-        ✅
-      </span>
-
-      <div>
-        <span>
-          Completed Attempts
-        </span>
-
-        <strong id="trophyCompletedAttempts">
-          0
-        </strong>
-      </div>
-
-    </article>
-
-
-    <article class="profile-trophy trophy-red">
-
-      <span
-        class="profile-trophy-icon"
-        aria-hidden="true"
-      >
-        🎯
-      </span>
-
-      <div>
-        <span>
-          Perfect Scores
-        </span>
-
-        <strong id="trophyPerfectScores">
-          0
-        </strong>
-      </div>
-
-    </article>
-
-  </div>
-
-</section>
-    
     <!-- ===================================================
          CHANGE PASSWORD
     ==================================================== -->
@@ -698,20 +1103,20 @@
 
 
   <!-- =====================================================
-       PROFILE APPLICATION
-
-       profile-editor.js imports session-ui.js.
-       Do not add another separate session-ui.js script.
+       APPLICATION SCRIPTS
   ====================================================== -->
 
-<script
-  type="module"
-  src="assets/js/profile-editor.js?v=1.2.1"
-></script>
-<script
-  type="module"
-  src="assets/js/pwa.js?v=1.6.0"
-></script>
+  <script
+    type="module"
+    src="assets/js/profile-editor.js?v=1.3.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
 </body>
 
 </html>
