@@ -5,7 +5,7 @@ import {
 
 
 console.log(
-  "ACL ADMIN SHELL v3.0.0 LOADED"
+  "ACL ADMIN SHELL v3.1.0 LOADED"
 );
 
 
@@ -18,7 +18,7 @@ const selectedEdition =
 
 
 /* =========================================================
-   ADMIN NAVIGATION ITEMS
+   ADMIN NAVIGATION
 ========================================================= */
 
 const ADMIN_ITEMS = [
@@ -143,6 +143,23 @@ const ADMIN_ITEMS = [
 
   {
     key:
+      "push",
+
+    label:
+      "Push Alerts",
+
+    detail:
+      "Send notifications",
+
+    icon:
+      "🔔",
+
+    href:
+      "admin-push.html"
+  },
+
+  {
+    key:
       "analytics",
 
     label:
@@ -168,7 +185,8 @@ function escapeHtml(
   value = ""
 ) {
   return String(
-    value
+    value ??
+    ""
   ).replace(
     /[&<>'"]/g,
     (character) =>
@@ -241,16 +259,12 @@ function detectActiveKey(
     currentPageName();
 
 
-  const matchedItem =
+  return (
     ADMIN_ITEMS.find(
       (item) =>
         item.href ===
         pageName
-    );
-
-
-  return (
-    matchedItem?.key ||
+    )?.key ||
     ""
   );
 }
@@ -501,7 +515,7 @@ function bindAdminShellInteraction() {
 
 
 /* =========================================================
-   START
+   INITIALIZATION
 ========================================================= */
 
 function initializeAdminShell() {
