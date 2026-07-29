@@ -104,6 +104,25 @@
       }
     })();
   </script>
+  body.challenge-page {
+  padding-top: 92px;
+}
+
+.topbar.acl-header-pending {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.topbar.acl-unified-header {
+  visibility: visible;
+  opacity: 1;
+}
+
+@media (max-width: 760px) {
+  body.challenge-page {
+    padding-top: 82px;
+  }
+}
 
 
   <style>
@@ -307,7 +326,57 @@
 
 
 <body class="challenge-page">
+<header class="topbar acl-header-pending">
 
+  <a
+    class="brand brand-link"
+    href="pathways.html"
+    aria-label="Alexandria Cardiology League"
+  >
+    Alexandria Cardiology League
+  </a>
+
+  <nav aria-label="Main navigation">
+
+    <a
+      id="userChip"
+      class="user-chip"
+      href="profile.html"
+      aria-label="Open my profile"
+    ></a>
+
+    <a
+      class="nav-btn"
+      href="pathways.html"
+    >
+      Switch Edition
+    </a>
+
+    <a
+      class="nav-btn"
+      href="modules.html"
+    >
+      Modules
+    </a>
+
+    <a
+      class="nav-btn"
+      href="progress.html"
+    >
+      My Progress
+    </a>
+
+    <button
+      class="nav-btn"
+      type="button"
+      onclick="aclSignOut()"
+    >
+      Sign Out
+    </button>
+
+  </nav>
+
+</header>
   <main class="challenge-shell">
 
     <a
