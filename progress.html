@@ -1,27 +1,345 @@
 <!doctype html>
-<html lang="en"><head>
-<meta name="referrer" content="strict-origin-when-cross-origin"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>My Progress | ACL Expert Edition</title>
-<link rel="stylesheet" href="assets/css/main.css?v=2.8.7"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+<html lang="en">
+
+<head>
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    My Progress | Alexandria Cardiology League
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=3.5.0"
+  >
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+
 <body>
-<header class="topbar"><a class="brand brand-link" href="modules.html" aria-label="ACL Expert Edition home">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn active" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container progress-page">
-<section class="card progress-hero"><div><span class="admin-kicker">PERSONAL LEARNING DASHBOARD</span><h1>My Progress</h1><p class="muted">Continue unfinished quizzes, review completed attempts, and track your ACL performance across devices.</p></div><button id="refreshProgress" class="secondary-btn" type="button">Refresh</button></section>
-<section class="progress-stats" aria-label="Progress statistics">
-<div class="stat-card"><span>Completed attempts</span><strong id="completedCount">—</strong></div>
-<div class="stat-card"><span>Open attempts</span><strong id="openCount">—</strong></div>
-<div class="stat-card"><span>Overall accuracy</span><strong id="overallAccuracy">—</strong></div>
-<div class="stat-card"><span>Total correct</span><strong id="totalCorrect">—</strong></div>
-</section>
-<div id="progressStatus" class="status-box"></div>
-<section class="progress-section"><div class="section-heading"><div><h2>Continue learning</h2><p class="muted">Your unfinished cloud attempts.</p></div></div><div id="openAttempts" class="attempt-grid"><div class="card muted">Loading unfinished attempts…</div></div></section>
-<section class="progress-section"><div class="section-heading"><div><h2>Completed attempts</h2><p class="muted">Your saved quiz history and results.</p></div><select id="moduleFilter" class="progress-filter"><option value="all">All modules</option></select></div><div id="completedAttempts" class="attempt-list"><div class="card muted">Loading completed attempts…</div></div></section>
-</main>
-<dialog id="reviewDialog" class="student-dialog review-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form><div id="reviewContent"></div></dialog>
-<script type="module" src="assets/js/progress-page.js?v=1.5.1"></script><script type="module" src="assets/js/session-ui.js?v=2.7.10"></script>
-<script
-  type="module"
-  src="assets/js/pwa.js?v=1.6.0"
-></script>
+
+  <!-- =====================================================
+       FALLBACK HEADER
+
+       session-ui.js will replace/render the authenticated
+       edition-aware header after the page starts.
+  ====================================================== -->
+
+  <header class="topbar">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+    <nav>
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+      ></a>
+
+      <a
+        class="nav-btn"
+        href="modules.html"
+      >
+        Modules
+      </a>
+
+      <a
+        class="nav-btn active"
+        href="progress.html"
+      >
+        My Progress
+      </a>
+
+      <button
+        class="nav-btn"
+        type="button"
+        onclick="aclSignOut()"
+      >
+        Sign Out
+      </button>
+
+    </nav>
+
+  </header>
+
+
+  <!-- =====================================================
+       MAIN CONTENT
+  ====================================================== -->
+
+  <main class="container progress-page">
+
+    <!-- ===================================================
+         HERO
+    ==================================================== -->
+
+    <section class="card progress-hero">
+
+      <div>
+
+        <span class="admin-kicker">
+          PERSONAL LEARNING DASHBOARD
+        </span>
+
+        <h1>
+          My Progress
+        </h1>
+
+        <span
+          id="progressEditionBadge"
+          class="progress-edition-badge"
+        ></span>
+
+        <p class="muted">
+          Continue unfinished quizzes, review completed
+          attempts, and track your ACL performance across
+          devices.
+        </p>
+
+      </div>
+
+
+      <button
+        id="refreshProgress"
+        class="secondary-btn"
+        type="button"
+      >
+        Refresh
+      </button>
+
+    </section>
+
+
+    <!-- ===================================================
+         STATISTICS
+    ==================================================== -->
+
+    <section
+      class="progress-stats"
+      aria-label="Progress statistics"
+    >
+
+      <div class="stat-card">
+
+        <span>
+          Completed attempts
+        </span>
+
+        <strong id="completedCount">
+          —
+        </strong>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <span>
+          Open attempts
+        </span>
+
+        <strong id="openCount">
+          —
+        </strong>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <span>
+          Overall accuracy
+        </span>
+
+        <strong id="overallAccuracy">
+          —
+        </strong>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <span>
+          Total correct
+        </span>
+
+        <strong id="totalCorrect">
+          —
+        </strong>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         PAGE STATUS
+    ==================================================== -->
+
+    <div
+      id="progressStatus"
+      class="status-box"
+      role="status"
+      aria-live="polite"
+    ></div>
+
+
+    <!-- ===================================================
+         UNFINISHED ATTEMPTS
+    ==================================================== -->
+
+    <section class="progress-section">
+
+      <div class="section-heading">
+
+        <div>
+
+          <h2>
+            Continue learning
+          </h2>
+
+          <p class="muted">
+            Your unfinished attempts in the current edition.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="openAttempts"
+        class="attempt-grid"
+      >
+
+        <div class="card muted">
+          Loading unfinished attempts…
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         COMPLETED ATTEMPTS
+    ==================================================== -->
+
+    <section class="progress-section">
+
+      <div class="section-heading">
+
+        <div>
+
+          <h2>
+            Completed attempts
+          </h2>
+
+          <p class="muted">
+            Your saved quiz history and results in the
+            current edition.
+          </p>
+
+        </div>
+
+
+        <label
+          class="progress-filter-label"
+          for="moduleFilter"
+        >
+          <span class="sr-only">
+            Filter completed attempts by module
+          </span>
+
+          <select
+            id="moduleFilter"
+            class="progress-filter"
+          >
+            <option value="all">
+              All modules
+            </option>
+          </select>
+        </label>
+
+      </div>
+
+
+      <div
+        id="completedAttempts"
+        class="attempt-list"
+      >
+
+        <div class="card muted">
+          Loading completed attempts…
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       ATTEMPT REVIEW DIALOG
+  ====================================================== -->
+
+  <dialog
+    id="reviewDialog"
+    class="student-dialog review-dialog"
+  >
+
+    <form method="dialog">
+
+      <button
+        class="dialog-close"
+        type="submit"
+        aria-label="Close review"
+      >
+        ×
+      </button>
+
+    </form>
+
+
+    <div id="reviewContent"></div>
+
+  </dialog>
+
+
+  <!-- =====================================================
+       SCRIPTS
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="assets/js/progress-page.js?v=2.1.0"
+  ></script>
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
 </body>
+
 </html>
