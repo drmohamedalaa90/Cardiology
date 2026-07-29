@@ -1,16 +1,2082 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Quiz Builder | ACL Expert Edition</title><link rel="stylesheet" href="assets/css/main.css?v=2.8.7"><link rel="stylesheet" href="assets/css/auth.css?v=1.5.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header class="topbar"><a class="brand brand-link" href="modules.html">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container">
-<section data-admin-shell data-active="quizzes"></section>
-<section class="card admin-hero"><div><span class="admin-kicker">PHASE 2.3</span><h1>Quiz Builder</h1><p class="muted">Assemble reusable quizzes from the secure question bank, preview the order, and publish when ready.</p></div><div class="admin-hero-actions"><a class="secondary-btn" href="admin.html">Admin Dashboard</a><a class="secondary-btn" href="admin-questions.html">Question Bank</a><button id="newQuizButton" class="primary-btn" type="button">Create Quiz</button></div></section>
-<section class="admin-stats"><div class="stat-card"><span>Total quizzes</span><strong id="quizTotal">—</strong></div><div class="stat-card"><span>Published</span><strong id="quizPublished">—</strong></div><div class="stat-card"><span>Drafts</span><strong id="quizDraft">—</strong></div><div class="stat-card"><span>Questions assigned</span><strong id="quizAssigned">—</strong></div></section>
-<section class="card admin-toolbar"><div class="field"><label>Search</label><input id="quizSearch" type="search" placeholder="Quiz title, module or description"></div><div class="field"><label>Module</label><select id="quizModuleFilter"><option value="all">All modules</option></select></div><div class="field"><label>Status</label><select id="quizStatusFilter"><option value="all">All</option><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></div><button id="refreshQuizzes" class="secondary-btn" type="button">Refresh</button></section>
-<div id="quizBuilderStatus" class="status-box" hidden></div><section id="quizList" class="module-admin-grid"></section>
-</main>
-<dialog id="quizDialog" class="module-dialog quiz-builder-dialog"><form id="quizForm"><div class="dialog-title-row"><div><span class="admin-kicker">QUIZ DEFINITION</span><h2 id="quizDialogTitle">Create Quiz</h2></div><button id="closeQuizDialog" class="dialog-close" type="button">×</button></div><input id="quizId" type="hidden">
-<div class="module-form-grid"><label>Module<select id="quizModule" required></select></label><label>Title<input id="quizTitle" required></label><label>Slug<input id="quizSlug" required placeholder="acute-coronary-syndromes-round"></label><label>Status<select id="quizStatus"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label><label>Mode<select id="quizMode"><option value="learning">Learning</option><option value="practice">Practice</option><option value="competition">Competition</option></select></label><label>Selection<select id="quizSelection"><option value="fixed">Fixed selected questions</option><option value="random">Random from selected pool</option></select></label><label>Questions delivered<input id="quizQuestionCount" type="number" min="1" max="500" value="10"></label><label>Time limit (minutes)<input id="quizTimeLimit" type="number" min="0" placeholder="0 = no total limit"></label><label>Passing percentage<input id="quizPassing" type="number" min="0" max="100" value="70"></label><label>Display order<input id="quizOrder" type="number" value="100"></label><label class="full-span">Description<textarea id="quizDescription" rows="3"></textarea></label></div>
-<div class="toggle-grid"><label><input id="quizRandomQuestions" type="checkbox"> Randomize question order</label><label><input id="quizRandomOptions" type="checkbox" checked> Randomize answer options</label><label><input id="quizAllowReview" type="checkbox" checked> Allow answer review</label><label><input id="quizShowExplanations" type="checkbox" checked> Show explanations</label></div>
-<section class="quiz-question-picker"><div class="section-heading"><div><h3>Select questions</h3><p class="muted">Only questions from the chosen module are shown.</p></div><input id="pickerSearch" type="search" placeholder="Filter questions"></div><div class="picker-tools"><button id="selectAllQuestions" class="secondary-btn" type="button">Select all visible</button><button id="clearQuestions" class="secondary-btn" type="button">Clear selection</button><strong id="selectedQuestionCount">0 selected</strong></div><div id="questionPicker" class="question-picker-list"></div></section>
-<div class="form-actions"><button id="previewQuizButton" class="secondary-btn" type="button">Preview</button><button id="duplicateQuizButton" class="secondary-btn" type="button" hidden>Duplicate</button><button id="archiveQuizButton" class="danger-btn secondary-btn" type="button" hidden>Archive</button><button id="cancelQuizButton" class="secondary-btn" type="button">Cancel</button><button class="primary-btn" type="submit">Save Quiz</button></div></form></dialog>
-<dialog id="quizPreviewDialog" class="student-dialog quiz-preview-dialog"><form method="dialog"><button class="dialog-close">×</button></form><div id="quizPreviewContent"></div></dialog>
-<script type="module" src="assets/js/admin-quizzes.js?v=2.8.0"></script><script type="module" src="assets/js/session-ui.js?v=2.7.12"></script><script type="module" src="assets/js/admin-shell.js?v=3.0.0"></script></body></html>
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    id="adminQuizzesThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <title>
+    Quiz Builder | ACL Admin
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=2.2"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const requestedEdition =
+        String(
+          parameters.get("edition") || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        requestedEdition === "basic" ||
+        requestedEdition === "expert"
+          ? requestedEdition
+          : storedEdition === "basic" ||
+            storedEdition === "expert"
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+
+      document.documentElement.classList.add(
+        edition === "basic"
+          ? "acl-admin-quizzes-basic"
+          : "acl-admin-quizzes-expert"
+      );
+
+
+      if (!parameters.get("edition")) {
+        const currentUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        currentUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          currentUrl
+        );
+      }
+    })();
+  </script>
+
+
+  <style>
+    :root {
+      --quiz-primary: #123f72;
+      --quiz-secondary: #176aa1;
+      --quiz-soft: #eaf5ff;
+      --quiz-soft-2: #f7fbff;
+      --quiz-accent: #ffc928;
+      --quiz-success: #168067;
+      --quiz-danger: #b33443;
+      --quiz-warning: #b97a00;
+      --quiz-text: #17324d;
+      --quiz-muted: #687d90;
+      --quiz-border: #d9e6f2;
+      --quiz-card: #ffffff;
+      --quiz-shadow:
+        0 18px 45px
+        rgba(18, 63, 114, 0.12);
+    }
+
+
+    html.acl-admin-quizzes-basic {
+      --quiz-primary: #105541;
+      --quiz-secondary: #168067;
+      --quiz-soft: #eaf8f2;
+      --quiz-soft-2: #f8fcfa;
+      --quiz-text: #173e34;
+      --quiz-shadow:
+        0 18px 45px
+        rgba(16, 85, 65, 0.12);
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
+    body {
+      margin: 0;
+      padding-top: 92px;
+
+      color:
+        var(--quiz-text);
+
+      background:
+        radial-gradient(
+          circle at 10% 6%,
+          rgba(255, 201, 40, 0.13),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 8%,
+          color-mix(
+            in srgb,
+            var(--quiz-secondary) 12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--quiz-soft)
+        );
+    }
+
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+
+    .topbar.acl-header-pending {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+
+    .topbar.acl-unified-header {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+
+    .admin-quizzes-shell {
+      width:
+        min(
+          1280px,
+          calc(100% - 28px)
+        );
+
+      margin: 0 auto;
+      padding: 30px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .admin-quizzes-hero {
+      position: relative;
+      overflow: hidden;
+
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+
+      margin-top: 20px;
+
+      padding:
+        clamp(
+          28px,
+          5vw,
+          46px
+        );
+
+      border-radius: 28px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(--quiz-primary),
+          var(--quiz-secondary)
+        );
+
+      box-shadow:
+        var(--quiz-shadow);
+    }
+
+
+    .admin-quizzes-hero::after {
+      content: "🧩";
+
+      position: absolute;
+      top: 50%;
+      right: 4%;
+
+      transform:
+        translateY(-50%)
+        rotate(-8deg);
+
+      opacity: 0.1;
+
+      font-size:
+        clamp(
+          110px,
+          18vw,
+          210px
+        );
+
+      pointer-events: none;
+    }
+
+
+    .admin-quizzes-hero-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+    }
+
+
+    .admin-quizzes-hero-top {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+
+    .admin-kicker,
+    .admin-quizzes-edition-badge {
+      display: inline-flex;
+      align-items: center;
+
+      min-height: 31px;
+      padding: 7px 12px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+
+    .admin-quizzes-edition-badge {
+      background:
+        rgba(255, 255, 255, 0.21);
+    }
+
+
+    .admin-quizzes-hero h1 {
+      margin: 15px 0 10px;
+
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4rem
+        );
+
+      line-height: 1;
+    }
+
+
+    .admin-quizzes-hero p {
+      margin: 0;
+
+      color:
+        rgba(255, 255, 255, 0.88);
+
+      font-size:
+        clamp(
+          0.96rem,
+          2vw,
+          1.06rem
+        );
+
+      line-height: 1.65;
+    }
+
+
+    .admin-hero-actions {
+      position: relative;
+      z-index: 1;
+
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 43px;
+      padding: 9px 15px;
+
+      border-radius: 11px;
+
+      cursor: pointer;
+
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+
+    .primary-btn {
+      border: 0;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--quiz-primary),
+          var(--quiz-secondary)
+        );
+    }
+
+
+    .secondary-btn {
+      border:
+        1px solid
+        var(--quiz-border);
+
+      color:
+        var(--quiz-primary);
+
+      background: #ffffff;
+    }
+
+
+    .danger-btn {
+      border: 1px solid #f0c6cc;
+
+      color:
+        var(--quiz-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .admin-quizzes-hero
+    .secondary-btn {
+      border-color:
+        rgba(255, 255, 255, 0.32);
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+    }
+
+
+    .admin-quizzes-hero
+    .primary-btn {
+      color:
+        var(--quiz-primary);
+
+      background: #ffffff;
+    }
+
+
+    .primary-btn:disabled,
+    .secondary-btn:disabled,
+    .danger-btn:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+
+    /* =====================================================
+       STATS
+    ===================================================== */
+
+    .admin-stats {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          4,
+          minmax(0, 1fr)
+        );
+
+      gap: 15px;
+      margin-top: 18px;
+    }
+
+
+    .stat-card {
+      padding: 19px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 18px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 11px 28px
+        rgba(18, 63, 114, 0.06);
+    }
+
+
+    .stat-card span {
+      display: block;
+
+      color:
+        var(--quiz-muted);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .stat-card strong {
+      display: block;
+      margin-top: 8px;
+
+      color:
+        var(--quiz-primary);
+
+      font-size: 2rem;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+
+    /* =====================================================
+       TOOLBAR
+    ===================================================== */
+
+    .admin-toolbar {
+      display: grid;
+
+      grid-template-columns:
+        minmax(240px, 1fr)
+        minmax(180px, 0.55fr)
+        minmax(160px, 0.45fr)
+        auto;
+
+      gap: 12px;
+      align-items: end;
+
+      margin-top: 18px;
+      padding: 18px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 19px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 30px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+
+    .field label,
+    .module-form-grid label {
+      display: grid;
+      gap: 6px;
+
+      color:
+        var(--quiz-muted);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .field input,
+    .field textarea,
+    .field select,
+    .module-form-grid input,
+    .module-form-grid textarea,
+    .module-form-grid select,
+    .section-heading input {
+      width: 100%;
+      min-height: 43px;
+      padding: 10px 12px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--quiz-text);
+
+      background: #ffffff;
+      outline: none;
+    }
+
+
+    .field textarea,
+    .module-form-grid textarea {
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus,
+    .module-form-grid input:focus,
+    .module-form-grid textarea:focus,
+    .module-form-grid select:focus,
+    .section-heading input:focus {
+      border-color:
+        var(--quiz-secondary);
+
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--quiz-secondary) 14%,
+          transparent
+        );
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .status-box {
+      margin-top: 15px;
+      padding: 14px 16px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 13px;
+
+      color:
+        var(--quiz-muted);
+
+      background: #ffffff;
+
+      font-weight: 750;
+    }
+
+
+    .status-box.success {
+      border-color: #bfe7d6;
+
+      color:
+        var(--quiz-success);
+
+      background: #f2fbf7;
+    }
+
+
+    .status-box.error {
+      border-color: #f0c6cc;
+
+      color:
+        var(--quiz-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .status-box.warning {
+      border-color: #f4d8a2;
+
+      color:
+        var(--quiz-warning);
+
+      background: #fffaf0;
+    }
+
+
+    /* =====================================================
+       QUIZ LIST
+    ===================================================== */
+
+    .quiz-admin-grid,
+    .module-admin-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+
+    .quiz-admin-card,
+    .admin-quiz-card {
+      position: relative;
+      overflow: hidden;
+
+      min-height: 255px;
+      padding: 20px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 20px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 30px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .quiz-admin-card h2,
+    .quiz-admin-card h3,
+    .admin-quiz-card h2,
+    .admin-quiz-card h3 {
+      margin: 0;
+
+      color:
+        var(--quiz-primary);
+    }
+
+
+    .quiz-admin-card p,
+    .admin-quiz-card p {
+      color:
+        var(--quiz-muted);
+
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+
+    .quiz-admin-actions,
+    .admin-module-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      margin-top: 15px;
+    }
+
+
+    .empty-state {
+      grid-column: 1 / -1;
+
+      padding: 52px 20px;
+
+      border:
+        1px dashed
+        var(--quiz-border);
+
+      border-radius: 20px;
+
+      color:
+        var(--quiz-muted);
+
+      background:
+        rgba(255, 255, 255, 0.9);
+
+      text-align: center;
+    }
+
+
+    /* =====================================================
+       DIALOG
+    ===================================================== */
+
+    .module-dialog {
+      width:
+        min(
+          980px,
+          calc(100% - 24px)
+        );
+
+      max-height:
+        calc(100vh - 28px);
+
+      padding: 0;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 22px;
+
+      color:
+        var(--quiz-text);
+
+      background: #ffffff;
+
+      box-shadow:
+        0 28px 80px
+        rgba(16, 43, 72, 0.28);
+    }
+
+
+    .module-dialog::backdrop,
+    .student-dialog::backdrop {
+      background:
+        rgba(10, 29, 50, 0.62);
+
+      backdrop-filter:
+        blur(4px);
+    }
+
+
+    #quizForm {
+      padding: 22px;
+    }
+
+
+    .dialog-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+
+      margin-bottom: 18px;
+    }
+
+
+    .dialog-title-row h2 {
+      margin: 7px 0 0;
+
+      color:
+        var(--quiz-primary);
+    }
+
+
+    .dialog-title-row
+    .admin-kicker {
+      border-color:
+        var(--quiz-border);
+
+      color:
+        var(--quiz-secondary);
+
+      background:
+        var(--quiz-soft);
+    }
+
+
+    .dialog-close {
+      display: grid;
+      place-items: center;
+
+      width: 40px;
+      min-width: 40px;
+      height: 40px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--quiz-primary);
+
+      background: #ffffff;
+
+      cursor: pointer;
+      font-size: 1.4rem;
+    }
+
+
+    .module-form-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 14px;
+    }
+
+
+    .full-span {
+      grid-column: 1 / -1;
+    }
+
+
+    .toggle-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          4,
+          minmax(0, 1fr)
+        );
+
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+
+    .toggle-grid label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      min-height: 48px;
+      padding: 11px 12px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 12px;
+
+      color:
+        var(--quiz-text);
+
+      background:
+        var(--quiz-soft-2);
+
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+
+    .toggle-grid input {
+      width: 17px;
+      height: 17px;
+
+      accent-color:
+        var(--quiz-secondary);
+    }
+
+
+    /* =====================================================
+       QUESTION PICKER
+    ===================================================== */
+
+    .quiz-question-picker {
+      margin-top: 20px;
+      padding: 18px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 17px;
+
+      background:
+        var(--quiz-soft-2);
+    }
+
+
+    .section-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+
+    .section-heading h3 {
+      margin: 0;
+
+      color:
+        var(--quiz-primary);
+    }
+
+
+    .section-heading p {
+      margin: 5px 0 0;
+
+      color:
+        var(--quiz-muted);
+
+      font-size: 0.8rem;
+    }
+
+
+    .section-heading input {
+      width: min(320px, 100%);
+    }
+
+
+    .picker-tools {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+
+      margin-top: 14px;
+    }
+
+
+    .picker-tools strong {
+      margin-left: auto;
+
+      color:
+        var(--quiz-primary);
+    }
+
+
+    .question-picker-list {
+      display: grid;
+      gap: 9px;
+
+      max-height: 380px;
+
+      margin-top: 14px;
+      padding-right: 4px;
+
+      overflow-y: auto;
+    }
+
+
+    .question-picker-item {
+      display: grid;
+
+      grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        auto;
+
+      gap: 10px;
+      align-items: flex-start;
+
+      padding: 12px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 13px;
+
+      background: #ffffff;
+    }
+
+
+    .question-picker-item input {
+      margin-top: 4px;
+
+      accent-color:
+        var(--quiz-secondary);
+    }
+
+
+    .question-picker-item p {
+      margin: 4px 0 0;
+
+      color:
+        var(--quiz-muted);
+
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
+
+    /* =====================================================
+       FORM ACTIONS
+    ===================================================== */
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+
+      margin-top: 20px;
+      padding-top: 17px;
+
+      border-top:
+        1px solid
+        var(--quiz-border);
+    }
+
+
+    /* =====================================================
+       PREVIEW
+    ===================================================== */
+
+    .student-dialog {
+      width:
+        min(
+          760px,
+          calc(100% - 24px)
+        );
+
+      max-height:
+        calc(100vh - 28px);
+
+      padding: 20px;
+
+      border:
+        1px solid
+        var(--quiz-border);
+
+      border-radius: 22px;
+
+      background: #ffffff;
+
+      box-shadow:
+        0 28px 80px
+        rgba(16, 43, 72, 0.28);
+    }
+
+
+    .student-dialog form {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+
+    #quizPreviewContent {
+      margin-top: 8px;
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
+
+    @media (max-width: 1050px) {
+      .admin-stats {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+
+
+      .quiz-admin-grid,
+      .module-admin-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+
+
+      .toggle-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+
+
+      .admin-toolbar {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+    }
+
+
+    @media (max-width: 760px) {
+      body {
+        padding-top: 82px;
+      }
+
+
+      .admin-quizzes-shell {
+        width:
+          min(
+            calc(100% - 18px),
+            1280px
+          );
+
+        padding-top: 18px;
+      }
+
+
+      .admin-quizzes-hero {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+
+      .admin-hero-actions {
+        justify-content: flex-start;
+      }
+
+
+      .admin-toolbar,
+      .module-form-grid,
+      .toggle-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .full-span {
+        grid-column: auto;
+      }
+
+
+      .admin-toolbar button {
+        width: 100%;
+      }
+
+
+      .section-heading {
+        flex-direction: column;
+      }
+
+
+      .section-heading input {
+        width: 100%;
+      }
+
+
+      .picker-tools strong {
+        width: 100%;
+        margin-left: 0;
+      }
+
+
+      .form-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+      }
+
+
+      .form-actions button {
+        width: 100%;
+      }
+    }
+
+
+    @media (max-width: 560px) {
+      .admin-stats,
+      .quiz-admin-grid,
+      .module-admin-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-hero-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-hero-actions a,
+      .admin-hero-actions button {
+        width: 100%;
+      }
+
+
+      .question-picker-item {
+        grid-template-columns:
+          auto
+          minmax(0, 1fr);
+      }
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="admin-quizzes-shell">
+
+    <section
+      data-admin-shell
+      data-active="quizzes"
+    ></section>
+
+
+    <section class="admin-quizzes-hero">
+
+      <div class="admin-quizzes-hero-copy">
+
+        <div class="admin-quizzes-hero-top">
+
+          <span class="admin-kicker">
+            PHASE 2.3 QUIZ CONTROL
+          </span>
+
+
+          <span
+            id="adminQuizzesEditionBadge"
+            class="admin-quizzes-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
+
+        <h1>
+          Quiz Builder
+        </h1>
+
+
+        <p>
+          Assemble reusable quizzes from the secure question bank,
+          preview their structure, and publish them when ready.
+        </p>
+
+      </div>
+
+
+      <div class="admin-hero-actions">
+
+        <a
+          id="adminQuizzesDashboardLink"
+          class="secondary-btn"
+          href="admin.html"
+        >
+          Admin Dashboard
+        </a>
+
+
+        <a
+          id="adminQuizzesQuestionsLink"
+          class="secondary-btn"
+          href="admin-questions.html"
+        >
+          Question Bank
+        </a>
+
+
+        <button
+          id="newQuizButton"
+          class="primary-btn"
+          type="button"
+        >
+          Create Quiz
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <section
+      class="admin-stats"
+      aria-label="Quiz statistics"
+    >
+
+      <article class="stat-card">
+
+        <span>
+          Total quizzes
+        </span>
+
+        <strong id="quizTotal">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <span>
+          Published
+        </span>
+
+        <strong id="quizPublished">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <span>
+          Drafts
+        </span>
+
+        <strong id="quizDraft">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <span>
+          Questions assigned
+        </span>
+
+        <strong id="quizAssigned">
+          —
+        </strong>
+
+      </article>
+
+    </section>
+
+
+    <section
+      class="admin-toolbar"
+      aria-label="Quiz filters"
+    >
+
+      <div class="field">
+
+        <label for="quizSearch">
+          Search
+        </label>
+
+        <input
+          id="quizSearch"
+          type="search"
+          placeholder="Quiz title, module or description"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="quizModuleFilter">
+          Module
+        </label>
+
+        <select id="quizModuleFilter">
+
+          <option value="all">
+            All modules
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="quizStatusFilter">
+          Status
+        </label>
+
+        <select id="quizStatusFilter">
+
+          <option value="all">
+            All
+          </option>
+
+          <option value="draft">
+            Draft
+          </option>
+
+          <option value="published">
+            Published
+          </option>
+
+          <option value="archived">
+            Archived
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <button
+        id="refreshQuizzes"
+        class="secondary-btn"
+        type="button"
+      >
+        Refresh
+      </button>
+
+    </section>
+
+
+    <div
+      id="quizBuilderStatus"
+      class="status-box"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <section
+      id="quizList"
+      class="quiz-admin-grid module-admin-grid"
+      aria-label="Quiz list"
+    >
+
+      <div class="empty-state">
+        Loading quizzes…
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       QUIZ EDITOR
+  ====================================================== -->
+
+  <dialog
+    id="quizDialog"
+    class="module-dialog quiz-builder-dialog"
+  >
+
+    <form
+      id="quizForm"
+      novalidate
+    >
+
+      <div class="dialog-title-row">
+
+        <div>
+
+          <span class="admin-kicker">
+            QUIZ DEFINITION
+          </span>
+
+
+          <h2 id="quizDialogTitle">
+            Create Quiz
+          </h2>
+
+        </div>
+
+
+        <button
+          id="closeQuizDialog"
+          class="dialog-close"
+          type="button"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <input
+        id="quizId"
+        type="hidden"
+      >
+
+
+      <div class="module-form-grid">
+
+        <label for="quizModule">
+
+          Module
+
+          <select
+            id="quizModule"
+            required
+          ></select>
+
+        </label>
+
+
+        <label for="quizTitle">
+
+          Title
+
+          <input
+            id="quizTitle"
+            required
+          >
+
+        </label>
+
+
+        <label for="quizSlug">
+
+          Slug
+
+          <input
+            id="quizSlug"
+            required
+            pattern="[a-z0-9-]+"
+            placeholder="acute-coronary-syndromes-round"
+          >
+
+        </label>
+
+
+        <label for="quizStatus">
+
+          Status
+
+          <select id="quizStatus">
+
+            <option value="draft">
+              Draft
+            </option>
+
+            <option value="published">
+              Published
+            </option>
+
+            <option value="archived">
+              Archived
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label for="quizMode">
+
+          Mode
+
+          <select id="quizMode">
+
+            <option value="learning">
+              Learning
+            </option>
+
+            <option value="practice">
+              Practice
+            </option>
+
+            <option value="competition">
+              Competition
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label for="quizSelection">
+
+          Selection
+
+          <select id="quizSelection">
+
+            <option value="fixed">
+              Fixed selected questions
+            </option>
+
+            <option value="random">
+              Random from selected pool
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label for="quizQuestionCount">
+
+          Questions delivered
+
+          <input
+            id="quizQuestionCount"
+            type="number"
+            min="1"
+            max="500"
+            value="10"
+          >
+
+        </label>
+
+
+        <label for="quizTimeLimit">
+
+          Time limit (minutes)
+
+          <input
+            id="quizTimeLimit"
+            type="number"
+            min="0"
+            placeholder="0 = no total limit"
+          >
+
+        </label>
+
+
+        <label for="quizPassing">
+
+          Passing percentage
+
+          <input
+            id="quizPassing"
+            type="number"
+            min="0"
+            max="100"
+            value="70"
+          >
+
+        </label>
+
+
+        <label for="quizOrder">
+
+          Display order
+
+          <input
+            id="quizOrder"
+            type="number"
+            value="100"
+          >
+
+        </label>
+
+
+        <label
+          for="quizDescription"
+          class="full-span"
+        >
+
+          Description
+
+          <textarea
+            id="quizDescription"
+            rows="3"
+          ></textarea>
+
+        </label>
+
+      </div>
+
+
+      <div class="toggle-grid">
+
+        <label>
+
+          <input
+            id="quizRandomQuestions"
+            type="checkbox"
+          >
+
+          Randomize question order
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="quizRandomOptions"
+            type="checkbox"
+            checked
+          >
+
+          Randomize answer options
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="quizAllowReview"
+            type="checkbox"
+            checked
+          >
+
+          Allow answer review
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="quizShowExplanations"
+            type="checkbox"
+            checked
+          >
+
+          Show explanations
+
+        </label>
+
+      </div>
+
+
+      <section class="quiz-question-picker">
+
+        <div class="section-heading">
+
+          <div>
+
+            <h3>
+              Select questions
+            </h3>
+
+
+            <p>
+              Only questions from the chosen module are shown.
+            </p>
+
+          </div>
+
+
+          <input
+            id="pickerSearch"
+            type="search"
+            placeholder="Filter questions"
+          >
+
+        </div>
+
+
+        <div class="picker-tools">
+
+          <button
+            id="selectAllQuestions"
+            class="secondary-btn"
+            type="button"
+          >
+            Select all visible
+          </button>
+
+
+          <button
+            id="clearQuestions"
+            class="secondary-btn"
+            type="button"
+          >
+            Clear selection
+          </button>
+
+
+          <strong id="selectedQuestionCount">
+            0 selected
+          </strong>
+
+        </div>
+
+
+        <div
+          id="questionPicker"
+          class="question-picker-list"
+        >
+
+          <div class="empty-state">
+            Select a module to load questions.
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <div class="form-actions">
+
+        <button
+          id="previewQuizButton"
+          class="secondary-btn"
+          type="button"
+        >
+          Preview
+        </button>
+
+
+        <button
+          id="duplicateQuizButton"
+          class="secondary-btn"
+          type="button"
+          hidden
+        >
+          Duplicate
+        </button>
+
+
+        <button
+          id="archiveQuizButton"
+          class="danger-btn"
+          type="button"
+          hidden
+        >
+          Archive
+        </button>
+
+
+        <button
+          id="cancelQuizButton"
+          class="secondary-btn"
+          type="button"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Save Quiz
+        </button>
+
+      </div>
+
+    </form>
+
+  </dialog>
+
+
+  <!-- =====================================================
+       QUIZ PREVIEW
+  ====================================================== -->
+
+  <dialog
+    id="quizPreviewDialog"
+    class="student-dialog quiz-preview-dialog"
+  >
+
+    <form method="dialog">
+
+      <button
+        class="dialog-close"
+        aria-label="Close preview"
+      >
+        ×
+      </button>
+
+    </form>
+
+
+    <div id="quizPreviewContent"></div>
+
+  </dialog>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const edition =
+        parameters.get("edition") === "basic"
+          ? "basic"
+          : "expert";
+
+
+      const badge =
+        document.getElementById(
+          "adminQuizzesEditionBadge"
+        );
+
+
+      if (badge) {
+        badge.textContent =
+          edition === "basic"
+            ? "BASIC EDITION"
+            : "EXPERT EDITION";
+      }
+
+
+      const themeColor =
+        document.getElementById(
+          "adminQuizzesThemeColor"
+        );
+
+
+      if (themeColor) {
+        themeColor.content =
+          edition === "basic"
+            ? "#105541"
+            : "#123f72";
+      }
+
+
+      const links = {
+        adminQuizzesDashboardLink:
+          "admin.html",
+
+        adminQuizzesQuestionsLink:
+          "admin-questions.html"
+      };
+
+
+      Object.entries(
+        links
+      ).forEach(
+        ([id, path]) => {
+          const link =
+            document.getElementById(
+              id
+            );
+
+
+          if (link) {
+            link.href =
+              `${path}?edition=${encodeURIComponent(
+                edition
+              )}`;
+          }
+        }
+      );
+
+
+      document.title =
+        `Quiz Builder | ACL ${
+          edition === "basic"
+            ? "Basic Edition"
+            : "Expert Edition"
+        } Admin`;
+    })();
+  </script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-quizzes.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/session-ui.js?v=4.6.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-shell.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
+</body>
+
+</html>
