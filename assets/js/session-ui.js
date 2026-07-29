@@ -1,13 +1,113 @@
-import { supabaseClient } from "./supabase-client.js";
+import {
+  supabaseClient
+} from "./supabase-client.js";
+
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
 const ACL_VALID_EDITIONS =
   new Set([
     "basic",
     "expert"
   ]);
 
+
+/* =========================================================
+   PATH HELPERS
+========================================================= */
+
+function nestedPath(
+  file
+) {
+  return window.location.pathname.includes(
+    "/modules/"
+  )
+    ? `../../${file}`
+    : file;
+}
+
+
+function isValidEdition(
+  edition
+) {
+  return ACL_VALID_EDITIONS.has(
+    String(
+      edition ||
+      ""
+    )
+      .trim()
+      .toLowerCase()
+  );
+}
+
+
+/* =========================================================
+   ACTIVE EDITION
+========================================================= */
+
+function getActiveAclEdition() {
+  const parameters =
+    new URLSearchParams(
+      window.location.search
+    );
+
+
+  const urlEdition =
+    String(
+      parameters.get(
+        "edition"
+      ) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    isValidEdition(
+      urlEdition
+    )
+  ) {
+    localStorage.setItem(
+      "aclSelectedEdition",
+      urlEdition
+    );
+
+
+    return urlEdition;
+  }
+
+
+  const savedEdition =
+    String(
+      localStorage.getItem(
+        "aclSelectedEdition"
+      ) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    isValidEdition(
+      savedEdition
+    )
+  ) {
+    return savedEdition;
+  }
+
+
+  return null;
+}
+
+
 /* =========================================================
    EDITION HELPERS
 ========================================================= */
+
 export function resolveAclEdition({
   requireEdition = true,
   updateUrl = true
@@ -29,37 +129,36 @@ export function resolveAclEdition({
       .toLowerCase();
 
 
-  const savedEdition =
-    String(
-      localStorage.getItem(
-        "aclSelectedEdition"
-      ) ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
   if (
-    !ACL_VALID_EDITIONS.has(
+    !isValidEdition(
       edition
     )
   ) {
     edition =
-      savedEdition;
+      String(
+        localStorage.getItem(
+          "aclSelectedEdition"
+        ) ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
   }
 
 
   if (
-    !ACL_VALID_EDITIONS.has(
+    !isValidEdition(
       edition
     )
   ) {
     if (requireEdition) {
       window.location.replace(
-        "pathways.html"
+        nestedPath(
+          "pathways.html"
+        )
       );
     }
+
 
     return null;
   }
@@ -113,159 +212,54 @@ export function resolveAclEdition({
 
   return edition;
 }
-/* =========================================================
-   SESSION AND PROFILE
-========================================================= */
 
-export async function requireSession(
-  relativeLogin = "login.html"
+
+export function aclUrl(
+  path,
+  edition
 ) {
-  const {
-    data,
-    error
-  } = await supabaseClient.auth.getSession();
-
-  if (
-    error ||
-    !data.session
-  ) {
-    window.location.replace(
-      relativeLogin
-    );
-
-    return null;
-  }
-
-  return data.session;
-}
-
-
-export async function loadProfile() {
-  const {
-    data: sessionData
-  } = await supabaseClient.auth.getSession();
-
-  const user =
-    sessionData.session?.user;
-
-  if (!user) {
-    return null;
-  }
-
-  const {
-    data,
-    error
-  } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  const metadata =
-    user.user_metadata || {};
-
-  return {
-    ...data,
-
-    email:
-      user.email,
-display_name:
-  data?.display_name ||
-  data?.full_name ||
-  metadata.display_name ||
-  metadata.full_name ||
-  data?.username ||
-  "",
-     
-    full_name:
-      data?.full_name ||
-      metadata.full_name ||
-      metadata.name ||
-      metadata.display_name ||
-      "",
-
-    avatar_url:
-      data?.avatar_url ||
-      metadata.avatar_url ||
-      metadata.picture ||
-      metadata.photo_url ||
-      ""
-  };
-}
-
-
-/* =========================================================
-   PATH HELPERS
-========================================================= */
-
-function nestedPath(file) {
-  return window.location.pathname.includes(
-    "/modules/"
-  )
-    ? `../../${file}`
-    : file;
-}
-
-
-/* =========================================================
-   ACTIVE ACL EDITION
-========================================================= */
-
-function getActiveAclEdition() {
-  const parameters =
-    new URLSearchParams(
-      window.location.search
-    );
-
-
-  const urlEdition =
-    String(
-      parameters.get(
-        "edition"
-      ) ||
-      ""
+  const resolvedEdition =
+    isValidEdition(
+      edition
     )
-      .trim()
-      .toLowerCase();
+      ? String(
+          edition
+        )
+          .trim()
+          .toLowerCase()
+      : getActiveAclEdition();
 
 
-  if (
-    urlEdition === "basic" ||
-    urlEdition === "expert"
-  ) {
-    localStorage.setItem(
-      "aclSelectedEdition",
-      urlEdition
+  const url =
+    new URL(
+      path,
+      window.location.href
     );
 
-    return urlEdition;
+
+  if (
+    resolvedEdition
+  ) {
+    url.searchParams.set(
+      "edition",
+      resolvedEdition
+    );
   }
-
-
-  const savedEdition =
-    String(
-      localStorage.getItem(
-        "aclSelectedEdition"
-      ) ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
 
 
   if (
-    savedEdition === "basic" ||
-    savedEdition === "expert"
+    url.origin ===
+    window.location.origin
   ) {
-    return savedEdition;
+    return (
+      `${url.pathname}` +
+      `${url.search}` +
+      `${url.hash}`
+    );
   }
 
 
-  return null;
+  return url.toString();
 }
 
 
@@ -278,12 +272,7 @@ function editionAwarePath(
     );
 
 
-  const edition =
-    getActiveAclEdition();
-
-
   if (
-    !edition ||
     file === "pathways.html" ||
     file === "login.html" ||
     file === "admin.html"
@@ -292,21 +281,150 @@ function editionAwarePath(
   }
 
 
-  const url =
-    new URL(
-      path,
-      window.location.href
+  const edition =
+    getActiveAclEdition();
+
+
+  if (!edition) {
+    return path;
+  }
+
+
+  return aclUrl(
+    path,
+    edition
+  );
+}
+
+
+/* =========================================================
+   SESSION
+========================================================= */
+
+export async function requireSession(
+  relativeLogin = "login.html"
+) {
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .auth
+      .getSession();
+
+
+  if (
+    error ||
+    !data?.session
+  ) {
+    window.location.replace(
+      nestedPath(
+        relativeLogin
+      )
     );
 
 
-  url.searchParams.set(
-    "edition",
-    edition
-  );
+    return null;
+  }
 
 
-  return `${path.split("?")[0]}${url.search}`;
-}   
+  return data.session;
+}
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+export async function loadProfile() {
+  const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await supabaseClient
+      .auth
+      .getSession();
+
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+
+  const user =
+    sessionData
+      ?.session
+      ?.user;
+
+
+  if (!user) {
+    return null;
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from(
+        "profiles"
+      )
+      .select(
+        "*"
+      )
+      .eq(
+        "id",
+        user.id
+      )
+      .single();
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  const metadata =
+    user.user_metadata ||
+    {};
+
+
+  const displayName =
+    data?.display_name ||
+    data?.full_name ||
+    metadata.display_name ||
+    metadata.full_name ||
+    metadata.name ||
+    data?.username ||
+    user.email ||
+    "ACL User";
+
+
+  return {
+    ...data,
+
+    email:
+      user.email,
+
+    display_name:
+      displayName,
+
+    full_name:
+      data?.full_name ||
+      metadata.full_name ||
+      metadata.name ||
+      metadata.display_name ||
+      displayName,
+
+    avatar_url:
+      data?.avatar_url ||
+      metadata.avatar_url ||
+      metadata.picture ||
+      metadata.photo_url ||
+      ""
+  };
+}
 
 
 /* =========================================================
@@ -321,6 +439,7 @@ export function renderUserChip(
       "userChip"
     );
 
+
   if (
     !chip ||
     !profile
@@ -328,28 +447,43 @@ export function renderUserChip(
     return;
   }
 
- const displayName =
-  profile.display_name ||
-  profile.full_name ||
-  profile.username ||
-  "ACL User";
+
+  const displayName =
+    profile.display_name ||
+    profile.full_name ||
+    profile.username ||
+    "ACL User";
 
 
-const initials =
-  displayName
-      .split(/\s+/)
-      .slice(0, 2)
+  const initials =
+    displayName
+      .trim()
+      .split(
+        /\s+/
+      )
+      .slice(
+        0,
+        2
+      )
       .map(
         (part) =>
-          part[0] || ""
+          part.charAt(
+            0
+          )
       )
-      .join("")
-      .toUpperCase();
+      .join(
+        ""
+      )
+      .toUpperCase() ||
+    "U";
+
 
   chip.href =
-  editionAwarePath(
-    "profile.html"
-  );
+    editionAwarePath(
+      "profile.html"
+    );
+
+
   chip.innerHTML =
     profile.avatar_url
       ? `
@@ -359,13 +493,15 @@ const initials =
         >
 
         <span class="user-chip-copy">
+
           <span class="user-name">
-           ${displayName}
+            ${displayName}
           </span>
 
           <span class="edit-profile-link">
             / Edit profile
           </span>
+
         </span>
       `
       : `
@@ -374,17 +510,17 @@ const initials =
         </span>
 
         <span class="user-chip-copy">
+
           <span class="user-name">
-${displayName}
-</span>
+            ${displayName}
+          </span>
 
           <span class="edit-profile-link">
             / Edit profile
           </span>
+
         </span>
       `;
-
-  buildUnifiedHeader();
 }
 
 
@@ -392,53 +528,62 @@ ${displayName}
    ADMIN STATUS
 ========================================================= */
 
-function renderAdminLink(
+async function applyAdminStatus(
   profile
 ) {
-  const isAdmin =
-    profile?.is_admin ||
-    profile?.role === "admin" ||
+  if (!profile) {
+    return null;
+  }
+
+
+  try {
+    const {
+      data: rpcAdmin,
+      error: rpcAdminError
+    } =
+      await supabaseClient
+        .rpc(
+          "acl_is_admin"
+        );
+
+
+    if (
+      !rpcAdminError &&
+      rpcAdmin === true
+    ) {
+      profile.role =
+        "admin";
+
+      profile.is_admin =
+        true;
+
+
+      return profile;
+    }
+  } catch (error) {
+    console.warn(
+      "Could not verify ACL administrator status:",
+      error
+    );
+  }
+
+
+  profile.is_admin =
+    profile?.role ===
+      "admin" ||
     profile?.role ===
       "administrator";
 
-  if (!isAdmin) {
-    return;
-  }
-
-  const nav =
-    document.querySelector(
-      ".topbar nav"
-    );
 
   if (
-    !nav ||
-    document.getElementById(
-      "adminNavLink"
-    )
+    profile.is_admin
   ) {
-    return;
+    profile.role =
+      "admin";
   }
 
-  const link =
-    document.createElement("a");
 
-  link.id =
-    "adminNavLink";
-
-  link.className =
-    "nav-btn admin-nav-btn";
-
-  link.href =
-    nestedPath(
-      "admin.html"
-    );
-
-  link.textContent =
-    "Admin";
-
-  nav.prepend(link);
-
-  buildUnifiedHeader();
+  return profile;
 }
 
 
@@ -454,89 +599,75 @@ export async function protectAndRender(
       relativeLogin
     );
 
+
   if (!session) {
     return null;
   }
 
-  const profile =
+
+  let profile =
     await loadProfile();
 
-  try {
-    const {
-      data: rpcAdmin,
-      error: rpcAdminError
-    } = await supabaseClient.rpc(
-      "acl_is_admin"
+
+  if (!profile) {
+    await supabaseClient
+      .auth
+      .signOut();
+
+
+    window.location.replace(
+      nestedPath(
+        relativeLogin
+      )
     );
 
-    if (
-      !rpcAdminError &&
-      rpcAdmin === true
-    ) {
-      profile.role =
-        "admin";
 
-      profile.is_admin =
-        true;
-    } else {
-      profile.is_admin =
-        profile?.role ===
-          "admin" ||
-        profile?.role ===
-          "administrator";
-
-      if (
-        profile.is_admin
-      ) {
-        profile.role =
-          "admin";
-      }
-    }
-  } catch {
-    profile.is_admin =
-      profile?.role ===
-        "admin" ||
-      profile?.role ===
-        "administrator";
-
-    if (
-      profile.is_admin
-    ) {
-      profile.role =
-        "admin";
-    }
+    return null;
   }
 
+
+  profile =
+    await applyAdminStatus(
+      profile
+    );
+
+
   if (
-    !profile ||
     profile.account_status ===
-      "suspended"
+    "suspended"
   ) {
-    await supabaseClient.auth.signOut();
+    await supabaseClient
+      .auth
+      .signOut();
+
 
     window.alert(
       "This account has been suspended. Contact the ACL administrator."
     );
 
+
     window.location.replace(
-      relativeLogin
+      nestedPath(
+        relativeLogin
+      )
     );
+
 
     return null;
   }
 
+
   window.aclCurrentProfile =
     profile;
+
 
   renderUserChip(
     profile
   );
 
-  renderAdminLink(
-    profile
-  );
 
   buildUnifiedHeader();
+
 
   return profile;
 }
@@ -547,7 +678,10 @@ export async function protectAndRender(
 ========================================================= */
 
 export async function signOut() {
-  await supabaseClient.auth.signOut();
+  await supabaseClient
+    .auth
+    .signOut();
+
 
   window.location.replace(
     nestedPath(
@@ -555,6 +689,7 @@ export async function signOut() {
     )
   );
 }
+
 
 window.aclSignOut =
   signOut;
@@ -606,19 +741,21 @@ const iconSvgs = {
       <path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>
     </svg>
   `,
-settings: `
-  <svg
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <path
-      d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"
-    />
-    <path
-      d="M19.4 13.5c.1-.5.1-1 0-1.5l2-1.6-2-3.5-2.5 1a8 8 0 0 0-1.3-.8L15.2 4h-4l-.4 3.1c-.5.2-.9.5-1.3.8L7 6.9l-2 3.5L7 12c-.1.5-.1 1 0 1.5l-2 1.6 2 3.5 2.5-1c.4.3.8.6 1.3.8l.4 3.1h4l.4-3.1c.5-.2.9-.5 1.3-.8l2.5 1 2-3.5-2-1.6Z"
-    />
-  </svg>
-`,
+
+  settings: `
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"
+      />
+      <path
+        d="M19.4 13.5c.1-.5.1-1 0-1.5l2-1.6-2-3.5-2.5 1a8 8 0 0 0-1.3-.8L15.2 4h-4l-.4 3.1c-.5.2-.9.5-1.3.8L7 6.9l-2 3.5L7 12c-.1.5-.1 1 0 1.5l-2 1.6 2 3.5 2.5-1c.4.3.8.6 1.3.8l.4 3.1h4l.4-3.1c.5-.2.9-.5 1.3-.8l2.5 1 2-3.5-2-1.6Z"
+      />
+    </svg>
+  `,
+
   modules: `
     <svg
       viewBox="0 0 24 24"
@@ -654,18 +791,20 @@ settings: `
       />
     </svg>
   `,
-pathways: `
-  <svg
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <path d="M12 3v18"/>
-    <path d="M12 8 6 4"/>
-    <path d="M12 15 18 11"/>
-    <path d="M6 4v5"/>
-    <path d="M18 11v5"/>
-  </svg>
-`,
+
+  pathways: `
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path d="M12 3v18"/>
+      <path d="M12 8 6 4"/>
+      <path d="M12 15 18 11"/>
+      <path d="M6 4v5"/>
+      <path d="M18 11v5"/>
+    </svg>
+  `,
+
   progress: `
     <svg
       viewBox="0 0 24 24"
@@ -701,8 +840,9 @@ pathways: `
   `
 };
 
+
 /* =========================================================
-   HEADER ICON
+   HEADER LINKS
 ========================================================= */
 
 function createHeaderLink({
@@ -713,13 +853,15 @@ function createHeaderLink({
   className = ""
 }) {
   const element =
-    action
+    typeof action ===
+      "function"
       ? document.createElement(
           "button"
         )
       : document.createElement(
           "a"
         );
+
 
   if (
     element instanceof
@@ -729,24 +871,37 @@ function createHeaderLink({
       "button";
   }
 
+
   element.className =
     `acl-header-icon ${className}`.trim();
 
+
   element.title =
     label;
+
 
   element.setAttribute(
     "aria-label",
     label
   );
 
-  element.innerHTML =
-    iconSvgs[type];
 
-  if (href) {
+  element.innerHTML =
+    iconSvgs[
+      type
+    ] ||
+    "";
+
+
+  if (
+    href &&
+    element instanceof
+    HTMLAnchorElement
+  ) {
     element.href =
       href;
   }
+
 
   if (
     typeof action ===
@@ -757,6 +912,7 @@ function createHeaderLink({
       action
     );
   }
+
 
   return element;
 }
@@ -778,8 +934,10 @@ function createDrawerItem({
       "button"
     );
 
+
   item.type =
     "button";
+
 
   item.className =
     `acl-drawer-item${
@@ -788,9 +946,10 @@ function createDrawerItem({
         : ""
     }`;
 
+
   item.innerHTML = `
     <span class="acl-drawer-item-icon">
-      ${iconSvgs[type]}
+      ${iconSvgs[type] || ""}
     </span>
 
     <span class="acl-drawer-item-label">
@@ -798,23 +957,31 @@ function createDrawerItem({
     </span>
   `;
 
+
   item.addEventListener(
     "click",
     () => {
       closeAclDrawer();
+
 
       if (
         typeof action ===
         "function"
       ) {
         action();
-      } else if (href) {
+
+        return;
+      }
+
+
+      if (href) {
         window.location.assign(
           href
         );
       }
     }
   );
+
 
   return item;
 }
@@ -829,6 +996,7 @@ function openAclDrawer() {
     "acl-drawer-open"
   );
 
+
   document
     .querySelector(
       ".acl-side-drawer"
@@ -837,6 +1005,7 @@ function openAclDrawer() {
       "aria-hidden",
       "false"
     );
+
 
   document
     .querySelector(
@@ -854,6 +1023,7 @@ function closeAclDrawer() {
     "acl-drawer-open"
   );
 
+
   document
     .querySelector(
       ".acl-side-drawer"
@@ -862,6 +1032,7 @@ function closeAclDrawer() {
       "aria-hidden",
       "true"
     );
+
 
   document
     .querySelector(
@@ -875,7 +1046,7 @@ function closeAclDrawer() {
 
 
 /* =========================================================
-   CENTERED ROLLING BRAND
+   BRAND
 ========================================================= */
 
 function createRollingBrand() {
@@ -896,7 +1067,10 @@ function createRollingBrand() {
 
 
   brand.className =
-    `acl-unified-brand acl-${edition || "expert"}-brand`;
+    `acl-unified-brand acl-${
+      edition ||
+      "expert"
+    }-brand`;
 
 
   brand.href =
@@ -941,8 +1115,14 @@ function createRollingBrand() {
   return brand;
 }
 
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
 function openAclSettings() {
   closeAclDrawer();
+
 
   window.location.assign(
     editionAwarePath(
@@ -951,8 +1131,9 @@ function openAclSettings() {
   );
 }
 
+
 /* =========================================================
-   UNIFIED GLOBAL HEADER
+   UNIFIED HEADER
 ========================================================= */
 
 function buildUnifiedHeader() {
@@ -961,40 +1142,45 @@ function buildUnifiedHeader() {
       ".topbar"
     );
 
+
   if (!topbar) {
     return;
   }
-   const activeEdition =
-  getActiveAclEdition();
 
 
-document.body.classList.remove(
-  "acl-theme-basic",
-  "acl-theme-expert"
-);
+  const activeEdition =
+    getActiveAclEdition();
 
 
-if (
-  activeEdition ===
-  "basic"
-) {
- document.body.classList.add(
-  "acl-theme-basic"
-);
-} else {
- document.body.classList.add(
-  "acl-theme-expert"
-);
-}
+  if (
+    activeEdition
+  ) {
+    document.body.classList.remove(
+      "acl-theme-basic",
+      "acl-theme-expert",
+      "acl-neutral-auth-page"
+    );
+
+
+    document.body.classList.add(
+      activeEdition ===
+        "basic"
+        ? "acl-theme-basic"
+        : "acl-theme-expert"
+    );
+  }
+
+
+  const profile =
+    window.aclCurrentProfile ||
+    null;
+
 
   const oldNav =
     topbar.querySelector(
       "nav"
     );
 
-  const profile =
-    window.aclCurrentProfile ||
-    null;
 
   const isAdmin =
     Boolean(
@@ -1008,34 +1194,34 @@ if (
       )
     );
 
+
   topbar.classList.add(
     "acl-unified-header"
   );
 
-  /*
-   * Hide the original page-specific header content.
-   * It remains in the DOM for compatibility.
-   */
 
   Array.from(
     topbar.children
-  ).forEach(
-    (child) => {
-      if (
-        !child.classList.contains(
-          "acl-header-layout"
-        )
-      ) {
-        child.hidden =
-          true;
+  )
+    .forEach(
+      (child) => {
+        if (
+          !child.classList.contains(
+            "acl-header-layout"
+          )
+        ) {
+          child.hidden =
+            true;
 
-        child.setAttribute(
-          "aria-hidden",
-          "true"
-        );
+
+          child.setAttribute(
+            "aria-hidden",
+            "true"
+          );
+        }
       }
-    }
-  );
+    );
+
 
   topbar
     .querySelector(
@@ -1043,78 +1229,81 @@ if (
     )
     ?.remove();
 
+
   const layout =
     document.createElement(
       "div"
     );
 
+
   layout.className =
     "acl-header-layout";
 
-
-  /*
-   * Left side: hamburger.
-   */
 
   const left =
     document.createElement(
       "div"
     );
 
+
   left.className =
     "acl-header-left";
+
 
   const menuButton =
     document.createElement(
       "button"
     );
 
+
   menuButton.type =
     "button";
 
+
   menuButton.className =
     "acl-menu-button";
+
 
   menuButton.setAttribute(
     "aria-label",
     "Open navigation menu"
   );
 
+
   menuButton.innerHTML =
     iconSvgs.menu;
+
 
   menuButton.addEventListener(
     "click",
     openAclDrawer
   );
 
+
   left.appendChild(
     menuButton
   );
 
-
-  /*
-   * Center: rolling ACL title and icon links.
-   */
 
   const center =
     document.createElement(
       "div"
     );
 
+
   center.className =
     "acl-header-center";
 
-  const brand =
-    createRollingBrand();
 
   const iconNav =
     document.createElement(
       "nav"
     );
 
+
   iconNav.className =
     "acl-header-icon-nav";
+
 
   iconNav.setAttribute(
     "aria-label",
@@ -1125,82 +1314,110 @@ if (
   if (isAdmin) {
     iconNav.appendChild(
       createHeaderLink({
-        type: "admin",
+        type:
+          "admin",
+
         label:
           "Administration",
+
         href:
           nestedPath(
             "admin.html"
           ),
+
         className:
           "acl-header-admin-icon"
       })
-    );     
+    );
   }
 
-iconNav.appendChild(
-  createHeaderLink({
-    type:
-      "pathways",
-
-    label:
-  "Switch Edition",
-
-    href:
-      nestedPath(
-        "pathways.html"
-      )
-  })
-);
-   
-  iconNav.appendChild(
-  createHeaderLink({
-    type: "modules",
-    label: "Modules",
-    href:
-      editionAwarePath(
-        "modules.html"
-      )
-  })
-);
-
-iconNav.appendChild(
-  createHeaderLink({
-    type: "progress",
-    label:
-      "My Progress",
-    href:
-      editionAwarePath(
-        "progress.html"
-      )
-  })
-);
-
-iconNav.appendChild(
-  createHeaderLink({
-    type: "profile",
-    label: "My Profile",
-    href:
-      editionAwarePath(
-        "profile.html"
-      )
-  })
-);
-
-
-iconNav.appendChild(
-  createHeaderLink({
-    type: "settings",
-    label: "Settings",
-    action:
-      openAclSettings
-  })
-);
 
   iconNav.appendChild(
     createHeaderLink({
-      type: "contact",
-      label: "Contact us",
+      type:
+        "pathways",
+
+      label:
+        "Switch Edition",
+
+      href:
+        nestedPath(
+          "pathways.html"
+        )
+    })
+  );
+
+
+  iconNav.appendChild(
+    createHeaderLink({
+      type:
+        "modules",
+
+      label:
+        "Modules",
+
+      href:
+        editionAwarePath(
+          "modules.html"
+        )
+    })
+  );
+
+
+  iconNav.appendChild(
+    createHeaderLink({
+      type:
+        "progress",
+
+      label:
+        "My Progress",
+
+      href:
+        editionAwarePath(
+          "progress.html"
+        )
+    })
+  );
+
+
+  iconNav.appendChild(
+    createHeaderLink({
+      type:
+        "profile",
+
+      label:
+        "My Profile",
+
+      href:
+        editionAwarePath(
+          "profile.html"
+        )
+    })
+  );
+
+
+  iconNav.appendChild(
+    createHeaderLink({
+      type:
+        "settings",
+
+      label:
+        "Settings",
+
+      action:
+        openAclSettings
+    })
+  );
+
+
+  iconNav.appendChild(
+    createHeaderLink({
+      type:
+        "contact",
+
+      label:
+        "Contact us",
+
       href:
         "mailto:drmohamedalaa90@gmail.com"
     })
@@ -1209,47 +1426,37 @@ iconNav.appendChild(
 
   iconNav.appendChild(
     createHeaderLink({
-      type: "signout",
-      label: "Sign out",
-      action: () => {
-        if (
-          typeof window.aclSignOut ===
-          "function"
-        ) {
-          window.aclSignOut();
-        } else {
-          window.location.assign(
-            nestedPath(
-              "login.html"
-            )
-          );
-        }
-      }
+      type:
+        "signout",
+
+      label:
+        "Sign out",
+
+      action:
+        signOut
     })
   );
 
 
   center.appendChild(
-    brand
+    createRollingBrand()
   );
+
 
   center.appendChild(
     iconNav
   );
 
 
-  /*
-   * Right spacer balances the hamburger,
-   * keeping brand and icons genuinely centered.
-   */
-
   const right =
     document.createElement(
       "div"
     );
 
+
   right.className =
     "acl-header-right";
+
 
   right.setAttribute(
     "aria-hidden",
@@ -1261,17 +1468,21 @@ iconNav.appendChild(
     left
   );
 
+
   layout.appendChild(
     center
   );
+
 
   layout.appendChild(
     right
   );
 
+
   topbar.appendChild(
     layout
   );
+
 
   buildDrawer(
     profile,
@@ -1281,7 +1492,7 @@ iconNav.appendChild(
 
 
 /* =========================================================
-   DRAWER CREATION
+   DRAWER
 ========================================================= */
 
 function buildDrawer(
@@ -1293,6 +1504,7 @@ function buildDrawer(
       ".acl-side-drawer"
     )
     ?.remove();
+
 
   document
     .querySelector(
@@ -1306,21 +1518,26 @@ function buildDrawer(
       "button"
     );
 
+
   overlay.type =
     "button";
 
+
   overlay.className =
     "acl-drawer-overlay";
+
 
   overlay.setAttribute(
     "aria-label",
     "Close navigation menu"
   );
 
+
   overlay.setAttribute(
     "aria-hidden",
     "true"
   );
+
 
   overlay.addEventListener(
     "click",
@@ -1333,8 +1550,10 @@ function buildDrawer(
       "aside"
     );
 
+
   drawer.className =
     "acl-side-drawer";
+
 
   drawer.setAttribute(
     "aria-hidden",
@@ -1347,39 +1566,16 @@ function buildDrawer(
       "div"
     );
 
+
   drawerHeader.className =
     "acl-drawer-top";
-
-
-  const closeButton =
-    document.createElement(
-      "button"
-    );
-
-  closeButton.type =
-    "button";
-
-  closeButton.className =
-    "acl-drawer-close";
-
-  closeButton.setAttribute(
-    "aria-label",
-    "Close navigation menu"
-  );
-
-  closeButton.innerHTML =
-    iconSvgs.close;
-
-  closeButton.addEventListener(
-    "click",
-    closeAclDrawer
-  );
 
 
   const identity =
     document.createElement(
       "div"
     );
+
 
   identity.className =
     "acl-drawer-identity";
@@ -1390,16 +1586,18 @@ function buildDrawer(
       "div"
     );
 
+
   avatar.className =
     "acl-drawer-avatar";
 
-const candidateName =
-  profile?.display_name ||
-  profile?.full_name ||
-  profile?.name ||
-  profile?.username ||
-  profile?.email ||
-  "Signed-in user";
+
+  const candidateName =
+    profile?.display_name ||
+    profile?.full_name ||
+    profile?.name ||
+    profile?.username ||
+    profile?.email ||
+    "Signed-in user";
 
 
   const avatarUrl =
@@ -1413,24 +1611,33 @@ const candidateName =
   const initials =
     candidateName
       .trim()
-      .split(/\s+/)
-      .slice(0, 2)
+      .split(
+        /\s+/
+      )
+      .slice(
+        0,
+        2
+      )
       .map(
         (part) =>
-          part.charAt(0)
+          part.charAt(
+            0
+          )
       )
-      .join("")
+      .join(
+        ""
+      )
       .toUpperCase() ||
     "U";
 
 
-  const showInitials =
-    () => {
-      avatar.replaceChildren();
+  function showInitials() {
+    avatar.replaceChildren();
 
-      avatar.textContent =
-        initials;
-    };
+
+    avatar.textContent =
+      initials;
+  }
 
 
   if (avatarUrl) {
@@ -1439,19 +1646,24 @@ const candidateName =
         "img"
       );
 
+
     image.src =
       avatarUrl;
 
+
     image.alt =
       `${candidateName} profile photo`;
+
 
     image.addEventListener(
       "error",
       showInitials,
       {
-        once: true
+        once:
+          true
       }
     );
+
 
     avatar.appendChild(
       image
@@ -1466,6 +1678,7 @@ const candidateName =
       "div"
     );
 
+
   identityCopy.className =
     "acl-drawer-identity-copy";
 
@@ -1474,6 +1687,7 @@ const candidateName =
     document.createElement(
       "strong"
     );
+
 
   nameElement.textContent =
     candidateName;
@@ -1484,6 +1698,7 @@ const candidateName =
       "span"
     );
 
+
   signedInElement.textContent =
     "Signed in";
 
@@ -1492,21 +1707,56 @@ const candidateName =
     nameElement
   );
 
+
   identityCopy.appendChild(
     signedInElement
   );
+
 
   identity.appendChild(
     avatar
   );
 
+
   identity.appendChild(
     identityCopy
   );
 
+
+  const closeButton =
+    document.createElement(
+      "button"
+    );
+
+
+  closeButton.type =
+    "button";
+
+
+  closeButton.className =
+    "acl-drawer-close";
+
+
+  closeButton.setAttribute(
+    "aria-label",
+    "Close navigation menu"
+  );
+
+
+  closeButton.innerHTML =
+    iconSvgs.close;
+
+
+  closeButton.addEventListener(
+    "click",
+    closeAclDrawer
+  );
+
+
   drawerHeader.appendChild(
     identity
   );
+
 
   drawerHeader.appendChild(
     closeButton
@@ -1518,6 +1768,7 @@ const candidateName =
       "div"
     );
 
+
   divider.className =
     "acl-drawer-divider";
 
@@ -1527,86 +1778,118 @@ const candidateName =
       "nav"
     );
 
+
   menu.className =
     "acl-drawer-menu";
 
 
   if (isAdmin) {
+    menu.appendChild(
+      createDrawerItem({
+        type:
+          "admin",
+
+        label:
+          "Admin",
+
+        href:
+          nestedPath(
+            "admin.html"
+          ),
+
+        admin:
+          true
+      })
+    );
+  }
+
+
   menu.appendChild(
     createDrawerItem({
-      type: "admin",
-      label: "Admin",
-      href:
-        nestedPath(
-          "admin.html"
-        ),
-      admin: true
+      type:
+        "settings",
+
+      label:
+        "Settings",
+
+      action:
+        openAclSettings
     })
   );
-}
-
-menu.appendChild(
-  createDrawerItem({
-    type: "settings",
-    label: "Settings",
-    action:
-      openAclSettings
-  })
-);
-
- menu.appendChild(
-  createDrawerItem({
-    type: "profile",
-    label: "Edit profile",
-    href:
-      nestedPath(
-        "profile.html"
-      )
-  })
-);
-
-menu.appendChild(
-  createDrawerItem({
-    type:
-      "pathways",
-
-    label:
-  "Switch Edition",
-
-    href:
-      nestedPath(
-        "pathways.html"
-      )
-  })
-);
-   
-  menu.appendChild(
-  createDrawerItem({
-    type: "modules",
-    label: "Modules",
-    href:
-      editionAwarePath(
-        "modules.html"
-      )
-  })
-);
-
-  menu.appendChild(
-  createDrawerItem({
-    type: "progress",
-    label: "My Progress",
-    href:
-      nestedPath(
-        "progress.html"
-      )
-  })
-);
 
 
   menu.appendChild(
     createDrawerItem({
-      type: "contact",
-      label: "Contact us",
+      type:
+        "profile",
+
+      label:
+        "Edit profile",
+
+      href:
+        editionAwarePath(
+          "profile.html"
+        )
+    })
+  );
+
+
+  menu.appendChild(
+    createDrawerItem({
+      type:
+        "pathways",
+
+      label:
+        "Switch Edition",
+
+      href:
+        nestedPath(
+          "pathways.html"
+        )
+    })
+  );
+
+
+  menu.appendChild(
+    createDrawerItem({
+      type:
+        "modules",
+
+      label:
+        "Modules",
+
+      href:
+        editionAwarePath(
+          "modules.html"
+        )
+    })
+  );
+
+
+  menu.appendChild(
+    createDrawerItem({
+      type:
+        "progress",
+
+      label:
+        "My Progress",
+
+      href:
+        editionAwarePath(
+          "progress.html"
+        )
+    })
+  );
+
+
+  menu.appendChild(
+    createDrawerItem({
+      type:
+        "contact",
+
+      label:
+        "Contact us",
+
       href:
         "mailto:drmohamedalaa90@gmail.com"
     })
@@ -1615,23 +1898,14 @@ menu.appendChild(
 
   menu.appendChild(
     createDrawerItem({
-      type: "signout",
-      label: "Sign out",
+      type:
+        "signout",
 
-      action: () => {
-        if (
-          typeof window.aclSignOut ===
-          "function"
-        ) {
-          window.aclSignOut();
-        } else {
-          window.location.assign(
-            nestedPath(
-              "login.html"
-            )
-          );
-        }
-      }
+      label:
+        "Sign out",
+
+      action:
+        signOut
     })
   );
 
@@ -1640,17 +1914,21 @@ menu.appendChild(
     drawerHeader
   );
 
+
   drawer.appendChild(
     divider
   );
+
 
   drawer.appendChild(
     menu
   );
 
+
   document.body.appendChild(
     overlay
   );
+
 
   document.body.appendChild(
     drawer
@@ -1673,57 +1951,35 @@ async function hydrateHeaderProfile() {
     return window.aclCurrentProfile;
   }
 
+
   if (
     aclHeaderHydrationPromise
   ) {
     return aclHeaderHydrationPromise;
   }
 
+
   aclHeaderHydrationPromise =
     (async () => {
       try {
-        const profile =
+        let profile =
           await loadProfile();
+
 
         if (!profile) {
           return null;
         }
 
-        try {
-          const {
-            data: rpcAdmin,
-            error: rpcAdminError
-          } =
-            await supabaseClient.rpc(
-              "acl_is_admin"
-            );
 
-          if (
-            !rpcAdminError &&
-            rpcAdmin === true
-          ) {
-            profile.role =
-              "admin";
+        profile =
+          await applyAdminStatus(
+            profile
+          );
 
-            profile.is_admin =
-              true;
-          } else {
-            profile.is_admin =
-              profile?.role ===
-                "admin" ||
-              profile?.role ===
-                "administrator";
-          }
-        } catch {
-          profile.is_admin =
-            profile?.role ===
-              "admin" ||
-            profile?.role ===
-              "administrator";
-        }
 
         window.aclCurrentProfile =
           profile;
+
 
         return profile;
       } catch (error) {
@@ -1732,62 +1988,18 @@ async function hydrateHeaderProfile() {
           error
         );
 
+
         return null;
       }
     })();
+
 
   return aclHeaderHydrationPromise;
 }
 
 
 /* =========================================================
-   INITIALIZATION
-========================================================= */
-
-let navigationInitialized =
-  false;
-
-
-async function initializeNavigation() {
-  await hydrateHeaderProfile();
-
-  buildUnifiedHeader();
-
-  if (
-    !navigationInitialized
-  ) {
-    navigationInitialized =
-      true;
-
-    document.addEventListener(
-      "keydown",
-      (event) => {
-        if (
-          event.key ===
-          "Escape"
-        ) {
-          closeAclDrawer();
-        }
-      }
-    );
-  }
-}
-
-
-document.addEventListener(
-  "DOMContentLoaded",
-  initializeNavigation
-);
-
-
-if (
-  document.readyState !==
-  "loading"
-) {
-  initializeNavigation();
-}
-/* =========================================================
-   ACL EDITION-AWARE NAVIGATION
+   EDITION-AWARE EXISTING LINKS
 ========================================================= */
 
 function updateEditionNavigation() {
@@ -1823,10 +2035,18 @@ function updateEditionNavigation() {
 
         if (
           !href ||
-          href.startsWith("#") ||
-          href.startsWith("http") ||
-          href.startsWith("mailto:") ||
-          href.startsWith("tel:")
+          href.startsWith(
+            "#"
+          ) ||
+          href.startsWith(
+            "http"
+          ) ||
+          href.startsWith(
+            "mailto:"
+          ) ||
+          href.startsWith(
+            "tel:"
+          )
         ) {
           return;
         }
@@ -1841,7 +2061,9 @@ function updateEditionNavigation() {
 
         const pageName =
           url.pathname
-            .split("/")
+            .split(
+              "/"
+            )
             .pop();
 
 
@@ -1860,22 +2082,65 @@ function updateEditionNavigation() {
         );
 
 
-        const originalPath =
-          href.split("?")[0];
-
-
         link.setAttribute(
           "href",
-          `${originalPath}${url.search}`
+          (
+            `${url.pathname}` +
+            `${url.search}` +
+            `${url.hash}`
+          )
         );
       }
     );
 }
 
 
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+let navigationInitialized =
+  false;
+
+
+async function initializeNavigation() {
+  await hydrateHeaderProfile();
+
+
+  buildUnifiedHeader();
+
+
+  updateEditionNavigation();
+
+
+  if (
+    navigationInitialized
+  ) {
+    return;
+  }
+
+
+  navigationInitialized =
+    true;
+
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (
+        event.key ===
+        "Escape"
+      ) {
+        closeAclDrawer();
+      }
+    }
+  );
+}
+
+
 document.addEventListener(
   "DOMContentLoaded",
-  updateEditionNavigation
+  initializeNavigation
 );
 
 
@@ -1883,5 +2148,5 @@ if (
   document.readyState !==
   "loading"
 ) {
-  updateEditionNavigation();
+  void initializeNavigation();
 }
