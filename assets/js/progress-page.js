@@ -7,7 +7,7 @@ import {
   protectAndRender,
   resolveAclEdition,
   aclUrl
-} from "./session-ui.js?v=4.5.1";
+} from "./session-ui.js?v=4.6.0";
 
 
 /* =========================================================
