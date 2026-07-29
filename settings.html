@@ -2,12 +2,12 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-
   <meta
     name="referrer"
     content="strict-origin-when-cross-origin"
   >
+
+  <meta charset="utf-8">
 
   <meta
     name="viewport"
@@ -15,51 +15,146 @@
   >
 
   <meta
+    id="settingsThemeColor"
     name="theme-color"
-    content="#082d67"
+    content="#123f72"
   >
 
   <title>
-    Settings | ACL Expert Edition
+    Settings | Alexandria Cardiology League
   </title>
+
 
   <link
     rel="stylesheet"
     href="assets/css/main.css?v=5.0.1"
   >
 
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+
+  <!-- Apply the saved edition immediately to prevent a blue/green flash. -->
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+      const urlEdition =
+        String(
+          parameters.get("edition") || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      const savedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      const edition =
+        (
+          urlEdition === "basic" ||
+          urlEdition === "expert"
+        )
+          ? urlEdition
+          : savedEdition;
+
+      if (edition === "basic") {
+        document.documentElement.classList.add(
+          "acl-settings-basic"
+        );
+      }
+
+      if (edition === "expert") {
+        document.documentElement.classList.add(
+          "acl-settings-expert"
+        );
+      }
+    })();
+  </script>
+
+
   <style>
+    /* =====================================================
+       EDITION VARIABLES
+    ===================================================== */
+
     :root {
-      --acl-deep-blue: #082d67;
-      --acl-blue: #0f5fbf;
-      --acl-light-blue: #eaf5ff;
-      --acl-card: #ffffff;
-      --acl-text: #13233a;
-      --acl-muted: #63748a;
-      --acl-border: #d5e5f5;
-      --acl-red: #a02333;
-      --acl-yellow: #ffc928;
-      --acl-green: #16a36a;
-      --acl-shadow:
+      --settings-primary: #123f72;
+      --settings-secondary: #176aa1;
+      --settings-soft: #eaf5ff;
+      --settings-soft-secondary: #f6fbff;
+      --settings-accent: #ffc928;
+
+      --settings-card: #ffffff;
+      --settings-text: #13233a;
+      --settings-heading: #173f67;
+      --settings-muted: #63748a;
+      --settings-border: #d5e5f5;
+      --settings-success: #16a36a;
+      --settings-danger: #a32635;
+
+      --settings-shadow:
         0 18px 50px
         rgba(7, 47, 101, 0.14);
     }
 
-    * {
-      box-sizing: border-box;
+
+    html.acl-settings-basic {
+      --settings-primary: #105541;
+      --settings-secondary: #168067;
+      --settings-soft: #e9f7f2;
+      --settings-soft-secondary: #f7fcfa;
+      --settings-heading: #174f41;
+
+      --settings-shadow:
+        0 18px 50px
+        rgba(9, 78, 60, 0.14);
     }
+
+
+    html.acl-settings-expert {
+      --settings-primary: #123f72;
+      --settings-secondary: #176aa1;
+      --settings-soft: #eaf5ff;
+      --settings-soft-secondary: #f6fbff;
+      --settings-heading: #173f67;
+    }
+
+
+    * {
+      box-sizing:
+        border-box;
+    }
+
 
     html {
-      min-height: 100%;
-      background: var(--acl-light-blue);
+      min-height:
+        100%;
+
+      background:
+        var(--settings-soft);
     }
 
+
     body {
-      min-height: 100vh;
-      margin: 0;
-      color: var(--acl-text);
+      min-height:
+        100vh;
+
+      margin:
+        0;
+
+      color:
+        var(--settings-text);
+
       font-family:
         Inter,
         ui-sans-serif,
@@ -69,10 +164,15 @@
         "Segoe UI",
         Arial,
         sans-serif;
+
       background:
         radial-gradient(
           circle at 12% 12%,
-          rgba(15, 95, 191, 0.12),
+          color-mix(
+            in srgb,
+            var(--settings-secondary) 12%,
+            transparent
+          ),
           transparent 29rem
         ),
         radial-gradient(
@@ -82,76 +182,118 @@
         ),
         linear-gradient(
           145deg,
-          #f8fcff 0%,
-          #eaf5ff 52%,
-          #f6fbff 100%
+          #ffffff 0%,
+          var(--settings-soft) 52%,
+          var(--settings-soft-secondary) 100%
         );
     }
+
 
     button,
     input,
     select {
-      font: inherit;
+      font:
+        inherit;
     }
 
-    /*
-     * Prevent the fallback header from flashing.
-     * session-ui.js reveals and rebuilds it.
-     */
 
-    .topbar {
-      min-height: 82px;
-      opacity: 0;
-      visibility: hidden;
+    /* =====================================================
+       PREVENT FALLBACK HEADER FLASH
+    ===================================================== */
+
+    .topbar.acl-header-pending {
+      min-height:
+        82px;
+
+      opacity:
+        0;
+
+      visibility:
+        hidden;
     }
+
 
     .topbar.acl-unified-header {
-      opacity: 1;
-      visibility: visible;
+      opacity:
+        1;
+
+      visibility:
+        visible;
     }
 
-    .topbar.acl-header-fallback-visible {
-      opacity: 1;
-      visibility: visible;
-    }
+
+    /* =====================================================
+       PAGE SHELL
+    ===================================================== */
 
     .settings-shell {
-      width: min(
-        1040px,
-        calc(100% - 28px)
-      );
-      margin: 0 auto;
-      padding: 30px 0 55px;
+      width:
+        min(
+          1040px,
+          calc(100% - 28px)
+        );
+
+      margin:
+        0 auto;
+
+      padding:
+        30px 0 55px;
     }
 
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
     .settings-hero {
-      position: relative;
-      overflow: hidden;
+      position:
+        relative;
+
+      overflow:
+        hidden;
+
       padding:
         clamp(
           28px,
           6vw,
           52px
         );
-      border-radius: 28px;
-      color: #ffffff;
+
+      border-radius:
+        28px;
+
+      color:
+        #ffffff;
+
       background:
         linear-gradient(
           125deg,
-          #082d67,
-          #0f5fbf
+          var(--settings-primary),
+          var(--settings-secondary)
         );
-      box-shadow: var(--acl-shadow);
+
+      box-shadow:
+        var(--settings-shadow);
     }
 
+
     .settings-hero::after {
-      content: "♥";
-      position: absolute;
-      right: 6%;
-      top: 50%;
+      content:
+        "♥";
+
+      position:
+        absolute;
+
+      top:
+        50%;
+
+      right:
+        6%;
+
       transform:
         translateY(-50%)
         rotate(-8deg);
+
       color:
         rgba(
           255,
@@ -159,24 +301,60 @@
           255,
           0.11
         );
+
       font-size:
         clamp(
           110px,
           22vw,
           230px
         );
-      pointer-events: none;
+
+      pointer-events:
+        none;
     }
+
 
     .settings-hero-content {
-      position: relative;
-      z-index: 1;
-      max-width: 690px;
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      max-width:
+        690px;
     }
 
-    .settings-eyebrow {
-      display: inline-flex;
-      padding: 7px 12px;
+
+    .settings-hero-top {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        10px;
+
+      flex-wrap:
+        wrap;
+    }
+
+
+    .settings-eyebrow,
+    .settings-edition-badge {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      min-height:
+        31px;
+
+      padding:
+        7px 12px;
+
       border:
         1px solid
         rgba(
@@ -185,7 +363,10 @@
           255,
           0.28
         );
-      border-radius: 999px;
+
+      border-radius:
+        999px;
+
       background:
         rgba(
           255,
@@ -193,26 +374,58 @@
           255,
           0.11
         );
-      font-size: 0.74rem;
-      font-weight: 950;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+
+      color:
+        #ffffff;
+
+      font-size:
+        0.74rem;
+
+      font-weight:
+        900;
+
+      letter-spacing:
+        0.09em;
+
+      text-transform:
+        uppercase;
     }
 
+
+    .settings-edition-badge {
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.2
+        );
+    }
+
+
     .settings-hero h1 {
-      margin: 15px 0 9px;
-      color: #ffffff;
+      margin:
+        15px 0 9px;
+
+      color:
+        #ffffff;
+
       font-size:
         clamp(
           2.3rem,
           7vw,
           4.2rem
         );
-      line-height: 1;
+
+      line-height:
+        1;
     }
 
+
     .settings-hero p {
-      margin: 0;
+      margin:
+        0;
+
       color:
         rgba(
           255,
@@ -220,37 +433,129 @@
           255,
           0.87
         );
+
       font-size:
         clamp(
           0.98rem,
           2.4vw,
           1.12rem
         );
-      line-height: 1.6;
+
+      line-height:
+        1.6;
     }
 
+
+    .settings-hero-actions {
+      display:
+        flex;
+
+      gap:
+        10px;
+
+      margin-top:
+        22px;
+
+      flex-wrap:
+        wrap;
+    }
+
+
+    .settings-hero-link {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        42px;
+
+      padding:
+        9px 16px;
+
+      border:
+        1px solid
+        rgba(
+          255,
+          255,
+          255,
+          0.42
+        );
+
+      border-radius:
+        12px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.1
+        );
+
+      color:
+        #ffffff;
+
+      font-size:
+        0.85rem;
+
+      font-weight:
+        850;
+
+      text-decoration:
+        none;
+    }
+
+
+    .settings-hero-link:hover,
+    .settings-hero-link:focus-visible {
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.2
+        );
+    }
+
+
+    /* =====================================================
+       SETTINGS GRID
+    ===================================================== */
+
     .settings-grid {
-      display: grid;
+      display:
+        grid;
+
       grid-template-columns:
         repeat(
           2,
           minmax(0, 1fr)
         );
-      gap: 18px;
-      margin-top: 20px;
+
+      gap:
+        18px;
+
+      margin-top:
+        20px;
     }
 
+
     .settings-card {
-      padding: 23px;
+      padding:
+        23px;
+
       border:
         1px solid
-        rgba(
-          213,
-          229,
-          245,
-          0.95
-        );
-      border-radius: 22px;
+        var(--settings-border);
+
+      border-radius:
+        22px;
+
       background:
         rgba(
           255,
@@ -258,142 +563,262 @@
           255,
           0.97
         );
+
       box-shadow:
         0 12px 34px
-        rgba(
-          8,
-          45,
-          103,
-          0.08
-        );
+        rgba(8, 45, 103, 0.08);
     }
+
 
     .settings-card.full {
-      grid-column: 1 / -1;
+      grid-column:
+        1 / -1;
     }
+
 
     .settings-card-heading {
-      display: flex;
-      align-items: flex-start;
-      gap: 13px;
-      margin-bottom: 17px;
+      display:
+        flex;
+
+      align-items:
+        flex-start;
+
+      gap:
+        13px;
+
+      margin-bottom:
+        17px;
     }
 
+
     .settings-card-icon {
-      display: grid;
-      place-items: center;
-      width: 44px;
-      min-width: 44px;
-      height: 44px;
-      border-radius: 14px;
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      width:
+        44px;
+
+      min-width:
+        44px;
+
+      height:
+        44px;
+
+      border-radius:
+        14px;
+
       background:
         linear-gradient(
           145deg,
-          #082d67,
-          #0f5fbf
+          var(--settings-primary),
+          var(--settings-secondary)
         );
-      color: #ffffff;
-      font-size: 1.05rem;
-      font-weight: 900;
+
+      color:
+        #ffffff;
+
+      font-size:
+        1.05rem;
+
+      font-weight:
+        900;
     }
+
 
     .settings-card-heading h2 {
-      margin: 1px 0 4px;
-      color: var(--acl-deep-blue);
-      font-size: 1.18rem;
+      margin:
+        1px 0 4px;
+
+      color:
+        var(--settings-heading);
+
+      font-size:
+        1.18rem;
     }
+
 
     .settings-card-heading p {
-      margin: 0;
-      color: var(--acl-muted);
-      font-size: 0.84rem;
-      line-height: 1.5;
+      margin:
+        0;
+
+      color:
+        var(--settings-muted);
+
+      font-size:
+        0.84rem;
+
+      line-height:
+        1.5;
     }
+
 
     .setting-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 19px;
-      min-height: 64px;
-      padding: 14px 0;
-      border-top: 1px solid #e9f0f7;
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        19px;
+
+      min-height:
+        64px;
+
+      padding:
+        14px 0;
+
+      border-top:
+        1px solid #e9f0f7;
     }
+
 
     .setting-row:first-of-type {
-      border-top: 0;
+      border-top:
+        0;
     }
+
 
     .setting-label {
-      min-width: 0;
+      min-width:
+        0;
     }
+
 
     .setting-label strong {
-      display: block;
-      color: #173f67;
-      font-size: 0.95rem;
+      display:
+        block;
+
+      color:
+        var(--settings-heading);
+
+      font-size:
+        0.95rem;
     }
+
 
     .setting-label small {
-      display: block;
-      margin-top: 4px;
-      color: var(--acl-muted);
-      line-height: 1.42;
+      display:
+        block;
+
+      margin-top:
+        4px;
+
+      color:
+        var(--settings-muted);
+
+      line-height:
+        1.42;
     }
+
+
+    /* =====================================================
+       SWITCHES
+    ===================================================== */
 
     .settings-switch {
-      position: relative;
-      display: inline-flex;
-      width: 52px;
-      min-width: 52px;
-      height: 29px;
-      cursor: pointer;
+      position:
+        relative;
+
+      display:
+        inline-flex;
+
+      width:
+        52px;
+
+      min-width:
+        52px;
+
+      height:
+        29px;
+
+      cursor:
+        pointer;
     }
+
 
     .settings-switch input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
-      pointer-events: none;
+      position:
+        absolute;
+
+      width:
+        1px;
+
+      height:
+        1px;
+
+      opacity:
+        0;
+
+      pointer-events:
+        none;
     }
+
 
     .settings-switch-track {
-      position: absolute;
-      inset: 0;
-      border-radius: 999px;
-      background: #bdc9d6;
+      position:
+        absolute;
+
+      inset:
+        0;
+
+      border-radius:
+        999px;
+
+      background:
+        #bdc9d6;
+
       transition:
-        background
-        0.18s ease;
+        background 0.18s ease;
     }
 
+
     .settings-switch-track::after {
-      content: "";
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 23px;
-      height: 23px;
-      border-radius: 50%;
-      background: #ffffff;
+      content:
+        "";
+
+      position:
+        absolute;
+
+      top:
+        3px;
+
+      left:
+        3px;
+
+      width:
+        23px;
+
+      height:
+        23px;
+
+      border-radius:
+        50%;
+
+      background:
+        #ffffff;
+
       box-shadow:
         0 2px 8px
-        rgba(
-          0,
-          0,
-          0,
-          0.2
-        );
+        rgba(0, 0, 0, 0.2);
+
       transition:
-        transform
-        0.18s ease;
+        transform 0.18s ease;
     }
+
 
     .settings-switch input:checked +
     .settings-switch-track {
-      background: var(--acl-green);
+      background:
+        var(--settings-secondary);
     }
+
 
     .settings-switch input:checked +
     .settings-switch-track::after {
@@ -401,27 +826,45 @@
         translateX(23px);
     }
 
+
     .settings-switch input:disabled +
     .settings-switch-track {
-      cursor: not-allowed;
-      opacity: 0.45;
+      cursor:
+        not-allowed;
+
+      opacity:
+        0.45;
     }
 
+
+    /* =====================================================
+       CONTROLS
+    ===================================================== */
+
     .settings-select {
-      min-width: 150px;
+      min-width:
+        150px;
+
       padding:
-        10px
-        34px
-        10px
-        12px;
+        10px 34px 10px 12px;
+
       border:
         1px solid
-        var(--acl-border);
-      border-radius: 11px;
-      background: #ffffff;
-      color: var(--acl-text);
-      font-weight: 750;
+        var(--settings-border);
+
+      border-radius:
+        11px;
+
+      background:
+        #ffffff;
+
+      color:
+        var(--settings-text);
+
+      font-weight:
+        750;
     }
+
 
     .settings-range {
       width:
@@ -431,180 +874,294 @@
         );
     }
 
+
     .settings-range input {
-      width: 100%;
-      accent-color: var(--acl-blue);
+      width:
+        100%;
+
+      accent-color:
+        var(--settings-secondary);
     }
+
 
     .settings-range-value {
-      display: block;
-      margin-top: 4px;
-      color: var(--acl-deep-blue);
-      font-size: 0.75rem;
-      font-weight: 900;
-      text-align: right;
+      display:
+        block;
+
+      margin-top:
+        4px;
+
+      color:
+        var(--settings-heading);
+
+      font-size:
+        0.75rem;
+
+      font-weight:
+        900;
+
+      text-align:
+        right;
     }
+
 
     .settings-actions {
-      display: flex;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      gap: 11px;
-      margin-top: 24px;
+      display:
+        flex;
+
+      justify-content:
+        flex-end;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        11px;
+
+      margin-top:
+        24px;
     }
+
 
     .settings-button {
-      min-height: 47px;
-      padding: 11px 20px;
-      border: 0;
-      border-radius: 13px;
-      cursor: pointer;
-      font-weight: 900;
+      min-height:
+        47px;
+
+      padding:
+        11px 20px;
+
+      border:
+        0;
+
+      border-radius:
+        13px;
+
+      cursor:
+        pointer;
+
+      font-weight:
+        900;
     }
+
 
     .settings-button:disabled {
-      cursor: wait;
-      opacity: 0.65;
+      cursor:
+        wait;
+
+      opacity:
+        0.65;
     }
 
+
     .settings-button-primary {
-      color: #ffffff;
+      color:
+        #ffffff;
+
       background:
         linear-gradient(
           135deg,
-          #082d67,
-          #0f5fbf
+          var(--settings-primary),
+          var(--settings-secondary)
         );
+
       box-shadow:
         0 9px 20px
-        rgba(
-          8,
-          45,
-          103,
-          0.2
-        );
+        rgba(8, 45, 103, 0.2);
     }
+
 
     .settings-button-secondary {
       border:
         1px solid
-        var(--acl-border);
-      background: #ffffff;
-      color: var(--acl-deep-blue);
+        var(--settings-border);
+
+      background:
+        #ffffff;
+
+      color:
+        var(--settings-heading);
     }
+
 
     .settings-save-status {
-      min-height: 24px;
-      margin-top: 15px;
-      color: var(--acl-green);
-      font-size: 0.84rem;
-      font-weight: 850;
-      text-align: right;
+      min-height:
+        24px;
+
+      margin-top:
+        15px;
+
+      color:
+        var(--settings-success);
+
+      font-size:
+        0.84rem;
+
+      font-weight:
+        850;
+
+      text-align:
+        right;
     }
+
 
     .settings-save-status.error {
-      color: #a32635;
+      color:
+        var(--settings-danger);
     }
+
 
     .settings-footer {
-      margin-top: 24px;
-      color: var(--acl-muted);
-      font-size: 0.77rem;
-      text-align: center;
+      margin-top:
+        24px;
+
+      color:
+        var(--settings-muted);
+
+      font-size:
+        0.77rem;
+
+      text-align:
+        center;
     }
 
+
+    /* =====================================================
+       ACCESSIBILITY MODES
+    ===================================================== */
+
     body.high-contrast {
-      --acl-light-blue: #ffffff;
-      --acl-card: #ffffff;
-      --acl-text: #000000;
-      --acl-muted: #292929;
-      --acl-border: #555555;
+      --settings-soft: #ffffff;
+      --settings-soft-secondary: #ffffff;
+      --settings-card: #ffffff;
+      --settings-text: #000000;
+      --settings-muted: #292929;
+      --settings-border: #555555;
     }
+
 
     body.reduced-motion *,
     body.reduced-motion *::before,
     body.reduced-motion *::after {
-      scroll-behavior: auto !important;
+      scroll-behavior:
+        auto !important;
+
       transition-duration:
         0.001ms !important;
+
       animation-duration:
         0.001ms !important;
+
       animation-iteration-count:
         1 !important;
     }
 
-    @media (max-width: 760px) {
+
+    /* =====================================================
+       MOBILE
+    ===================================================== */
+
+    @media (
+      max-width:
+      760px
+    ) {
       .settings-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          1fr;
       }
+
 
       .settings-card.full {
-        grid-column: auto;
+        grid-column:
+          auto;
       }
+
 
       .setting-row {
-        align-items: flex-start;
+        align-items:
+          flex-start;
       }
 
+
       .settings-select {
-        min-width: 125px;
-        max-width: 45vw;
+        min-width:
+          125px;
+
+        max-width:
+          45vw;
       }
     }
 
-    @media (max-width: 440px) {
+
+    @media (
+      max-width:
+      440px
+    ) {
       .settings-shell {
         width:
           min(
-            100% - 18px,
+            calc(100% - 18px),
             1040px
           );
-        padding-top: 15px;
+
+        padding-top:
+          15px;
       }
+
 
       .settings-card {
-        padding: 18px;
+        padding:
+          18px;
       }
+
 
       .setting-row {
-        gap: 10px;
+        gap:
+          10px;
       }
 
+
       .settings-range {
-        width: 42vw;
+        width:
+          42vw;
       }
     }
   </style>
 </head>
-<script
-  type="module"
-  src="assets/js/pwa.js?v=1.6.0"
-></script>
+
 
 <body>
 
-  <!--
-    Fallback header.
-    session-ui.js replaces this with the unified ACL header.
-  -->
+  <!-- =====================================================
+       FALLBACK HEADER
+  ====================================================== -->
 
-  <header class="topbar">
+  <header class="topbar acl-header-pending">
 
     <a
       class="brand brand-link"
-      href="modules.html"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
     >
-      ACL;
-      <b>THE EXPERT EDITION</b>
+      Alexandria Cardiology League
     </a>
 
-    <nav>
+
+    <nav aria-label="Main navigation">
 
       <a
         id="userChip"
         class="user-chip"
         href="profile.html"
       ></a>
+
+
+      <a
+        class="nav-btn"
+        href="pathways.html"
+      >
+        Switch Edition
+      </a>
+
 
       <a
         class="nav-btn"
@@ -613,10 +1170,31 @@
         Modules
       </a>
 
+
+      <a
+        class="nav-btn"
+        href="progress.html"
+      >
+        My Progress
+      </a>
+
+
+      <button
+        class="nav-btn"
+        type="button"
+        onclick="aclSignOut()"
+      >
+        Sign Out
+      </button>
+
     </nav>
 
   </header>
 
+
+  <!-- =====================================================
+       MAIN PAGE
+  ====================================================== -->
 
   <main class="settings-shell">
 
@@ -624,18 +1202,53 @@
 
       <div class="settings-hero-content">
 
-        <span class="settings-eyebrow">
-          Platform preferences
-        </span>
+        <div class="settings-hero-top">
+
+          <span class="settings-eyebrow">
+            Platform preferences
+          </span>
+
+
+          <span
+            id="settingsEditionBadge"
+            class="settings-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
 
         <h1>
           Settings
         </h1>
 
+
         <p>
           Control confidence-based answering, Scientific Lifelines,
           sound, accessibility and display preferences.
         </p>
+
+
+        <div class="settings-hero-actions">
+
+          <a
+            id="settingsModulesLink"
+            class="settings-hero-link"
+            href="modules.html"
+          >
+            Back to modules
+          </a>
+
+
+          <a
+            class="settings-hero-link"
+            href="pathways.html"
+          >
+            Switch Edition
+          </a>
+
+        </div>
 
       </div>
 
@@ -647,7 +1260,9 @@
       aria-label="ACL settings"
     >
 
-      <!-- Confidence -->
+      <!-- =================================================
+           CONFIDENCE ANSWERING
+      ================================================== -->
 
       <article class="settings-card">
 
@@ -681,8 +1296,7 @@
             </strong>
 
             <small>
-              After selecting an option, choose High or Low confidence
-              before the answer is submitted.
+              Choose High or Low confidence before submitting an answer.
             </small>
 
           </div>
@@ -722,7 +1336,9 @@
       </article>
 
 
-      <!-- Lifelines -->
+      <!-- =================================================
+           SCIENTIFIC LIFELINES
+      ================================================== -->
 
       <article class="settings-card">
 
@@ -756,7 +1372,7 @@
             </strong>
 
             <small>
-              Show or hide the complete Expert Panel.
+              Show or hide the complete scientific assistance panel.
             </small>
 
           </div>
@@ -872,7 +1488,7 @@
             </strong>
 
             <small>
-              Opens the full review flashcard.
+              Opens the complete review flashcard.
             </small>
 
           </div>
@@ -894,7 +1510,9 @@
       </article>
 
 
-      <!-- Sound -->
+      <!-- =================================================
+           SOUND
+      ================================================== -->
 
       <article class="settings-card">
 
@@ -928,7 +1546,7 @@
             </strong>
 
             <small>
-              Correct, wrong-answer and checkpoint sounds.
+              Correct-answer, wrong-answer and checkpoint sounds.
             </small>
 
           </div>
@@ -1016,7 +1634,9 @@
       </article>
 
 
-      <!-- Accessibility -->
+      <!-- =================================================
+           ACCESSIBILITY
+      ================================================== -->
 
       <article class="settings-card">
 
@@ -1130,7 +1750,9 @@
       </article>
 
 
-      <!-- Display -->
+      <!-- =================================================
+           DISPLAY
+      ================================================== -->
 
       <article class="settings-card full">
 
@@ -1164,7 +1786,7 @@
             </strong>
 
             <small>
-              Adjust the text size on supported pages.
+              Adjust text size on supported pages.
             </small>
 
           </div>
@@ -1295,18 +1917,24 @@
 
 
     <footer class="settings-footer">
-      Scientific and confidence settings are stored in your ACL cloud account.
-      Display and sound preferences are stored on this device.
+      Scientific and confidence settings are stored in your ACL cloud
+      account. Display and sound preferences are stored on this device.
     </footer>
 
   </main>
 
 
+  <!-- =====================================================
+       SETTINGS APPLICATION
+  ====================================================== -->
+
   <script type="module">
 
     import {
-      protectAndRender
-    } from "./assets/js/session-ui.js?v=5.0.1";
+      protectAndRender,
+      resolveAclEdition,
+      aclUrl
+    } from "./assets/js/session-ui.js?v=4.6.0";
 
 
     import {
@@ -1317,75 +1945,113 @@
     } from "./assets/js/user-settings.js?v=5.0.1";
 
 
+    const selectedEdition =
+      resolveAclEdition();
+
+
     const LOCAL_STORAGE_KEY =
       "acl_local_preferences";
 
 
     const LOCAL_DEFAULTS = {
-      soundEffects: true,
-      backgroundMusic: true,
-      volume: 70,
-      readAloud: false,
-      highContrast: false,
-      reducedMotion: false,
-      fontSize: "normal",
-      confirmWithdraw: true,
-      autoExplanation: true
+      soundEffects:
+        true,
+
+      backgroundMusic:
+        true,
+
+      volume:
+        70,
+
+      readAloud:
+        false,
+
+      highContrast:
+        false,
+
+      reducedMotion:
+        false,
+
+      fontSize:
+        "normal",
+
+      confirmWithdraw:
+        true,
+
+      autoExplanation:
+        true
     };
 
 
+    const byId =
+      (id) =>
+        document.getElementById(
+          id
+        );
+
+
     const confidenceEnabled =
-      document.getElementById(
+      byId(
         "confidenceEnabled"
       );
 
+
     const lifelinesEnabled =
-      document.getElementById(
+      byId(
         "lifelinesEnabled"
       );
 
+
     const lifelineExpert =
-      document.getElementById(
+      byId(
         "lifelineExpert"
       );
 
+
     const lifelineFilter =
-      document.getElementById(
+      byId(
         "lifelineFilter"
       );
 
+
     const lifelineGuideline =
-      document.getElementById(
+      byId(
         "lifelineGuideline"
       );
 
+
     const lifelineVault =
-      document.getElementById(
+      byId(
         "lifelineVault"
       );
 
+
     const saveButton =
-      document.getElementById(
+      byId(
         "saveSettings"
       );
 
+
     const resetButton =
-      document.getElementById(
+      byId(
         "resetSettings"
       );
 
+
     const saveStatus =
-      document.getElementById(
+      byId(
         "settingsSaveStatus"
       );
 
+
     const volume =
-      document.getElementById(
+      byId(
         "volume"
       );
 
+
     const volumeValue =
-      document.getElementById(
+      byId(
         "volumeValue"
       );
 
@@ -1395,6 +2061,74 @@
         LOCAL_DEFAULTS
       );
 
+
+    /* =====================================================
+       EDITION DISPLAY
+    ===================================================== */
+
+    function renderSettingsEdition() {
+      const isBasic =
+        selectedEdition ===
+        "basic";
+
+
+      const editionName =
+        isBasic
+          ? "Basic Edition"
+          : "Expert Edition";
+
+
+      const badge =
+        byId(
+          "settingsEditionBadge"
+        );
+
+
+      const modulesLink =
+        byId(
+          "settingsModulesLink"
+        );
+
+
+      if (badge) {
+        badge.textContent =
+          isBasic
+            ? "BASIC EDITION"
+            : "EXPERT EDITION";
+      }
+
+
+      if (modulesLink) {
+        modulesLink.href =
+          aclUrl(
+            "modules.html",
+            selectedEdition
+          );
+      }
+
+
+      document.title =
+        `${editionName} Settings | ACL`;
+
+
+      const themeMeta =
+        byId(
+          "settingsThemeColor"
+        );
+
+
+      if (themeMeta) {
+        themeMeta.content =
+          isBasic
+            ? "#105541"
+            : "#123f72";
+      }
+    }
+
+
+    /* =====================================================
+       LOCAL PREFERENCES
+    ===================================================== */
 
     function readLocalPreferences() {
       try {
@@ -1414,6 +2148,7 @@
           error
         );
 
+
         return {
           ...LOCAL_DEFAULTS
         };
@@ -1427,13 +2162,15 @@
       localIds.forEach(
         (id) => {
           const element =
-            document.getElementById(
+            byId(
               id
             );
+
 
           if (!element) {
             return;
           }
+
 
           if (
             element.type ===
@@ -1450,8 +2187,12 @@
         }
       );
 
-      volumeValue.textContent =
-        `${preferences.volume}%`;
+
+      if (volumeValue) {
+        volumeValue.textContent =
+          `${preferences.volume}%`;
+      }
+
 
       applyLocalPreview(
         preferences
@@ -1463,29 +2204,35 @@
       const preferences =
         {};
 
+
       localIds.forEach(
         (id) => {
           const element =
-            document.getElementById(
+            byId(
               id
             );
+
 
           if (!element) {
             return;
           }
 
+
           preferences[id] =
             element.type ===
               "checkbox"
               ? element.checked
+
               : element.type ===
                   "range"
                 ? Number(
                     element.value
                   )
+
                 : element.value;
         }
       );
+
 
       return preferences;
     }
@@ -1499,17 +2246,27 @@
         preferences.highContrast
       );
 
+
       document.body.classList.toggle(
         "reduced-motion",
         preferences.reducedMotion
       );
 
+
       const sizeMap = {
-        small: "15px",
-        normal: "16px",
-        large: "18px",
-        "extra-large": "20px"
+        small:
+          "15px",
+
+        normal:
+          "16px",
+
+        large:
+          "18px",
+
+        "extra-large":
+          "20px"
       };
+
 
       document.documentElement
         .style.fontSize =
@@ -1524,6 +2281,7 @@
       const preferences =
         collectLocalPreferences();
 
+
       localStorage.setItem(
         LOCAL_STORAGE_KEY,
         JSON.stringify(
@@ -1531,9 +2289,6 @@
         )
       );
 
-      /*
-       * Compatibility with existing pages.
-       */
 
       localStorage.setItem(
         "acl_settings",
@@ -1542,12 +2297,14 @@
         )
       );
 
+
       localStorage.setItem(
         "acl_sound_enabled",
         String(
           preferences.soundEffects
         )
       );
+
 
       localStorage.setItem(
         "acl_music_enabled",
@@ -1556,12 +2313,14 @@
         )
       );
 
+
       localStorage.setItem(
         "acl_volume",
         String(
           preferences.volume
         )
       );
+
 
       localStorage.setItem(
         "acl_read_aloud",
@@ -1570,24 +2329,33 @@
         )
       );
 
+
       applyLocalPreview(
         preferences
       );
     }
 
 
+    /* =====================================================
+       CLOUD SETTINGS
+    ===================================================== */
+
     function syncLifelineDisabledState() {
       const disabled =
         !lifelinesEnabled.checked;
 
+
       lifelineExpert.disabled =
         disabled;
+
 
       lifelineFilter.disabled =
         disabled;
 
+
       lifelineGuideline.disabled =
         disabled;
+
 
       lifelineVault.disabled =
         disabled;
@@ -1602,33 +2370,38 @@
           settings
         );
 
+
       confidenceEnabled.checked =
-        normalized
-          .confidenceEnabled;
+        normalized.confidenceEnabled;
+
 
       lifelinesEnabled.checked =
-        normalized
-          .lifelinesEnabled;
+        normalized.lifelinesEnabled;
+
 
       lifelineExpert.checked =
         normalized
           .enabledLifelines
           .expert;
 
+
       lifelineFilter.checked =
         normalized
           .enabledLifelines
           .filter;
+
 
       lifelineGuideline.checked =
         normalized
           .enabledLifelines
           .guideline;
 
+
       lifelineVault.checked =
         normalized
           .enabledLifelines
           .vault;
+
 
       syncLifelineDisabledState();
     }
@@ -1639,18 +2412,23 @@
         confidenceEnabled:
           confidenceEnabled.checked,
 
+
         lifelinesEnabled:
           lifelinesEnabled.checked,
+
 
         enabledLifelines: {
           expert:
             lifelineExpert.checked,
 
+
           filter:
             lifelineFilter.checked,
 
+
           guideline:
             lifelineGuideline.checked,
+
 
           vault:
             lifelineVault.checked
@@ -1659,21 +2437,30 @@
     }
 
 
-    lifelinesEnabled.addEventListener(
-      "change",
-      syncLifelineDisabledState
-    );
+    /* =====================================================
+       EVENTS
+    ===================================================== */
+
+    lifelinesEnabled
+      ?.addEventListener(
+        "change",
+        syncLifelineDisabledState
+      );
 
 
-    volume.addEventListener(
-      "input",
-      () => {
-        volumeValue.textContent =
-          `${volume.value}%`;
+    volume
+      ?.addEventListener(
+        "input",
+        () => {
+          if (volumeValue) {
+            volumeValue.textContent =
+              `${volume.value}%`;
+          }
 
-        saveLocalPreferences();
-      }
-    );
+
+          saveLocalPreferences();
+        }
+      );
 
 
     localIds.forEach(
@@ -1684,10 +2471,10 @@
           return;
         }
 
-        document
-          .getElementById(
-            id
-          )
+
+        byId(
+          id
+        )
           ?.addEventListener(
             "change",
             saveLocalPreferences
@@ -1696,174 +2483,221 @@
     );
 
 
-    saveButton.addEventListener(
-      "click",
-      async () => {
-        saveButton.disabled =
-          true;
-
-        saveStatus.textContent =
-          "Saving settings…";
-
-        saveStatus.classList.remove(
-          "error"
-        );
-
-        try {
-          saveLocalPreferences();
-
-          const saved =
-            await saveAclSettings(
-              collectCloudSettings()
-            );
-
-          populateCloudSettings(
-            saved
-          );
-
-          saveStatus.textContent =
-            "✓ Settings saved successfully.";
-        } catch (error) {
-          console.error(error);
-
-          saveStatus.textContent =
-            "Settings could not be saved.";
-
-          saveStatus.classList.add(
-            "error"
-          );
-        } finally {
+    saveButton
+      ?.addEventListener(
+        "click",
+        async () => {
           saveButton.disabled =
-            false;
-        }
-      }
-    );
+            true;
 
-
-    resetButton.addEventListener(
-      "click",
-      async () => {
-        const confirmed =
-          window.confirm(
-            "Restore all ACL settings to their defaults?"
-          );
-
-        if (!confirmed) {
-          return;
-        }
-
-        resetButton.disabled =
-          true;
-
-        saveStatus.textContent =
-          "Restoring defaults…";
-
-        try {
-          populateLocalPreferences(
-            LOCAL_DEFAULTS
-          );
-
-          saveLocalPreferences();
-
-          const saved =
-            await saveAclSettings(
-              DEFAULT_ACL_SETTINGS
-            );
-
-          populateCloudSettings(
-            saved
-          );
 
           saveStatus.textContent =
-            "Default settings restored.";
-        } catch (error) {
-          console.error(error);
+            "Saving settings…";
 
-          saveStatus.textContent =
-            "Defaults could not be restored.";
 
-          saveStatus.classList.add(
+          saveStatus.classList.remove(
             "error"
           );
-        } finally {
+
+
+          try {
+            saveLocalPreferences();
+
+
+            const saved =
+              await saveAclSettings(
+                collectCloudSettings()
+              );
+
+
+            populateCloudSettings(
+              saved
+            );
+
+
+            saveStatus.textContent =
+              "✓ Settings saved successfully.";
+
+
+            const updatedUrl =
+              new URL(
+                window.location.href
+              );
+
+
+            updatedUrl.searchParams.set(
+              "edition",
+              selectedEdition
+            );
+
+
+            window.history.replaceState(
+              {},
+              "",
+              updatedUrl
+            );
+          } catch (error) {
+            console.error(
+              "SETTINGS SAVE ERROR:",
+              error
+            );
+
+
+            saveStatus.textContent =
+              "Settings could not be saved.";
+
+
+            saveStatus.classList.add(
+              "error"
+            );
+          } finally {
+            saveButton.disabled =
+              false;
+          }
+        }
+      );
+
+
+    resetButton
+      ?.addEventListener(
+        "click",
+        async () => {
+          const confirmed =
+            window.confirm(
+              "Restore all ACL settings to their defaults?"
+            );
+
+
+          if (!confirmed) {
+            return;
+          }
+
+
           resetButton.disabled =
-            false;
-        }
-      }
-    );
+            true;
 
 
-    /*
-     * Header fallback safety.
-     */
+          saveStatus.textContent =
+            "Restoring defaults…";
 
-    window.setTimeout(
-      () => {
-        const topbar =
-          document.querySelector(
-            ".topbar"
+
+          saveStatus.classList.remove(
+            "error"
           );
 
-        if (
-          topbar &&
-          !topbar.classList.contains(
-            "acl-unified-header"
-          )
-        ) {
-          topbar.classList.add(
-            "acl-header-fallback-visible"
-          );
+
+          try {
+            populateLocalPreferences(
+              LOCAL_DEFAULTS
+            );
+
+
+            saveLocalPreferences();
+
+
+            const saved =
+              await saveAclSettings(
+                DEFAULT_ACL_SETTINGS
+              );
+
+
+            populateCloudSettings(
+              saved
+            );
+
+
+            saveStatus.textContent =
+              "Default settings restored.";
+          } catch (error) {
+            console.error(
+              "SETTINGS RESET ERROR:",
+              error
+            );
+
+
+            saveStatus.textContent =
+              "Defaults could not be restored.";
+
+
+            saveStatus.classList.add(
+              "error"
+            );
+          } finally {
+            resetButton.disabled =
+              false;
+          }
         }
-      },
-      2500
-    );
+      );
 
 
-    try {
+    /* =====================================================
+       START
+    ===================================================== */
+
+    async function startSettingsPage() {
+      renderSettingsEdition();
+
+
       const profile =
         await protectAndRender(
-          "./login.html"
+          "login.html"
         );
+
 
       if (!profile) {
-        throw new Error(
-          "Authentication is required."
-        );
+        return;
       }
 
-      populateLocalPreferences(
-        readLocalPreferences()
-      );
-
-      const cloudSettings =
-        await getAclSettings();
-
-      populateCloudSettings(
-        cloudSettings
-      );
-
-      saveStatus.textContent =
-        "";
-    } catch (error) {
-      console.error(error);
 
       populateLocalPreferences(
         readLocalPreferences()
       );
 
-      populateCloudSettings(
-        DEFAULT_ACL_SETTINGS
-      );
 
-      saveStatus.textContent =
-        "Cloud settings could not be loaded.";
+      try {
+        const cloudSettings =
+          await getAclSettings();
 
-      saveStatus.classList.add(
-        "error"
-      );
+
+        populateCloudSettings(
+          cloudSettings
+        );
+
+
+        saveStatus.textContent =
+          "";
+      } catch (error) {
+        console.error(
+          "CLOUD SETTINGS LOAD ERROR:",
+          error
+        );
+
+
+        populateCloudSettings(
+          DEFAULT_ACL_SETTINGS
+        );
+
+
+        saveStatus.textContent =
+          "Cloud settings could not be loaded.";
+
+
+        saveStatus.classList.add(
+          "error"
+        );
+      }
     }
 
+
+    void startSettingsPage();
+
   </script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
 
 </body>
 
