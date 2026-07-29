@@ -1143,10 +1143,22 @@ function challengeLinkFor(
       window.location.href
     );
 
+
   url.searchParams.set(
     "code",
     challengeCode
   );
+
+
+  /*
+   * Preserve the pathway that created the challenge.
+   */
+
+  url.searchParams.set(
+    "edition",
+    selectedEdition
+  );
+
 
   return url.toString();
 }
@@ -1266,31 +1278,35 @@ async function createModuleChallenge() {
      * Find the published quiz linked to the module.
      */
 
-    const {
-      data: quizData,
-      error: quizError
-    } =
-      await supabaseClient
-        .from(
-          "quizzes"
-        )
-        .select(`
-          id,
-          slug,
-          title,
-          module_id,
-          question_count
-        `)
-        .eq(
-          "slug",
-          quizSlug
-        )
-        .eq(
-          "status",
-          "published"
-        )
-        .maybeSingle();
-
+  const {
+  data: quizData,
+  error: quizError
+} =
+  await supabaseClient
+    .from(
+      "quizzes"
+    )
+    .select(`
+      id,
+      slug,
+      title,
+      module_id,
+      question_count,
+      edition
+    `)
+    .eq(
+      "slug",
+      quizSlug
+    )
+    .eq(
+      "edition",
+      selectedEdition
+    )
+    .eq(
+      "status",
+      "published"
+    )
+    .maybeSingle();
     if (quizError) {
       throw quizError;
     }
@@ -1300,6 +1316,19 @@ async function createModuleChallenge() {
         "The published quiz linked to this module could not be found."
       );
     }
+    if (
+  String(
+    quizData.edition ||
+    ""
+  )
+    .trim()
+    .toLowerCase() !==
+  selectedEdition
+) {
+  throw new Error(
+    "This quiz does not belong to the selected ACL edition."
+  );
+}
 
 
     /*
