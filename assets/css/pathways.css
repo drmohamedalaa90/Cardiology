@@ -1412,3 +1412,45 @@ body.acl-pathways-page {
       18px;
   }
 }
+/* =========================================================
+   PATHWAY AUDIENCE CHIPS — FINAL WHITE FIX
+========================================================= */
+
+.pathway-card
+.pathway-audience
+span,
+.pathway-basic
+.pathway-audience
+span,
+.pathway-expert
+.pathway-audience
+span {
+  color:
+    #ffffff !important;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.72
+    ) !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.12
+    ) !important;
+
+  font-weight:
+    400 !important;
+
+  text-shadow:
+    none !important;
+
+  opacity:
+    1 !important;
+}
