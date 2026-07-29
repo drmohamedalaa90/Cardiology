@@ -1031,7 +1031,7 @@ iconNav.appendChild(
       "pathways",
 
     label:
-      "Choose Pathway",
+  "Switch Edition"
 
     href:
       nestedPath(
@@ -1458,7 +1458,7 @@ menu.appendChild(
       "pathways",
 
     label:
-      "Choose Pathway",
+  "Switch Edition"
 
     href:
       nestedPath(
