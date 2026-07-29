@@ -7531,3 +7531,72 @@ body:has(.login-neutral-header) {
       0.8rem;
   }
 }
+/* =========================================================
+   NEUTRAL AUTHENTICATION PAGES
+========================================================= */
+
+body.acl-neutral-auth-page {
+  padding-top:
+    0 !important;
+}
+
+
+body.acl-neutral-auth-page
+.login-neutral-header {
+  position:
+    relative !important;
+
+  top:
+    auto !important;
+
+  left:
+    auto !important;
+
+  right:
+    auto !important;
+
+  z-index:
+    10 !important;
+}
+
+
+body.acl-neutral-auth-page
+.login-neutral-header,
+body.acl-neutral-auth-page
+.login-neutral-header .login-neutral-brand {
+  visibility:
+    visible !important;
+
+  opacity:
+    1 !important;
+}
+
+
+body.acl-neutral-auth-page
+.login-neutral-header {
+  background:
+    linear-gradient(
+      105deg,
+      #123653 0%,
+      #175a78 55%,
+      #197896 100%
+    ) !important;
+
+  border-bottom:
+    4px solid
+    #f2b500 !important;
+}
+
+
+body.acl-neutral-auth-page
+.login-neutral-brand strong {
+  color:
+    #ffffff !important;
+}
+
+
+body.acl-neutral-auth-page
+.login-neutral-brand > span {
+  color:
+    #f2b500 !important;
+}
