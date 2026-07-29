@@ -1,1566 +1,1611 @@
-import {
-  supabaseClient
-} from "./supabase-client.js";
+<!doctype html>
 
+<html lang="en">
 
-import {
-  protectAndRender,
-  resolveAclEdition,
-  aclUrl
-} from "./session-ui.js?v=4.6.0";
+<head>
 
+  <meta charset="utf-8">
 
-console.log(
-  "ACL NOTIFICATIONS v1.0.0 LOADED"
-);
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
 
-/* =========================================================
-   PAGE STATE
-========================================================= */
+  <meta
+    id="notificationsThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
 
-const selectedEdition =
-  resolveAclEdition();
+  <title>
+    Notifications | Alexandria Cardiology League
+  </title>
 
 
-const state = {
-  user: null,
-  profile: null,
-  notifications: [],
-  filteredNotifications: []
-};
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
 
 
-const el =
-  (id) =>
-    document.getElementById(
-      id
-    );
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const notificationsList =
-  el(
-    "notificationsList"
-  );
-
-
-const emptyState =
-  el(
-    "notificationsEmptyState"
-  );
-
-
-const statusBox =
-  el(
-    "notificationsStatus"
-  );
-
-
-const readFilter =
-  el(
-    "notificationsReadFilter"
-  );
-
-
-const typeFilter =
-  el(
-    "notificationsTypeFilter"
-  );
-
-
-const refreshButton =
-  el(
-    "refreshNotifications"
-  );
-
-
-const markAllReadButton =
-  el(
-    "markAllNotificationsRead"
-  );
-
-
-/* =========================================================
-   TEXT HELPERS
-========================================================= */
-
-function escapeHtml(
-  value = ""
-) {
-  return String(
-    value
-  ).replace(
-    /[&<>'"]/g,
-    (character) =>
-      ({
-        "&":
-          "&amp;",
-
-        "<":
-          "&lt;",
-
-        ">":
-          "&gt;",
-
-        "'":
-          "&#39;",
-
-        '"':
-          "&quot;"
-      })[
-        character
-      ]
-  );
-}
-
-
-function normalizeType(
-  value
-) {
-  const type =
-    String(
-      value ||
-      "system"
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const validTypes =
-    new Set([
-      "challenge",
-      "competition",
-      "module",
-      "achievement",
-      "announcement",
-      "system"
-    ]);
-
-
-  return validTypes.has(
-    type
-  )
-    ? type
-    : "system";
-}
-
-
-function normalizeEdition(
-  value
-) {
-  const edition =
-    String(
-      value ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  return (
-    edition ===
-      "basic" ||
-    edition ===
-      "expert"
-  )
-    ? edition
-    : null;
-}
-
-
-function humanizeType(
-  value
-) {
-  return normalizeType(
-    value
-  )
-    .replaceAll(
-      "_",
-      " "
-    )
-    .replace(
-      /\b\w/g,
-      (letter) =>
-        letter.toUpperCase()
-    );
-}
-
-
-function formatDateTime(
-  value
-) {
-  if (!value) {
-    return "—";
-  }
-
-
-  const date =
-    new Date(
-      value
-    );
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "—";
-  }
-
-
-  return new Intl.DateTimeFormat(
-    "en-GB",
-    {
-      dateStyle:
-        "medium",
-
-      timeStyle:
-        "short"
-    }
-  ).format(
-    date
-  );
-}
-
-
-function relativeTime(
-  value
-) {
-  if (!value) {
-    return "";
-  }
-
-
-  const date =
-    new Date(
-      value
-    );
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "";
-  }
-
-
-  const differenceMilliseconds =
-    date.getTime() -
-    Date.now();
-
-
-  const absoluteMilliseconds =
-    Math.abs(
-      differenceMilliseconds
-    );
-
-
-  const minute =
-    60 *
-    1000;
-
-
-  const hour =
-    60 *
-    minute;
-
-
-  const day =
-    24 *
-    hour;
-
-
-  const formatter =
-    new Intl.RelativeTimeFormat(
-      "en",
-      {
-        numeric:
-          "auto"
-      }
-    );
-
-
-  if (
-    absoluteMilliseconds <
-    hour
-  ) {
-    return formatter.format(
-      Math.round(
-        differenceMilliseconds /
-        minute
-      ),
-      "minute"
-    );
-  }
-
-
-  if (
-    absoluteMilliseconds <
-    day
-  ) {
-    return formatter.format(
-      Math.round(
-        differenceMilliseconds /
-        hour
-      ),
-      "hour"
-    );
-  }
-
-
-  return formatter.format(
-    Math.round(
-      differenceMilliseconds /
-      day
-    ),
-    "day"
-  );
-}
-
-
-/* =========================================================
-   STATUS
-========================================================= */
-
-function setStatus(
-  message = "",
-  kind = ""
-) {
-  if (!statusBox) {
-    return;
-  }
-
-
-  statusBox.textContent =
-    message;
-
-
-  statusBox.className =
-    `notifications-status ${kind}`.trim();
-
-
-  statusBox.hidden =
-    !message;
-}
-
-
-/* =========================================================
-   EDITION DISPLAY
-========================================================= */
-
-function renderEdition() {
-  const isBasic =
-    selectedEdition ===
-    "basic";
-
-
-  document.body.classList.remove(
-    "acl-theme-basic",
-    "acl-theme-expert"
-  );
-
-
-  document.body.classList.add(
-    isBasic
-      ? "acl-theme-basic"
-      : "acl-theme-expert"
-  );
-
-
-  const editionBadge =
-    el(
-      "notificationsEditionBadge"
-    );
-
-
-  if (editionBadge) {
-    editionBadge.textContent =
-      isBasic
-        ? "BASIC EDITION"
-        : "EXPERT EDITION";
-  }
-
-
-  const themeColor =
-    el(
-      "notificationsThemeColor"
-    );
-
-
-  if (themeColor) {
-    themeColor.content =
-      isBasic
-        ? "#105541"
-        : "#123f72";
-  }
-
-
-  const modulesLink =
-    el(
-      "notificationsModulesLink"
-    );
-
-
-  const progressLink =
-    el(
-      "notificationsProgressLink"
-    );
-
-
-  if (modulesLink) {
-    modulesLink.href =
-      aclUrl(
-        "modules.html",
-        selectedEdition
-      );
-  }
-
-
-  if (progressLink) {
-    progressLink.href =
-      aclUrl(
-        "progress.html",
-        selectedEdition
-      );
-  }
-
-
-  document.title =
-    `${
-      isBasic
-        ? "Basic"
-        : "Expert"
-    } Edition Notifications | ACL`;
-
-
-  const currentUrl =
-    new URL(
-      window.location.href
-    );
-
-
-  currentUrl.searchParams.set(
-    "edition",
-    selectedEdition
-  );
-
-
-  window.history.replaceState(
-    {},
-    "",
-    currentUrl
-  );
-}
-
-
-/* =========================================================
-   NOTIFICATION ICONS
-========================================================= */
-
-function notificationIcon(
-  type
-) {
-  const icons = {
-    challenge:
-      "⚔️",
-
-    competition:
-      "🏆",
-
-    module:
-      "📚",
-
-    achievement:
-      "🎯",
-
-    announcement:
-      "📢",
-
-    system:
-      "⚙️"
-  };
-
-
-  return (
-    icons[
-      normalizeType(
-        type
-      )
-    ] ||
-    icons.system
-  );
-}
-
-
-/* =========================================================
-   SAFE ACTION LINK
-========================================================= */
-
-function notificationActionUrl(
-  notification
-) {
-  const rawUrl =
-    String(
-      notification?.action_url ||
-      notification?.link_url ||
-      notification?.target_url ||
-      ""
-    )
-      .trim();
-
-
-  if (!rawUrl) {
-    return "";
-  }
-
-
-  try {
-    const url =
-      new URL(
-        rawUrl,
-        window.location.href
-      );
-
-
-    if (
-      url.origin !==
-      window.location.origin
-    ) {
-      return "";
-    }
-
-
-    url.searchParams.set(
-      "edition",
-      selectedEdition
-    );
-
-
-    return (
-      `${url.pathname}` +
-      `${url.search}` +
-      `${url.hash}`
-    );
-  } catch (error) {
-    console.warn(
-      "INVALID NOTIFICATION URL:",
-      rawUrl,
-      error
-    );
-
-
-    return "";
-  }
-}
-
-
-/* =========================================================
-   LOAD NOTIFICATIONS
-========================================================= */
-
-async function loadNotifications() {
-  if (!state.user) {
-    return;
-  }
-
-
-  setStatus(
-    "Loading notifications…"
-  );
-
-
-  if (refreshButton) {
-    refreshButton.disabled =
-      true;
-
-
-    refreshButton.textContent =
-      "Refreshing…";
-  }
-
-
-  try {
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from(
-          "notifications"
-        )
-        .select(`
-          id,
-          user_id,
-          title,
-          message,
-          notification_type,
-          type,
-          edition,
-          is_read,
-          read_at,
-          action_url,
-          link_url,
-          target_url,
-          metadata,
-          created_at,
-          updated_at
-        `)
-        .eq(
-          "user_id",
-          state.user.id
-        )
-        .order(
-          "created_at",
-          {
-            ascending:
-              false
-          }
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
         );
 
 
-    if (error) {
-      throw error;
-    }
-
-
-    state.notifications =
-      (
-        data ||
-        []
-      ).filter(
-        (notification) => {
-          const notificationEdition =
-            normalizeEdition(
-              notification.edition
-            );
-
-
-          /*
-           * Global notifications without an edition appear
-           * in both pathways.
-           */
-
-          return (
-            !notificationEdition ||
-            notificationEdition ===
-              selectedEdition
-          );
-        }
-      );
-
-
-    applyFilters();
-
-
-    setStatus(
-      ""
-    );
-  } catch (error) {
-    console.error(
-      "NOTIFICATIONS LOAD ERROR:",
-      error
-    );
-
-
-    state.notifications =
-      [];
-
-
-    state.filteredNotifications =
-      [];
-
-
-    renderNotifications();
-
-
-    if (
-      error?.code ===
-        "42P01" ||
-      String(
-        error?.message ||
-        ""
-      )
-        .toLowerCase()
-        .includes(
-          "notifications"
+      const requestedEdition =
+        String(
+          parameters.get("edition") || ""
         )
-    ) {
-      setStatus(
-        "The notifications database table has not been created yet.",
-        "error"
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        requestedEdition === "basic" ||
+        requestedEdition === "expert"
+          ? requestedEdition
+          : storedEdition === "basic" ||
+            storedEdition === "expert"
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
       );
-    } else {
-      setStatus(
-        error.message ||
-        "Notifications could not be loaded.",
-        "error"
+
+
+      document.documentElement.classList.add(
+        edition === "basic"
+          ? "acl-notifications-basic"
+          : "acl-notifications-expert"
       );
-    }
-  } finally {
-    if (refreshButton) {
-      refreshButton.disabled =
-        false;
 
 
-      refreshButton.textContent =
-        "Refresh";
-    }
-  }
-}
-
-
-/* =========================================================
-   FILTER NOTIFICATIONS
-========================================================= */
-
-function applyFilters() {
-  const selectedReadFilter =
-    readFilter
-      ?.value ||
-    "all";
-
-
-  const selectedTypeFilter =
-    typeFilter
-      ?.value ||
-    "all";
-
-
-  state.filteredNotifications =
-    state.notifications.filter(
-      (notification) => {
-        const isRead =
-          Boolean(
-            notification.is_read ||
-            notification.read_at
+      if (!parameters.get("edition")) {
+        const updatedUrl =
+          new URL(
+            window.location.href
           );
 
 
-        const matchesReadStatus =
-          selectedReadFilter ===
-            "all" ||
-          (
-            selectedReadFilter ===
-              "read" &&
-            isRead
-          ) ||
-          (
-            selectedReadFilter ===
-              "unread" &&
-            !isRead
-          );
+        updatedUrl.searchParams.set(
+          "edition",
+          edition
+        );
 
 
-        const notificationType =
-          normalizeType(
-            notification.notification_type ||
-            notification.type
-          );
-
-
-        const matchesType =
-          selectedTypeFilter ===
-            "all" ||
-          notificationType ===
-            selectedTypeFilter;
-
-
-        return (
-          matchesReadStatus &&
-          matchesType
+        window.history.replaceState(
+          {},
+          "",
+          updatedUrl
         );
       }
-    );
+    })();
+  </script>
 
 
-  renderNotifications();
-  renderSummary();
-}
+  <style>
+    :root {
+      --notifications-primary: #123f72;
+      --notifications-secondary: #176aa1;
+      --notifications-soft: #eaf5ff;
+      --notifications-soft-2: #f7fbff;
+      --notifications-accent: #ffc928;
+      --notifications-success: #168067;
+      --notifications-danger: #b33443;
+      --notifications-warning: #b97a00;
+      --notifications-text: #17324d;
+      --notifications-muted: #687d90;
+      --notifications-border: #d9e6f2;
+      --notifications-card: #ffffff;
+      --notifications-shadow:
+        0 18px 45px
+        rgba(18, 63, 114, 0.12);
+    }
 
 
-/* =========================================================
-   RENDER SUMMARY
-========================================================= */
-
-function setCount(
-  id,
-  value
-) {
-  const target =
-    el(
-      id
-    );
+    html.acl-notifications-basic {
+      --notifications-primary: #105541;
+      --notifications-secondary: #168067;
+      --notifications-soft: #eaf8f2;
+      --notifications-soft-2: #f8fcfa;
+      --notifications-text: #173e34;
+      --notifications-shadow:
+        0 18px 45px
+        rgba(16, 85, 65, 0.12);
+    }
 
 
-  if (target) {
-    target.textContent =
-      String(
-        Number(
-          value ||
-          0
-        )
-      );
-  }
-}
+    * {
+      box-sizing: border-box;
+    }
 
 
-function renderSummary() {
-  const unreadCount =
-    state.notifications.filter(
-      (notification) =>
-        !notification.is_read &&
-        !notification.read_at
-    ).length;
+    html,
+    body {
+      min-height: 100%;
+    }
 
 
-  const challengeCount =
-    state.notifications.filter(
-      (notification) =>
-        normalizeType(
-          notification.notification_type ||
-          notification.type
-        ) ===
-        "challenge"
-    ).length;
+    body {
+      margin: 0;
+      padding-top: 92px;
+
+      color:
+        var(--notifications-text);
+
+      background:
+        radial-gradient(
+          circle at 10% 6%,
+          rgba(255, 201, 40, 0.13),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 8%,
+          color-mix(
+            in srgb,
+            var(--notifications-secondary) 12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--notifications-soft)
+        );
+    }
 
 
-  setCount(
-    "notificationsTotalCount",
-    state.notifications.length
-  );
+    button,
+    select,
+    input {
+      font: inherit;
+    }
 
 
-  setCount(
-    "notificationsUnreadCount",
-    unreadCount
-  );
+    .topbar.acl-header-pending {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
 
 
-  setCount(
-    "notificationsChallengeCount",
-    challengeCount
-  );
+    .topbar.acl-unified-header {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
 
 
-  if (markAllReadButton) {
-    markAllReadButton.disabled =
-      unreadCount ===
-      0;
-  }
-}
+    .notifications-shell {
+      width:
+        min(
+          1120px,
+          calc(100% - 28px)
+        );
+
+      margin: 0 auto;
+      padding: 30px 0 60px;
+    }
 
 
-/* =========================================================
-   RENDER NOTIFICATIONS
-========================================================= */
+    /* =====================================================
+       HERO
+    ===================================================== */
 
-function renderNotifications() {
-  if (
-    !notificationsList ||
-    !emptyState
-  ) {
-    return;
-  }
+    .notifications-hero {
+      position: relative;
+      overflow: hidden;
 
+      padding:
+        clamp(
+          28px,
+          5vw,
+          48px
+        );
 
-  if (
-    !state.filteredNotifications.length
-  ) {
-    notificationsList.innerHTML =
-      "";
+      border-radius: 28px;
 
+      color: #ffffff;
 
-    emptyState.hidden =
-      false;
+      background:
+        linear-gradient(
+          125deg,
+          var(--notifications-primary),
+          var(--notifications-secondary)
+        );
 
-
-    return;
-  }
-
-
-  emptyState.hidden =
-    true;
-
-
-  notificationsList.innerHTML =
-    state.filteredNotifications
-      .map(
-        notificationHtml
-      )
-      .join(
-        ""
-      );
-}
+      box-shadow:
+        var(--notifications-shadow);
+    }
 
 
-/* =========================================================
-   NOTIFICATION HTML
-========================================================= */
+    .notifications-hero::after {
+      content: "🔔";
 
-function notificationHtml(
-  notification
-) {
-  const notificationType =
-    normalizeType(
-      notification.notification_type ||
-      notification.type
-    );
+      position: absolute;
+      top: 50%;
+      right: 5%;
 
+      transform:
+        translateY(-50%)
+        rotate(-8deg);
 
-  const isRead =
-    Boolean(
-      notification.is_read ||
-      notification.read_at
-    );
+      opacity: 0.11;
 
+      font-size:
+        clamp(
+          110px,
+          20vw,
+          220px
+        );
 
-  const actionUrl =
-    notificationActionUrl(
-      notification
-    );
+      pointer-events: none;
+    }
 
 
-  const title =
-    notification.title ||
-    humanizeType(
-      notificationType
-    );
+    .notifications-hero-content {
+      position: relative;
+      z-index: 1;
+
+      max-width: 760px;
+    }
 
 
-  const message =
-    notification.message ||
-    "You have a new ACL notification.";
+    .notifications-hero-top {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
 
 
-  return `
-    <article
-      class="
-        notification-item
-        ${
-          isRead
-            ? "read"
-            : "unread"
-        }
-      "
-      data-notification-id="${escapeHtml(
-        notification.id
-      )}"
+    .notifications-kicker,
+    .notifications-edition-badge {
+      display: inline-flex;
+      align-items: center;
+
+      min-height: 31px;
+      padding: 7px 12px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+
+      font-size: 0.74rem;
+      font-weight: 900;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+
+    .notifications-edition-badge {
+      background:
+        rgba(255, 255, 255, 0.21);
+    }
+
+
+    .notifications-hero h1 {
+      margin: 15px 0 10px;
+
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4rem
+        );
+
+      line-height: 1;
+    }
+
+
+    .notifications-hero p {
+      margin: 0;
+
+      color:
+        rgba(255, 255, 255, 0.88);
+
+      font-size:
+        clamp(
+          0.98rem,
+          2vw,
+          1.08rem
+        );
+
+      line-height: 1.65;
+    }
+
+
+    /* =====================================================
+       PUSH NOTIFICATION CARD
+    ===================================================== */
+
+    .push-card {
+      display: grid;
+
+      grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+
+      gap: 18px;
+      align-items: center;
+
+      margin-top: 20px;
+      padding: 21px;
+
+      border:
+        1px solid
+        var(--notifications-border);
+
+      border-radius: 20px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 30px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .push-card-title {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+    }
+
+
+    .push-card-icon {
+      display: grid;
+      place-items: center;
+
+      width: 50px;
+      min-width: 50px;
+      height: 50px;
+
+      border-radius: 15px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--notifications-primary),
+          var(--notifications-secondary)
+        );
+
+      font-size: 1.25rem;
+    }
+
+
+    .push-card h2 {
+      margin: 0;
+
+      color:
+        var(--notifications-primary);
+
+      font-size: 1.15rem;
+    }
+
+
+    .push-card p {
+      margin: 6px 0 0;
+
+      color:
+        var(--notifications-muted);
+
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+
+
+    .push-status-line {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      margin-top: 11px;
+    }
+
+
+    .push-status-badge {
+      display: inline-flex;
+      align-items: center;
+
+      min-height: 28px;
+      padding: 5px 10px;
+
+      border-radius: 999px;
+
+      color:
+        var(--notifications-primary);
+
+      background:
+        var(--notifications-soft);
+
+      font-size: 0.69rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+
+    .push-status-badge.enabled {
+      color: #ffffff;
+
+      background:
+        var(--notifications-success);
+    }
+
+
+    .push-status-badge.blocked {
+      color: #ffffff;
+
+      background:
+        var(--notifications-danger);
+    }
+
+
+    .push-status-badge.warning {
+      color: #765000;
+
+      background: #fff0bf;
+    }
+
+
+    .push-device-label {
+      color:
+        var(--notifications-muted);
+
+      font-size: 0.74rem;
+    }
+
+
+    .push-actions {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+
+    /* =====================================================
+       SUMMARY
+    ===================================================== */
+
+    .notifications-summary {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+
+    .notifications-summary-card {
+      padding: 20px;
+
+      border:
+        1px solid
+        var(--notifications-border);
+
+      border-radius: 19px;
+
+      background:
+        rgba(255, 255, 255, 0.97);
+
+      box-shadow:
+        0 12px 30px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .notifications-summary-card span {
+      display: block;
+
+      color:
+        var(--notifications-muted);
+
+      font-size: 0.76rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+
+    .notifications-summary-card strong {
+      display: block;
+      margin-top: 9px;
+
+      color:
+        var(--notifications-primary);
+
+      font-size: 2.2rem;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+
+    /* =====================================================
+       CONTROLS
+    ===================================================== */
+
+    .notifications-toolbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+
+      margin-top: 20px;
+      padding: 17px;
+
+      border:
+        1px solid
+        var(--notifications-border);
+
+      border-radius: 19px;
+
+      background:
+        rgba(255, 255, 255, 0.96);
+
+      box-shadow:
+        0 12px 30px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .notifications-filters {
+      display: flex;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 11px;
+    }
+
+
+    .notifications-field {
+      display: grid;
+      gap: 6px;
+    }
+
+
+    .notifications-field label {
+      color:
+        var(--notifications-muted);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .notifications-field select {
+      min-width: 155px;
+      min-height: 43px;
+      padding: 9px 12px;
+
+      border:
+        1px solid
+        var(--notifications-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--notifications-text);
+
+      background: #ffffff;
+
+      font-weight: 750;
+    }
+
+
+    .notifications-toolbar-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+
+    .notifications-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 43px;
+      padding: 9px 15px;
+
+      border: 0;
+      border-radius: 11px;
+
+      cursor: pointer;
+
+      font-weight: 900;
+    }
+
+
+    .notifications-button-primary {
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--notifications-primary),
+          var(--notifications-secondary)
+        );
+    }
+
+
+    .notifications-button-secondary {
+      border:
+        1px solid
+        var(--notifications-border);
+
+      color:
+        var(--notifications-primary);
+
+      background: #ffffff;
+    }
+
+
+    .notifications-button-danger {
+      border: 1px solid #f0c6cc;
+
+      color:
+        var(--notifications-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .notifications-button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .notifications-status {
+      margin-top: 15px;
+      padding: 14px 16px;
+
+      border:
+        1px solid
+        var(--notifications-border);
+
+      border-radius: 13px;
+
+      color:
+        var(--notifications-muted);
+
+      background: #ffffff;
+
+      font-weight: 750;
+    }
+
+
+    .notifications-status.error {
+      border-color: #f0c6cc;
+
+      color:
+        var(--notifications-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .notifications-status.success {
+      border-color: #bfe7d6;
+
+      color:
+        var(--notifications-success);
+
+      background: #f2fbf7;
+    }
+
+
+    .notifications-status.warning {
+      border-color: #f4d8a2;
+
+      color:
+        var(--notifications-warning);
+
+      background: #fffaf0;
+    }
+
+
+    /* =====================================================
+       LIST
+    ===================================================== */
+
+    .notifications-list {
+      display: grid;
+      gap: 13px;
+
+      margin-top: 18px;
+    }
+
+
+    .notification-item {
+      position: relative;
+
+      display: grid;
+
+      grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        auto;
+
+      gap: 15px;
+      align-items: flex-start;
+
+      padding: 18px;
+
+      border:
+        1px solid
+        var(--notifications-border);
+
+      border-radius: 18px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 10px 28px
+        rgba(18, 63, 114, 0.06);
+    }
+
+
+    .notification-item.unread {
+      border-color:
+        color-mix(
+          in srgb,
+          var(--notifications-secondary) 40%,
+          white
+        );
+
+      background:
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--notifications-soft-2)
+        );
+    }
+
+
+    .notification-item.unread::before {
+      content: "";
+
+      position: absolute;
+      top: 16px;
+      left: 0;
+
+      width: 4px;
+      height:
+        calc(100% - 32px);
+
+      border-radius:
+        0 6px 6px 0;
+
+      background:
+        var(--notifications-secondary);
+    }
+
+
+    .notification-icon {
+      display: grid;
+      place-items: center;
+
+      width: 46px;
+      min-width: 46px;
+      height: 46px;
+
+      border-radius: 14px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--notifications-primary),
+          var(--notifications-secondary)
+        );
+
+      font-size: 1.12rem;
+    }
+
+
+    .notification-heading {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+
+    .notification-heading h2 {
+      margin: 0;
+
+      color:
+        var(--notifications-primary);
+
+      font-size: 1rem;
+    }
+
+
+    .notification-unread-badge {
+      display: inline-flex;
+      align-items: center;
+
+      padding: 4px 8px;
+
+      border-radius: 999px;
+
+      color: #ffffff;
+
+      background:
+        var(--notifications-secondary);
+
+      font-size: 0.65rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+
+    .notification-content p {
+      margin: 7px 0 0;
+
+      color:
+        var(--notifications-muted);
+
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+
+    .notification-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      margin-top: 10px;
+
+      color:
+        var(--notifications-muted);
+
+      font-size: 0.74rem;
+    }
+
+
+    .notification-category {
+      display: inline-flex;
+      align-items: center;
+
+      padding: 5px 9px;
+
+      border-radius: 999px;
+
+      color:
+        var(--notifications-primary);
+
+      background:
+        var(--notifications-soft);
+
+      font-weight: 850;
+      text-transform: capitalize;
+    }
+
+
+    .notification-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+
+    .notification-action {
+      min-height: 36px;
+      padding: 7px 11px;
+
+      border:
+        1px solid
+        var(--notifications-border);
+
+      border-radius: 10px;
+
+      color:
+        var(--notifications-primary);
+
+      background: #ffffff;
+
+      cursor: pointer;
+
+      font-size: 0.75rem;
+      font-weight: 850;
+      text-decoration: none;
+    }
+
+
+    .notification-action-danger {
+      color:
+        var(--notifications-danger);
+    }
+
+
+    /* =====================================================
+       EMPTY AND FOOTER
+    ===================================================== */
+
+    .notifications-empty {
+      margin-top: 18px;
+      padding: 50px 20px;
+
+      border:
+        1px dashed
+        var(--notifications-border);
+
+      border-radius: 20px;
+
+      color:
+        var(--notifications-muted);
+
+      background:
+        rgba(255, 255, 255, 0.9);
+
+      text-align: center;
+    }
+
+
+    .notifications-empty-icon {
+      display: grid;
+      place-items: center;
+
+      width: 66px;
+      height: 66px;
+
+      margin: 0 auto 14px;
+
+      border-radius: 20px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--notifications-primary),
+          var(--notifications-secondary)
+        );
+
+      font-size: 1.6rem;
+    }
+
+
+    .notifications-empty h2 {
+      margin: 0;
+
+      color:
+        var(--notifications-primary);
+    }
+
+
+    .notifications-empty p {
+      margin: 8px 0 0;
+      line-height: 1.55;
+    }
+
+
+    .notifications-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+
+      margin-top: 22px;
+    }
+
+
+    .notifications-footer p {
+      margin: 0;
+
+      color:
+        var(--notifications-muted);
+
+      font-size: 0.76rem;
+    }
+
+
+    .notifications-footer-links {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+
+    .notifications-footer-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 40px;
+      padding: 8px 13px;
+
+      border:
+        1px solid
+        var(--notifications-border);
+
+      border-radius: 10px;
+
+      color:
+        var(--notifications-primary);
+
+      background: #ffffff;
+
+      font-size: 0.78rem;
+      font-weight: 850;
+      text-decoration: none;
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
+
+    @media (max-width: 760px) {
+      body {
+        padding-top: 82px;
+      }
+
+
+      .notifications-shell {
+        width:
+          min(
+            calc(100% - 18px),
+            1120px
+          );
+
+        padding-top: 18px;
+      }
+
+
+      .push-card {
+        grid-template-columns: 1fr;
+      }
+
+
+      .push-actions {
+        justify-content: flex-start;
+      }
+
+
+      .notifications-summary {
+        grid-template-columns: 1fr;
+      }
+
+
+      .notifications-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+
+      .notifications-filters {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .notifications-field select {
+        width: 100%;
+        min-width: 0;
+      }
+
+
+      .notifications-toolbar-actions {
+        width: 100%;
+      }
+
+
+      .notifications-toolbar-actions button {
+        flex: 1;
+      }
+
+
+      .notification-item {
+        grid-template-columns:
+          auto
+          minmax(0, 1fr);
+      }
+
+
+      .notification-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+      }
+    }
+
+
+    @media (max-width: 480px) {
+      .push-actions,
+      .notifications-toolbar-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .push-actions button,
+      .notifications-toolbar-actions button {
+        width: 100%;
+      }
+
+
+      .notification-item {
+        grid-template-columns: 1fr;
+      }
+
+
+      .notification-actions {
+        grid-column: auto;
+      }
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
     >
-
-      <div
-        class="notification-icon"
-        aria-hidden="true"
-      >
-        ${notificationIcon(
-          notificationType
-        )}
-      </div>
+      Alexandria Cardiology League
+    </a>
 
 
-      <div class="notification-content">
+    <nav aria-label="Main navigation">
 
-        <div class="notification-heading">
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
 
-          <h2>
-            ${escapeHtml(
-              title
-            )}
-          </h2>
+    </nav>
 
-
-          ${
-            !isRead
-              ? `
-                <span class="notification-unread-badge">
-                  New
-                </span>
-              `
-              : ""
-          }
-
-        </div>
+  </header>
 
 
-        <p>
-          ${escapeHtml(
-            message
-          )}
-        </p>
+  <main class="notifications-shell">
 
+    <section class="notifications-hero">
 
-        <div class="notification-meta">
+      <div class="notifications-hero-content">
 
-          <span class="notification-category">
-            ${escapeHtml(
-              humanizeType(
-                notificationType
-              )
-            )}
+        <div class="notifications-hero-top">
+
+          <span class="notifications-kicker">
+            ACL UPDATES
           </span>
 
 
           <span
-            title="${escapeHtml(
-              formatDateTime(
-                notification.created_at
-              )
-            )}"
+            id="notificationsEditionBadge"
+            class="notifications-edition-badge"
           >
-            ${escapeHtml(
-              relativeTime(
-                notification.created_at
-              ) ||
-              formatDateTime(
-                notification.created_at
-              )
-            )}
+            EDITION
           </span>
+
+        </div>
+
+
+        <h1>
+          Notifications
+        </h1>
+
+
+        <p>
+          Receive official ACL announcements, competition reminders,
+          challenge invitations, module updates, and achievement alerts.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <section
+      class="push-card"
+      aria-labelledby="pushNotificationsTitle"
+    >
+
+      <div class="push-card-title">
+
+        <div
+          class="push-card-icon"
+          aria-hidden="true"
+        >
+          🔔
+        </div>
+
+
+        <div>
+
+          <h2 id="pushNotificationsTitle">
+            Phone push notifications
+          </h2>
+
+
+          <p id="pushNotificationsDescription">
+            Enable ACL alerts on this iPhone, Android phone, tablet,
+            or computer.
+          </p>
+
+
+          <div class="push-status-line">
+
+            <span
+              id="pushStatusBadge"
+              class="push-status-badge"
+            >
+              Checking…
+            </span>
+
+
+            <span
+              id="pushDeviceLabel"
+              class="push-device-label"
+            ></span>
+
+          </div>
 
         </div>
 
       </div>
 
 
-      <div class="notification-actions">
+      <div class="push-actions">
 
-        ${
-          actionUrl
-            ? `
-              <a
-                class="notification-action"
-                href="${escapeHtml(
-                  actionUrl
-                )}"
-                data-open-notification="${escapeHtml(
-                  notification.id
-                )}"
-              >
-                Open
-              </a>
-            `
-            : ""
-        }
-
-
-        ${
-          !isRead
-            ? `
-              <button
-                class="notification-action"
-                type="button"
-                data-mark-notification-read="${escapeHtml(
-                  notification.id
-                )}"
-              >
-                Mark read
-              </button>
-            `
-            : ""
-        }
+        <button
+          id="enablePushNotifications"
+          class="
+            notifications-button
+            notifications-button-primary
+          "
+          type="button"
+        >
+          Enable Notifications
+        </button>
 
 
         <button
+          id="testPushNotification"
           class="
-            notification-action
-            notification-action-danger
+            notifications-button
+            notifications-button-secondary
           "
           type="button"
-          data-delete-notification="${escapeHtml(
-            notification.id
-          )}"
+          hidden
         >
-          Delete
+          Test Notification
+        </button>
+
+
+        <button
+          id="disablePushNotifications"
+          class="
+            notifications-button
+            notifications-button-danger
+          "
+          type="button"
+          hidden
+        >
+          Disable
         </button>
 
       </div>
 
-    </article>
-  `;
-}
-
-
-/* =========================================================
-   MARK ONE AS READ
-========================================================= */
+    </section>
 
-async function markNotificationRead(
-  notificationId
-) {
-  const notification =
-    state.notifications.find(
-      (item) =>
-        String(
-          item.id
-        ) ===
-        String(
-          notificationId
-        )
-    );
 
+    <section
+      class="notifications-summary"
+      aria-label="Notification summary"
+    >
 
-  if (
-    !notification ||
-    notification.is_read ||
-    notification.read_at
-  ) {
-    return;
-  }
+      <article class="notifications-summary-card">
 
+        <span>
+          Total notifications
+        </span>
 
-  const readAt =
-    new Date()
-      .toISOString();
+        <strong id="notificationsTotalCount">
+          —
+        </strong>
 
-
-  const {
-    error
-  } =
-    await supabaseClient
-      .from(
-        "notifications"
-      )
-      .update({
-        is_read:
-          true,
-
-        read_at:
-          readAt
-      })
-      .eq(
-        "id",
-        notificationId
-      )
-      .eq(
-        "user_id",
-        state.user.id
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  notification.is_read =
-    true;
-
-
-  notification.read_at =
-    readAt;
+      </article>
 
 
-  applyFilters();
-}
-
-
-/* =========================================================
-   MARK ALL AS READ
-========================================================= */
-
-async function markAllNotificationsRead() {
-  const unreadIds =
-    state.notifications
-      .filter(
-        (notification) =>
-          !notification.is_read &&
-          !notification.read_at
-      )
-      .map(
-        (notification) =>
-          notification.id
-      );
-
-
-  if (!unreadIds.length) {
-    return;
-  }
-
+      <article class="notifications-summary-card">
 
-  if (markAllReadButton) {
-    markAllReadButton.disabled =
-      true;
+        <span>
+          Unread
+        </span>
 
+        <strong id="notificationsUnreadCount">
+          —
+        </strong>
 
-    markAllReadButton.textContent =
-      "Updating…";
-  }
+      </article>
 
 
-  setStatus(
-    "Marking notifications as read…"
-  );
+      <article class="notifications-summary-card">
 
+        <span>
+          Challenge invitations
+        </span>
 
-  try {
-    const readAt =
-      new Date()
-        .toISOString();
+        <strong id="notificationsChallengeCount">
+          —
+        </strong>
 
+      </article>
 
-    const {
-      error
-    } =
-      await supabaseClient
-        .from(
-          "notifications"
-        )
-        .update({
-          is_read:
-            true,
-
-          read_at:
-            readAt
-        })
-        .eq(
-          "user_id",
-          state.user.id
-        )
-        .in(
-          "id",
-          unreadIds
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    state.notifications.forEach(
-      (notification) => {
-        if (
-          unreadIds.includes(
-            notification.id
-          )
-        ) {
-          notification.is_read =
-            true;
-
-
-          notification.read_at =
-            readAt;
-        }
-      }
-    );
+    </section>
 
 
-    applyFilters();
+    <section
+      class="notifications-toolbar"
+      aria-label="Notification controls"
+    >
 
+      <div class="notifications-filters">
 
-    setStatus(
-      "All notifications marked as read.",
-      "success"
-    );
-  } catch (error) {
-    console.error(
-      "MARK ALL NOTIFICATIONS ERROR:",
-      error
-    );
+        <div class="notifications-field">
 
+          <label for="notificationsReadFilter">
+            Status
+          </label>
 
-    setStatus(
-      error.message ||
-      "Notifications could not be updated.",
-      "error"
-    );
-  } finally {
-    if (markAllReadButton) {
-      markAllReadButton.textContent =
-        "Mark all as read";
+          <select id="notificationsReadFilter">
 
+            <option value="all">
+              All notifications
+            </option>
 
-      renderSummary();
-    }
-  }
-}
+            <option value="unread">
+              Unread only
+            </option>
 
+            <option value="read">
+              Read only
+            </option>
 
-/* =========================================================
-   DELETE NOTIFICATION
-========================================================= */
+          </select>
 
-async function deleteNotification(
-  notificationId
-) {
-  const confirmed =
-    window.confirm(
-      "Delete this notification?"
-    );
+        </div>
 
 
-  if (!confirmed) {
-    return;
-  }
+        <div class="notifications-field">
 
+          <label for="notificationsTypeFilter">
+            Type
+          </label>
 
-  const {
-    error
-  } =
-    await supabaseClient
-      .from(
-        "notifications"
-      )
-      .delete()
-      .eq(
-        "id",
-        notificationId
-      )
-      .eq(
-        "user_id",
-        state.user.id
-      );
+          <select id="notificationsTypeFilter">
 
+            <option value="all">
+              All types
+            </option>
 
-  if (error) {
-    throw error;
-  }
+            <option value="challenge">
+              Challenge
+            </option>
 
+            <option value="competition">
+              Competition
+            </option>
 
-  state.notifications =
-    state.notifications.filter(
-      (notification) =>
-        String(
-          notification.id
-        ) !==
-        String(
-          notificationId
-        )
-    );
+            <option value="module">
+              Module
+            </option>
 
+            <option value="achievement">
+              Achievement
+            </option>
 
-  applyFilters();
+            <option value="announcement">
+              Announcement
+            </option>
 
+            <option value="system">
+              System
+            </option>
 
-  setStatus(
-    "Notification deleted.",
-    "success"
-  );
-}
+          </select>
 
+        </div>
 
-/* =========================================================
-   DELEGATED CLICK EVENTS
-========================================================= */
+      </div>
 
-document.addEventListener(
-  "click",
-  async (event) => {
-    const readButton =
-      event.target.closest(
-        "[data-mark-notification-read]"
-      );
 
+      <div class="notifications-toolbar-actions">
 
-    if (readButton) {
-      const notificationId =
-        readButton.dataset
-          .markNotificationRead;
+        <button
+          id="markAllNotificationsRead"
+          class="
+            notifications-button
+            notifications-button-secondary
+          "
+          type="button"
+        >
+          Mark all as read
+        </button>
 
 
-      readButton.disabled =
-        true;
+        <button
+          id="refreshNotifications"
+          class="
+            notifications-button
+            notifications-button-primary
+          "
+          type="button"
+        >
+          Refresh
+        </button>
 
+      </div>
 
-      try {
-        await markNotificationRead(
-          notificationId
-        );
-      } catch (error) {
-        console.error(
-          "MARK NOTIFICATION READ ERROR:",
-          error
-        );
+    </section>
 
 
-        setStatus(
-          error.message ||
-          "The notification could not be updated.",
-          "error"
-        );
+    <div
+      id="notificationsStatus"
+      class="notifications-status"
+      role="status"
+      aria-live="polite"
+    >
+      Loading notifications…
+    </div>
 
 
-        readButton.disabled =
-          false;
-      }
+    <section
+      id="notificationsList"
+      class="notifications-list"
+      aria-label="Notifications"
+    ></section>
 
 
-      return;
-    }
+    <section
+      id="notificationsEmptyState"
+      class="notifications-empty"
+      hidden
+    >
 
+      <div
+        class="notifications-empty-icon"
+        aria-hidden="true"
+      >
+        ✉
+      </div>
 
-    const deleteButton =
-      event.target.closest(
-        "[data-delete-notification]"
-      );
 
+      <h2>
+        No notifications found
+      </h2>
 
-    if (deleteButton) {
-      const notificationId =
-        deleteButton.dataset
-          .deleteNotification;
 
+      <p>
+        New ACL updates, invitations, and achievements will appear here.
+      </p>
 
-      deleteButton.disabled =
-        true;
+    </section>
 
 
-      try {
-        await deleteNotification(
-          notificationId
-        );
-      } catch (error) {
-        console.error(
-          "DELETE NOTIFICATION ERROR:",
-          error
-        );
+    <footer class="notifications-footer">
 
+      <p>
+        Notifications are private and visible only to your ACL account.
+      </p>
 
-        setStatus(
-          error.message ||
-          "The notification could not be deleted.",
-          "error"
-        );
 
+      <div class="notifications-footer-links">
 
-        deleteButton.disabled =
-          false;
-      }
+        <a
+          id="notificationsModulesLink"
+          class="notifications-footer-link"
+          href="modules.html"
+        >
+          Modules
+        </a>
 
 
-      return;
-    }
+        <a
+          id="notificationsProgressLink"
+          class="notifications-footer-link"
+          href="progress.html"
+        >
+          My Progress
+        </a>
 
 
-    const openLink =
-      event.target.closest(
-        "[data-open-notification]"
-      );
+        <a
+          class="notifications-footer-link"
+          href="pathways.html"
+        >
+          Switch Edition
+        </a>
 
+      </div>
 
-    if (openLink) {
-      const notificationId =
-        openLink.dataset
-          .openNotification;
+    </footer>
 
+  </main>
 
-      try {
-        await markNotificationRead(
-          notificationId
-        );
-      } catch (error) {
-        console.warn(
-          "OPEN NOTIFICATION READ ERROR:",
-          error
-        );
-      }
-    }
-  }
-);
 
+  <script
+    type="module"
+    src="assets/js/notifications.js?v=2.0.0"
+  ></script>
 
-/* =========================================================
-   FILTER EVENTS
-========================================================= */
 
-readFilter
-  ?.addEventListener(
-    "change",
-    applyFilters
-  );
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.7.0"
+  ></script>
 
+</body>
 
-typeFilter
-  ?.addEventListener(
-    "change",
-    applyFilters
-  );
-
-
-refreshButton
-  ?.addEventListener(
-    "click",
-    loadNotifications
-  );
-
-
-markAllReadButton
-  ?.addEventListener(
-    "click",
-    markAllNotificationsRead
-  );
-
-
-/* =========================================================
-   START PAGE
-========================================================= */
-
-async function startNotificationsPage() {
-  try {
-    renderEdition();
-
-
-    const profile =
-      await protectAndRender(
-        "login.html"
-      );
-
-
-    if (!profile) {
-      return;
-    }
-
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .auth
-        .getUser();
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    if (!data?.user) {
-      throw new Error(
-        "Please sign in to view notifications."
-      );
-    }
-
-
-    state.user =
-      data.user;
-
-
-    state.profile =
-      profile;
-
-
-    await loadNotifications();
-  } catch (error) {
-    console.error(
-      "NOTIFICATIONS INITIALIZATION ERROR:",
-      error
-    );
-
-
-    setStatus(
-      error.message ||
-      "Notifications could not be initialized.",
-      "error"
-    );
-  }
-}
-
-
-void startNotificationsPage();
+</html>
