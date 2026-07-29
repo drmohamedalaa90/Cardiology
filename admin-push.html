@@ -1,0 +1,1562 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    id="adminPushThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <title>
+    Send Push Notification | ACL Admin
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=2.2"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const requestedEdition =
+        String(
+          parameters.get("edition") || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        requestedEdition === "basic" ||
+        requestedEdition === "expert"
+          ? requestedEdition
+          : storedEdition === "basic" ||
+            storedEdition === "expert"
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+
+      document.documentElement.classList.add(
+        edition === "basic"
+          ? "acl-admin-push-basic"
+          : "acl-admin-push-expert"
+      );
+
+
+      if (!parameters.get("edition")) {
+        const updatedUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        updatedUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          updatedUrl
+        );
+      }
+    })();
+  </script>
+
+
+  <style>
+    :root {
+      --push-primary: #123f72;
+      --push-secondary: #176aa1;
+      --push-soft: #eaf5ff;
+      --push-soft-2: #f7fbff;
+      --push-accent: #ffc928;
+      --push-success: #168067;
+      --push-danger: #b33443;
+      --push-warning: #b97a00;
+      --push-text: #17324d;
+      --push-muted: #687d90;
+      --push-border: #d9e6f2;
+      --push-card: #ffffff;
+      --push-shadow:
+        0 18px 45px
+        rgba(18, 63, 114, 0.12);
+    }
+
+
+    html.acl-admin-push-basic {
+      --push-primary: #105541;
+      --push-secondary: #168067;
+      --push-soft: #eaf8f2;
+      --push-soft-2: #f8fcfa;
+      --push-text: #173e34;
+      --push-shadow:
+        0 18px 45px
+        rgba(16, 85, 65, 0.12);
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
+    body {
+      margin: 0;
+      padding-top: 92px;
+
+      color:
+        var(--push-text);
+
+      background:
+        radial-gradient(
+          circle at 9% 5%,
+          rgba(255, 201, 40, 0.14),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 7%,
+          color-mix(
+            in srgb,
+            var(--push-secondary) 13%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--push-soft)
+        );
+    }
+
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+
+    .topbar.acl-header-pending {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+
+    .topbar.acl-unified-header {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+
+    .admin-push-shell {
+      width:
+        min(
+          1160px,
+          calc(100% - 28px)
+        );
+
+      margin: 0 auto;
+      padding: 30px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .admin-push-hero {
+      position: relative;
+      overflow: hidden;
+
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+
+      padding:
+        clamp(
+          28px,
+          5vw,
+          46px
+        );
+
+      border-radius: 28px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(--push-primary),
+          var(--push-secondary)
+        );
+
+      box-shadow:
+        var(--push-shadow);
+    }
+
+
+    .admin-push-hero::after {
+      content: "🔔";
+
+      position: absolute;
+      top: 50%;
+      right: 4%;
+
+      transform:
+        translateY(-50%)
+        rotate(-8deg);
+
+      opacity: 0.1;
+
+      font-size:
+        clamp(
+          110px,
+          18vw,
+          210px
+        );
+
+      pointer-events: none;
+    }
+
+
+    .admin-push-hero-copy {
+      position: relative;
+      z-index: 1;
+
+      max-width: 760px;
+    }
+
+
+    .admin-push-hero-top {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+
+    .admin-push-kicker,
+    .admin-push-edition-badge {
+      display: inline-flex;
+      align-items: center;
+
+      min-height: 31px;
+      padding: 7px 12px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+
+    .admin-push-edition-badge {
+      background:
+        rgba(255, 255, 255, 0.21);
+    }
+
+
+    .admin-push-hero h1 {
+      margin: 15px 0 10px;
+
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4rem
+        );
+
+      line-height: 1;
+    }
+
+
+    .admin-push-hero p {
+      margin: 0;
+
+      color:
+        rgba(255, 255, 255, 0.88);
+
+      font-size:
+        clamp(
+          0.96rem,
+          2vw,
+          1.06rem
+        );
+
+      line-height: 1.65;
+    }
+
+
+    .admin-push-hero-actions {
+      position: relative;
+      z-index: 1;
+
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 44px;
+      padding: 10px 16px;
+
+      border-radius: 11px;
+
+      cursor: pointer;
+
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+
+    .primary-btn {
+      border: 0;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--push-primary),
+          var(--push-secondary)
+        );
+    }
+
+
+    .secondary-btn {
+      border:
+        1px solid
+        var(--push-border);
+
+      color:
+        var(--push-primary);
+
+      background: #ffffff;
+    }
+
+
+    .danger-btn {
+      border: 1px solid #f0c6cc;
+
+      color:
+        var(--push-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .admin-push-hero
+    .secondary-btn {
+      border-color:
+        rgba(255, 255, 255, 0.34);
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+    }
+
+
+    .primary-btn:disabled,
+    .secondary-btn:disabled,
+    .danger-btn:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+
+    /* =====================================================
+       LAYOUT
+    ===================================================== */
+
+    .admin-push-grid {
+      display: grid;
+
+      grid-template-columns:
+        minmax(0, 1.35fr)
+        minmax(300px, 0.65fr);
+
+      gap: 18px;
+      align-items: start;
+
+      margin-top: 20px;
+    }
+
+
+    .admin-push-card {
+      padding: 22px;
+
+      border:
+        1px solid
+        var(--push-border);
+
+      border-radius: 21px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 32px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .admin-push-card h2 {
+      margin: 0;
+
+      color:
+        var(--push-primary);
+
+      font-size: 1.25rem;
+    }
+
+
+    .admin-push-card-intro {
+      margin: 7px 0 0;
+
+      color:
+        var(--push-muted);
+
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
+
+    /* =====================================================
+       FORM
+    ===================================================== */
+
+    .admin-push-form {
+      display: grid;
+      gap: 17px;
+
+      margin-top: 20px;
+    }
+
+
+    .admin-push-form-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 14px;
+    }
+
+
+    .admin-push-field {
+      display: grid;
+      gap: 7px;
+    }
+
+
+    .admin-push-field.full-span {
+      grid-column: 1 / -1;
+    }
+
+
+    .admin-push-field label,
+    .admin-push-field legend {
+      color:
+        var(--push-muted);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .admin-push-field input,
+    .admin-push-field textarea,
+    .admin-push-field select {
+      width: 100%;
+      min-height: 45px;
+      padding: 11px 12px;
+
+      border:
+        1px solid
+        var(--push-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--push-text);
+
+      background: #ffffff;
+      outline: none;
+    }
+
+
+    .admin-push-field textarea {
+      resize: vertical;
+
+      line-height: 1.55;
+    }
+
+
+    .admin-push-field input:focus,
+    .admin-push-field textarea:focus,
+    .admin-push-field select:focus {
+      border-color:
+        var(--push-secondary);
+
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--push-secondary) 14%,
+          transparent
+        );
+    }
+
+
+    .admin-push-help {
+      margin: 0;
+
+      color:
+        var(--push-muted);
+
+      font-size: 0.75rem;
+      line-height: 1.45;
+    }
+
+
+    .admin-push-checkbox {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+
+      min-height: 48px;
+      padding: 12px;
+
+      border:
+        1px solid
+        var(--push-border);
+
+      border-radius: 12px;
+
+      color:
+        var(--push-text);
+
+      background:
+        var(--push-soft-2);
+
+      font-size: 0.82rem;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+
+    .admin-push-checkbox input {
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+
+      accent-color:
+        var(--push-secondary);
+    }
+
+
+    .admin-push-form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+
+      padding-top: 18px;
+
+      border-top:
+        1px solid
+        var(--push-border);
+    }
+
+
+    /* =====================================================
+       PREVIEW
+    ===================================================== */
+
+    .push-preview-device {
+      position: relative;
+      overflow: hidden;
+
+      margin-top: 20px;
+      padding: 18px;
+
+      border:
+        8px solid
+        #1d2b38;
+
+      border-radius: 26px;
+
+      background:
+        linear-gradient(
+          145deg,
+          #f5f8fb,
+          #e7eef5
+        );
+
+      box-shadow:
+        inset 0 0 0 1px
+        rgba(255, 255, 255, 0.8);
+    }
+
+
+    .push-preview-device::before {
+      content: "";
+
+      display: block;
+
+      width: 72px;
+      height: 6px;
+
+      margin:
+        -6px auto
+        14px;
+
+      border-radius: 999px;
+
+      background: #1d2b38;
+    }
+
+
+    .push-preview-notification {
+      display: grid;
+
+      grid-template-columns:
+        auto
+        minmax(0, 1fr);
+
+      gap: 12px;
+
+      padding: 14px;
+
+      border:
+        1px solid
+        var(--push-border);
+
+      border-radius: 15px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 26px
+        rgba(20, 42, 62, 0.13);
+    }
+
+
+    .push-preview-icon {
+      display: grid;
+      place-items: center;
+
+      width: 45px;
+      height: 45px;
+
+      border-radius: 13px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--push-primary),
+          var(--push-secondary)
+        );
+
+      font-size: 1.2rem;
+    }
+
+
+    .push-preview-app {
+      color:
+        var(--push-muted);
+
+      font-size: 0.67rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+
+    .push-preview-title {
+      margin-top: 4px;
+
+      color:
+        var(--push-primary);
+
+      font-size: 0.92rem;
+      font-weight: 950;
+      line-height: 1.3;
+    }
+
+
+    .push-preview-body {
+      margin-top: 4px;
+
+      color:
+        var(--push-muted);
+
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+
+    /* =====================================================
+       AUDIENCE SUMMARY
+    ===================================================== */
+
+    .audience-summary {
+      display: grid;
+      gap: 10px;
+
+      margin-top: 18px;
+    }
+
+
+    .audience-summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+
+      padding: 11px 12px;
+
+      border:
+        1px solid
+        var(--push-border);
+
+      border-radius: 12px;
+
+      background:
+        var(--push-soft-2);
+    }
+
+
+    .audience-summary-row span {
+      color:
+        var(--push-muted);
+
+      font-size: 0.74rem;
+      font-weight: 800;
+    }
+
+
+    .audience-summary-row strong {
+      color:
+        var(--push-primary);
+
+      font-size: 0.78rem;
+      text-align: right;
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .admin-push-status {
+      margin-top: 17px;
+      padding: 15px 17px;
+
+      border:
+        1px solid
+        var(--push-border);
+
+      border-radius: 14px;
+
+      color:
+        var(--push-muted);
+
+      background: #ffffff;
+
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
+
+    .admin-push-status.success {
+      border-color: #bfe7d6;
+
+      color:
+        var(--push-success);
+
+      background: #f2fbf7;
+    }
+
+
+    .admin-push-status.error {
+      border-color: #f0c6cc;
+
+      color:
+        var(--push-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .admin-push-status.warning {
+      border-color: #f4d8a2;
+
+      color:
+        var(--push-warning);
+
+      background: #fffaf0;
+    }
+
+
+    /* =====================================================
+       RESULT
+    ===================================================== */
+
+    .push-result {
+      margin-top: 17px;
+      padding: 18px;
+
+      border:
+        1px solid
+        var(--push-border);
+
+      border-radius: 17px;
+
+      background:
+        var(--push-soft-2);
+    }
+
+
+    .push-result-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap: 10px;
+    }
+
+
+    .push-result-card {
+      padding: 13px;
+
+      border:
+        1px solid
+        var(--push-border);
+
+      border-radius: 12px;
+
+      background: #ffffff;
+
+      text-align: center;
+    }
+
+
+    .push-result-card span {
+      display: block;
+
+      color:
+        var(--push-muted);
+
+      font-size: 0.67rem;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+
+    .push-result-card strong {
+      display: block;
+      margin-top: 6px;
+
+      color:
+        var(--push-primary);
+
+      font-size: 1.7rem;
+      line-height: 1;
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
+
+    @media (max-width: 900px) {
+      .admin-push-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-push-hero {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+
+      .admin-push-hero-actions {
+        justify-content: flex-start;
+      }
+    }
+
+
+    @media (max-width: 680px) {
+      body {
+        padding-top: 82px;
+      }
+
+
+      .admin-push-shell {
+        width:
+          min(
+            calc(100% - 18px),
+            1160px
+          );
+
+        padding-top: 18px;
+      }
+
+
+      .admin-push-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-push-field.full-span {
+        grid-column: auto;
+      }
+
+
+      .admin-push-form-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+      }
+
+
+      .admin-push-form-actions button {
+        width: 100%;
+      }
+
+
+      .push-result-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+
+    @media (max-width: 480px) {
+      .admin-push-hero-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-push-hero-actions a {
+        width: 100%;
+      }
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="admin-push-shell">
+
+    <section class="admin-push-hero">
+
+      <div class="admin-push-hero-copy">
+
+        <div class="admin-push-hero-top">
+
+          <span class="admin-push-kicker">
+            ACL ADMIN COMMUNICATION
+          </span>
+
+
+          <span
+            id="adminPushEditionBadge"
+            class="admin-push-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
+
+        <h1>
+          Send Push Notification
+        </h1>
+
+
+        <p>
+          Send official ACL announcements, competition reminders,
+          module alerts, and urgent updates to registered devices.
+        </p>
+
+      </div>
+
+
+      <div class="admin-push-hero-actions">
+
+        <a
+          id="adminPushDashboardLink"
+          class="secondary-btn"
+          href="admin.html"
+        >
+          Admin Dashboard
+        </a>
+
+
+        <a
+          id="adminPushNotificationsLink"
+          class="secondary-btn"
+          href="notifications.html"
+        >
+          Notification Centre
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <div
+      id="adminPushStatus"
+      class="admin-push-status"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <section class="admin-push-grid">
+
+      <article class="admin-push-card">
+
+        <h2>
+          Compose notification
+        </h2>
+
+
+        <p class="admin-push-card-intro">
+          Choose the audience and message. Only devices that enabled
+          ACL push notifications can receive it.
+        </p>
+
+
+        <form
+          id="adminPushForm"
+          class="admin-push-form"
+          novalidate
+        >
+
+          <div class="admin-push-form-grid">
+
+            <div class="admin-push-field">
+
+              <label for="pushAudience">
+                Audience
+              </label>
+
+
+              <select id="pushAudience">
+
+                <option value="all">
+                  All registered devices
+                </option>
+
+                <option value="basic">
+                  Basic Edition devices
+                </option>
+
+                <option value="expert">
+                  Expert Edition devices
+                </option>
+
+                <option value="selected">
+                  Selected users
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="admin-push-field">
+
+              <label for="pushType">
+                Notification type
+              </label>
+
+
+              <select id="pushType">
+
+                <option value="announcement">
+                  Announcement
+                </option>
+
+                <option value="competition">
+                  Competition
+                </option>
+
+                <option value="module">
+                  Module update
+                </option>
+
+                <option value="challenge">
+                  Challenge
+                </option>
+
+                <option value="achievement">
+                  Achievement
+                </option>
+
+                <option value="system">
+                  System
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div
+              id="selectedUsersField"
+              class="admin-push-field full-span"
+              hidden
+            >
+
+              <label for="pushUserIds">
+                User IDs
+              </label>
+
+
+              <textarea
+                id="pushUserIds"
+                rows="4"
+                placeholder="Paste one Supabase user UUID per line, or separate them with commas"
+              ></textarea>
+
+
+              <p class="admin-push-help">
+                These must be Supabase Auth user IDs, not usernames or
+                email addresses.
+              </p>
+
+            </div>
+
+
+            <div class="admin-push-field full-span">
+
+              <label for="pushTitle">
+                Notification title
+              </label>
+
+
+              <input
+                id="pushTitle"
+                maxlength="120"
+                required
+                value="Alexandria Cardiology League"
+              >
+
+            </div>
+
+
+            <div class="admin-push-field full-span">
+
+              <label for="pushBody">
+                Message
+              </label>
+
+
+              <textarea
+                id="pushBody"
+                rows="5"
+                maxlength="500"
+                required
+                placeholder="Write the notification message"
+              ></textarea>
+
+
+              <p
+                id="pushBodyCounter"
+                class="admin-push-help"
+              >
+                0 / 500
+              </p>
+
+            </div>
+
+
+            <div class="admin-push-field full-span">
+
+              <label for="pushUrl">
+                Open page after tapping
+              </label>
+
+
+              <input
+                id="pushUrl"
+                value="/Cardiology/notifications.html"
+                placeholder="/Cardiology/notifications.html"
+              >
+
+
+              <p class="admin-push-help">
+                Use an internal ACL path beginning with
+                /Cardiology/.
+              </p>
+
+            </div>
+
+
+            <div class="admin-push-field">
+
+              <label for="pushTag">
+                Notification tag
+              </label>
+
+
+              <input
+                id="pushTag"
+                maxlength="100"
+                placeholder="Optional grouping tag"
+              >
+
+            </div>
+
+
+            <div class="admin-push-field">
+
+              <label>
+                Display behaviour
+              </label>
+
+
+              <label class="admin-push-checkbox">
+
+                <input
+                  id="pushRequireInteraction"
+                  type="checkbox"
+                >
+
+                Keep notification visible until the user interacts with it
+
+              </label>
+
+            </div>
+
+          </div>
+
+
+          <div class="admin-push-form-actions">
+
+            <button
+              id="resetPushForm"
+              class="secondary-btn"
+              type="button"
+            >
+              Reset
+            </button>
+
+
+            <button
+              id="sendPushButton"
+              class="primary-btn"
+              type="submit"
+            >
+              Send Push Notification
+            </button>
+
+          </div>
+
+        </form>
+
+
+        <section
+          id="pushSendResult"
+          class="push-result"
+          hidden
+        >
+
+          <div class="push-result-grid">
+
+            <article class="push-result-card">
+
+              <span>
+                Total
+              </span>
+
+              <strong id="pushResultTotal">
+                0
+              </strong>
+
+            </article>
+
+
+            <article class="push-result-card">
+
+              <span>
+                Sent
+              </span>
+
+              <strong id="pushResultSent">
+                0
+              </strong>
+
+            </article>
+
+
+            <article class="push-result-card">
+
+              <span>
+                Failed
+              </span>
+
+              <strong id="pushResultFailed">
+                0
+              </strong>
+
+            </article>
+
+          </div>
+
+        </section>
+
+      </article>
+
+
+      <aside class="admin-push-card">
+
+        <h2>
+          Live preview
+        </h2>
+
+
+        <p class="admin-push-card-intro">
+          Approximate appearance on a registered phone or computer.
+        </p>
+
+
+        <div class="push-preview-device">
+
+          <article class="push-preview-notification">
+
+            <div
+              class="push-preview-icon"
+              aria-hidden="true"
+            >
+              🔔
+            </div>
+
+
+            <div>
+
+              <div class="push-preview-app">
+                Alexandria Cardiology League
+              </div>
+
+
+              <div
+                id="pushPreviewTitle"
+                class="push-preview-title"
+              >
+                Alexandria Cardiology League
+              </div>
+
+
+              <div
+                id="pushPreviewBody"
+                class="push-preview-body"
+              >
+                Your notification message will appear here.
+              </div>
+
+            </div>
+
+          </article>
+
+        </div>
+
+
+        <div class="audience-summary">
+
+          <div class="audience-summary-row">
+
+            <span>
+              Audience
+            </span>
+
+            <strong id="pushPreviewAudience">
+              All registered devices
+            </strong>
+
+          </div>
+
+
+          <div class="audience-summary-row">
+
+            <span>
+              Type
+            </span>
+
+            <strong id="pushPreviewType">
+              Announcement
+            </strong>
+
+          </div>
+
+
+          <div class="audience-summary-row">
+
+            <span>
+              Opens
+            </span>
+
+            <strong id="pushPreviewUrl">
+              /Cardiology/notifications.html
+            </strong>
+
+          </div>
+
+        </div>
+
+      </aside>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.7.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-push.js?v=1.0.0"
+  ></script>
+
+</body>
+
+</html>
