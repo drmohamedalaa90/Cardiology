@@ -1,6 +1,6 @@
 import {
   listAttempts
-} from "./cloud-progress.js";
+} from "./cloud-progress.js?v=2.0.0";
 
 
 import {
