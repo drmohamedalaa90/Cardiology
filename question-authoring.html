@@ -1,0 +1,2967 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    id="questionAuthoringThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <title>
+    Question Authoring | Alexandria Cardiology League
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const requestedEdition =
+        String(
+          parameters.get(
+            "edition"
+          ) ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        (
+          requestedEdition ===
+            "basic" ||
+          requestedEdition ===
+            "expert"
+        )
+          ? requestedEdition
+          : (
+              storedEdition ===
+                "basic" ||
+              storedEdition ===
+                "expert"
+            )
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+
+      document.documentElement.classList.add(
+        edition ===
+          "basic"
+          ? "acl-authoring-basic"
+          : "acl-authoring-expert"
+      );
+
+
+      if (
+        !parameters.get(
+          "edition"
+        )
+      ) {
+        const updatedUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        updatedUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          updatedUrl
+        );
+      }
+    })();
+  </script>
+
+
+  <style>
+    :root {
+      --authoring-primary:
+        #123f72;
+
+      --authoring-secondary:
+        #176aa1;
+
+      --authoring-soft:
+        #eaf5ff;
+
+      --authoring-soft-2:
+        #f7fbff;
+
+      --authoring-accent:
+        #ffc928;
+
+      --authoring-success:
+        #168067;
+
+      --authoring-danger:
+        #b33443;
+
+      --authoring-warning:
+        #b97a00;
+
+      --authoring-text:
+        #17324d;
+
+      --authoring-muted:
+        #687d90;
+
+      --authoring-border:
+        #d9e6f2;
+
+      --authoring-card:
+        #ffffff;
+
+      --authoring-shadow:
+        0 18px 45px
+        rgba(
+          18,
+          63,
+          114,
+          0.12
+        );
+    }
+
+
+    html.acl-authoring-basic {
+      --authoring-primary:
+        #105541;
+
+      --authoring-secondary:
+        #168067;
+
+      --authoring-soft:
+        #eaf8f2;
+
+      --authoring-soft-2:
+        #f8fcfa;
+
+      --authoring-text:
+        #173e34;
+
+      --authoring-shadow:
+        0 18px 45px
+        rgba(
+          16,
+          85,
+          65,
+          0.12
+        );
+    }
+
+
+    html.acl-authoring-expert {
+      --authoring-primary:
+        #123f72;
+
+      --authoring-secondary:
+        #176aa1;
+
+      --authoring-soft:
+        #eaf5ff;
+
+      --authoring-soft-2:
+        #f7fbff;
+
+      --authoring-text:
+        #17324d;
+    }
+
+
+    * {
+      box-sizing:
+        border-box;
+    }
+
+
+    html,
+    body {
+      min-height:
+        100%;
+    }
+
+
+    body {
+      margin:
+        0;
+
+      padding-top:
+        92px;
+
+      color:
+        var(
+          --authoring-text
+        );
+
+      background:
+        radial-gradient(
+          circle at 10% 6%,
+          rgba(
+            255,
+            201,
+            40,
+            0.13
+          ),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 8%,
+          color-mix(
+            in srgb,
+            var(
+              --authoring-secondary
+            )
+            12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(
+            --authoring-soft
+          )
+        );
+    }
+
+
+    button,
+    input,
+    textarea,
+    select {
+      font:
+        inherit;
+    }
+
+
+    .topbar.acl-header-pending {
+      opacity:
+        0;
+
+      visibility:
+        hidden;
+
+      pointer-events:
+        none;
+    }
+
+
+    .topbar.acl-unified-header {
+      opacity:
+        1;
+
+      visibility:
+        visible;
+
+      pointer-events:
+        auto;
+    }
+
+
+    .authoring-shell {
+      width:
+        min(
+          1280px,
+          calc(
+            100% - 28px
+          )
+        );
+
+      margin:
+        0 auto;
+
+      padding:
+        30px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .authoring-hero {
+      position:
+        relative;
+
+      overflow:
+        hidden;
+
+      padding:
+        clamp(
+          28px,
+          5vw,
+          48px
+        );
+
+      border-radius:
+        28px;
+
+      color:
+        #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(
+            --authoring-primary
+          ),
+          var(
+            --authoring-secondary
+          )
+        );
+
+      box-shadow:
+        var(
+          --authoring-shadow
+        );
+    }
+
+
+    .authoring-hero::after {
+      content:
+        "✍";
+
+      position:
+        absolute;
+
+      top:
+        50%;
+
+      right:
+        5%;
+
+      transform:
+        translateY(
+          -50%
+        )
+        rotate(
+          -8deg
+        );
+
+      color:
+        rgba(
+          255,
+          255,
+          255,
+          0.11
+        );
+
+      font-size:
+        clamp(
+          110px,
+          19vw,
+          210px
+        );
+
+      pointer-events:
+        none;
+    }
+
+
+    .authoring-hero-content {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      max-width:
+        820px;
+    }
+
+
+    .authoring-hero-top {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        10px;
+    }
+
+
+    .authoring-kicker,
+    .authoring-edition-badge {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      min-height:
+        31px;
+
+      padding:
+        7px 12px;
+
+      border:
+        1px solid
+        rgba(
+          255,
+          255,
+          255,
+          0.3
+        );
+
+      border-radius:
+        999px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.12
+        );
+
+      color:
+        #ffffff;
+
+      font-size:
+        0.74rem;
+
+      font-weight:
+        900;
+
+      letter-spacing:
+        0.09em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .authoring-edition-badge {
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.21
+        );
+    }
+
+
+    .authoring-hero h1 {
+      margin:
+        15px 0 10px;
+
+      color:
+        #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4rem
+        );
+
+      line-height:
+        1;
+    }
+
+
+    .authoring-hero p {
+      margin:
+        0;
+
+      color:
+        rgba(
+          255,
+          255,
+          255,
+          0.88
+        );
+
+      font-size:
+        clamp(
+          0.98rem,
+          2vw,
+          1.08rem
+        );
+
+      line-height:
+        1.65;
+    }
+
+
+    /* =====================================================
+       TOOLBAR
+    ===================================================== */
+
+    .authoring-toolbar {
+      display:
+        flex;
+
+      align-items:
+        flex-end;
+
+      justify-content:
+        space-between;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        14px;
+
+      margin-top:
+        20px;
+
+      padding:
+        17px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        19px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.97
+        );
+
+      box-shadow:
+        0 12px 30px
+        rgba(
+          18,
+          63,
+          114,
+          0.07
+        );
+    }
+
+
+    .authoring-toolbar-group {
+      display:
+        flex;
+
+      align-items:
+        flex-end;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        11px;
+    }
+
+
+    .authoring-field {
+      display:
+        grid;
+
+      gap:
+        6px;
+    }
+
+
+    .authoring-field label {
+      color:
+        var(
+          --authoring-muted
+        );
+
+      font-size:
+        0.72rem;
+
+      font-weight:
+        850;
+
+      letter-spacing:
+        0.05em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .authoring-field input,
+    .authoring-field select,
+    .authoring-field textarea {
+      width:
+        100%;
+
+      min-height:
+        43px;
+
+      padding:
+        10px 12px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        11px;
+
+      color:
+        var(
+          --authoring-text
+        );
+
+      background:
+        #ffffff;
+
+      outline:
+        none;
+    }
+
+
+    .authoring-field input:focus,
+    .authoring-field select:focus,
+    .authoring-field textarea:focus {
+      border-color:
+        var(
+          --authoring-secondary
+        );
+
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(
+            --authoring-secondary
+          )
+          14%,
+          transparent
+        );
+    }
+
+
+    .authoring-toolbar .authoring-field select {
+      min-width:
+        185px;
+    }
+
+
+    .authoring-toolbar-actions {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        9px;
+    }
+
+
+    .authoring-button {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        43px;
+
+      padding:
+        9px 15px;
+
+      border:
+        0;
+
+      border-radius:
+        11px;
+
+      cursor:
+        pointer;
+
+      font-weight:
+        900;
+    }
+
+
+    .authoring-button-primary {
+      color:
+        #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(
+            --authoring-primary
+          ),
+          var(
+            --authoring-secondary
+          )
+        );
+    }
+
+
+    .authoring-button-secondary {
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      color:
+        var(
+          --authoring-primary
+        );
+
+      background:
+        #ffffff;
+    }
+
+
+    .authoring-button-danger {
+      border:
+        1px solid
+        #f0c6cc;
+
+      color:
+        var(
+          --authoring-danger
+        );
+
+      background:
+        #fff5f6;
+    }
+
+
+    .authoring-button:disabled {
+      cursor:
+        wait;
+
+      opacity:
+        0.65;
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .authoring-status {
+      margin-top:
+        15px;
+
+      padding:
+        14px 16px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        13px;
+
+      color:
+        var(
+          --authoring-muted
+        );
+
+      background:
+        #ffffff;
+
+      font-weight:
+        750;
+    }
+
+
+    .authoring-status.success {
+      border-color:
+        #bfe7d6;
+
+      color:
+        var(
+          --authoring-success
+        );
+
+      background:
+        #f2fbf7;
+    }
+
+
+    .authoring-status.error {
+      border-color:
+        #f0c6cc;
+
+      color:
+        var(
+          --authoring-danger
+        );
+
+      background:
+        #fff5f6;
+    }
+
+
+    .authoring-status.warning {
+      border-color:
+        #f4d8a2;
+
+      color:
+        var(
+          --authoring-warning
+        );
+
+      background:
+        #fffaf0;
+    }
+
+
+    .authoring-status:empty {
+      display:
+        none;
+    }
+
+
+    /* =====================================================
+       LAYOUT
+    ===================================================== */
+
+    .authoring-layout {
+      display:
+        grid;
+
+      grid-template-columns:
+        minmax(
+          0,
+          0.72fr
+        )
+        minmax(
+          0,
+          1.28fr
+        );
+
+      gap:
+        18px;
+
+      margin-top:
+        18px;
+    }
+
+
+    .authoring-panel {
+      min-width:
+        0;
+
+      padding:
+        20px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        21px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.98
+        );
+
+      box-shadow:
+        0 12px 32px
+        rgba(
+          18,
+          63,
+          114,
+          0.07
+        );
+    }
+
+
+    .authoring-panel-heading {
+      display:
+        flex;
+
+      align-items:
+        flex-start;
+
+      justify-content:
+        space-between;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        12px;
+
+      margin-bottom:
+        16px;
+    }
+
+
+    .authoring-panel-heading h2 {
+      margin:
+        0;
+
+      color:
+        var(
+          --authoring-primary
+        );
+
+      font-size:
+        1.18rem;
+    }
+
+
+    .authoring-panel-heading p {
+      margin:
+        5px 0 0;
+
+      color:
+        var(
+          --authoring-muted
+        );
+
+      font-size:
+        0.82rem;
+
+      line-height:
+        1.5;
+    }
+
+
+    /* =====================================================
+       QUESTION LIST
+    ===================================================== */
+
+    .authoring-question-list {
+      display:
+        grid;
+
+      gap:
+        10px;
+
+      max-height:
+        820px;
+
+      overflow-y:
+        auto;
+
+      padding-right:
+        3px;
+    }
+
+
+    .authoring-question-list-item {
+      display:
+        grid;
+
+      grid-template-columns:
+        auto
+        minmax(
+          0,
+          1fr
+        )
+        auto;
+
+      gap:
+        11px;
+
+      align-items:
+        center;
+
+      width:
+        100%;
+
+      padding:
+        12px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        14px;
+
+      color:
+        var(
+          --authoring-text
+        );
+
+      background:
+        #ffffff;
+
+      cursor:
+        pointer;
+
+      text-align:
+        left;
+    }
+
+
+    .authoring-question-list-item.active {
+      border-color:
+        var(
+          --authoring-secondary
+        );
+
+      background:
+        var(
+          --authoring-soft-2
+        );
+
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(
+            --authoring-secondary
+          )
+          12%,
+          transparent
+        );
+    }
+
+
+    .authoring-question-number {
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      width:
+        36px;
+
+      min-width:
+        36px;
+
+      height:
+        36px;
+
+      border-radius:
+        11px;
+
+      color:
+        #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(
+            --authoring-primary
+          ),
+          var(
+            --authoring-secondary
+          )
+        );
+
+      font-size:
+        0.8rem;
+
+      font-weight:
+        950;
+    }
+
+
+    .authoring-question-list-main {
+      min-width:
+        0;
+    }
+
+
+    .authoring-question-list-main strong {
+      display:
+        block;
+
+      overflow:
+        hidden;
+
+      color:
+        var(
+          --authoring-primary
+        );
+
+      font-size:
+        0.83rem;
+
+      text-overflow:
+        ellipsis;
+
+      white-space:
+        nowrap;
+    }
+
+
+    .authoring-question-list-main span {
+      display:
+        block;
+
+      margin-top:
+        4px;
+
+      color:
+        var(
+          --authoring-muted
+        );
+
+      font-size:
+        0.7rem;
+
+      text-transform:
+        capitalize;
+    }
+
+
+    .authoring-question-state {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      min-height:
+        26px;
+
+      padding:
+        4px 8px;
+
+      border-radius:
+        999px;
+
+      color:
+        var(
+          --authoring-primary
+        );
+
+      background:
+        var(
+          --authoring-soft
+        );
+
+      font-size:
+        0.64rem;
+
+      font-weight:
+        900;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .authoring-question-state.published {
+      color:
+        #ffffff;
+
+      background:
+        var(
+          --authoring-success
+        );
+    }
+
+
+    .authoring-question-list-empty {
+      padding:
+        38px 18px;
+
+      border:
+        1px dashed
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        16px;
+
+      color:
+        var(
+          --authoring-muted
+        );
+
+      text-align:
+        center;
+    }
+
+
+    /* =====================================================
+       FORM
+    ===================================================== */
+
+    .authoring-form {
+      display:
+        grid;
+
+      gap:
+        18px;
+    }
+
+
+    .authoring-form-section {
+      display:
+        grid;
+
+      gap:
+        14px;
+
+      padding:
+        17px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        16px;
+
+      background:
+        var(
+          --authoring-soft-2
+        );
+    }
+
+
+    .authoring-form-section h3 {
+      margin:
+        0;
+
+      color:
+        var(
+          --authoring-primary
+        );
+
+      font-size:
+        0.96rem;
+    }
+
+
+    .authoring-form-section-description {
+      margin:
+        -7px 0 0;
+
+      color:
+        var(
+          --authoring-muted
+        );
+
+      font-size:
+        0.78rem;
+
+      line-height:
+        1.45;
+    }
+
+
+    .authoring-form-grid {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(
+            0,
+            1fr
+          )
+        );
+
+      gap:
+        13px;
+    }
+
+
+    .authoring-form-grid-three {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(
+            0,
+            1fr
+          )
+        );
+
+      gap:
+        13px;
+    }
+
+
+    .authoring-field-full {
+      grid-column:
+        1 / -1;
+    }
+
+
+    .authoring-field textarea {
+      min-height:
+        112px;
+
+      resize:
+        vertical;
+
+      line-height:
+        1.55;
+    }
+
+
+    .authoring-field textarea.authoring-textarea-large {
+      min-height:
+        165px;
+    }
+
+
+    .authoring-field-hint {
+      margin:
+        0;
+
+      color:
+        var(
+          --authoring-muted
+        );
+
+      font-size:
+        0.7rem;
+
+      line-height:
+        1.45;
+    }
+
+
+    .authoring-checkbox-row {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        14px;
+    }
+
+
+    .authoring-checkbox-label {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      gap:
+        8px;
+
+      color:
+        var(
+          --authoring-text
+        );
+
+      font-size:
+        0.82rem;
+
+      font-weight:
+        750;
+    }
+
+
+    .authoring-checkbox-label input {
+      width:
+        17px;
+
+      height:
+        17px;
+
+      accent-color:
+        var(
+          --authoring-secondary
+        );
+    }
+
+
+    /* =====================================================
+       OPTIONS
+    ===================================================== */
+
+    .authoring-options-list {
+      display:
+        grid;
+
+      gap:
+        11px;
+    }
+
+
+    .authoring-option-row {
+      display:
+        grid;
+
+      grid-template-columns:
+        auto
+        minmax(
+          0,
+          1fr
+        )
+        auto;
+
+      gap:
+        10px;
+
+      align-items:
+        center;
+
+      padding:
+        11px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        14px;
+
+      background:
+        #ffffff;
+    }
+
+
+    .authoring-option-key {
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      width:
+        38px;
+
+      height:
+        38px;
+
+      border-radius:
+        11px;
+
+      color:
+        #ffffff;
+
+      background:
+        var(
+          --authoring-primary
+        );
+
+      font-size:
+        0.82rem;
+
+      font-weight:
+        950;
+    }
+
+
+    .authoring-option-row input[type="text"] {
+      width:
+        100%;
+
+      min-height:
+        42px;
+
+      padding:
+        9px 11px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        10px;
+
+      color:
+        var(
+          --authoring-text
+        );
+
+      background:
+        #ffffff;
+    }
+
+
+    .authoring-option-correct {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      gap:
+        6px;
+
+      color:
+        var(
+          --authoring-muted
+        );
+
+      font-size:
+        0.72rem;
+
+      font-weight:
+        850;
+    }
+
+
+    .authoring-option-correct input {
+      width:
+        17px;
+
+      height:
+        17px;
+
+      accent-color:
+        var(
+          --authoring-success
+        );
+    }
+
+
+    /* =====================================================
+       IMAGE PREVIEW
+    ===================================================== */
+
+    .authoring-image-preview {
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      min-height:
+        180px;
+
+      overflow:
+        hidden;
+
+      border:
+        1px dashed
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        15px;
+
+      color:
+        var(
+          --authoring-muted
+        );
+
+      background:
+        #ffffff;
+
+      text-align:
+        center;
+    }
+
+
+    .authoring-image-preview img {
+      display:
+        block;
+
+      width:
+        100%;
+
+      max-height:
+        360px;
+
+      object-fit:
+        contain;
+    }
+
+
+    /* =====================================================
+       FORM ACTIONS
+    ===================================================== */
+
+    .authoring-form-actions {
+      position:
+        sticky;
+
+      bottom:
+        12px;
+
+      z-index:
+        4;
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        11px;
+
+      padding:
+        14px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        15px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.96
+        );
+
+      box-shadow:
+        0 14px 34px
+        rgba(
+          18,
+          63,
+          114,
+          0.12
+        );
+
+      backdrop-filter:
+        blur(
+          10px
+        );
+    }
+
+
+    .authoring-form-actions-left,
+    .authoring-form-actions-right {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        9px;
+    }
+
+
+    /* =====================================================
+       FOOTER
+    ===================================================== */
+
+    .authoring-footer {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        12px;
+
+      margin-top:
+        22px;
+    }
+
+
+    .authoring-footer p {
+      margin:
+        0;
+
+      color:
+        var(
+          --authoring-muted
+        );
+
+      font-size:
+        0.76rem;
+    }
+
+
+    .authoring-footer-links {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        8px;
+    }
+
+
+    .authoring-footer-link {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        40px;
+
+      padding:
+        8px 13px;
+
+      border:
+        1px solid
+        var(
+          --authoring-border
+        );
+
+      border-radius:
+        10px;
+
+      color:
+        var(
+          --authoring-primary
+        );
+
+      background:
+        #ffffff;
+
+      font-size:
+        0.78rem;
+
+      font-weight:
+        850;
+
+      text-decoration:
+        none;
+    }
+
+
+    [hidden] {
+      display:
+        none !important;
+    }
+
+
+    @media (
+      max-width:
+      980px
+    ) {
+      .authoring-layout {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .authoring-question-list {
+        max-height:
+          420px;
+      }
+    }
+
+
+    @media (
+      max-width:
+      760px
+    ) {
+      body {
+        padding-top:
+          82px;
+      }
+
+
+      .authoring-shell {
+        width:
+          min(
+            calc(
+              100% - 18px
+            ),
+            1280px
+          );
+
+        padding-top:
+          18px;
+      }
+
+
+      .authoring-toolbar {
+        align-items:
+          stretch;
+
+        flex-direction:
+          column;
+      }
+
+
+      .authoring-toolbar-group {
+        display:
+          grid;
+
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .authoring-toolbar .authoring-field select {
+        width:
+          100%;
+
+        min-width:
+          0;
+      }
+
+
+      .authoring-toolbar-actions {
+        width:
+          100%;
+      }
+
+
+      .authoring-toolbar-actions button {
+        flex:
+          1;
+      }
+
+
+      .authoring-form-grid,
+      .authoring-form-grid-three {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .authoring-option-row {
+        grid-template-columns:
+          auto
+          minmax(
+            0,
+            1fr
+          );
+      }
+
+
+      .authoring-option-correct {
+        grid-column:
+          1 / -1;
+      }
+
+
+      .authoring-form-actions {
+        position:
+          static;
+      }
+
+
+      .authoring-form-actions-left,
+      .authoring-form-actions-right {
+        width:
+          100%;
+      }
+
+
+      .authoring-form-actions button {
+        flex:
+          1;
+      }
+    }
+  </style>
+</head>
+
+
+<body>
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="authoring-shell">
+
+    <section class="authoring-hero">
+
+      <div class="authoring-hero-content">
+
+        <div class="authoring-hero-top">
+
+          <span class="authoring-kicker">
+            ACL ADMIN
+          </span>
+
+
+          <span
+            id="questionAuthoringEditionBadge"
+            class="authoring-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
+
+        <h1>
+          Question Authoring
+        </h1>
+
+
+        <p>
+          Create, edit, review, publish, and organize high-quality ACL
+          questions while keeping each question linked to the correct
+          edition, module, and quiz.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <section
+      class="authoring-toolbar"
+      aria-label="Question authoring controls"
+    >
+
+      <div class="authoring-toolbar-group">
+
+        <div class="authoring-field">
+
+          <label for="questionAuthoringModuleFilter">
+            Module
+          </label>
+
+          <select id="questionAuthoringModuleFilter">
+
+            <option value="">
+              Select module
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="authoring-field">
+
+          <label for="questionAuthoringQuizFilter">
+            Quiz
+          </label>
+
+          <select id="questionAuthoringQuizFilter">
+
+            <option value="">
+              Select quiz
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="authoring-field">
+
+          <label for="questionAuthoringStatusFilter">
+            Status
+          </label>
+
+          <select id="questionAuthoringStatusFilter">
+
+            <option value="all">
+              All questions
+            </option>
+
+            <option value="draft">
+              Draft
+            </option>
+
+            <option value="published">
+              Published
+            </option>
+
+            <option value="archived">
+              Archived
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <div class="authoring-toolbar-actions">
+
+        <button
+          id="refreshQuestionAuthoring"
+          class="
+            authoring-button
+            authoring-button-secondary
+          "
+          type="button"
+        >
+          Refresh
+        </button>
+
+
+        <button
+          id="createNewQuestion"
+          class="
+            authoring-button
+            authoring-button-primary
+          "
+          type="button"
+        >
+          New question
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <div
+      id="questionAuthoringStatus"
+      class="authoring-status"
+      role="status"
+      aria-live="polite"
+    >
+      Loading question authoring…
+    </div>
+
+
+    <section class="authoring-layout">
+
+      <aside class="authoring-panel">
+
+        <div class="authoring-panel-heading">
+
+          <div>
+
+            <h2>
+              Questions
+            </h2>
+
+            <p id="questionAuthoringListDescription">
+              Select a module and quiz to review questions.
+            </p>
+
+          </div>
+
+
+          <span
+            id="questionAuthoringQuestionCount"
+            class="authoring-question-state"
+          >
+            0
+          </span>
+
+        </div>
+
+
+        <div
+          id="questionAuthoringQuestionList"
+          class="authoring-question-list"
+        >
+
+          <div class="authoring-question-list-empty">
+            Select a module and quiz to load questions.
+          </div>
+
+        </div>
+
+      </aside>
+
+
+      <section class="authoring-panel">
+
+        <div class="authoring-panel-heading">
+
+          <div>
+
+            <h2 id="questionAuthoringFormTitle">
+              New question
+            </h2>
+
+            <p id="questionAuthoringFormDescription">
+              Complete the fields below, then save as draft or publish.
+            </p>
+
+          </div>
+
+
+          <span
+            id="questionAuthoringCurrentState"
+            class="authoring-question-state"
+          >
+            Draft
+          </span>
+
+        </div>
+
+
+        <form
+          id="questionAuthoringForm"
+          class="authoring-form"
+          novalidate
+        >
+
+          <input
+            id="questionAuthoringQuestionId"
+            type="hidden"
+          >
+
+
+          <section class="authoring-form-section">
+
+            <h3>
+              Question classification
+            </h3>
+
+
+            <p class="authoring-form-section-description">
+              Assign the question to the correct module, quiz, topic,
+              difficulty, and order.
+            </p>
+
+
+            <div class="authoring-form-grid-three">
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringModuleId">
+                  Module
+                </label>
+
+                <select
+                  id="questionAuthoringModuleId"
+                  required
+                >
+
+                  <option value="">
+                    Select module
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringQuizId">
+                  Quiz
+                </label>
+
+                <select
+                  id="questionAuthoringQuizId"
+                  required
+                >
+
+                  <option value="">
+                    Select quiz
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringOrderIndex">
+                  Order
+                </label>
+
+                <input
+                  id="questionAuthoringOrderIndex"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value="1"
+                  required
+                >
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringType">
+                  Question type
+                </label>
+
+                <select
+                  id="questionAuthoringType"
+                  required
+                >
+
+                  <option value="single_best_answer">
+                    Single best answer
+                  </option>
+
+                  <option value="multiple_response">
+                    Multiple response
+                  </option>
+
+                  <option value="true_false">
+                    True or false
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringDifficulty">
+                  Difficulty
+                </label>
+
+                <select
+                  id="questionAuthoringDifficulty"
+                  required
+                >
+
+                  <option value="basic">
+                    Basic
+                  </option>
+
+                  <option value="intermediate">
+                    Intermediate
+                  </option>
+
+                  <option
+                    value="expert"
+                    selected
+                  >
+                    Expert
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringTopic">
+                  Topic
+                </label>
+
+                <input
+                  id="questionAuthoringTopic"
+                  type="text"
+                  maxlength="140"
+                  placeholder="e.g. Left main bifurcation PCI"
+                >
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <section class="authoring-form-section">
+
+            <h3>
+              Clinical question
+            </h3>
+
+
+            <p class="authoring-form-section-description">
+              Write the clinical scenario and the exact question stem
+              separately when appropriate.
+            </p>
+
+
+            <div class="authoring-form-grid">
+
+              <div class="authoring-field authoring-field-full">
+
+                <label for="questionAuthoringScenario">
+                  Clinical scenario
+                </label>
+
+                <textarea
+                  id="questionAuthoringScenario"
+                  class="authoring-textarea-large"
+                  placeholder="Enter the clinical case, context, investigations, or procedural findings."
+                ></textarea>
+
+              </div>
+
+
+              <div class="authoring-field authoring-field-full">
+
+                <label for="questionAuthoringStem">
+                  Question stem
+                </label>
+
+                <textarea
+                  id="questionAuthoringStem"
+                  required
+                  placeholder="Enter the specific question being asked."
+                ></textarea>
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringTimeLimit">
+                  Time limit in seconds
+                </label>
+
+                <input
+                  id="questionAuthoringTimeLimit"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="60"
+                >
+
+                <p class="authoring-field-hint">
+                  Use 0 to inherit the quiz default.
+                </p>
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringStatusValue">
+                  Question status
+                </label>
+
+                <select id="questionAuthoringStatusValue">
+
+                  <option value="draft">
+                    Draft
+                  </option>
+
+                  <option value="published">
+                    Published
+                  </option>
+
+                  <option value="archived">
+                    Archived
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <section class="authoring-form-section">
+
+            <h3>
+              Answer options
+            </h3>
+
+
+            <p class="authoring-form-section-description">
+              Enter four options and mark the correct answer. For single
+              best answer questions, choose only one correct option.
+            </p>
+
+
+            <div
+              id="questionAuthoringOptions"
+              class="authoring-options-list"
+            >
+
+              <div
+                class="authoring-option-row"
+                data-option-row="A"
+              >
+
+                <span class="authoring-option-key">
+                  A
+                </span>
+
+
+                <input
+                  id="questionAuthoringOptionA"
+                  type="text"
+                  placeholder="Option A"
+                  required
+                >
+
+
+                <label class="authoring-option-correct">
+
+                  <input
+                    type="radio"
+                    name="questionAuthoringCorrectOption"
+                    value="A"
+                  >
+
+                  Correct
+
+                </label>
+
+              </div>
+
+
+              <div
+                class="authoring-option-row"
+                data-option-row="B"
+              >
+
+                <span class="authoring-option-key">
+                  B
+                </span>
+
+
+                <input
+                  id="questionAuthoringOptionB"
+                  type="text"
+                  placeholder="Option B"
+                  required
+                >
+
+
+                <label class="authoring-option-correct">
+
+                  <input
+                    type="radio"
+                    name="questionAuthoringCorrectOption"
+                    value="B"
+                  >
+
+                  Correct
+
+                </label>
+
+              </div>
+
+
+              <div
+                class="authoring-option-row"
+                data-option-row="C"
+              >
+
+                <span class="authoring-option-key">
+                  C
+                </span>
+
+
+                <input
+                  id="questionAuthoringOptionC"
+                  type="text"
+                  placeholder="Option C"
+                  required
+                >
+
+
+                <label class="authoring-option-correct">
+
+                  <input
+                    type="radio"
+                    name="questionAuthoringCorrectOption"
+                    value="C"
+                  >
+
+                  Correct
+
+                </label>
+
+              </div>
+
+
+              <div
+                class="authoring-option-row"
+                data-option-row="D"
+              >
+
+                <span class="authoring-option-key">
+                  D
+                </span>
+
+
+                <input
+                  id="questionAuthoringOptionD"
+                  type="text"
+                  placeholder="Option D"
+                  required
+                >
+
+
+                <label class="authoring-option-correct">
+
+                  <input
+                    type="radio"
+                    name="questionAuthoringCorrectOption"
+                    value="D"
+                  >
+
+                  Correct
+
+                </label>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <section class="authoring-form-section">
+
+            <h3>
+              Explanation and learning material
+            </h3>
+
+
+            <p class="authoring-form-section-description">
+              Add the post-answer explanation, expert reasoning, and
+              optional flashcard content.
+            </p>
+
+
+            <div class="authoring-form-grid">
+
+              <div class="authoring-field authoring-field-full">
+
+                <label for="questionAuthoringExplanation">
+                  Explanation
+                </label>
+
+                <textarea
+                  id="questionAuthoringExplanation"
+                  class="authoring-textarea-large"
+                  placeholder="Explain why the correct answer is correct and why the distractors are incorrect."
+                ></textarea>
+
+              </div>
+
+
+              <div class="authoring-field authoring-field-full">
+
+                <label for="questionAuthoringExpertTip">
+                  Dr. Corazón expert tip
+                </label>
+
+                <textarea
+                  id="questionAuthoringExpertTip"
+                  placeholder="Write 1–3 concise sentences showing how an expert approaches the question without revealing the answer directly."
+                ></textarea>
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringFlashcardType">
+                  Flashcard type
+                </label>
+
+                <select id="questionAuthoringFlashcardType">
+
+                  <option value="flashcard">
+                    FLASHCARD
+                  </option>
+
+                  <option value="trial_flashcard">
+                    TRIAL FLASHCARD
+                  </option>
+
+                  <option value="none">
+                    No flashcard
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringFlashcardTitle">
+                  Flashcard title
+                </label>
+
+                <input
+                  id="questionAuthoringFlashcardTitle"
+                  type="text"
+                  maxlength="180"
+                  placeholder="Main topic or named clinical trial"
+                >
+
+              </div>
+
+
+              <div class="authoring-field authoring-field-full">
+
+                <label for="questionAuthoringFlashcardContent">
+                  Flashcard content
+                </label>
+
+                <textarea
+                  id="questionAuthoringFlashcardContent"
+                  class="authoring-textarea-large"
+                  placeholder="Add substantial study notes with headings and approximately 15–20 high-yield bullet lines."
+                ></textarea>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <section class="authoring-form-section">
+
+            <h3>
+              Media and additional settings
+            </h3>
+
+
+            <div class="authoring-form-grid">
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringImageUrl">
+                  Image URL
+                </label>
+
+                <input
+                  id="questionAuthoringImageUrl"
+                  type="url"
+                  placeholder="https://..."
+                >
+
+              </div>
+
+
+              <div class="authoring-field">
+
+                <label for="questionAuthoringReference">
+                  Reference
+                </label>
+
+                <input
+                  id="questionAuthoringReference"
+                  type="text"
+                  maxlength="240"
+                  placeholder="Guideline, paper, trial, or book reference"
+                >
+
+              </div>
+
+
+              <div class="authoring-field authoring-field-full">
+
+                <div
+                  id="questionAuthoringImagePreview"
+                  class="authoring-image-preview"
+                >
+                  Image preview will appear here.
+                </div>
+
+              </div>
+
+
+              <div class="authoring-field authoring-field-full">
+
+                <div class="authoring-checkbox-row">
+
+                  <label class="authoring-checkbox-label">
+
+                    <input
+                      id="questionAuthoringAllowConfidence"
+                      type="checkbox"
+                      checked
+                    >
+
+                    Ask for confidence
+
+                  </label>
+
+
+                  <label class="authoring-checkbox-label">
+
+                    <input
+                      id="questionAuthoringAllowFlashcard"
+                      type="checkbox"
+                      checked
+                    >
+
+                    Show flashcard button
+
+                  </label>
+
+
+                  <label class="authoring-checkbox-label">
+
+                    <input
+                      id="questionAuthoringActive"
+                      type="checkbox"
+                      checked
+                    >
+
+                    Active question
+
+                  </label>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <div class="authoring-form-actions">
+
+            <div class="authoring-form-actions-left">
+
+              <button
+                id="deleteQuestion"
+                class="
+                  authoring-button
+                  authoring-button-danger
+                "
+                type="button"
+                disabled
+              >
+                Delete question
+              </button>
+
+
+              <button
+                id="duplicateQuestion"
+                class="
+                  authoring-button
+                  authoring-button-secondary
+                "
+                type="button"
+                disabled
+              >
+                Duplicate
+              </button>
+
+            </div>
+
+
+            <div class="authoring-form-actions-right">
+
+              <button
+                id="resetQuestionForm"
+                class="
+                  authoring-button
+                  authoring-button-secondary
+                "
+                type="button"
+              >
+                Reset
+              </button>
+
+
+              <button
+                id="saveQuestionDraft"
+                class="
+                  authoring-button
+                  authoring-button-secondary
+                "
+                type="button"
+              >
+                Save draft
+              </button>
+
+
+              <button
+                id="publishQuestion"
+                class="
+                  authoring-button
+                  authoring-button-primary
+                "
+                type="submit"
+              >
+                Save and publish
+              </button>
+
+            </div>
+
+          </div>
+
+        </form>
+
+      </section>
+
+    </section>
+
+
+    <footer class="authoring-footer">
+
+      <p>
+        Only administrators should access question authoring. Supabase RLS
+        must also enforce all create, update, publish, and delete permissions.
+      </p>
+
+
+      <div class="authoring-footer-links">
+
+        <a
+          id="questionAuthoringModulesLink"
+          class="authoring-footer-link"
+          href="modules.html"
+        >
+          Modules
+        </a>
+
+
+        <a
+          id="questionAuthoringAnalyticsLink"
+          class="authoring-footer-link"
+          href="admin-analytics.html"
+        >
+          Analytics
+        </a>
+
+
+        <a
+          class="authoring-footer-link"
+          href="pathways.html"
+        >
+          Switch Edition
+        </a>
+
+      </div>
+
+    </footer>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="assets/js/question-authoring.js?v=1.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
+</body>
+
+</html>
