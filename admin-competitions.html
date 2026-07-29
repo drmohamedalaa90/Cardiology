@@ -1,6 +1,1506 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Competition Manager | ACL</title><link rel="stylesheet" href="assets/css/main.css?v=2.8.7"><link rel="stylesheet" href="assets/css/auth.css?v=1.5.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header class="topbar"><a class="brand brand-link" href="modules.html">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="admin.html">Admin</a><a class="nav-btn" href="modules.html">Modules</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container">
-<section data-admin-shell data-active="competitions"></section><section class="card admin-hero"><div><span class="admin-kicker">PHASE 2.5</span><h1>Competition Manager</h1><p class="muted">Schedule official ACL rounds, define duration and anti-cheat rules, then publish them.</p></div><button id="newCompetition" class="primary-btn">Create Competition</button></section><div id="status" class="status-box" hidden></div><section id="competitionList" class="module-admin-grid"></section></main>
-<dialog id="competitionDialog" class="module-dialog"><form id="competitionForm"><div class="dialog-title-row"><h2 id="dialogTitle">Create Competition</h2><button type="button" id="closeDialog" class="dialog-close">×</button></div><input id="competitionId" type="hidden"><div class="module-form-grid"><label>Module<select id="moduleId" required></select></label><label>Quiz<select id="quizId" required></select></label><label>Title<input id="title" required></label><label>Slug<input id="slug" required></label><label>Opens at<input id="opensAt" type="datetime-local" required></label><label>Closes at<input id="closesAt" type="datetime-local" required></label><label>Duration (minutes)<input id="duration" type="number" min="1" value="20"></label><label>Warnings allowed<input id="warnings" type="number" min="0" max="10" value="2"></label><label>Status<select id="competitionStatus"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label><label class="full-span">Description<textarea id="description" rows="3"></textarea></label></div><div class="toggle-grid"><label><input id="confidence" type="checkbox" checked> Confidence scoring</label><label><input id="randomQuestions" type="checkbox" checked> Randomize questions</label><label><input id="randomOptions" type="checkbox" checked> Randomize options</label><label><input id="leaderboard" type="checkbox" checked> Show leaderboard</label><label><input id="antiCheat" type="checkbox" checked> Anti-cheat</label></div><div class="form-actions"><button type="button" id="cancel" class="secondary-btn">Cancel</button><button class="primary-btn">Save Competition</button></div></form></dialog>
-<script type="module" src="assets/js/admin-competitions.js?v=2.8.0"></script><script type="module" src="assets/js/session-ui.js?v=2.7.12"></script><script type="module" src="assets/js/admin-shell.js?v=3.0.0"></script></script></body></html>
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    id="adminCompetitionsThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <title>
+    Competition Manager | ACL Admin
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=2.2"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const requestedEdition =
+        String(
+          parameters.get("edition") || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        requestedEdition === "basic" ||
+        requestedEdition === "expert"
+          ? requestedEdition
+          : storedEdition === "basic" ||
+            storedEdition === "expert"
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+
+      document.documentElement.classList.add(
+        edition === "basic"
+          ? "acl-admin-competitions-basic"
+          : "acl-admin-competitions-expert"
+      );
+
+
+      if (!parameters.get("edition")) {
+        const currentUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        currentUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          currentUrl
+        );
+      }
+    })();
+  </script>
+
+
+  <style>
+    :root {
+      --competition-primary: #123f72;
+      --competition-secondary: #176aa1;
+      --competition-soft: #eaf5ff;
+      --competition-soft-2: #f7fbff;
+      --competition-accent: #ffc928;
+      --competition-success: #168067;
+      --competition-danger: #b33443;
+      --competition-warning: #b97a00;
+      --competition-text: #17324d;
+      --competition-muted: #687d90;
+      --competition-border: #d9e6f2;
+      --competition-card: #ffffff;
+      --competition-shadow:
+        0 18px 45px
+        rgba(18, 63, 114, 0.12);
+    }
+
+
+    html.acl-admin-competitions-basic {
+      --competition-primary: #105541;
+      --competition-secondary: #168067;
+      --competition-soft: #eaf8f2;
+      --competition-soft-2: #f8fcfa;
+      --competition-text: #173e34;
+      --competition-shadow:
+        0 18px 45px
+        rgba(16, 85, 65, 0.12);
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
+    body {
+      margin: 0;
+      padding-top: 92px;
+
+      color:
+        var(--competition-text);
+
+      background:
+        radial-gradient(
+          circle at 10% 6%,
+          rgba(255, 201, 40, 0.14),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 8%,
+          color-mix(
+            in srgb,
+            var(--competition-secondary) 12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--competition-soft)
+        );
+    }
+
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+
+    .topbar.acl-header-pending {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+
+    .topbar.acl-unified-header {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+
+    .admin-competitions-shell {
+      width:
+        min(
+          1280px,
+          calc(100% - 28px)
+        );
+
+      margin: 0 auto;
+      padding: 30px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .admin-competitions-hero {
+      position: relative;
+      overflow: hidden;
+
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+
+      margin-top: 20px;
+
+      padding:
+        clamp(
+          28px,
+          5vw,
+          46px
+        );
+
+      border-radius: 28px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(--competition-primary),
+          var(--competition-secondary)
+        );
+
+      box-shadow:
+        var(--competition-shadow);
+    }
+
+
+    .admin-competitions-hero::after {
+      content: "🏆";
+
+      position: absolute;
+      top: 50%;
+      right: 4%;
+
+      transform:
+        translateY(-50%)
+        rotate(-8deg);
+
+      opacity: 0.1;
+
+      font-size:
+        clamp(
+          110px,
+          18vw,
+          210px
+        );
+
+      pointer-events: none;
+    }
+
+
+    .admin-competitions-hero-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+    }
+
+
+    .admin-competitions-hero-top {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+
+    .admin-kicker,
+    .admin-competitions-edition-badge {
+      display: inline-flex;
+      align-items: center;
+
+      min-height: 31px;
+      padding: 7px 12px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+
+    .admin-competitions-edition-badge {
+      background:
+        rgba(255, 255, 255, 0.21);
+    }
+
+
+    .admin-competitions-hero h1 {
+      margin: 15px 0 10px;
+
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4rem
+        );
+
+      line-height: 1;
+    }
+
+
+    .admin-competitions-hero p {
+      margin: 0;
+
+      color:
+        rgba(255, 255, 255, 0.88);
+
+      font-size:
+        clamp(
+          0.96rem,
+          2vw,
+          1.06rem
+        );
+
+      line-height: 1.65;
+    }
+
+
+    .admin-competitions-hero-actions {
+      position: relative;
+      z-index: 1;
+
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 43px;
+      padding: 9px 15px;
+
+      border-radius: 11px;
+
+      cursor: pointer;
+
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+
+    .primary-btn {
+      border: 0;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--competition-primary),
+          var(--competition-secondary)
+        );
+    }
+
+
+    .secondary-btn {
+      border:
+        1px solid
+        var(--competition-border);
+
+      color:
+        var(--competition-primary);
+
+      background: #ffffff;
+    }
+
+
+    .danger-btn {
+      border: 1px solid #f0c6cc;
+
+      color:
+        var(--competition-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .admin-competitions-hero
+    .secondary-btn {
+      border-color:
+        rgba(255, 255, 255, 0.32);
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+    }
+
+
+    .admin-competitions-hero
+    .primary-btn {
+      color:
+        var(--competition-primary);
+
+      background: #ffffff;
+    }
+
+
+    .primary-btn:disabled,
+    .secondary-btn:disabled,
+    .danger-btn:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .status-box {
+      margin-top: 15px;
+      padding: 14px 16px;
+
+      border:
+        1px solid
+        var(--competition-border);
+
+      border-radius: 13px;
+
+      color:
+        var(--competition-muted);
+
+      background: #ffffff;
+
+      font-weight: 750;
+    }
+
+
+    .status-box.success {
+      border-color: #bfe7d6;
+
+      color:
+        var(--competition-success);
+
+      background: #f2fbf7;
+    }
+
+
+    .status-box.error {
+      border-color: #f0c6cc;
+
+      color:
+        var(--competition-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .status-box.warning {
+      border-color: #f4d8a2;
+
+      color:
+        var(--competition-warning);
+
+      background: #fffaf0;
+    }
+
+
+    /* =====================================================
+       COMPETITION LIST
+    ===================================================== */
+
+    .competition-admin-grid,
+    .module-admin-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+
+    .competition-admin-card,
+    .module-admin-card {
+      position: relative;
+      overflow: hidden;
+
+      min-height: 285px;
+      padding: 20px;
+
+      border:
+        1px solid
+        var(--competition-border);
+
+      border-radius: 20px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 30px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .competition-admin-card::after,
+    .module-admin-card::after {
+      content: "";
+
+      position: absolute;
+      right: -35px;
+      bottom: -45px;
+
+      width: 135px;
+      height: 135px;
+
+      border-radius: 50%;
+
+      background:
+        color-mix(
+          in srgb,
+          var(--competition-secondary) 8%,
+          transparent
+        );
+    }
+
+
+    .competition-admin-card > *,
+    .module-admin-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+
+    .competition-admin-card h2,
+    .competition-admin-card h3,
+    .module-admin-card h2,
+    .module-admin-card h3 {
+      margin: 0;
+
+      color:
+        var(--competition-primary);
+    }
+
+
+    .competition-admin-card p,
+    .module-admin-card p {
+      color:
+        var(--competition-muted);
+
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+
+    .competition-admin-actions,
+    .admin-module-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      margin-top: 15px;
+    }
+
+
+    .empty-state {
+      grid-column: 1 / -1;
+
+      padding: 52px 20px;
+
+      border:
+        1px dashed
+        var(--competition-border);
+
+      border-radius: 20px;
+
+      color:
+        var(--competition-muted);
+
+      background:
+        rgba(255, 255, 255, 0.9);
+
+      text-align: center;
+    }
+
+
+    /* =====================================================
+       DIALOG
+    ===================================================== */
+
+    .module-dialog {
+      width:
+        min(
+          920px,
+          calc(100% - 24px)
+        );
+
+      max-height:
+        calc(100vh - 28px);
+
+      padding: 0;
+
+      border:
+        1px solid
+        var(--competition-border);
+
+      border-radius: 22px;
+
+      color:
+        var(--competition-text);
+
+      background: #ffffff;
+
+      box-shadow:
+        0 28px 80px
+        rgba(16, 43, 72, 0.28);
+    }
+
+
+    .module-dialog::backdrop {
+      background:
+        rgba(10, 29, 50, 0.62);
+
+      backdrop-filter:
+        blur(4px);
+    }
+
+
+    #competitionForm {
+      padding: 22px;
+    }
+
+
+    .dialog-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+
+      margin-bottom: 18px;
+    }
+
+
+    .dialog-title-row h2 {
+      margin: 7px 0 0;
+
+      color:
+        var(--competition-primary);
+    }
+
+
+    .dialog-title-row
+    .admin-kicker {
+      border-color:
+        var(--competition-border);
+
+      color:
+        var(--competition-secondary);
+
+      background:
+        var(--competition-soft);
+    }
+
+
+    .dialog-close {
+      display: grid;
+      place-items: center;
+
+      width: 40px;
+      min-width: 40px;
+      height: 40px;
+
+      border:
+        1px solid
+        var(--competition-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--competition-primary);
+
+      background: #ffffff;
+
+      cursor: pointer;
+      font-size: 1.4rem;
+    }
+
+
+    .module-form-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 14px;
+    }
+
+
+    .module-form-grid label {
+      display: grid;
+      gap: 6px;
+
+      color:
+        var(--competition-muted);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .module-form-grid input,
+    .module-form-grid textarea,
+    .module-form-grid select {
+      width: 100%;
+      min-height: 43px;
+      padding: 10px 12px;
+
+      border:
+        1px solid
+        var(--competition-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--competition-text);
+
+      background: #ffffff;
+      outline: none;
+    }
+
+
+    .module-form-grid textarea {
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+
+    .module-form-grid input:focus,
+    .module-form-grid textarea:focus,
+    .module-form-grid select:focus {
+      border-color:
+        var(--competition-secondary);
+
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--competition-secondary) 14%,
+          transparent
+        );
+    }
+
+
+    .full-span {
+      grid-column: 1 / -1;
+    }
+
+
+    .toggle-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          5,
+          minmax(0, 1fr)
+        );
+
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+
+    .toggle-grid label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      min-height: 50px;
+      padding: 11px 12px;
+
+      border:
+        1px solid
+        var(--competition-border);
+
+      border-radius: 12px;
+
+      color:
+        var(--competition-text);
+
+      background:
+        var(--competition-soft-2);
+
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+
+    .toggle-grid input {
+      width: 17px;
+      height: 17px;
+
+      accent-color:
+        var(--competition-secondary);
+    }
+
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+
+      margin-top: 20px;
+      padding-top: 17px;
+
+      border-top:
+        1px solid
+        var(--competition-border);
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
+
+    @media (max-width: 1050px) {
+      .competition-admin-grid,
+      .module-admin-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+
+
+      .toggle-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+    }
+
+
+    @media (max-width: 760px) {
+      body {
+        padding-top: 82px;
+      }
+
+
+      .admin-competitions-shell {
+        width:
+          min(
+            calc(100% - 18px),
+            1280px
+          );
+
+        padding-top: 18px;
+      }
+
+
+      .admin-competitions-hero {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+
+      .admin-competitions-hero-actions {
+        justify-content: flex-start;
+      }
+
+
+      .module-form-grid,
+      .toggle-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .full-span {
+        grid-column: auto;
+      }
+
+
+      .form-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+      }
+
+
+      .form-actions button {
+        width: 100%;
+      }
+    }
+
+
+    @media (max-width: 560px) {
+      .competition-admin-grid,
+      .module-admin-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-competitions-hero-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-competitions-hero-actions a,
+      .admin-competitions-hero-actions button {
+        width: 100%;
+      }
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="admin-competitions-shell">
+
+    <section
+      data-admin-shell
+      data-active="competitions"
+    ></section>
+
+
+    <section class="admin-competitions-hero">
+
+      <div class="admin-competitions-hero-copy">
+
+        <div class="admin-competitions-hero-top">
+
+          <span class="admin-kicker">
+            PHASE 2.5 COMPETITION CONTROL
+          </span>
+
+
+          <span
+            id="adminCompetitionsEditionBadge"
+            class="admin-competitions-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
+
+        <h1>
+          Competition Manager
+        </h1>
+
+
+        <p>
+          Schedule official ACL rounds, define duration and anti-cheat
+          rules, connect each round to a quiz, and publish it when ready.
+        </p>
+
+      </div>
+
+
+      <div class="admin-competitions-hero-actions">
+
+        <a
+          id="adminCompetitionsDashboardLink"
+          class="secondary-btn"
+          href="admin.html"
+        >
+          Admin Dashboard
+        </a>
+
+
+        <a
+          id="adminCompetitionsQuizLink"
+          class="secondary-btn"
+          href="admin-quizzes.html"
+        >
+          Quiz Builder
+        </a>
+
+
+        <button
+          id="newCompetition"
+          class="primary-btn"
+          type="button"
+        >
+          Create Competition
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <div
+      id="status"
+      class="status-box"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <section
+      id="competitionList"
+      class="competition-admin-grid module-admin-grid"
+      aria-label="Competition list"
+    >
+
+      <div class="empty-state">
+        Loading competitions…
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       COMPETITION EDITOR
+  ====================================================== -->
+
+  <dialog
+    id="competitionDialog"
+    class="module-dialog"
+  >
+
+    <form
+      id="competitionForm"
+      novalidate
+    >
+
+      <div class="dialog-title-row">
+
+        <div>
+
+          <span class="admin-kicker">
+            COMPETITION DEFINITION
+          </span>
+
+
+          <h2 id="dialogTitle">
+            Create Competition
+          </h2>
+
+        </div>
+
+
+        <button
+          type="button"
+          id="closeDialog"
+          class="dialog-close"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <input
+        id="competitionId"
+        type="hidden"
+      >
+
+
+      <div class="module-form-grid">
+
+        <label for="moduleId">
+
+          Module
+
+          <select
+            id="moduleId"
+            required
+          ></select>
+
+        </label>
+
+
+        <label for="quizId">
+
+          Quiz
+
+          <select
+            id="quizId"
+            required
+          ></select>
+
+        </label>
+
+
+        <label for="title">
+
+          Title
+
+          <input
+            id="title"
+            required
+            maxlength="160"
+          >
+
+        </label>
+
+
+        <label for="slug">
+
+          Slug
+
+          <input
+            id="slug"
+            required
+            pattern="[a-z0-9-]+"
+            placeholder="acl-round-1"
+          >
+
+        </label>
+
+
+        <label for="opensAt">
+
+          Opens at
+
+          <input
+            id="opensAt"
+            type="datetime-local"
+            required
+          >
+
+        </label>
+
+
+        <label for="closesAt">
+
+          Closes at
+
+          <input
+            id="closesAt"
+            type="datetime-local"
+            required
+          >
+
+        </label>
+
+
+        <label for="duration">
+
+          Duration (minutes)
+
+          <input
+            id="duration"
+            type="number"
+            min="1"
+            value="20"
+          >
+
+        </label>
+
+
+        <label for="warnings">
+
+          Warnings allowed
+
+          <input
+            id="warnings"
+            type="number"
+            min="0"
+            max="10"
+            value="2"
+          >
+
+        </label>
+
+
+        <label for="competitionStatus">
+
+          Status
+
+          <select id="competitionStatus">
+
+            <option value="draft">
+              Draft
+            </option>
+
+            <option value="published">
+              Published
+            </option>
+
+            <option value="archived">
+              Archived
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label
+          for="description"
+          class="full-span"
+        >
+
+          Description
+
+          <textarea
+            id="description"
+            rows="3"
+          ></textarea>
+
+        </label>
+
+      </div>
+
+
+      <div class="toggle-grid">
+
+        <label>
+
+          <input
+            id="confidence"
+            type="checkbox"
+            checked
+          >
+
+          Confidence scoring
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="randomQuestions"
+            type="checkbox"
+            checked
+          >
+
+          Randomize questions
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="randomOptions"
+            type="checkbox"
+            checked
+          >
+
+          Randomize options
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="leaderboard"
+            type="checkbox"
+            checked
+          >
+
+          Show leaderboard
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="antiCheat"
+            type="checkbox"
+            checked
+          >
+
+          Anti-cheat
+
+        </label>
+
+      </div>
+
+
+      <div class="form-actions">
+
+        <button
+          type="button"
+          id="cancel"
+          class="secondary-btn"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Save Competition
+        </button>
+
+      </div>
+
+    </form>
+
+  </dialog>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const edition =
+        parameters.get("edition") === "basic"
+          ? "basic"
+          : "expert";
+
+
+      const badge =
+        document.getElementById(
+          "adminCompetitionsEditionBadge"
+        );
+
+
+      if (badge) {
+        badge.textContent =
+          edition === "basic"
+            ? "BASIC EDITION"
+            : "EXPERT EDITION";
+      }
+
+
+      const themeColor =
+        document.getElementById(
+          "adminCompetitionsThemeColor"
+        );
+
+
+      if (themeColor) {
+        themeColor.content =
+          edition === "basic"
+            ? "#105541"
+            : "#123f72";
+      }
+
+
+      const links = {
+        adminCompetitionsDashboardLink:
+          "admin.html",
+
+        adminCompetitionsQuizLink:
+          "admin-quizzes.html"
+      };
+
+
+      Object.entries(
+        links
+      ).forEach(
+        ([id, path]) => {
+          const link =
+            document.getElementById(
+              id
+            );
+
+
+          if (link) {
+            link.href =
+              `${path}?edition=${encodeURIComponent(
+                edition
+              )}`;
+          }
+        }
+      );
+
+
+      document.title =
+        `Competition Manager | ACL ${
+          edition === "basic"
+            ? "Basic Edition"
+            : "Expert Edition"
+        } Admin`;
+    })();
+  </script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-competitions.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/session-ui.js?v=4.6.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-shell.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
+</body>
+
+</html>
