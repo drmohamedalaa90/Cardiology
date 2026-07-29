@@ -1,74 +1,2359 @@
-<!doctype html><html lang="en"><head>
-<meta name="referrer" content="strict-origin-when-cross-origin"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Question Bank | ACL Admin</title>
-<link rel="stylesheet" href="assets/css/main.css?v=2.8.7"><link rel="stylesheet" href="assets/css/auth.css?v=2.2"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header class="topbar"><a class="brand brand-link" href="modules.html">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container">
-<section data-admin-shell data-active="questions"></section>
-<section class="card admin-hero"><div><span class="admin-kicker">PHASE 2 QUESTION BANK</span><h1>Manage Questions</h1><p class="muted">Create secure, reusable questions with answer options, explanations, images, references, timing, difficulty and confidence scoring.</p></div><div class="admin-hero-actions"><a class="secondary-btn" href="admin.html">Students</a><a class="secondary-btn" href="admin-modules.html">Modules</a><button id="generateAiQuestionsButton" class="secondary-btn" type="button">✨ Generate with AI</button><button id="newQuestionButton" class="primary-btn" type="button">+ New question</button></div></section>
+<!doctype html>
 
-<section class="ai-question-panel">
-  <div class="ai-question-panel-head">
-    <div>
-      <span class="admin-kicker">AI DRAFT WORKSPACE</span>
-      <h2>Generated questions awaiting your approval</h2>
-      <p>AI output never enters the question bank automatically. Review, edit, and save each item as a draft first.</p>
-    </div>
-    <button id="generateAiQuestionsButtonSecondary" class="primary-btn" type="button">✨ Generate questions</button>
-  </div>
-  <div id="aiDraftList" class="ai-draft-grid">
-    <div class="ai-empty">No pending AI drafts.</div>
-  </div>
-</section>
+<html lang="en">
 
-<section class="admin-stats"><div class="stat-card"><span>All questions</span><strong id="questionTotal">—</strong></div><div class="stat-card"><span>Published</span><strong id="questionPublished">—</strong></div><div class="stat-card"><span>Draft</span><strong id="questionDraft">—</strong></div><div class="stat-card"><span>Modules represented</span><strong id="questionModules">—</strong></div></section>
-<section class="card admin-toolbar question-toolbar"><div class="field"><label for="questionModuleFilter">Module</label><select id="questionModuleFilter"><option value="all">All modules</option></select></div><div class="field"><label for="questionStatusFilter">Status</label><select id="questionStatusFilter"><option value="all">All statuses</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div><div class="field"><label for="questionSearch">Search</label><input id="questionSearch" type="search" placeholder="Stem, topic, reference or ID"></div><button id="refreshQuestions" class="secondary-btn" type="button">Refresh</button></section>
-<div id="adminQuestionsStatus" class="status-box" hidden></div>
-<section id="adminQuestionsList" class="question-admin-list"><div class="empty-state">Loading questions…</div></section>
-</main>
-<dialog id="questionDialog" class="module-dialog question-dialog"><form id="questionForm"><div class="dialog-title-row"><div><span class="admin-kicker">QUESTION EDITOR</span><h2 id="questionDialogTitle">Create question</h2></div><button type="button" id="closeQuestionDialog" class="dialog-close" aria-label="Close">×</button></div>
-<input id="questionId" type="hidden">
-<div class="form-grid">
-<div class="field"><label for="questionModule">Module *</label><select id="questionModule" required></select></div><div class="field"><label for="questionType">Question type</label><select id="questionType"><option value="single_best_answer">Single best answer</option><option value="multiple_response">Multiple response</option><option value="true_false">True / False</option><option value="image_based">Image-based MCQ</option><option value="ordering">Ordering</option><option value="matching">Matching</option><option value="short_answer">Short answer</option></select></div>
-<div class="field"><label for="questionExternalId">Question code</label><input id="questionExternalId" placeholder="acs-001"></div><div class="field"><label for="questionStatus">Status</label><select id="questionStatus"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></div>
-<div class="field span-2"><label for="questionScenario">Clinical scenario</label><textarea id="questionScenario" rows="3" placeholder="Optional patient scenario shown before the question stem"></textarea></div>
-<div class="field span-2"><label for="questionStem">Question stem *</label><textarea id="questionStem" rows="4" required></textarea></div>
-<div class="field"><label for="questionTopic">Topic</label><input id="questionTopic"></div><div class="field"><label for="questionSubtopic">Subtopic</label><input id="questionSubtopic"></div>
-<div class="field"><label for="questionDifficulty">Difficulty</label><select id="questionDifficulty"><option value="foundation">Foundation</option><option value="intermediate" selected>Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div><div class="field"><label for="questionSeconds">Default time (seconds)</label><input id="questionSeconds" type="number" min="5" max="3600" value="60"></div>
-<div class="field"><label for="questionPoints">Correct points</label><input id="questionPoints" type="number" min="0" step="0.25" value="1"></div><div class="field"><label for="questionNegativePoints">Wrong-answer penalty</label><input id="questionNegativePoints" type="number" min="0" step="0.25" value="0"></div>
-<div class="field"><label for="questionOrder">Display order</label><input id="questionOrder" type="number" value="100"></div><div class="field"><label for="questionImageUrl">Image URL</label><input id="questionImageUrl" type="url" placeholder="https://..."></div>
-<div class="field span-2"><label for="questionImageAlt">Image description / accessibility text</label><input id="questionImageAlt"></div>
-</div>
-<section class="option-editor-section"><div class="option-editor-title"><div><h3>Answer options</h3><p id="optionHelp" class="muted">Choose one correct answer.</p></div><button id="addOptionButton" type="button" class="secondary-btn">+ Add option</button></div><div id="optionRows" class="option-rows"></div></section>
-<div class="form-grid">
-<div class="field span-2"><label for="questionExplanation">Explanation</label><textarea id="questionExplanation" rows="4"></textarea></div>
-<div class="field span-2"><label for="questionReferenceText">Guideline / trial reference</label><textarea id="questionReferenceText" rows="2"></textarea></div>
-<div class="field span-2"><label for="questionReferenceUrl">Reference URL</label><input id="questionReferenceUrl" type="url" placeholder="https://..."></div>
-</div>
-<div class="toggle-grid"><label><input id="questionConfidence" type="checkbox"> Confidence scoring</label><label><input id="questionRandomize" type="checkbox" checked> Randomize options</label></div>
-<div class="dialog-actions"><button id="archiveQuestionButton" type="button" class="danger-btn" hidden>Archive question</button><button id="duplicateQuestionButton" type="button" class="secondary-btn" hidden>Duplicate</button><button id="cancelQuestionButton" type="button" class="secondary-btn">Cancel</button><button type="submit" class="primary-btn">Save question</button></div>
-</form></dialog>
+<head>
 
-<dialog id="aiQuestionDialog" class="module-dialog">
-  <form id="aiQuestionForm">
-    <div class="dialog-title-row">
-      <div><span class="admin-kicker">AI QUESTION GENERATOR</span><h2>Generate reviewable drafts</h2></div>
-      <button type="button" id="closeAiQuestionDialog" class="dialog-close" aria-label="Close">×</button>
-    </div>
-    <div class="ai-dialog-note"><strong>Approval workflow:</strong> Generated questions are saved only in an AI-review queue. They are not added to quizzes or published until you open them, edit them, and save them manually.</div>
-    <div class="form-grid" style="margin-top:18px">
-      <div class="field"><label for="aiModule">Module *</label><select id="aiModule" required></select></div>
-      <div class="field"><label for="aiQuestionCount">Number of questions</label><input id="aiQuestionCount" type="number" min="1" max="10" value="5" required></div>
-      <div class="field"><label for="aiDifficulty">Difficulty</label><select id="aiDifficulty"><option value="foundation">Foundation</option><option value="intermediate" selected>Intermediate</option><option value="advanced">Advanced</option><option value="expert">Expert</option></select></div>
-      <div class="field"><label for="aiQuestionType">Question type</label><select id="aiQuestionType"><option value="single_best_answer">Single best answer</option><option value="multiple_response">Multiple response</option><option value="true_false">True / False</option><option value="image_based">Image-based MCQ</option></select></div>
-      <div class="field span-2"><label for="aiPrompt">Topic and instructions *</label><textarea id="aiPrompt" rows="5" required placeholder="Example: Generate guideline-based questions on STEMI reperfusion strategy. Use realistic clinical scenarios and avoid ambiguous distractors."></textarea></div>
-      <div class="field span-2"><label for="aiReferenceContext">Reference context</label><textarea id="aiReferenceContext" rows="4" placeholder="Paste the guideline passage, trial summary, learning objectives, or source notes that the AI must use."></textarea></div>
-    </div>
-    <div id="aiGenerationProgress" class="ai-generation-progress"></div>
-    <div class="dialog-actions">
-      <button id="cancelAiQuestionDialog" type="button" class="secondary-btn">Cancel</button>
-      <button id="submitAiGeneration" type="submit" class="primary-btn">Generate drafts</button>
-    </div>
-  </form>
-</dialog>
+  <meta charset="utf-8">
 
-<script type="module" src="assets/js/admin-questions.js?v=2.8.0"></script><script type="module" src="assets/js/session-ui.js?v=2.7.12"></script><script type="module" src="assets/js/admin-shell.js?v=3.0.0"></script></body></html>
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    id="adminQuestionsThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <title>
+    Question Bank | ACL Admin
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=2.2"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const requestedEdition =
+        String(
+          parameters.get(
+            "edition"
+          ) ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        (
+          requestedEdition === "basic" ||
+          requestedEdition === "expert"
+        )
+          ? requestedEdition
+          : (
+              storedEdition === "basic" ||
+              storedEdition === "expert"
+            )
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+
+      document.documentElement.classList.add(
+        edition === "basic"
+          ? "acl-admin-questions-basic"
+          : "acl-admin-questions-expert"
+      );
+
+
+      if (
+        !parameters.get(
+          "edition"
+        )
+      ) {
+        const url =
+          new URL(
+            window.location.href
+          );
+
+
+        url.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          url
+        );
+      }
+    })();
+  </script>
+
+
+  <style>
+    :root {
+      --questions-primary: #123f72;
+      --questions-secondary: #176aa1;
+      --questions-soft: #eaf5ff;
+      --questions-soft-2: #f7fbff;
+      --questions-success: #168067;
+      --questions-danger: #b33443;
+      --questions-warning: #b97a00;
+      --questions-text: #17324d;
+      --questions-muted: #687d90;
+      --questions-border: #d9e6f2;
+      --questions-card: #ffffff;
+      --questions-shadow:
+        0 18px 45px
+        rgba(18, 63, 114, 0.12);
+    }
+
+
+    html.acl-admin-questions-basic {
+      --questions-primary: #105541;
+      --questions-secondary: #168067;
+      --questions-soft: #eaf8f2;
+      --questions-soft-2: #f8fcfa;
+      --questions-text: #173e34;
+      --questions-shadow:
+        0 18px 45px
+        rgba(16, 85, 65, 0.12);
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
+    body {
+      margin: 0;
+      padding-top: 92px;
+      color: var(--questions-text);
+
+      background:
+        radial-gradient(
+          circle at 10% 6%,
+          rgba(255, 201, 40, 0.13),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 8%,
+          color-mix(
+            in srgb,
+            var(--questions-secondary) 12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--questions-soft)
+        );
+    }
+
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+
+    .topbar.acl-header-pending {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+
+    .topbar.acl-unified-header {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+
+    .admin-questions-shell {
+      width:
+        min(
+          1280px,
+          calc(100% - 28px)
+        );
+
+      margin: 0 auto;
+      padding: 30px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .admin-questions-hero {
+      position: relative;
+      overflow: hidden;
+
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+
+      margin-top: 20px;
+      padding:
+        clamp(
+          28px,
+          5vw,
+          46px
+        );
+
+      border-radius: 28px;
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(--questions-primary),
+          var(--questions-secondary)
+        );
+
+      box-shadow:
+        var(--questions-shadow);
+    }
+
+
+    .admin-questions-hero::after {
+      content: "❓";
+
+      position: absolute;
+      top: 50%;
+      right: 4%;
+
+      transform:
+        translateY(-50%)
+        rotate(-8deg);
+
+      opacity: 0.1;
+
+      font-size:
+        clamp(
+          110px,
+          18vw,
+          210px
+        );
+
+      pointer-events: none;
+    }
+
+
+    .admin-questions-hero-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+    }
+
+
+    .admin-questions-hero-top {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+
+    .admin-kicker,
+    .admin-questions-edition-badge {
+      display: inline-flex;
+      align-items: center;
+
+      min-height: 31px;
+      padding: 7px 12px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+
+    .admin-questions-edition-badge {
+      background:
+        rgba(255, 255, 255, 0.21);
+    }
+
+
+    .admin-questions-hero h1 {
+      margin: 15px 0 10px;
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4rem
+        );
+
+      line-height: 1;
+    }
+
+
+    .admin-questions-hero p {
+      margin: 0;
+
+      color:
+        rgba(255, 255, 255, 0.88);
+
+      font-size:
+        clamp(
+          0.96rem,
+          2vw,
+          1.06rem
+        );
+
+      line-height: 1.65;
+    }
+
+
+    .admin-hero-actions {
+      position: relative;
+      z-index: 1;
+
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 43px;
+      padding: 9px 15px;
+
+      border-radius: 11px;
+
+      cursor: pointer;
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+
+    .primary-btn {
+      border: 0;
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--questions-primary),
+          var(--questions-secondary)
+        );
+    }
+
+
+    .secondary-btn {
+      border:
+        1px solid
+        var(--questions-border);
+
+      color:
+        var(--questions-primary);
+
+      background: #ffffff;
+    }
+
+
+    .danger-btn {
+      border: 1px solid #f0c6cc;
+      color: var(--questions-danger);
+      background: #fff5f6;
+    }
+
+
+    .admin-questions-hero
+    .secondary-btn {
+      border-color:
+        rgba(255, 255, 255, 0.32);
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+    }
+
+
+    .admin-questions-hero
+    .primary-btn {
+      color:
+        var(--questions-primary);
+
+      background: #ffffff;
+    }
+
+
+    .primary-btn:disabled,
+    .secondary-btn:disabled,
+    .danger-btn:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+
+    /* =====================================================
+       AI WORKSPACE
+    ===================================================== */
+
+    .ai-question-panel {
+      margin-top: 18px;
+      padding: 21px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 21px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 32px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .ai-question-panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+
+    .ai-question-panel-head
+    .admin-kicker,
+    .dialog-title-row
+    .admin-kicker {
+      border-color:
+        var(--questions-border);
+
+      color:
+        var(--questions-secondary);
+
+      background:
+        var(--questions-soft);
+    }
+
+
+    .ai-question-panel h2 {
+      margin: 8px 0 0;
+
+      color:
+        var(--questions-primary);
+
+      font-size: 1.16rem;
+    }
+
+
+    .ai-question-panel p {
+      margin: 7px 0 0;
+
+      color:
+        var(--questions-muted);
+
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+
+    .ai-draft-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 14px;
+      margin-top: 17px;
+    }
+
+
+    .ai-draft-card {
+      padding: 16px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 16px;
+
+      background:
+        var(--questions-soft-2);
+    }
+
+
+    .ai-empty {
+      grid-column: 1 / -1;
+      padding: 36px 18px;
+
+      border:
+        1px dashed
+        var(--questions-border);
+
+      border-radius: 16px;
+
+      color:
+        var(--questions-muted);
+
+      text-align: center;
+    }
+
+
+    .ai-dialog-note {
+      padding: 13px 14px;
+
+      border:
+        1px solid
+        color-mix(
+          in srgb,
+          var(--questions-secondary) 25%,
+          white
+        );
+
+      border-radius: 13px;
+
+      color:
+        var(--questions-primary);
+
+      background:
+        var(--questions-soft-2);
+
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+
+    .ai-generation-progress {
+      margin-top: 14px;
+      color:
+        var(--questions-muted);
+
+      font-size: 0.8rem;
+      font-weight: 750;
+    }
+
+
+    /* =====================================================
+       STATS
+    ===================================================== */
+
+    .admin-stats {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          4,
+          minmax(0, 1fr)
+        );
+
+      gap: 15px;
+      margin-top: 18px;
+    }
+
+
+    .stat-card {
+      padding: 19px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 18px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 11px 28px
+        rgba(18, 63, 114, 0.06);
+    }
+
+
+    .stat-card span {
+      display: block;
+
+      color:
+        var(--questions-muted);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .stat-card strong {
+      display: block;
+      margin-top: 8px;
+
+      color:
+        var(--questions-primary);
+
+      font-size: 2rem;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+
+    /* =====================================================
+       TOOLBAR
+    ===================================================== */
+
+    .admin-toolbar {
+      display: grid;
+
+      grid-template-columns:
+        minmax(180px, 0.55fr)
+        minmax(170px, 0.45fr)
+        minmax(240px, 1fr)
+        auto;
+
+      gap: 12px;
+      align-items: end;
+
+      margin-top: 18px;
+      padding: 18px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 19px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 30px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+
+    .field label {
+      color:
+        var(--questions-muted);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      min-height: 43px;
+      padding: 10px 12px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--questions-text);
+
+      background: #ffffff;
+      outline: none;
+    }
+
+
+    .field textarea {
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color:
+        var(--questions-secondary);
+
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--questions-secondary) 14%,
+          transparent
+        );
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .status-box {
+      margin-top: 15px;
+      padding: 14px 16px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 13px;
+
+      color:
+        var(--questions-muted);
+
+      background: #ffffff;
+
+      font-weight: 750;
+    }
+
+
+    .status-box.success {
+      border-color: #bfe7d6;
+      color: var(--questions-success);
+      background: #f2fbf7;
+    }
+
+
+    .status-box.error {
+      border-color: #f0c6cc;
+      color: var(--questions-danger);
+      background: #fff5f6;
+    }
+
+
+    /* =====================================================
+       QUESTION LIST
+    ===================================================== */
+
+    .question-admin-list {
+      display: grid;
+      gap: 13px;
+      margin-top: 18px;
+    }
+
+
+    .question-admin-card {
+      padding: 18px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 18px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 10px 28px
+        rgba(18, 63, 114, 0.06);
+    }
+
+
+    .question-admin-card h2,
+    .question-admin-card h3 {
+      margin: 0;
+
+      color:
+        var(--questions-primary);
+    }
+
+
+    .question-admin-card p {
+      color:
+        var(--questions-muted);
+
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+
+    .question-admin-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+
+    .empty-state {
+      padding: 52px 20px;
+
+      border:
+        1px dashed
+        var(--questions-border);
+
+      border-radius: 20px;
+
+      color:
+        var(--questions-muted);
+
+      background:
+        rgba(255, 255, 255, 0.9);
+
+      text-align: center;
+    }
+
+
+    /* =====================================================
+       DIALOG
+    ===================================================== */
+
+    .module-dialog {
+      width:
+        min(
+          920px,
+          calc(100% - 24px)
+        );
+
+      max-height:
+        calc(100vh - 28px);
+
+      padding: 0;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 22px;
+
+      color:
+        var(--questions-text);
+
+      background: #ffffff;
+
+      box-shadow:
+        0 28px 80px
+        rgba(16, 43, 72, 0.28);
+    }
+
+
+    .module-dialog::backdrop {
+      background:
+        rgba(10, 29, 50, 0.62);
+
+      backdrop-filter:
+        blur(4px);
+    }
+
+
+    #questionForm,
+    #aiQuestionForm {
+      padding: 22px;
+    }
+
+
+    .dialog-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+
+    .dialog-title-row h2 {
+      margin: 7px 0 0;
+
+      color:
+        var(--questions-primary);
+    }
+
+
+    .dialog-close {
+      display: grid;
+      place-items: center;
+
+      width: 40px;
+      min-width: 40px;
+      height: 40px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--questions-primary);
+
+      background: #ffffff;
+
+      cursor: pointer;
+      font-size: 1.4rem;
+    }
+
+
+    .form-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 14px;
+    }
+
+
+    .span-2 {
+      grid-column: 1 / -1;
+    }
+
+
+    .option-editor-section {
+      margin: 18px 0;
+      padding: 17px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 16px;
+
+      background:
+        var(--questions-soft-2);
+    }
+
+
+    .option-editor-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+
+    .option-editor-title h3 {
+      margin: 0;
+
+      color:
+        var(--questions-primary);
+    }
+
+
+    .option-editor-title p {
+      margin: 5px 0 0;
+    }
+
+
+    .option-rows {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+
+    .option-row {
+      display: grid;
+
+      grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        auto
+        auto;
+
+      gap: 9px;
+      align-items: center;
+
+      padding: 10px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 13px;
+
+      background: #ffffff;
+    }
+
+
+    .toggle-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+
+    .toggle-grid label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      min-height: 48px;
+      padding: 11px 12px;
+
+      border:
+        1px solid
+        var(--questions-border);
+
+      border-radius: 12px;
+
+      background:
+        var(--questions-soft-2);
+
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+
+    .toggle-grid input {
+      width: 17px;
+      height: 17px;
+
+      accent-color:
+        var(--questions-secondary);
+    }
+
+
+    .dialog-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 9px;
+
+      margin-top: 20px;
+      padding-top: 17px;
+
+      border-top:
+        1px solid
+        var(--questions-border);
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
+
+    @media (max-width: 1050px) {
+      .admin-stats {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+
+
+      .admin-toolbar {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+    }
+
+
+    @media (max-width: 760px) {
+      body {
+        padding-top: 82px;
+      }
+
+
+      .admin-questions-shell {
+        width:
+          min(
+            calc(100% - 18px),
+            1280px
+          );
+
+        padding-top: 18px;
+      }
+
+
+      .admin-questions-hero {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+
+      .admin-hero-actions {
+        justify-content: flex-start;
+      }
+
+
+      .admin-toolbar,
+      .form-grid,
+      .toggle-grid,
+      .ai-draft-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .span-2 {
+        grid-column: auto;
+      }
+
+
+      .admin-toolbar button {
+        width: 100%;
+      }
+
+
+      .option-row {
+        grid-template-columns:
+          auto
+          minmax(0, 1fr);
+      }
+
+
+      .dialog-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+      }
+
+
+      .dialog-actions button {
+        width: 100%;
+      }
+    }
+
+
+    @media (max-width: 560px) {
+      .admin-stats {
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-hero-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .admin-hero-actions a,
+      .admin-hero-actions button {
+        width: 100%;
+      }
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="admin-questions-shell">
+
+    <section
+      data-admin-shell
+      data-active="questions"
+    ></section>
+
+
+    <section class="admin-questions-hero">
+
+      <div class="admin-questions-hero-copy">
+
+        <div class="admin-questions-hero-top">
+
+          <span class="admin-kicker">
+            PHASE 2 QUESTION BANK
+          </span>
+
+
+          <span
+            id="adminQuestionsEditionBadge"
+            class="admin-questions-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
+
+        <h1>
+          Manage Questions
+        </h1>
+
+
+        <p>
+          Create secure, reusable questions with answer options,
+          explanations, images, references, timing, difficulty and
+          confidence scoring.
+        </p>
+
+      </div>
+
+
+      <div class="admin-hero-actions">
+
+        <a
+          id="adminQuestionsStudentsLink"
+          class="secondary-btn"
+          href="admin.html"
+        >
+          Students
+        </a>
+
+
+        <a
+          id="adminQuestionsModulesLink"
+          class="secondary-btn"
+          href="admin-modules.html"
+        >
+          Modules
+        </a>
+
+
+        <button
+          id="generateAiQuestionsButton"
+          class="secondary-btn"
+          type="button"
+        >
+          ✨ Generate with AI
+        </button>
+
+
+        <button
+          id="newQuestionButton"
+          class="primary-btn"
+          type="button"
+        >
+          + New question
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <section class="ai-question-panel">
+
+      <div class="ai-question-panel-head">
+
+        <div>
+
+          <span class="admin-kicker">
+            AI DRAFT WORKSPACE
+          </span>
+
+
+          <h2>
+            Generated questions awaiting your approval
+          </h2>
+
+
+          <p>
+            AI output never enters the question bank automatically.
+            Review, edit, and save each item as a draft first.
+          </p>
+
+        </div>
+
+
+        <button
+          id="generateAiQuestionsButtonSecondary"
+          class="primary-btn"
+          type="button"
+        >
+          ✨ Generate questions
+        </button>
+
+      </div>
+
+
+      <div
+        id="aiDraftList"
+        class="ai-draft-grid"
+      >
+
+        <div class="ai-empty">
+          No pending AI drafts.
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section
+      class="admin-stats"
+      aria-label="Question statistics"
+    >
+
+      <article class="stat-card">
+
+        <span>
+          All questions
+        </span>
+
+        <strong id="questionTotal">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <span>
+          Published
+        </span>
+
+        <strong id="questionPublished">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <span>
+          Draft
+        </span>
+
+        <strong id="questionDraft">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="stat-card">
+
+        <span>
+          Modules represented
+        </span>
+
+        <strong id="questionModules">
+          —
+        </strong>
+
+      </article>
+
+    </section>
+
+
+    <section
+      class="admin-toolbar question-toolbar"
+      aria-label="Question filters"
+    >
+
+      <div class="field">
+
+        <label for="questionModuleFilter">
+          Module
+        </label>
+
+        <select id="questionModuleFilter">
+
+          <option value="all">
+            All modules
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="questionStatusFilter">
+          Status
+        </label>
+
+        <select id="questionStatusFilter">
+
+          <option value="all">
+            All statuses
+          </option>
+
+          <option value="published">
+            Published
+          </option>
+
+          <option value="draft">
+            Draft
+          </option>
+
+          <option value="archived">
+            Archived
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="questionSearch">
+          Search
+        </label>
+
+        <input
+          id="questionSearch"
+          type="search"
+          placeholder="Stem, topic, reference or ID"
+        >
+
+      </div>
+
+
+      <button
+        id="refreshQuestions"
+        class="secondary-btn"
+        type="button"
+      >
+        Refresh
+      </button>
+
+    </section>
+
+
+    <div
+      id="adminQuestionsStatus"
+      class="status-box"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <section
+      id="adminQuestionsList"
+      class="question-admin-list"
+      aria-label="Question bank"
+    >
+
+      <div class="empty-state">
+        Loading questions…
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       QUESTION EDITOR
+  ====================================================== -->
+
+  <dialog
+    id="questionDialog"
+    class="module-dialog question-dialog"
+  >
+
+    <form
+      id="questionForm"
+      novalidate
+    >
+
+      <div class="dialog-title-row">
+
+        <div>
+
+          <span class="admin-kicker">
+            QUESTION EDITOR
+          </span>
+
+
+          <h2 id="questionDialogTitle">
+            Create question
+          </h2>
+
+        </div>
+
+
+        <button
+          type="button"
+          id="closeQuestionDialog"
+          class="dialog-close"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <input
+        id="questionId"
+        type="hidden"
+      >
+
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label for="questionModule">
+            Module *
+          </label>
+
+          <select
+            id="questionModule"
+            required
+          ></select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionType">
+            Question type
+          </label>
+
+          <select id="questionType">
+
+            <option value="single_best_answer">
+              Single best answer
+            </option>
+
+            <option value="multiple_response">
+              Multiple response
+            </option>
+
+            <option value="true_false">
+              True / False
+            </option>
+
+            <option value="image_based">
+              Image-based MCQ
+            </option>
+
+            <option value="ordering">
+              Ordering
+            </option>
+
+            <option value="matching">
+              Matching
+            </option>
+
+            <option value="short_answer">
+              Short answer
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionExternalId">
+            Question code
+          </label>
+
+          <input
+            id="questionExternalId"
+            placeholder="acs-001"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionStatus">
+            Status
+          </label>
+
+          <select id="questionStatus">
+
+            <option value="draft">
+              Draft
+            </option>
+
+            <option value="published">
+              Published
+            </option>
+
+            <option value="archived">
+              Archived
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="questionScenario">
+            Clinical scenario
+          </label>
+
+          <textarea
+            id="questionScenario"
+            rows="3"
+            placeholder="Optional patient scenario shown before the question stem"
+          ></textarea>
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="questionStem">
+            Question stem *
+          </label>
+
+          <textarea
+            id="questionStem"
+            rows="4"
+            required
+          ></textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionTopic">
+            Topic
+          </label>
+
+          <input id="questionTopic">
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionSubtopic">
+            Subtopic
+          </label>
+
+          <input id="questionSubtopic">
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionDifficulty">
+            Difficulty
+          </label>
+
+          <select id="questionDifficulty">
+
+            <option value="foundation">
+              Foundation
+            </option>
+
+            <option
+              value="intermediate"
+              selected
+            >
+              Intermediate
+            </option>
+
+            <option value="advanced">
+              Advanced
+            </option>
+
+            <option value="expert">
+              Expert
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionSeconds">
+            Default time (seconds)
+          </label>
+
+          <input
+            id="questionSeconds"
+            type="number"
+            min="5"
+            max="3600"
+            value="60"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionPoints">
+            Correct points
+          </label>
+
+          <input
+            id="questionPoints"
+            type="number"
+            min="0"
+            step="0.25"
+            value="1"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionNegativePoints">
+            Wrong-answer penalty
+          </label>
+
+          <input
+            id="questionNegativePoints"
+            type="number"
+            min="0"
+            step="0.25"
+            value="0"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionOrder">
+            Display order
+          </label>
+
+          <input
+            id="questionOrder"
+            type="number"
+            value="100"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="questionImageUrl">
+            Image URL
+          </label>
+
+          <input
+            id="questionImageUrl"
+            type="url"
+            placeholder="https://..."
+          >
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="questionImageAlt">
+            Image description / accessibility text
+          </label>
+
+          <input id="questionImageAlt">
+
+        </div>
+
+      </div>
+
+
+      <section class="option-editor-section">
+
+        <div class="option-editor-title">
+
+          <div>
+
+            <h3>
+              Answer options
+            </h3>
+
+            <p
+              id="optionHelp"
+              class="muted"
+            >
+              Choose one correct answer.
+            </p>
+
+          </div>
+
+
+          <button
+            id="addOptionButton"
+            type="button"
+            class="secondary-btn"
+          >
+            + Add option
+          </button>
+
+        </div>
+
+
+        <div
+          id="optionRows"
+          class="option-rows"
+        ></div>
+
+      </section>
+
+
+      <div class="form-grid">
+
+        <div class="field span-2">
+
+          <label for="questionExplanation">
+            Explanation
+          </label>
+
+          <textarea
+            id="questionExplanation"
+            rows="4"
+          ></textarea>
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="questionReferenceText">
+            Guideline / trial reference
+          </label>
+
+          <textarea
+            id="questionReferenceText"
+            rows="2"
+          ></textarea>
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="questionReferenceUrl">
+            Reference URL
+          </label>
+
+          <input
+            id="questionReferenceUrl"
+            type="url"
+            placeholder="https://..."
+          >
+
+        </div>
+
+      </div>
+
+
+      <div class="toggle-grid">
+
+        <label>
+
+          <input
+            id="questionConfidence"
+            type="checkbox"
+          >
+
+          Confidence scoring
+
+        </label>
+
+
+        <label>
+
+          <input
+            id="questionRandomize"
+            type="checkbox"
+            checked
+          >
+
+          Randomize options
+
+        </label>
+
+      </div>
+
+
+      <div class="dialog-actions">
+
+        <button
+          id="archiveQuestionButton"
+          type="button"
+          class="danger-btn"
+          hidden
+        >
+          Archive question
+        </button>
+
+
+        <button
+          id="duplicateQuestionButton"
+          type="button"
+          class="secondary-btn"
+          hidden
+        >
+          Duplicate
+        </button>
+
+
+        <button
+          id="cancelQuestionButton"
+          type="button"
+          class="secondary-btn"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          type="submit"
+          class="primary-btn"
+        >
+          Save question
+        </button>
+
+      </div>
+
+    </form>
+
+  </dialog>
+
+
+  <!-- =====================================================
+       AI QUESTION GENERATOR
+  ====================================================== -->
+
+  <dialog
+    id="aiQuestionDialog"
+    class="module-dialog"
+  >
+
+    <form
+      id="aiQuestionForm"
+      novalidate
+    >
+
+      <div class="dialog-title-row">
+
+        <div>
+
+          <span class="admin-kicker">
+            AI QUESTION GENERATOR
+          </span>
+
+
+          <h2>
+            Generate reviewable drafts
+          </h2>
+
+        </div>
+
+
+        <button
+          type="button"
+          id="closeAiQuestionDialog"
+          class="dialog-close"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="ai-dialog-note">
+
+        <strong>
+          Approval workflow:
+        </strong>
+
+        Generated questions are saved only in an AI-review queue.
+        They are not added to quizzes or published until you open them,
+        edit them, and save them manually.
+
+      </div>
+
+
+      <div
+        class="form-grid"
+        style="margin-top:18px"
+      >
+
+        <div class="field">
+
+          <label for="aiModule">
+            Module *
+          </label>
+
+          <select
+            id="aiModule"
+            required
+          ></select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="aiQuestionCount">
+            Number of questions
+          </label>
+
+          <input
+            id="aiQuestionCount"
+            type="number"
+            min="1"
+            max="10"
+            value="5"
+            required
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="aiDifficulty">
+            Difficulty
+          </label>
+
+          <select id="aiDifficulty">
+
+            <option value="foundation">
+              Foundation
+            </option>
+
+            <option
+              value="intermediate"
+              selected
+            >
+              Intermediate
+            </option>
+
+            <option value="advanced">
+              Advanced
+            </option>
+
+            <option value="expert">
+              Expert
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="aiQuestionType">
+            Question type
+          </label>
+
+          <select id="aiQuestionType">
+
+            <option value="single_best_answer">
+              Single best answer
+            </option>
+
+            <option value="multiple_response">
+              Multiple response
+            </option>
+
+            <option value="true_false">
+              True / False
+            </option>
+
+            <option value="image_based">
+              Image-based MCQ
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="aiPrompt">
+            Topic and instructions *
+          </label>
+
+          <textarea
+            id="aiPrompt"
+            rows="5"
+            required
+            placeholder="Example: Generate guideline-based questions on STEMI reperfusion strategy. Use realistic clinical scenarios and avoid ambiguous distractors."
+          ></textarea>
+
+        </div>
+
+
+        <div class="field span-2">
+
+          <label for="aiReferenceContext">
+            Reference context
+          </label>
+
+          <textarea
+            id="aiReferenceContext"
+            rows="4"
+            placeholder="Paste the guideline passage, trial summary, learning objectives, or source notes that the AI must use."
+          ></textarea>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="aiGenerationProgress"
+        class="ai-generation-progress"
+      ></div>
+
+
+      <div class="dialog-actions">
+
+        <button
+          id="cancelAiQuestionDialog"
+          type="button"
+          class="secondary-btn"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          id="submitAiGeneration"
+          type="submit"
+          class="primary-btn"
+        >
+          Generate drafts
+        </button>
+
+      </div>
+
+    </form>
+
+  </dialog>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const edition =
+        parameters.get(
+          "edition"
+        ) === "basic"
+          ? "basic"
+          : "expert";
+
+
+      const badge =
+        document.getElementById(
+          "adminQuestionsEditionBadge"
+        );
+
+
+      if (badge) {
+        badge.textContent =
+          edition === "basic"
+            ? "BASIC EDITION"
+            : "EXPERT EDITION";
+      }
+
+
+      const themeColor =
+        document.getElementById(
+          "adminQuestionsThemeColor"
+        );
+
+
+      if (themeColor) {
+        themeColor.content =
+          edition === "basic"
+            ? "#105541"
+            : "#123f72";
+      }
+
+
+      const links = {
+        adminQuestionsStudentsLink:
+          "admin.html",
+
+        adminQuestionsModulesLink:
+          "admin-modules.html"
+      };
+
+
+      Object.entries(
+        links
+      ).forEach(
+        ([id, path]) => {
+          const link =
+            document.getElementById(
+              id
+            );
+
+
+          if (link) {
+            link.href =
+              `${path}?edition=${encodeURIComponent(
+                edition
+              )}`;
+          }
+        }
+      );
+
+
+      document.title =
+        `Question Bank | ACL ${
+          edition === "basic"
+            ? "Basic Edition"
+            : "Expert Edition"
+        } Admin`;
+    })();
+  </script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-questions.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/session-ui.js?v=4.6.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-shell.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
+</body>
+
+</html>
