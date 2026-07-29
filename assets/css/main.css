@@ -6886,3 +6886,91 @@ body.acl-basic-edition .acl-drawer-close {
       0.08
     );
 }
+/* =========================================================
+   BASIC EDITION — GREEN HEADER AND DRAWER
+========================================================= */
+
+/* Header background */
+
+body.acl-basic-edition .topbar,
+body.acl-basic-edition .topbar.acl-unified-header,
+body.acl-basic-edition .acl-header-layout {
+  background:
+    linear-gradient(
+      135deg,
+      #043d32 0%,
+      #075b49 55%,
+      #08705a 100%
+    ) !important;
+}
+
+
+/* Keep the lower header line yellow */
+
+body.acl-basic-edition .topbar,
+body.acl-basic-edition .topbar.acl-unified-header {
+  border-bottom-color:
+    #f2b500 !important;
+}
+
+
+/* Keep BASIC EDITION words yellow */
+
+body.acl-basic-edition .acl-edition-title,
+body.acl-basic-edition .acl-expert-edition {
+  color:
+    #f2b500 !important;
+}
+
+
+/* Keep ACL / Alexandria Cardiology League white */
+
+body.acl-basic-edition .acl-brand-name,
+body.acl-basic-edition .acl-brand-separator {
+  color:
+    #ffffff !important;
+}
+
+
+/* Drawer background */
+
+body.acl-basic-edition .acl-side-drawer {
+  background:
+    linear-gradient(
+      180deg,
+      #043d32 0%,
+      #075b49 55%,
+      #032f27 100%
+    ) !important;
+}
+
+
+/* Drawer text */
+
+body.acl-basic-edition .acl-drawer-item,
+body.acl-basic-edition .acl-drawer-item-label,
+body.acl-basic-edition .acl-drawer-identity-copy strong {
+  color:
+    #ffffff !important;
+}
+
+
+/* Drawer icons */
+
+body.acl-basic-edition .acl-drawer-item-icon {
+  color:
+    #f2b500 !important;
+}
+
+
+/* Drawer hover */
+
+body.acl-basic-edition .acl-drawer-item:hover {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.11
+    ) !important;
+}
