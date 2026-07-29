@@ -138,15 +138,15 @@ localStorage.setItem(
 );
 
 document.body.classList.remove(
-  "acl-basic-edition",
-  "acl-expert-edition"
+  "acl-theme-basic",
+  "acl-theme-expert"
 );
 
 
 document.body.classList.add(
   selectedEdition === "basic"
-    ? "acl-basic-edition"
-    : "acl-expert-edition"
+    ? "acl-theme-basic"
+    : "acl-theme-expert"
 );
 /*
  * Add the remembered edition to the URL without reloading.
