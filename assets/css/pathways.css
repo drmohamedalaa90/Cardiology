@@ -1074,7 +1074,7 @@ body.acl-pathways-page {
 .pathway-basic .pathway-tagline,
 .pathway-basic .pathway-label,
 .pathway-basic .pathway-card h2 {
-  color: #ffffff;
+  color: #ffffff !important;
 }
 
 .pathway-expert .pathway-icon {
@@ -1236,35 +1236,29 @@ body.acl-pathways-page {
       255,
       255,
       255,
-      0.18
+      0.34
     );
 
   border-radius:
     999px;
 
   color:
-    rgba(
-      255,
-      255,
-      255,
-      0.95
-    );
+    #ffffff;
 
   background:
     rgba(
       255,
       255,
       255,
-      0.08
+      0.10
     );
 
   font-size:
     0.74rem;
 
   font-weight:
-    500;
+    400;
 }
-
 
 .pathway-action {
   display:
