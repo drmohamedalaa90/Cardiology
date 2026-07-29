@@ -1,34 +1,2736 @@
-<!doctype html><html lang="en"><head>
-<meta name="referrer" content="strict-origin-when-cross-origin">
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ACL Admin | Expert Edition</title>
-<link rel="stylesheet" href="assets/css/main.css?v=2.8.7"><link rel="stylesheet" href="assets/css/auth.css?v=1.5.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header class="topbar"><a class="brand brand-link" href="modules.html" aria-label="ACL Expert Edition home">Alexandria Cardiology League; <b>THE EXPERT EDITION</b></a><nav><a id="userChip" class="user-chip" href="profile.html"></a><a class="nav-btn" href="modules.html">Modules</a><a class="nav-btn" href="progress.html">My Progress</a><button class="nav-btn" onclick="aclSignOut()">Sign Out</button></nav></header>
-<main class="container">
-<section data-admin-shell data-active="students"></section>
-<section class="card admin-page-heading">
-              <span class="admin-kicker">OPENED SECTION</span>
-              <h1>Registered Students</h1>
-              <p class="muted">Search accounts, review profile data, suspend or restore access, send password-reset emails, and export the current list.</p>
-              <div style="margin-top:14px"><button id="exportCsvBtn" class="primary-btn" type="button">Export student CSV</button></div>
-            </section>
+<!doctype html>
 
-<section class="admin-stats" aria-label="Account statistics">
-<div class="stat-card"><span>Total registered</span><strong id="totalStudents">—</strong></div>
-<div class="stat-card"><span>Active</span><strong id="activeStudents">—</strong></div>
-<div class="stat-card"><span>Suspended</span><strong id="suspendedStudents">—</strong></div>
-<div class="stat-card"><span>Administrators</span><strong id="adminCount">—</strong></div>
-</section>
-<section class="card admin-toolbar">
-<div class="field"><label for="studentSearch">Search</label><input id="studentSearch" type="search" placeholder="Name, username, email, WhatsApp or institution"></div>
-<div class="field"><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All accounts</option><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
-<div class="field"><label for="roleFilter">Role</label><select id="roleFilter"><option value="all">All roles</option><option value="student">Students</option><option value="admin">Administrators</option></select></div>
-<button id="refreshStudents" class="secondary-btn" type="button">Refresh</button>
-</section>
-<div id="adminStatus" class="status-box"></div>
-<section class="card admin-table-card">
-<div class="table-wrap"><table class="admin-table"><thead><tr><th>Student</th><th>Contact</th><th>Academic details</th><th>Role</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody id="studentsBody"><tr><td colspan="7" class="table-empty">Loading registered accounts…</td></tr></tbody></table></div>
-</section>
-<section class="card"><h2>Competition Engine</h2><p class="muted">Schedule and manage official ACL rounds.</p><a class="primary-btn" href="admin-competitions.html">Manage Competitions</a></section></main>
-<dialog id="studentDialog" class="student-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form><div id="studentDialogContent"></div></dialog>
-<dialog id="photoDialog" class="photo-dialog"><div class="photo-dialog-head"><h3 id="photoDialogTitle">Profile photo</h3><form method="dialog"><button class="photo-dialog-close" aria-label="Close">×</button></form></div><img id="photoDialogImage" alt="Student profile photo"></dialog>
-<script type="module" src="assets/js/admin.js?v=2.8.3"></script><script type="module" src="assets/js/session-ui.js?v=2.7.12"></script><script type="module" src="assets/js/admin-shell.js?v=2.8.0"></script></body></html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    id="adminThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <title>
+    ACL Admin
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=1.5.1"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <!-- =====================================================
+       APPLY EDITION BEFORE RENDER
+  ====================================================== -->
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const requestedEdition =
+        String(
+          parameters.get(
+            "edition"
+          ) ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        (
+          requestedEdition ===
+            "basic" ||
+          requestedEdition ===
+            "expert"
+        )
+          ? requestedEdition
+          : (
+              storedEdition ===
+                "basic" ||
+              storedEdition ===
+                "expert"
+            )
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+
+      document.documentElement.classList.add(
+        edition ===
+          "basic"
+          ? "acl-admin-basic"
+          : "acl-admin-expert"
+      );
+
+
+      if (
+        !parameters.get(
+          "edition"
+        )
+      ) {
+        const updatedUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        updatedUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          updatedUrl
+        );
+      }
+    })();
+  </script>
+
+
+  <style>
+    :root {
+      --admin-primary:
+        #123f72;
+
+      --admin-secondary:
+        #176aa1;
+
+      --admin-soft:
+        #eaf5ff;
+
+      --admin-soft-2:
+        #f7fbff;
+
+      --admin-accent:
+        #ffc928;
+
+      --admin-success:
+        #168067;
+
+      --admin-danger:
+        #b33443;
+
+      --admin-warning:
+        #b97a00;
+
+      --admin-text:
+        #17324d;
+
+      --admin-muted:
+        #687d90;
+
+      --admin-border:
+        #d9e6f2;
+
+      --admin-card:
+        #ffffff;
+
+      --admin-shadow:
+        0 18px 45px
+        rgba(
+          18,
+          63,
+          114,
+          0.12
+        );
+    }
+
+
+    html.acl-admin-basic {
+      --admin-primary:
+        #105541;
+
+      --admin-secondary:
+        #168067;
+
+      --admin-soft:
+        #eaf8f2;
+
+      --admin-soft-2:
+        #f8fcfa;
+
+      --admin-text:
+        #173e34;
+
+      --admin-shadow:
+        0 18px 45px
+        rgba(
+          16,
+          85,
+          65,
+          0.12
+        );
+    }
+
+
+    html.acl-admin-expert {
+      --admin-primary:
+        #123f72;
+
+      --admin-secondary:
+        #176aa1;
+
+      --admin-soft:
+        #eaf5ff;
+
+      --admin-soft-2:
+        #f7fbff;
+
+      --admin-text:
+        #17324d;
+    }
+
+
+    * {
+      box-sizing:
+        border-box;
+    }
+
+
+    html,
+    body {
+      min-height:
+        100%;
+    }
+
+
+    body {
+      margin:
+        0;
+
+      padding-top:
+        92px;
+
+      color:
+        var(
+          --admin-text
+        );
+
+      background:
+        radial-gradient(
+          circle at 10% 6%,
+          rgba(
+            255,
+            201,
+            40,
+            0.13
+          ),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 8%,
+          color-mix(
+            in srgb,
+            var(
+              --admin-secondary
+            )
+            12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(
+            --admin-soft
+          )
+        );
+    }
+
+
+    button,
+    input,
+    select {
+      font:
+        inherit;
+    }
+
+
+    /* =====================================================
+       HEADER LOADING
+    ===================================================== */
+
+    .topbar.acl-header-pending {
+      opacity:
+        0;
+
+      visibility:
+        hidden;
+
+      pointer-events:
+        none;
+    }
+
+
+    .topbar.acl-unified-header {
+      opacity:
+        1;
+
+      visibility:
+        visible;
+
+      pointer-events:
+        auto;
+    }
+
+
+    /* =====================================================
+       PAGE SHELL
+    ===================================================== */
+
+    .admin-page-shell {
+      width:
+        min(
+          1280px,
+          calc(
+            100% - 28px
+          )
+        );
+
+      margin:
+        0 auto;
+
+      padding:
+        30px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .admin-hero {
+      position:
+        relative;
+
+      overflow:
+        hidden;
+
+      padding:
+        clamp(
+          28px,
+          5vw,
+          48px
+        );
+
+      border-radius:
+        28px;
+
+      color:
+        #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(
+            --admin-primary
+          ),
+          var(
+            --admin-secondary
+          )
+        );
+
+      box-shadow:
+        var(
+          --admin-shadow
+        );
+    }
+
+
+    .admin-hero::after {
+      content:
+        "⚙";
+
+      position:
+        absolute;
+
+      top:
+        50%;
+
+      right:
+        5%;
+
+      transform:
+        translateY(
+          -50%
+        )
+        rotate(
+          -10deg
+        );
+
+      color:
+        rgba(
+          255,
+          255,
+          255,
+          0.11
+        );
+
+      font-size:
+        clamp(
+          115px,
+          20vw,
+          220px
+        );
+
+      pointer-events:
+        none;
+    }
+
+
+    .admin-hero-content {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      max-width:
+        800px;
+    }
+
+
+    .admin-hero-top {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        10px;
+    }
+
+
+    .admin-kicker,
+    .admin-edition-badge {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      min-height:
+        31px;
+
+      padding:
+        7px 12px;
+
+      border:
+        1px solid
+        rgba(
+          255,
+          255,
+          255,
+          0.3
+        );
+
+      border-radius:
+        999px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.12
+        );
+
+      color:
+        #ffffff;
+
+      font-size:
+        0.74rem;
+
+      font-weight:
+        900;
+
+      letter-spacing:
+        0.09em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .admin-edition-badge {
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.21
+        );
+    }
+
+
+    .admin-hero h1 {
+      margin:
+        15px 0 10px;
+
+      color:
+        #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4rem
+        );
+
+      line-height:
+        1;
+    }
+
+
+    .admin-hero p {
+      margin:
+        0;
+
+      color:
+        rgba(
+          255,
+          255,
+          255,
+          0.88
+        );
+
+      font-size:
+        clamp(
+          0.98rem,
+          2vw,
+          1.08rem
+        );
+
+      line-height:
+        1.65;
+    }
+
+
+    /* =====================================================
+       ADMIN TOOLS
+    ===================================================== */
+
+    .admin-tools-section {
+      margin-top:
+        20px;
+    }
+
+
+    .admin-section-heading {
+      display:
+        flex;
+
+      align-items:
+        flex-start;
+
+      justify-content:
+        space-between;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        12px;
+
+      margin-bottom:
+        14px;
+    }
+
+
+    .admin-section-heading h2 {
+      margin:
+        0;
+
+      color:
+        var(
+          --admin-primary
+        );
+
+      font-size:
+        1.25rem;
+    }
+
+
+    .admin-section-heading p {
+      margin:
+        5px 0 0;
+
+      color:
+        var(
+          --admin-muted
+        );
+
+      font-size:
+        0.84rem;
+
+      line-height:
+        1.5;
+    }
+
+
+    .admin-tools-grid {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(
+            0,
+            1fr
+          )
+        );
+
+      gap:
+        15px;
+    }
+
+
+    .admin-tool-card {
+      position:
+        relative;
+
+      overflow:
+        hidden;
+
+      display:
+        flex;
+
+      flex-direction:
+        column;
+
+      min-height:
+        200px;
+
+      padding:
+        20px;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        20px;
+
+      color:
+        var(
+          --admin-text
+        );
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.98
+        );
+
+      box-shadow:
+        0 12px 30px
+        rgba(
+          18,
+          63,
+          114,
+          0.07
+        );
+
+      text-decoration:
+        none;
+
+      transition:
+        transform
+        0.18s
+        ease,
+        box-shadow
+        0.18s
+        ease,
+        border-color
+        0.18s
+        ease;
+    }
+
+
+    .admin-tool-card:hover {
+      transform:
+        translateY(
+          -3px
+        );
+
+      border-color:
+        color-mix(
+          in srgb,
+          var(
+            --admin-secondary
+          )
+          35%,
+          white
+        );
+
+      box-shadow:
+        0 18px 38px
+        rgba(
+          18,
+          63,
+          114,
+          0.12
+        );
+    }
+
+
+    .admin-tool-card::after {
+      content:
+        "";
+
+      position:
+        absolute;
+
+      right:
+        -28px;
+
+      bottom:
+        -38px;
+
+      width:
+        120px;
+
+      height:
+        120px;
+
+      border-radius:
+        50%;
+
+      background:
+        color-mix(
+          in srgb,
+          var(
+            --admin-secondary
+          )
+          9%,
+          transparent
+        );
+    }
+
+
+    .admin-tool-icon {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      width:
+        52px;
+
+      height:
+        52px;
+
+      border-radius:
+        16px;
+
+      color:
+        #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(
+            --admin-primary
+          ),
+          var(
+            --admin-secondary
+          )
+        );
+
+      font-size:
+        1.3rem;
+    }
+
+
+    .admin-tool-card h3 {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      margin:
+        16px 0 0;
+
+      color:
+        var(
+          --admin-primary
+        );
+
+      font-size:
+        1.02rem;
+    }
+
+
+    .admin-tool-card p {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      margin:
+        8px 0 0;
+
+      color:
+        var(
+          --admin-muted
+        );
+
+      font-size:
+        0.82rem;
+
+      line-height:
+        1.52;
+    }
+
+
+    .admin-tool-link-text {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      gap:
+        6px;
+
+      margin-top:
+        auto;
+
+      padding-top:
+        16px;
+
+      color:
+        var(
+          --admin-secondary
+        );
+
+      font-size:
+        0.78rem;
+
+      font-weight:
+        900;
+    }
+
+
+    /* =====================================================
+       CARDS
+    ===================================================== */
+
+    .admin-content-card {
+      margin-top:
+        20px;
+
+      padding:
+        21px;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        21px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.98
+        );
+
+      box-shadow:
+        0 12px 32px
+        rgba(
+          18,
+          63,
+          114,
+          0.07
+        );
+    }
+
+
+    .admin-content-card h2 {
+      margin:
+        0;
+
+      color:
+        var(
+          --admin-primary
+        );
+
+      font-size:
+        1.18rem;
+    }
+
+
+    .admin-content-card p {
+      margin:
+        7px 0 0;
+
+      color:
+        var(
+          --admin-muted
+        );
+
+      font-size:
+        0.84rem;
+
+      line-height:
+        1.5;
+    }
+
+
+    .admin-heading-actions {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        9px;
+
+      margin-top:
+        15px;
+    }
+
+
+    /* =====================================================
+       STATS
+    ===================================================== */
+
+    .admin-stats {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          4,
+          minmax(
+            0,
+            1fr
+          )
+        );
+
+      gap:
+        15px;
+
+      margin-top:
+        18px;
+    }
+
+
+    .admin-stat-card {
+      padding:
+        19px;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        18px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          0.98
+        );
+
+      box-shadow:
+        0 11px 28px
+        rgba(
+          18,
+          63,
+          114,
+          0.06
+        );
+    }
+
+
+    .admin-stat-card span {
+      display:
+        block;
+
+      color:
+        var(
+          --admin-muted
+        );
+
+      font-size:
+        0.72rem;
+
+      font-weight:
+        850;
+
+      letter-spacing:
+        0.05em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .admin-stat-card strong {
+      display:
+        block;
+
+      margin-top:
+        8px;
+
+      color:
+        var(
+          --admin-primary
+        );
+
+      font-size:
+        2rem;
+
+      font-weight:
+        950;
+
+      line-height:
+        1;
+    }
+
+
+    /* =====================================================
+       TOOLBAR
+    ===================================================== */
+
+    .admin-toolbar {
+      display:
+        grid;
+
+      grid-template-columns:
+        minmax(
+          240px,
+          1.4fr
+        )
+        minmax(
+          150px,
+          0.5fr
+        )
+        minmax(
+          150px,
+          0.5fr
+        )
+        auto;
+
+      gap:
+        12px;
+
+      align-items:
+        end;
+    }
+
+
+    .admin-toolbar .field {
+      display:
+        grid;
+
+      gap:
+        6px;
+    }
+
+
+    .admin-toolbar label {
+      color:
+        var(
+          --admin-muted
+        );
+
+      font-size:
+        0.72rem;
+
+      font-weight:
+        850;
+
+      letter-spacing:
+        0.05em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .admin-toolbar input,
+    .admin-toolbar select {
+      width:
+        100%;
+
+      min-height:
+        43px;
+
+      padding:
+        9px 12px;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        11px;
+
+      color:
+        var(
+          --admin-text
+        );
+
+      background:
+        #ffffff;
+
+      outline:
+        none;
+    }
+
+
+    .admin-toolbar input:focus,
+    .admin-toolbar select:focus {
+      border-color:
+        var(
+          --admin-secondary
+        );
+
+      box-shadow:
+        0 0 0 3px
+        color-mix(
+          in srgb,
+          var(
+            --admin-secondary
+          )
+          14%,
+          transparent
+        );
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .admin-primary-button,
+    .admin-secondary-button {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        43px;
+
+      padding:
+        9px 15px;
+
+      border-radius:
+        11px;
+
+      cursor:
+        pointer;
+
+      font-weight:
+        900;
+
+      text-decoration:
+        none;
+    }
+
+
+    .admin-primary-button {
+      border:
+        0;
+
+      color:
+        #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(
+            --admin-primary
+          ),
+          var(
+            --admin-secondary
+          )
+        );
+    }
+
+
+    .admin-secondary-button {
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      color:
+        var(
+          --admin-primary
+        );
+
+      background:
+        #ffffff;
+    }
+
+
+    .admin-primary-button:disabled,
+    .admin-secondary-button:disabled {
+      cursor:
+        wait;
+
+      opacity:
+        0.65;
+    }
+
+
+    /* Preserve classes used by admin.js */
+    .primary-btn {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        43px;
+
+      padding:
+        9px 15px;
+
+      border:
+        0;
+
+      border-radius:
+        11px;
+
+      color:
+        #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(
+            --admin-primary
+          ),
+          var(
+            --admin-secondary
+          )
+        );
+
+      cursor:
+        pointer;
+
+      font-weight:
+        900;
+
+      text-decoration:
+        none;
+    }
+
+
+    .secondary-btn {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        43px;
+
+      padding:
+        9px 15px;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        11px;
+
+      color:
+        var(
+          --admin-primary
+        );
+
+      background:
+        #ffffff;
+
+      cursor:
+        pointer;
+
+      font-weight:
+        900;
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .status-box {
+      margin-top:
+        15px;
+
+      padding:
+        14px 16px;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        13px;
+
+      color:
+        var(
+          --admin-muted
+        );
+
+      background:
+        #ffffff;
+
+      font-weight:
+        750;
+    }
+
+
+    .status-box:empty {
+      display:
+        none;
+    }
+
+
+    .status-box.success {
+      border-color:
+        #bfe7d6;
+
+      color:
+        var(
+          --admin-success
+        );
+
+      background:
+        #f2fbf7;
+    }
+
+
+    .status-box.error {
+      border-color:
+        #f0c6cc;
+
+      color:
+        var(
+          --admin-danger
+        );
+
+      background:
+        #fff5f6;
+    }
+
+
+    /* =====================================================
+       TABLE
+    ===================================================== */
+
+    .admin-table-card {
+      overflow:
+        hidden;
+    }
+
+
+    .table-wrap {
+      overflow-x:
+        auto;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        15px;
+    }
+
+
+    .admin-table {
+      width:
+        100%;
+
+      min-width:
+        1080px;
+
+      border-collapse:
+        collapse;
+
+      background:
+        #ffffff;
+    }
+
+
+    .admin-table th,
+    .admin-table td {
+      padding:
+        14px 15px;
+
+      border-bottom:
+        1px solid
+        #e9f0f6;
+
+      text-align:
+        left;
+
+      vertical-align:
+        middle;
+    }
+
+
+    .admin-table th {
+      color:
+        var(
+          --admin-muted
+        );
+
+      background:
+        var(
+          --admin-soft-2
+        );
+
+      font-size:
+        0.7rem;
+
+      font-weight:
+        900;
+
+      letter-spacing:
+        0.05em;
+
+      text-transform:
+        uppercase;
+    }
+
+
+    .admin-table td {
+      color:
+        var(
+          --admin-text
+        );
+
+      font-size:
+        0.84rem;
+    }
+
+
+    .admin-table tbody tr:last-child td {
+      border-bottom:
+        0;
+    }
+
+
+    .table-empty {
+      padding:
+        38px 18px !important;
+
+      color:
+        var(
+          --admin-muted
+        ) !important;
+
+      text-align:
+        center !important;
+    }
+
+
+    /* =====================================================
+       DIALOGS
+    ===================================================== */
+
+    .student-dialog,
+    .photo-dialog {
+      width:
+        min(
+          680px,
+          calc(
+            100% - 24px
+          )
+        );
+
+      max-height:
+        calc(
+          100vh - 30px
+        );
+
+      padding:
+        22px;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        20px;
+
+      color:
+        var(
+          --admin-text
+        );
+
+      background:
+        #ffffff;
+
+      box-shadow:
+        0 28px 80px
+        rgba(
+          16,
+          43,
+          72,
+          0.28
+        );
+    }
+
+
+    .student-dialog::backdrop,
+    .photo-dialog::backdrop {
+      background:
+        rgba(
+          10,
+          29,
+          50,
+          0.62
+        );
+
+      backdrop-filter:
+        blur(
+          4px
+        );
+    }
+
+
+    .dialog-close,
+    .photo-dialog-close {
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      width:
+        38px;
+
+      height:
+        38px;
+
+      margin-left:
+        auto;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        11px;
+
+      color:
+        var(
+          --admin-primary
+        );
+
+      background:
+        #ffffff;
+
+      cursor:
+        pointer;
+
+      font-size:
+        1.35rem;
+    }
+
+
+    .photo-dialog-head {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        12px;
+
+      margin-bottom:
+        15px;
+    }
+
+
+    .photo-dialog-head h3 {
+      margin:
+        0;
+
+      color:
+        var(
+          --admin-primary
+        );
+    }
+
+
+    .photo-dialog img {
+      display:
+        block;
+
+      width:
+        100%;
+
+      max-height:
+        70vh;
+
+      border-radius:
+        15px;
+
+      object-fit:
+        contain;
+
+      background:
+        var(
+          --admin-soft-2
+        );
+    }
+
+
+    /* =====================================================
+       FOOTER
+    ===================================================== */
+
+    .admin-footer {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        12px;
+
+      margin-top:
+        22px;
+    }
+
+
+    .admin-footer p {
+      margin:
+        0;
+
+      color:
+        var(
+          --admin-muted
+        );
+
+      font-size:
+        0.76rem;
+    }
+
+
+    .admin-footer-links {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        8px;
+    }
+
+
+    .admin-footer-link {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        40px;
+
+      padding:
+        8px 13px;
+
+      border:
+        1px solid
+        var(
+          --admin-border
+        );
+
+      border-radius:
+        10px;
+
+      color:
+        var(
+          --admin-primary
+        );
+
+      background:
+        #ffffff;
+
+      font-size:
+        0.78rem;
+
+      font-weight:
+        850;
+
+      text-decoration:
+        none;
+    }
+
+
+    [hidden] {
+      display:
+        none !important;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (
+      max-width:
+      1050px
+    ) {
+      .admin-tools-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(
+              0,
+              1fr
+            )
+          );
+      }
+
+
+      .admin-stats {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(
+              0,
+              1fr
+            )
+          );
+      }
+
+
+      .admin-toolbar {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(
+              0,
+              1fr
+            )
+          );
+      }
+    }
+
+
+    @media (
+      max-width:
+      760px
+    ) {
+      body {
+        padding-top:
+          82px;
+      }
+
+
+      .admin-page-shell {
+        width:
+          min(
+            calc(
+              100% - 18px
+            ),
+            1280px
+          );
+
+        padding-top:
+          18px;
+      }
+
+
+      .admin-toolbar {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .admin-toolbar button {
+        width:
+          100%;
+      }
+    }
+
+
+    @media (
+      max-width:
+      560px
+    ) {
+      .admin-tools-grid,
+      .admin-stats {
+        grid-template-columns:
+          1fr;
+      }
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <!-- =====================================================
+       UNIFIED HEADER PLACEHOLDER
+  ====================================================== -->
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="admin-page-shell">
+
+    <!-- ===================================================
+         HERO
+    ==================================================== -->
+
+    <section class="admin-hero">
+
+      <div class="admin-hero-content">
+
+        <div class="admin-hero-top">
+
+          <span class="admin-kicker">
+            ACL ADMINISTRATION
+          </span>
+
+
+          <span
+            id="adminEditionBadge"
+            class="admin-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
+
+        <h1>
+          Admin Dashboard
+        </h1>
+
+
+        <p>
+          Manage ACL members, competitions, questions, analytics,
+          notifications, rankings, and platform learning tools from one
+          central administration area.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         EXISTING ADMIN SHELL
+    ==================================================== -->
+
+    <section
+      data-admin-shell
+      data-active="students"
+    ></section>
+
+
+    <!-- ===================================================
+         ADMIN TOOL CARDS
+    ==================================================== -->
+
+    <section class="admin-tools-section">
+
+      <div class="admin-section-heading">
+
+        <div>
+
+          <h2>
+            Administration tools
+          </h2>
+
+          <p>
+            Open each management area while preserving the selected ACL
+            edition.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="admin-tools-grid">
+
+        <a
+          id="adminCompetitionsLink"
+          class="admin-tool-card"
+          href="admin-competitions.html"
+        >
+
+          <span
+            class="admin-tool-icon"
+            aria-hidden="true"
+          >
+            🏆
+          </span>
+
+
+          <h3>
+            Competition Engine
+          </h3>
+
+
+          <p>
+            Schedule official ACL rounds, configure availability, manage
+            competition settings, and review submitted attempts.
+          </p>
+
+
+          <span class="admin-tool-link-text">
+            Manage competitions →
+          </span>
+
+        </a>
+
+
+        <a
+          id="adminAnalyticsLink"
+          class="admin-tool-card"
+          href="admin-analytics.html"
+        >
+
+          <span
+            class="admin-tool-icon"
+            aria-hidden="true"
+          >
+            📊
+          </span>
+
+
+          <h3>
+            Admin Analytics
+          </h3>
+
+
+          <p>
+            Review users, activity, completed attempts, confidence data,
+            module performance, challenges, and recent learner activity.
+          </p>
+
+
+          <span class="admin-tool-link-text">
+            Open analytics →
+          </span>
+
+        </a>
+
+
+        <a
+          id="adminQuestionAuthoringLink"
+          class="admin-tool-card"
+          href="question-authoring.html"
+        >
+
+          <span
+            class="admin-tool-icon"
+            aria-hidden="true"
+          >
+            ✍️
+          </span>
+
+
+          <h3>
+            Question Authoring
+          </h3>
+
+
+          <p>
+            Create and edit questions, answer options, explanations,
+            expert tips, references, and ACL flashcards.
+          </p>
+
+
+          <span class="admin-tool-link-text">
+            Author questions →
+          </span>
+
+        </a>
+
+
+        <a
+          id="adminNotificationsLink"
+          class="admin-tool-card"
+          href="notifications.html"
+        >
+
+          <span
+            class="admin-tool-icon"
+            aria-hidden="true"
+          >
+            🔔
+          </span>
+
+
+          <h3>
+            Notifications
+          </h3>
+
+
+          <p>
+            Review personal ACL updates, challenge invitations,
+            announcements, achievements, and system messages.
+          </p>
+
+
+          <span class="admin-tool-link-text">
+            View notifications →
+          </span>
+
+        </a>
+
+
+        <a
+          id="adminLeaderboardLink"
+          class="admin-tool-card"
+          href="leaderboard.html"
+        >
+
+          <span
+            class="admin-tool-icon"
+            aria-hidden="true"
+          >
+            🥇
+          </span>
+
+
+          <h3>
+            Leaderboard
+          </h3>
+
+
+          <p>
+            Inspect general rankings, module performance, challenge wins,
+            scores, accuracy, and completion time.
+          </p>
+
+
+          <span class="admin-tool-link-text">
+            Open leaderboard →
+          </span>
+
+        </a>
+
+
+        <a
+          id="adminAchievementsLink"
+          class="admin-tool-card"
+          href="achievements.html"
+        >
+
+          <span
+            class="admin-tool-icon"
+            aria-hidden="true"
+          >
+            🏅
+          </span>
+
+
+          <h3>
+            Achievements
+          </h3>
+
+
+          <p>
+            Review learning milestones, confidence achievements, streaks,
+            accuracy badges, and challenge progress.
+          </p>
+
+
+          <span class="admin-tool-link-text">
+            View achievements →
+          </span>
+
+        </a>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         REGISTERED USERS HEADING
+    ==================================================== -->
+
+    <section class="admin-content-card admin-page-heading">
+
+      <span
+        style="
+          display:inline-flex;
+          color:var(--admin-secondary);
+          font-size:.72rem;
+          font-weight:900;
+          letter-spacing:.08em;
+          text-transform:uppercase;
+        "
+      >
+        MEMBER MANAGEMENT
+      </span>
+
+
+      <h2 style="margin-top:9px">
+        Registered Students
+      </h2>
+
+
+      <p>
+        Search accounts, review profile data, suspend or restore access,
+        send password-reset emails, and export the current list.
+      </p>
+
+
+      <div class="admin-heading-actions">
+
+        <button
+          id="exportCsvBtn"
+          class="primary-btn"
+          type="button"
+        >
+          Export student CSV
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         ACCOUNT STATISTICS
+    ==================================================== -->
+
+    <section
+      class="admin-stats"
+      aria-label="Account statistics"
+    >
+
+      <article class="admin-stat-card">
+
+        <span>
+          Total registered
+        </span>
+
+        <strong id="totalStudents">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="admin-stat-card">
+
+        <span>
+          Active
+        </span>
+
+        <strong id="activeStudents">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="admin-stat-card">
+
+        <span>
+          Suspended
+        </span>
+
+        <strong id="suspendedStudents">
+          —
+        </strong>
+
+      </article>
+
+
+      <article class="admin-stat-card">
+
+        <span>
+          Administrators
+        </span>
+
+        <strong id="adminCount">
+          —
+        </strong>
+
+      </article>
+
+    </section>
+
+
+    <!-- ===================================================
+         MEMBER FILTERS
+    ==================================================== -->
+
+    <section class="admin-content-card admin-toolbar">
+
+      <div class="field">
+
+        <label for="studentSearch">
+          Search
+        </label>
+
+        <input
+          id="studentSearch"
+          type="search"
+          placeholder="Name, username, email, WhatsApp or institution"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="statusFilter">
+          Status
+        </label>
+
+        <select id="statusFilter">
+
+          <option value="all">
+            All accounts
+          </option>
+
+          <option value="active">
+            Active
+          </option>
+
+          <option value="suspended">
+            Suspended
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="roleFilter">
+          Role
+        </label>
+
+        <select id="roleFilter">
+
+          <option value="all">
+            All roles
+          </option>
+
+          <option value="student">
+            Students
+          </option>
+
+          <option value="admin">
+            Administrators
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <button
+        id="refreshStudents"
+        class="secondary-btn"
+        type="button"
+      >
+        Refresh
+      </button>
+
+    </section>
+
+
+    <!-- ===================================================
+         STATUS
+    ==================================================== -->
+
+    <div
+      id="adminStatus"
+      class="status-box"
+      role="status"
+      aria-live="polite"
+    ></div>
+
+
+    <!-- ===================================================
+         MEMBER TABLE
+    ==================================================== -->
+
+    <section class="admin-content-card admin-table-card">
+
+      <div class="table-wrap">
+
+        <table class="admin-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Student
+              </th>
+
+              <th>
+                Contact
+              </th>
+
+              <th>
+                Academic details
+              </th>
+
+              <th>
+                Role
+              </th>
+
+              <th>
+                Status
+              </th>
+
+              <th>
+                Registered
+              </th>
+
+              <th>
+                Actions
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="studentsBody">
+
+            <tr>
+
+              <td
+                colspan="7"
+                class="table-empty"
+              >
+                Loading registered accounts…
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         FOOTER
+    ==================================================== -->
+
+    <footer class="admin-footer">
+
+      <p>
+        Administrator access must remain protected by Supabase RLS and
+        server-side permission checks.
+      </p>
+
+
+      <div class="admin-footer-links">
+
+        <a
+          id="adminModulesLink"
+          class="admin-footer-link"
+          href="modules.html"
+        >
+          Modules
+        </a>
+
+
+        <a
+          id="adminProgressLink"
+          class="admin-footer-link"
+          href="progress.html"
+        >
+          My Progress
+        </a>
+
+
+        <a
+          class="admin-footer-link"
+          href="pathways.html"
+        >
+          Switch Edition
+        </a>
+
+      </div>
+
+    </footer>
+
+  </main>
+
+
+  <!-- =====================================================
+       STUDENT DETAILS DIALOG
+  ====================================================== -->
+
+  <dialog
+    id="studentDialog"
+    class="student-dialog"
+  >
+
+    <form method="dialog">
+
+      <button
+        class="dialog-close"
+        aria-label="Close"
+      >
+        ×
+      </button>
+
+    </form>
+
+
+    <div id="studentDialogContent"></div>
+
+  </dialog>
+
+
+  <!-- =====================================================
+       PHOTO DIALOG
+  ====================================================== -->
+
+  <dialog
+    id="photoDialog"
+    class="photo-dialog"
+  >
+
+    <div class="photo-dialog-head">
+
+      <h3 id="photoDialogTitle">
+        Profile photo
+      </h3>
+
+
+      <form method="dialog">
+
+        <button
+          class="photo-dialog-close"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </form>
+
+    </div>
+
+
+    <img
+      id="photoDialogImage"
+      alt="Student profile photo"
+    >
+
+  </dialog>
+
+
+  <!-- =====================================================
+       EDITION-AWARE ADMIN LINKS
+  ====================================================== -->
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const edition =
+        parameters.get(
+          "edition"
+        ) ===
+        "basic"
+          ? "basic"
+          : "expert";
+
+
+      const editionBadge =
+        document.getElementById(
+          "adminEditionBadge"
+        );
+
+
+      if (editionBadge) {
+        editionBadge.textContent =
+          edition ===
+            "basic"
+            ? "BASIC EDITION"
+            : "EXPERT EDITION";
+      }
+
+
+      const themeColor =
+        document.getElementById(
+          "adminThemeColor"
+        );
+
+
+      if (themeColor) {
+        themeColor.content =
+          edition ===
+            "basic"
+            ? "#105541"
+            : "#123f72";
+      }
+
+
+      const links = {
+        adminCompetitionsLink:
+          "admin-competitions.html",
+
+        adminAnalyticsLink:
+          "admin-analytics.html",
+
+        adminQuestionAuthoringLink:
+          "question-authoring.html",
+
+        adminNotificationsLink:
+          "notifications.html",
+
+        adminLeaderboardLink:
+          "leaderboard.html",
+
+        adminAchievementsLink:
+          "achievements.html",
+
+        adminModulesLink:
+          "modules.html",
+
+        adminProgressLink:
+          "progress.html"
+      };
+
+
+      Object.entries(
+        links
+      ).forEach(
+        (
+          [
+            id,
+            path
+          ]
+        ) => {
+          const link =
+            document.getElementById(
+              id
+            );
+
+
+          if (link) {
+            link.href =
+              `${path}?edition=${encodeURIComponent(
+                edition
+              )}`;
+          }
+        }
+      );
+
+
+      document.title =
+        `ACL Admin | ${
+          edition ===
+            "basic"
+            ? "Basic Edition"
+            : "Expert Edition"
+        }`;
+    })();
+  </script>
+
+
+  <!-- =====================================================
+       APPLICATION
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="assets/js/admin.js?v=2.8.3"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/session-ui.js?v=4.6.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/admin-shell.js?v=2.8.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
+</body>
+
+</html>
