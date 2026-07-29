@@ -272,23 +272,14 @@ function belongsToSelectedEdition(
 
 
   /*
-   * When edition information exists, filter strictly.
-   * Older saved attempts without edition information
-   * remain visible until they are migrated.
+   * Show only attempts with a confirmed edition.
+   * Unmatched legacy attempts are hidden.
    */
 
-  if (
-    edition === "basic" ||
-    edition === "expert"
-  ) {
-    return (
-      edition ===
-      selectedEdition
-    );
-  }
-
-
-  return true;
+  return (
+    edition ===
+    selectedEdition
+  );
 }
 
 
