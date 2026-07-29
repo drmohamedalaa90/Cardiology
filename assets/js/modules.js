@@ -1,5 +1,5 @@
 import { supabaseClient } from "./supabase-client.js";
-import { protectAndRender } from "./session-ui.js?v=4.4.0";
+import { protectAndRender } from "./session-ui.js?v=4.5.0";
 
 
 
