@@ -7600,3 +7600,26 @@ body.acl-neutral-auth-page
   color:
     #f2b500 !important;
 }
+/* =========================================================
+   PREVENT OLD HEADER FLASH DURING LOADING
+========================================================= */
+
+.topbar.acl-header-pending {
+  visibility:
+    hidden;
+
+  opacity:
+    0;
+}
+
+
+.topbar.acl-unified-header {
+  visibility:
+    visible;
+
+  opacity:
+    1;
+
+  transition:
+    opacity 0.16s ease;
+}
