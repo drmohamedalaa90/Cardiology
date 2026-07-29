@@ -496,7 +496,51 @@ function accessDecision(
   };
 }
 
+function launchPathWithEdition(
+  launchPath
+) {
+  if (!launchPath) {
+    return "";
+  }
 
+  try {
+    const url =
+      new URL(
+        launchPath,
+        window.location.href
+      );
+
+    url.searchParams.set(
+      "edition",
+      selectedEdition
+    );
+
+    /*
+     * Keep internal links relative.
+     */
+
+    if (
+      url.origin ===
+      window.location.origin
+    ) {
+      return (
+        `${url.pathname}` +
+        `${url.search}` +
+        `${url.hash}`
+      );
+    }
+
+    return url.toString();
+  } catch (error) {
+    console.warn(
+      "INVALID MODULE LAUNCH PATH:",
+      launchPath,
+      error
+    );
+
+    return launchPath;
+  }
+}
 /* =========================================================
    MODULE CARD
 ========================================================= */
@@ -531,11 +575,13 @@ function moduleCard(
 
 
   const href =
-    decision.state === "open"
-      ? escapeHtml(
+  decision.state === "open"
+    ? escapeHtml(
+        launchPathWithEdition(
           module.launch_path
         )
-      : "#";
+      )
+    : "#";
 
 
   const theme =
@@ -777,10 +823,12 @@ function moduleCard(
   data-challenge-module-title="${escapeHtml(
     module.title
   )}"
-  data-challenge-launch-path="${escapeHtml(
+ data-challenge-launch-path="${escapeHtml(
+  launchPathWithEdition(
     module.launch_path ||
     ""
-  )}"
+  )
+)}"
 >
   <span
     class="module-challenge-button-icon"
