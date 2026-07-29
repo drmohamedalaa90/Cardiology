@@ -1,5 +1,118 @@
 import { supabaseClient } from "./supabase-client.js";
+const ACL_VALID_EDITIONS =
+  new Set([
+    "basic",
+    "expert"
+  ]);
 
+/* =========================================================
+   EDITION HELPERS
+========================================================= */
+export function resolveAclEdition({
+  requireEdition = true,
+  updateUrl = true
+} = {}) {
+  const parameters =
+    new URLSearchParams(
+      window.location.search
+    );
+
+
+  let edition =
+    String(
+      parameters.get(
+        "edition"
+      ) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const savedEdition =
+    String(
+      localStorage.getItem(
+        "aclSelectedEdition"
+      ) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    !ACL_VALID_EDITIONS.has(
+      edition
+    )
+  ) {
+    edition =
+      savedEdition;
+  }
+
+
+  if (
+    !ACL_VALID_EDITIONS.has(
+      edition
+    )
+  ) {
+    if (requireEdition) {
+      window.location.replace(
+        "pathways.html"
+      );
+    }
+
+    return null;
+  }
+
+
+  localStorage.setItem(
+    "aclSelectedEdition",
+    edition
+  );
+
+
+  document.body.classList.remove(
+    "acl-theme-basic",
+    "acl-theme-expert",
+    "acl-neutral-auth-page"
+  );
+
+
+  document.body.classList.add(
+    edition === "basic"
+      ? "acl-theme-basic"
+      : "acl-theme-expert"
+  );
+
+
+  if (
+    updateUrl &&
+    !parameters.get(
+      "edition"
+    )
+  ) {
+    const updatedUrl =
+      new URL(
+        window.location.href
+      );
+
+
+    updatedUrl.searchParams.set(
+      "edition",
+      edition
+    );
+
+
+    window.history.replaceState(
+      {},
+      "",
+      updatedUrl
+    );
+  }
+
+
+  return edition;
+}
 /* =========================================================
    SESSION AND PROFILE
 ========================================================= */
