@@ -1071,7 +1071,11 @@ body.acl-pathways-page {
       #0b6ca8 100%
     );
 }
-
+.pathway-basic .pathway-tagline,
+.pathway-basic .pathway-label,
+.pathway-basic .pathway-card h2 {
+  color: #ffffff;
+}
 
 .pathway-expert .pathway-icon {
   background:
@@ -1197,7 +1201,7 @@ body.acl-pathways-page {
       255,
       255,
       255,
-      0.82
+      0.9
     );
 
   font-size:
@@ -1244,7 +1248,7 @@ body.acl-pathways-page {
       255,
       255,
       255,
-      0.9
+      0.95
     );
 
   background:
@@ -1259,7 +1263,7 @@ body.acl-pathways-page {
     0.74rem;
 
   font-weight:
-    800;
+    500;
 }
 
 
