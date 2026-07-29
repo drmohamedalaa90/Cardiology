@@ -856,8 +856,8 @@ function buildUnifiedHeader() {
 
 
 document.body.classList.remove(
-  "acl-basic-edition",
-  "acl-expert-edition"
+  "acl-theme-basic",
+  "acl-theme-expert"
 );
 
 
@@ -865,13 +865,13 @@ if (
   activeEdition ===
   "basic"
 ) {
-  document.body.classList.add(
-    "acl-basic-edition"
-  );
+ document.body.classList.add(
+  "acl-theme-basic"
+);
 } else {
-  document.body.classList.add(
-    "acl-expert-edition"
-  );
+ document.body.classList.add(
+  "acl-theme-expert"
+);
 }
 
   const oldNav =
