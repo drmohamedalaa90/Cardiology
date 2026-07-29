@@ -6705,39 +6705,219 @@ body.module-challenge-open {
     width: 100%;
   }
 }
-/* =========================================================
-   BASIC EDITION THEME
+//* =========================================================
+   ACL EDITION THEMES — DEFINITIVE CLEAN VERSION
+
+   Basic Edition:
+   - Deep green header
+   - Deep green drawer
+   - Yellow edition title
+
+   Expert Edition:
+   - Deep blue header
+   - Deep blue drawer
+   - Yellow edition title
 ========================================================= */
 
-body.acl-basic-edition .topbar,
-body.acl-basic-edition .acl-unified-header {
+
+/* =========================================================
+   SHARED EDITION HEADER DETAILS
+========================================================= */
+
+body.acl-theme-basic .acl-header-layout,
+body.acl-theme-expert .acl-header-layout {
+  background:
+    transparent !important;
+}
+
+
+body.acl-theme-basic .acl-brand-name,
+body.acl-theme-basic .acl-brand-separator,
+body.acl-theme-expert .acl-brand-name,
+body.acl-theme-expert .acl-brand-separator {
+  color:
+    #ffffff !important;
+}
+
+
+body.acl-theme-basic .acl-edition-title,
+body.acl-theme-basic .acl-expert-edition,
+body.acl-theme-expert .acl-edition-title,
+body.acl-theme-expert .acl-expert-edition {
+  color:
+    #f2b500 !important;
+}
+
+
+/* =========================================================
+   BASIC EDITION — DEEP GREEN HEADER
+========================================================= */
+
+body.acl-theme-basic
+header.topbar.acl-unified-header,
+body.acl-theme-basic
+.topbar.acl-unified-header,
+body.acl-theme-basic
+.topbar {
   background:
     linear-gradient(
-      135deg,
-      #063f34 0%,
-      #075c49 55%,
+      110deg,
+      #04392f 0%,
+      #075544 52%,
       #08705a 100%
-    );
+    ) !important;
+
+  border-bottom:
+    4px solid
+    #f2b500 !important;
+
+  box-shadow:
+    0 8px 24px
+    rgba(
+      3,
+      62,
+      50,
+      0.25
+    ) !important;
 }
 
 
-body.acl-basic-edition .topbar {
-  border-bottom-color:
-    #9bd452;
-}
+/* Basic header buttons */
 
+body.acl-theme-basic
+.acl-header-icon,
+body.acl-theme-basic
+.acl-menu-button {
+  color:
+    #ffffff !important;
 
-body.acl-basic-edition .acl-header-icon,
-body.acl-basic-edition .acl-menu-button {
   border-color:
     rgba(
       255,
       255,
       255,
-      0.34
-    );
+      0.42
+    ) !important;
 
-  color: #ffffff;
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.07
+    ) !important;
+}
+
+
+body.acl-theme-basic
+.acl-header-icon:hover,
+body.acl-theme-basic
+.acl-header-icon:focus-visible,
+body.acl-theme-basic
+.acl-menu-button:hover,
+body.acl-theme-basic
+.acl-menu-button:focus-visible {
+  color:
+    #ffffff !important;
+
+  border-color:
+    #ffffff !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.17
+    ) !important;
+}
+
+
+/* =========================================================
+   BASIC EDITION — DEEP GREEN DRAWER
+========================================================= */
+
+body.acl-theme-basic
+.acl-side-drawer {
+  color:
+    #ffffff !important;
+
+  background:
+    linear-gradient(
+      180deg,
+      #04392f 0%,
+      #075544 52%,
+      #032e27 100%
+    ) !important;
+
+  border-right:
+    1px solid
+    rgba(
+      242,
+      181,
+      0,
+      0.32
+    ) !important;
+}
+
+
+body.acl-theme-basic
+.acl-drawer-top {
+  background:
+    transparent !important;
+}
+
+
+body.acl-theme-basic
+.acl-drawer-avatar {
+  color:
+    #064536 !important;
+
+  background:
+    #f2b500 !important;
+
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.88
+    ) !important;
+}
+
+
+body.acl-theme-basic
+.acl-drawer-identity-copy strong,
+body.acl-theme-basic
+.acl-drawer-item,
+body.acl-theme-basic
+.acl-drawer-item-label {
+  color:
+    #ffffff !important;
+}
+
+
+body.acl-theme-basic
+.acl-drawer-identity-copy span {
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.72
+    ) !important;
+}
+
+
+body.acl-theme-basic
+.acl-drawer-item {
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.2
+    ) !important;
 
   background:
     rgba(
@@ -6745,19 +6925,21 @@ body.acl-basic-edition .acl-menu-button {
       255,
       255,
       0.06
-    );
+    ) !important;
 }
 
 
-body.acl-basic-edition .acl-header-icon:hover,
-body.acl-basic-edition .acl-menu-button:hover {
+body.acl-theme-basic
+.acl-drawer-item:hover,
+body.acl-theme-basic
+.acl-drawer-item:focus-visible {
   border-color:
     rgba(
       255,
       255,
       255,
-      0.58
-    );
+      0.42
+    ) !important;
 
   background:
     rgba(
@@ -6765,118 +6947,29 @@ body.acl-basic-edition .acl-menu-button:hover {
       255,
       255,
       0.13
-    );
+    ) !important;
 }
 
 
-body.acl-basic-edition .acl-edition-title {
-  color: #b8e85d;
-}
-
-
-body.acl-basic-edition .acl-brand-name,
-body.acl-basic-edition .acl-brand-separator {
-  color: #ffffff;
-}
-/* =========================================================
-   BASIC EDITION DRAWER
-========================================================= */
-
-body.acl-basic-edition .acl-side-drawer {
-  background:
-    linear-gradient(
-      180deg,
-      #063f34 0%,
-      #075c49 52%,
-      #04372e 100%
-    );
-
-  border-right-color:
-    rgba(
-      184,
-      232,
-      93,
-      0.35
-    );
-}
-
-
-body.acl-basic-edition .acl-drawer-top {
-  background:
-    rgba(
-      0,
-      0,
-      0,
-      0.08
-    );
-}
-
-
-body.acl-basic-edition .acl-drawer-identity-copy strong,
-body.acl-basic-edition .acl-drawer-item-label {
-  color: #ffffff;
-}
-
-
-body.acl-basic-edition .acl-drawer-identity-copy span {
+body.acl-theme-basic
+.acl-drawer-item-icon {
   color:
-    rgba(
-      255,
-      255,
-      255,
-      0.7
-    );
+    #f2b500 !important;
 }
 
 
-body.acl-basic-edition .acl-drawer-avatar {
-  color: #063f34;
-  background: #b8e85d;
-}
-
-
-body.acl-basic-edition .acl-drawer-item {
-  color: #ffffff;
-}
-
-
-body.acl-basic-edition .acl-drawer-item:hover {
-  background:
-    rgba(
-      184,
-      232,
-      93,
-      0.15
-    );
-}
-
-
-body.acl-basic-edition .acl-drawer-item-icon {
-  color: #b8e85d;
-}
-
-
-body.acl-basic-edition .acl-drawer-divider {
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      0.14
-    );
-}
-
-
-body.acl-basic-edition .acl-drawer-close {
-  color: #ffffff;
+body.acl-theme-basic
+.acl-drawer-close {
+  color:
+    #ffffff !important;
 
   border-color:
     rgba(
       255,
       255,
       255,
-      0.28
-    );
+      0.35
+    ) !important;
 
   background:
     rgba(
@@ -6884,93 +6977,302 @@ body.acl-basic-edition .acl-drawer-close {
       255,
       255,
       0.08
-    );
-}
-/* =========================================================
-   BASIC EDITION — GREEN HEADER AND DRAWER
-========================================================= */
-
-/* Header background */
-
-body.acl-basic-edition .topbar,
-body.acl-basic-edition .topbar.acl-unified-header,
-body.acl-basic-edition .acl-header-layout {
-  background:
-    linear-gradient(
-      135deg,
-      #043d32 0%,
-      #075b49 55%,
-      #08705a 100%
     ) !important;
 }
 
 
-/* Keep the lower header line yellow */
-
-body.acl-basic-edition .topbar,
-body.acl-basic-edition .topbar.acl-unified-header {
-  border-bottom-color:
-    #f2b500 !important;
-}
-
-
-/* Keep BASIC EDITION words yellow */
-
-body.acl-basic-edition .acl-edition-title,
-body.acl-basic-edition .acl-expert-edition {
-  color:
-    #f2b500 !important;
-}
-
-
-/* Keep ACL / Alexandria Cardiology League white */
-
-body.acl-basic-edition .acl-brand-name,
-body.acl-basic-edition .acl-brand-separator {
-  color:
+body.acl-theme-basic
+.acl-drawer-close:hover,
+body.acl-theme-basic
+.acl-drawer-close:focus-visible {
+  border-color:
     #ffffff !important;
-}
 
-
-/* Drawer background */
-
-body.acl-basic-edition .acl-side-drawer {
-  background:
-    linear-gradient(
-      180deg,
-      #043d32 0%,
-      #075b49 55%,
-      #032f27 100%
-    ) !important;
-}
-
-
-/* Drawer text */
-
-body.acl-basic-edition .acl-drawer-item,
-body.acl-basic-edition .acl-drawer-item-label,
-body.acl-basic-edition .acl-drawer-identity-copy strong {
-  color:
-    #ffffff !important;
-}
-
-
-/* Drawer icons */
-
-body.acl-basic-edition .acl-drawer-item-icon {
-  color:
-    #f2b500 !important;
-}
-
-
-/* Drawer hover */
-
-body.acl-basic-edition .acl-drawer-item:hover {
   background:
     rgba(
       255,
       255,
       255,
-      0.11
+      0.18
     ) !important;
+}
+
+
+/* =========================================================
+   EXPERT EDITION — DEEP BLUE HEADER
+========================================================= */
+
+body.acl-theme-expert
+header.topbar.acl-unified-header,
+body.acl-theme-expert
+.topbar.acl-unified-header,
+body.acl-theme-expert
+.topbar {
+  background:
+    linear-gradient(
+      105deg,
+      #061b3a 0%,
+      #082d58 55%,
+      #0a4d7c 100%
+    ) !important;
+
+  border-bottom:
+    4px solid
+    #f2b500 !important;
+
+  box-shadow:
+    0 8px 24px
+    rgba(
+      3,
+      27,
+      59,
+      0.24
+    ) !important;
+}
+
+
+/* Expert header buttons */
+
+body.acl-theme-expert
+.acl-header-icon,
+body.acl-theme-expert
+.acl-menu-button {
+  color:
+    #ffffff !important;
+
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.42
+    ) !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    ) !important;
+}
+
+
+body.acl-theme-expert
+.acl-header-icon:hover,
+body.acl-theme-expert
+.acl-header-icon:focus-visible,
+body.acl-theme-expert
+.acl-menu-button:hover,
+body.acl-theme-expert
+.acl-menu-button:focus-visible {
+  color:
+    #ffffff !important;
+
+  border-color:
+    #ffffff !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.18
+    ) !important;
+}
+
+
+/* =========================================================
+   EXPERT EDITION — DEEP BLUE DRAWER
+========================================================= */
+
+body.acl-theme-expert
+.acl-side-drawer {
+  color:
+    #ffffff !important;
+
+  background:
+    linear-gradient(
+      180deg,
+      #061b3a 0%,
+      #082d58 55%,
+      #051a36 100%
+    ) !important;
+
+  border-right:
+    1px solid
+    rgba(
+      242,
+      181,
+      0,
+      0.24
+    ) !important;
+}
+
+
+body.acl-theme-expert
+.acl-drawer-top {
+  background:
+    transparent !important;
+}
+
+
+body.acl-theme-expert
+.acl-drawer-avatar {
+  color:
+    #082d58 !important;
+
+  background:
+    #e7f2ff !important;
+
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.88
+    ) !important;
+}
+
+
+body.acl-theme-expert
+.acl-drawer-identity-copy strong,
+body.acl-theme-expert
+.acl-drawer-item,
+body.acl-theme-expert
+.acl-drawer-item-label {
+  color:
+    #ffffff !important;
+}
+
+
+body.acl-theme-expert
+.acl-drawer-identity-copy span {
+  color:
+    #bed8f2 !important;
+}
+
+
+body.acl-theme-expert
+.acl-drawer-item {
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.2
+    ) !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.06
+    ) !important;
+}
+
+
+body.acl-theme-expert
+.acl-drawer-item:hover,
+body.acl-theme-expert
+.acl-drawer-item:focus-visible {
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.42
+    ) !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.13
+    ) !important;
+}
+
+
+body.acl-theme-expert
+.acl-drawer-item-icon {
+  color:
+    #ffffff !important;
+}
+
+
+body.acl-theme-expert
+.acl-drawer-close {
+  color:
+    #ffffff !important;
+
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.35
+    ) !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    ) !important;
+}
+
+
+/* =========================================================
+   EDITION THEME SAFETY
+
+   These rules ensure the edition classes affect only
+   the header and drawer, never the main page content.
+========================================================= */
+
+body.acl-theme-basic
+main,
+body.acl-theme-basic
+.container,
+body.acl-theme-basic
+.page-shell,
+body.acl-theme-expert
+main,
+body.acl-theme-expert
+.container,
+body.acl-theme-expert
+.page-shell {
+  visibility:
+    visible !important;
+
+  opacity:
+    1 !important;
+
+  display:
+    revert;
+}
+
+
+/*
+ * Keep the fixed-header spacing consistent.
+ */
+
+body.acl-theme-basic,
+body.acl-theme-expert {
+  padding-top:
+    72px !important;
+}
+
+
+@media (
+  max-width:
+  720px
+) {
+  body.acl-theme-basic,
+  body.acl-theme-expert {
+    padding-top:
+      112px !important;
+  }
 }
