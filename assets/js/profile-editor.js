@@ -4,17 +4,113 @@ import {
 
 
 import {
-  protectAndRender
-} from "./session-ui.js?v=3.0.0";
+  protectAndRender,
+  resolveAclEdition,
+  aclUrl,
+  renderUserChip
+} from "./session-ui.js?v=4.6.0";
 
 
 console.log(
-  "ACL PROFILE EDITOR v1.1.1 LOADED"
+  "ACL PROFILE EDITOR v1.3.0 LOADED"
 );
 
 
-const el = (id) =>
-  document.getElementById(id);
+/* =========================================================
+   EDITION
+========================================================= */
+
+const selectedEdition =
+  resolveAclEdition();
+
+
+/* =========================================================
+   ELEMENT HELPERS
+========================================================= */
+
+const el =
+  (id) =>
+    document.getElementById(
+      id
+    );
+
+
+/* =========================================================
+   EDITION DISPLAY
+========================================================= */
+
+function renderProfileEdition() {
+  const editionName =
+    el(
+      "profileEditionName"
+    );
+
+
+  const editionBadge =
+    el(
+      "profileEditionBadge"
+    );
+
+
+  const modulesLink =
+    el(
+      "profileModulesLink"
+    );
+
+
+  const switchEditionLink =
+    el(
+      "profileSwitchEdition"
+    );
+
+
+  const isBasic =
+    selectedEdition ===
+    "basic";
+
+
+  const fullEditionName =
+    isBasic
+      ? "Basic Edition"
+      : "Expert Edition";
+
+
+  const badgeText =
+    isBasic
+      ? "BASIC EDITION"
+      : "EXPERT EDITION";
+
+
+  if (editionName) {
+    editionName.textContent =
+      fullEditionName;
+  }
+
+
+  if (editionBadge) {
+    editionBadge.textContent =
+      badgeText;
+  }
+
+
+  if (modulesLink) {
+    modulesLink.href =
+      aclUrl(
+        "modules.html",
+        selectedEdition
+      );
+  }
+
+
+  if (switchEditionLink) {
+    switchEditionLink.href =
+      "pathways.html";
+  }
+
+
+  document.title =
+    `${fullEditionName} Profile | ACL`;
+}
 
 
 /* =========================================================
@@ -26,26 +122,35 @@ function setProfileStatus(
   isError = false
 ) {
   const status =
-    el("profileStatus");
+    el(
+      "profileStatus"
+    );
+
 
   if (!status) {
     return;
   }
 
+
   status.textContent =
     message;
 
+
   status.hidden =
     !message;
+
 
   status.classList.toggle(
     "error",
     isError
   );
 
+
   status.classList.toggle(
     "success",
-    Boolean(message) &&
+    Boolean(
+      message
+    ) &&
     !isError
   );
 }
@@ -56,26 +161,35 @@ function setPasswordStatus(
   isError = false
 ) {
   const status =
-    el("passwordStatus");
+    el(
+      "passwordStatus"
+    );
+
 
   if (!status) {
     return;
   }
 
+
   status.textContent =
     message;
 
+
   status.hidden =
     !message;
+
 
   status.classList.toggle(
     "error",
     isError
   );
 
+
   status.classList.toggle(
     "success",
-    Boolean(message) &&
+    Boolean(
+      message
+    ) &&
     !isError
   );
 }
@@ -94,16 +208,26 @@ function profileInitials(
     profile?.username ||
     "ACL";
 
+
   return (
     name
       .trim()
-      .split(/\s+/)
-      .slice(0, 2)
+      .split(
+        /\s+/
+      )
+      .slice(
+        0,
+        2
+      )
       .map(
         (part) =>
-          part.charAt(0)
+          part.charAt(
+            0
+          )
       )
-      .join("")
+      .join(
+        ""
+      )
       .toUpperCase() ||
     "ACL"
   );
@@ -114,10 +238,16 @@ function renderAvatar(
   profile
 ) {
   const image =
-    el("avatarPreview");
+    el(
+      "avatarPreview"
+    );
+
 
   const placeholder =
-    el("avatarPlaceholder");
+    el(
+      "avatarPlaceholder"
+    );
+
 
   if (
     !image ||
@@ -126,35 +256,93 @@ function renderAvatar(
     return;
   }
 
+
   placeholder.textContent =
     profileInitials(
       profile
     );
 
-  if (profile?.avatar_url) {
+
+  if (
+    profile?.avatar_url
+  ) {
     image.src =
       profile.avatar_url;
+
 
     image.style.display =
       "block";
 
+
     placeholder.style.display =
       "none";
+
 
     image.onerror =
       () => {
         image.style.display =
           "none";
 
+
         placeholder.style.display =
           "grid";
       };
   } else {
+    image.removeAttribute(
+      "src"
+    );
+
+
     image.style.display =
       "none";
 
+
     placeholder.style.display =
       "grid";
+  }
+}
+
+
+function validateAvatarFile(
+  file
+) {
+  if (!file) {
+    return;
+  }
+
+
+  const allowedTypes =
+    new Set([
+      "image/png",
+      "image/jpeg",
+      "image/webp"
+    ]);
+
+
+  if (
+    !allowedTypes.has(
+      file.type
+    )
+  ) {
+    throw new Error(
+      "Profile photo must be PNG, JPEG or WebP."
+    );
+  }
+
+
+  const maximumSize =
+    5 *
+    1024 *
+    1024;
+
+
+  if (
+    file.size >
+    maximumSize
+  ) {
+    throw new Error(
+      "Profile photo must be smaller than 5 MB."
+    );
   }
 }
 
@@ -163,54 +351,198 @@ async function uploadAvatar(
   userId
 ) {
   const file =
-    el("avatarFile")
+    el(
+      "avatarFile"
+    )
       ?.files?.[0];
+
 
   if (!file) {
     return null;
   }
 
+
+  validateAvatarFile(
+    file
+  );
+
+
+  const extensionMap = {
+    "image/png":
+      "png",
+
+    "image/jpeg":
+      "jpg",
+
+    "image/webp":
+      "webp"
+  };
+
+
   const extension =
-    file.name
-      .split(".")
-      .pop()
-      ?.toLowerCase() ||
+    extensionMap[
+      file.type
+    ] ||
     "webp";
+
 
   const filePath =
     `${userId}/avatar-${Date.now()}.${extension}`;
+
 
   const {
     error: uploadError
   } =
     await supabaseClient
       .storage
-      .from("avatars")
+      .from(
+        "avatars"
+      )
       .upload(
         filePath,
         file,
         {
-          upsert: true
+          upsert:
+            true,
+
+          contentType:
+            file.type,
+
+          cacheControl:
+            "3600"
         }
       );
+
 
   if (uploadError) {
     throw uploadError;
   }
+
 
   const {
     data
   } =
     supabaseClient
       .storage
-      .from("avatars")
+      .from(
+        "avatars"
+      )
       .getPublicUrl(
         filePath
       );
 
+
   return (
     data?.publicUrl ||
     null
+  );
+}
+
+
+/* =========================================================
+   FILL PROFILE FORM
+========================================================= */
+
+function populateProfileForm(
+  profile
+) {
+  const displayName =
+    el(
+      "displayName"
+    );
+
+
+  const email =
+    el(
+      "email"
+    );
+
+
+  const username =
+    el(
+      "username"
+    );
+
+
+  const whatsapp =
+    el(
+      "whatsapp"
+    );
+
+
+  const institution =
+    el(
+      "institution"
+    );
+
+
+  const positionInput =
+    el(
+      "academicYear"
+    );
+
+
+  if (displayName) {
+    displayName.value =
+      profile.display_name ||
+      profile.full_name ||
+      profile.username ||
+      "";
+  }
+
+
+  if (email) {
+    email.value =
+      profile.email ||
+      "";
+  }
+
+
+  if (username) {
+    username.value =
+      profile.username ||
+      "";
+  }
+
+
+  if (whatsapp) {
+    whatsapp.value =
+      profile.whatsapp ||
+      profile.phone_e164 ||
+      "";
+  }
+
+
+  if (institution) {
+    institution.value =
+      profile.institution ||
+      "";
+  }
+
+
+  if (positionInput) {
+    const savedPosition =
+      profile.position ||
+      profile.academic_year ||
+      "";
+
+
+    positionInput.value =
+      savedPosition;
+
+
+    if (
+      positionInput.value !==
+      savedPosition
+    ) {
+      positionInput.value =
+        "";
+    }
+  }
+
+
+  renderAvatar(
+    profile
   );
 }
 
@@ -226,82 +558,38 @@ async function loadProfilePage() {
         "login.html"
       );
 
+
     if (!profile) {
-      return;
+      return null;
     }
 
-    if (el("displayName")) {
-      el("displayName").value =
-        profile.display_name ||
-        profile.full_name ||
-        profile.username ||
-        "";
-    }
 
-    if (el("email")) {
-      el("email").value =
-        profile.email ||
-        "";
-    }
-
-    if (el("username")) {
-      el("username").value =
-        profile.username ||
-        "";
-    }
-
-    if (el("whatsapp")) {
-      el("whatsapp").value =
-        profile.whatsapp ||
-        profile.phone_e164 ||
-        "";
-    }
-
-    if (el("institution")) {
-      el("institution").value =
-        profile.institution ||
-        "";
-    }
-
-    const positionInput =
-      el("academicYear");
-
-    if (positionInput) {
-      const savedPosition =
-        profile.position ||
-        profile.academic_year ||
-        "";
-
-      positionInput.value =
-        savedPosition;
-
-      if (
-        positionInput.value !==
-        savedPosition
-      ) {
-        positionInput.value =
-          "";
-      }
-    }
-
-    renderAvatar(
+    populateProfileForm(
       profile
     );
+
 
     setProfileStatus(
       ""
     );
+
+
+    return profile;
   } catch (error) {
     console.error(
       "PROFILE LOAD ERROR:",
       error
     );
 
+
     setProfileStatus(
       error.message ||
       "The profile could not be loaded.",
       true
     );
+
+
+    return null;
   }
 }
 
@@ -310,15 +598,33 @@ async function loadProfilePage() {
    SAVE PROFILE
 ========================================================= */
 
-el("profileForm")
+el(
+  "profileForm"
+)
   ?.addEventListener(
     "submit",
     async (event) => {
       event.preventDefault();
 
+
+      const submitButton =
+        event.submitter;
+
+
       setProfileStatus(
         "Saving profile…"
       );
+
+
+      if (submitButton) {
+        submitButton.disabled =
+          true;
+
+
+        submitButton.textContent =
+          "Saving…";
+      }
+
 
       try {
         const {
@@ -329,12 +635,15 @@ el("profileForm")
             .auth
             .getUser();
 
+
         if (userError) {
           throw userError;
         }
 
+
         const user =
           userData?.user;
+
 
         if (!user) {
           throw new Error(
@@ -342,41 +651,78 @@ el("profileForm")
           );
         }
 
+
         const displayName =
-          el("displayName")
+          el(
+            "displayName"
+          )
             ?.value
             ?.trim() ||
           "";
+
 
         const whatsapp =
-          el("whatsapp")
+          el(
+            "whatsapp"
+          )
             ?.value
             ?.trim() ||
           "";
 
+
         const position =
-          el("academicYear")
+          el(
+            "academicYear"
+          )
             ?.value ||
           "";
 
+
         const institution =
-          el("institution")
+          el(
+            "institution"
+          )
             ?.value
             ?.trim() ||
           "";
 
+
         if (
-          displayName.length < 2
+          displayName.length <
+          2
         ) {
           throw new Error(
-            "Display Name must contain at least 2 characters."
+            "Display name must contain at least 2 characters."
           );
         }
+
+
+        if (!whatsapp) {
+          throw new Error(
+            "Please enter your WhatsApp number."
+          );
+        }
+
+
+        if (!position) {
+          throw new Error(
+            "Please select your position."
+          );
+        }
+
+
+        if (!institution) {
+          throw new Error(
+            "Please enter your institution."
+          );
+        }
+
 
         const avatarUrl =
           await uploadAvatar(
             user.id
           );
+
 
         const updates = {
           display_name:
@@ -387,20 +733,26 @@ el("profileForm")
           academic_year:
             position,
 
+          position,
+
           institution
         };
+
 
         if (avatarUrl) {
           updates.avatar_url =
             avatarUrl;
         }
 
+
         const {
           data,
           error
         } =
           await supabaseClient
-            .from("profiles")
+            .from(
+              "profiles"
+            )
             .update(
               updates
             )
@@ -408,26 +760,65 @@ el("profileForm")
               "id",
               user.id
             )
-            .select("*")
+            .select(
+              "*"
+            )
             .single();
+
 
         if (error) {
           throw error;
         }
 
-        window.aclCurrentProfile = {
+
+        const updatedProfile = {
           ...window.aclCurrentProfile,
           ...data,
+
           email:
             user.email
         };
 
-        renderAvatar(
-          window.aclCurrentProfile
+
+        window.aclCurrentProfile =
+          updatedProfile;
+
+
+        populateProfileForm(
+          updatedProfile
         );
+
+
+        renderUserChip(
+          updatedProfile
+        );
+
 
         setProfileStatus(
           "Profile saved successfully."
+        );
+
+
+        /*
+         * Preserve the active edition in the URL.
+         */
+
+        const updatedUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        updatedUrl.searchParams.set(
+          "edition",
+          selectedEdition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          updatedUrl
         );
       } catch (error) {
         console.error(
@@ -435,11 +826,21 @@ el("profileForm")
           error
         );
 
+
         setProfileStatus(
           error.message ||
           "The profile could not be saved.",
           true
         );
+      } finally {
+        if (submitButton) {
+          submitButton.disabled =
+            false;
+
+
+          submitButton.textContent =
+            "Save profile";
+        }
       }
     }
   );
@@ -449,41 +850,72 @@ el("profileForm")
    CHANGE PASSWORD
 ========================================================= */
 
-el("passwordForm")
+el(
+  "passwordForm"
+)
   ?.addEventListener(
     "submit",
     async (event) => {
       event.preventDefault();
 
+
+      const submitButton =
+        event.submitter;
+
+
       setPasswordStatus(
         ""
       );
 
+
       const currentPassword =
-        el("currentPassword")
+        el(
+          "currentPassword"
+        )
           ?.value ||
         "";
+
 
       const newPassword =
-        el("profileNewPassword")
+        el(
+          "profileNewPassword"
+        )
           ?.value ||
         "";
+
 
       const confirmation =
-        el("profileConfirmPassword")
+        el(
+          "profileConfirmPassword"
+        )
           ?.value ||
         "";
 
+
+      if (!currentPassword) {
+        setPasswordStatus(
+          "Enter your current password.",
+          true
+        );
+
+
+        return;
+      }
+
+
       if (
-        newPassword.length < 8
+        newPassword.length <
+        8
       ) {
         setPasswordStatus(
           "New password must contain at least 8 characters.",
           true
         );
 
+
         return;
       }
+
 
       if (
         newPassword !==
@@ -494,8 +926,34 @@ el("passwordForm")
           true
         );
 
+
         return;
       }
+
+
+      if (
+        currentPassword ===
+        newPassword
+      ) {
+        setPasswordStatus(
+          "The new password must be different from your current password.",
+          true
+        );
+
+
+        return;
+      }
+
+
+      if (submitButton) {
+        submitButton.disabled =
+          true;
+
+
+        submitButton.textContent =
+          "Changing password…";
+      }
+
 
       try {
         const {
@@ -506,20 +964,24 @@ el("passwordForm")
             .auth
             .getUser();
 
+
         if (userError) {
           throw userError;
         }
+
 
         const email =
           userData
             ?.user
             ?.email;
 
+
         if (!email) {
           throw new Error(
             "The signed-in email could not be found."
           );
         }
+
 
         const {
           error: signInError
@@ -528,15 +990,18 @@ el("passwordForm")
             .auth
             .signInWithPassword({
               email,
+
               password:
                 currentPassword
             });
+
 
         if (signInError) {
           throw new Error(
             "The current password is incorrect."
           );
         }
+
 
         const {
           error: updateError
@@ -548,11 +1013,14 @@ el("passwordForm")
                 newPassword
             });
 
+
         if (updateError) {
           throw updateError;
         }
 
+
         event.target.reset();
+
 
         setPasswordStatus(
           "Password changed successfully."
@@ -563,24 +1031,38 @@ el("passwordForm")
           error
         );
 
+
         setPasswordStatus(
           error.message ||
           "The password could not be changed.",
           true
         );
+      } finally {
+        if (submitButton) {
+          submitButton.disabled =
+            false;
+
+
+          submitButton.textContent =
+            "Change password";
+        }
       }
     }
   );
 
+
 /* =========================================================
-   PROFILE TROPHIES
+   TROPHY HELPERS
 ========================================================= */
 
 function dateKey(
   value
 ) {
   const date =
-    new Date(value);
+    new Date(
+      value
+    );
+
 
   if (
     Number.isNaN(
@@ -590,15 +1072,27 @@ function dateKey(
     return "";
   }
 
+
   return [
     date.getFullYear(),
+
     String(
-      date.getMonth() + 1
-    ).padStart(2, "0"),
+      date.getMonth() +
+      1
+    ).padStart(
+      2,
+      "0"
+    ),
+
     String(
       date.getDate()
-    ).padStart(2, "0")
-  ].join("-");
+    ).padStart(
+      2,
+      "0"
+    )
+  ].join(
+    "-"
+  );
 }
 
 
@@ -609,14 +1103,19 @@ function calculateStreaks(
     [
       ...new Set(
         timestamps
-          .map(dateKey)
-          .filter(Boolean)
+          .map(
+            dateKey
+          )
+          .filter(
+            Boolean
+          )
       )
-    ]
-      .sort();
+    ].sort();
 
 
-  if (!activityDays.length) {
+  if (
+    !activityDays.length
+  ) {
     return {
       current:
         0,
@@ -630,24 +1129,32 @@ function calculateStreaks(
   let best =
     1;
 
+
   let running =
     1;
 
 
   for (
-    let index = 1;
-    index < activityDays.length;
-    index += 1
+    let index =
+      1;
+
+    index <
+    activityDays.length;
+
+    index +=
+      1
   ) {
     const previous =
       new Date(
         `${activityDays[index - 1]}T12:00:00`
       );
 
+
     const current =
       new Date(
         `${activityDays[index]}T12:00:00`
       );
+
 
     const differenceDays =
       Math.round(
@@ -659,10 +1166,15 @@ function calculateStreaks(
       );
 
 
-    if (differenceDays === 1) {
-      running += 1;
+    if (
+      differenceDays ===
+      1
+    ) {
+      running +=
+        1;
     } else {
-      running = 1;
+      running =
+        1;
     }
 
 
@@ -677,25 +1189,35 @@ function calculateStreaks(
   const today =
     new Date();
 
+
   const todayKey =
-    dateKey(today);
+    dateKey(
+      today
+    );
 
 
   const yesterday =
-    new Date(today);
+    new Date(
+      today
+    );
+
 
   yesterday.setDate(
-    yesterday.getDate() - 1
+    yesterday.getDate() -
+    1
   );
 
 
   const yesterdayKey =
-    dateKey(yesterday);
+    dateKey(
+      yesterday
+    );
 
 
   const latestDay =
     activityDays[
-      activityDays.length - 1
+      activityDays.length -
+      1
     ];
 
 
@@ -704,8 +1226,10 @@ function calculateStreaks(
 
 
   if (
-    latestDay === todayKey ||
-    latestDay === yesterdayKey
+    latestDay ===
+      todayKey ||
+    latestDay ===
+      yesterdayKey
   ) {
     current =
       1;
@@ -713,21 +1237,26 @@ function calculateStreaks(
 
     for (
       let index =
-        activityDays.length - 1;
+        activityDays.length -
+        1;
 
-      index > 0;
+      index >
+        0;
 
-      index -= 1
+      index -=
+        1
     ) {
       const later =
         new Date(
           `${activityDays[index]}T12:00:00`
         );
 
+
       const earlier =
         new Date(
           `${activityDays[index - 1]}T12:00:00`
         );
+
 
       const differenceDays =
         Math.round(
@@ -739,12 +1268,16 @@ function calculateStreaks(
         );
 
 
-      if (differenceDays !== 1) {
+      if (
+        differenceDays !==
+        1
+      ) {
         break;
       }
 
 
-      current += 1;
+      current +=
+        1;
     }
   }
 
@@ -754,6 +1287,8 @@ function calculateStreaks(
     best
   };
 }
+
+
 function setTrophiesStatus(
   message = "",
   isError = false
@@ -763,15 +1298,19 @@ function setTrophiesStatus(
       "profileTrophiesStatus"
     );
 
+
   if (!status) {
     return;
   }
 
+
   status.textContent =
     message;
 
+
   status.hidden =
     !message;
+
 
   status.classList.toggle(
     "error",
@@ -785,15 +1324,27 @@ function setTrophyValue(
   value
 ) {
   const element =
-    el(id);
+    el(
+      id
+    );
+
 
   if (element) {
     element.textContent =
       String(
-        Number(value || 0)
+        Number(
+          value ||
+          0
+        )
       );
   }
 }
+
+
+/* =========================================================
+   LOAD TROPHIES
+========================================================= */
+
 async function loadProfileTrophies() {
   const trophiesGrid =
     el(
@@ -845,6 +1396,7 @@ async function loadProfileTrophies() {
           module_id,
           status,
           score,
+          question_count,
           updated_at,
           completed_at
         `)
@@ -882,7 +1434,9 @@ async function loadProfileTrophies() {
             (attempt) =>
               attempt.module_id
           )
-          .filter(Boolean)
+          .filter(
+            Boolean
+          )
       );
 
 
@@ -896,7 +1450,9 @@ async function loadProfileTrophies() {
       "trophyCompletedAttempts",
       completedAttempts.length
     );
-        const {
+
+
+    const {
       data: leaderboardRow,
       error: leaderboardError
     } =
@@ -904,9 +1460,9 @@ async function loadProfileTrophies() {
         .from(
           "module_challenge_leaderboard"
         )
-        .select(`
-          challenge_wins
-        `)
+        .select(
+          "challenge_wins"
+        )
         .eq(
           "user_id",
           user.id
@@ -932,14 +1488,18 @@ async function loadProfileTrophies() {
         ?.challenge_wins ||
       0
     );
-        const activityTimestamps =
+
+
+    const activityTimestamps =
       completedAttempts
         .map(
           (attempt) =>
             attempt.completed_at ||
             attempt.updated_at
         )
-        .filter(Boolean);
+        .filter(
+          Boolean
+        );
 
 
     const streaks =
@@ -958,33 +1518,42 @@ async function loadProfileTrophies() {
       "trophyBestStreak",
       streaks.best
     );
-        let perfectScores =
-      0;
 
 
-    for (
-      const attempt of
-      completedAttempts
-    ) {
-      const score =
-        Number(
-          attempt.score ||
-          0
-        );
+    const perfectScores =
+      completedAttempts.filter(
+        (attempt) => {
+          const score =
+            Number(
+              attempt.score ||
+              0
+            );
 
 
-      if (score > 0) {
-        perfectScores +=
-          0;
-      }
-    }
+          const questionCount =
+            Number(
+              attempt.question_count ||
+              0
+            );
+
+
+          return (
+            questionCount >
+              0 &&
+            score >=
+              questionCount
+          );
+        }
+      ).length;
 
 
     setTrophyValue(
       "trophyPerfectScores",
       perfectScores
     );
-        if (trophiesGrid) {
+
+
+    if (trophiesGrid) {
       trophiesGrid.hidden =
         false;
     }
@@ -1015,16 +1584,40 @@ async function loadProfileTrophies() {
 }
 
 
-el("refreshProfileTrophies")
+/* =========================================================
+   TROPHY EVENTS
+========================================================= */
+
+el(
+  "refreshProfileTrophies"
+)
   ?.addEventListener(
     "click",
-    loadProfileTrophies
+    async () => {
+      await loadProfileTrophies();
+    }
   );
+
 
 /* =========================================================
    START
 ========================================================= */
 
-loadProfilePage();
+async function startProfilePage() {
+  renderProfileEdition();
 
-loadProfileTrophies();
+
+  const profile =
+    await loadProfilePage();
+
+
+  if (!profile) {
+    return;
+  }
+
+
+  await loadProfileTrophies();
+}
+
+
+void startProfilePage();
