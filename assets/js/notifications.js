@@ -1,1611 +1,2514 @@
-<!doctype html>
-
-<html lang="en">
-
-<head>
-
-  <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-
-  <meta
-    name="referrer"
-    content="strict-origin-when-cross-origin"
-  >
-
-  <meta
-    id="notificationsThemeColor"
-    name="theme-color"
-    content="#123f72"
-  >
-
-  <title>
-    Notifications | Alexandria Cardiology League
-  </title>
+import {
+  supabaseClient
+} from "./supabase-client.js";
 
 
-  <link
-    rel="stylesheet"
-    href="assets/css/main.css?v=5.0.1"
-  >
+import {
+  ACL_CONFIG
+} from "./config.js";
 
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+import {
+  protectAndRender,
+  resolveAclEdition,
+  aclUrl
+} from "./session-ui.js?v=4.6.0";
 
 
-  <script>
-    (() => {
-      const parameters =
-        new URLSearchParams(
-          window.location.search
-        );
+console.log(
+  "ACL NOTIFICATIONS v2.0.2 LOADED"
+);
 
 
-      const requestedEdition =
-        String(
-          parameters.get("edition") || ""
+/* =========================================================
+   CONFIGURATION
+========================================================= */
+
+const selectedEdition =
+  resolveAclEdition();
+
+
+const VAPID_PUBLIC_KEY =
+  String(
+    ACL_CONFIG.vapidPublicKey ||
+    ""
+  ).trim();
+
+
+const state = {
+  user: null,
+  profile: null,
+  notifications: [],
+  filteredNotifications: [],
+  pushSubscription: null,
+  serviceWorkerRegistration: null
+};
+
+
+const el =
+  (id) =>
+    document.getElementById(
+      id
+    );
+
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
+const notificationsList =
+  el(
+    "notificationsList"
+  );
+
+
+const emptyState =
+  el(
+    "notificationsEmptyState"
+  );
+
+
+const statusBox =
+  el(
+    "notificationsStatus"
+  );
+
+
+const readFilter =
+  el(
+    "notificationsReadFilter"
+  );
+
+
+const typeFilter =
+  el(
+    "notificationsTypeFilter"
+  );
+
+
+const refreshButton =
+  el(
+    "refreshNotifications"
+  );
+
+
+const markAllReadButton =
+  el(
+    "markAllNotificationsRead"
+  );
+
+
+const enablePushButton =
+  el(
+    "enablePushNotifications"
+  );
+
+
+const disablePushButton =
+  el(
+    "disablePushNotifications"
+  );
+
+
+const testPushButton =
+  el(
+    "testPushNotification"
+  );
+
+
+const pushStatusBadge =
+  el(
+    "pushStatusBadge"
+  );
+
+
+const pushDeviceLabel =
+  el(
+    "pushDeviceLabel"
+  );
+
+
+const pushDescription =
+  el(
+    "pushNotificationsDescription"
+  );
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function escapeHtml(
+  value = ""
+) {
+  return String(
+    value ??
+    ""
+  ).replace(
+    /[&<>'"]/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      })[
+        character
+      ]
+  );
+}
+
+
+function setStatus(
+  message = "",
+  kind = ""
+) {
+  if (!statusBox) {
+    return;
+  }
+
+
+  statusBox.textContent =
+    message;
+
+
+  statusBox.className =
+    `notifications-status ${kind}`.trim();
+
+
+  statusBox.hidden =
+    !message;
+}
+
+
+function setButtonBusy(
+  button,
+  busy,
+  busyText,
+  normalText
+) {
+  if (!button) {
+    return;
+  }
+
+
+  button.disabled =
+    busy;
+
+
+  button.textContent =
+    busy
+      ? busyText
+      : normalText;
+}
+
+
+function normalizeType(
+  value
+) {
+  const type =
+    String(
+      value ||
+      "system"
+    )
+      .trim()
+      .toLowerCase();
+
+
+  return [
+    "challenge",
+    "competition",
+    "module",
+    "achievement",
+    "announcement",
+    "system"
+  ].includes(
+    type
+  )
+    ? type
+    : "system";
+}
+
+
+function normalizeEdition(
+  value
+) {
+  const edition =
+    String(
+      value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  return edition === "basic" ||
+    edition === "expert"
+    ? edition
+    : null;
+}
+
+
+function humanizeType(
+  value
+) {
+  return normalizeType(
+    value
+  )
+    .replaceAll(
+      "_",
+      " "
+    )
+    .replace(
+      /\b\w/g,
+      (letter) =>
+        letter.toUpperCase()
+    );
+}
+
+
+function formatDateTime(
+  value
+) {
+  if (!value) {
+    return "—";
+  }
+
+
+  const date =
+    new Date(
+      value
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+
+  return new Intl.DateTimeFormat(
+    "en-GB",
+    {
+      dateStyle:
+        "medium",
+
+      timeStyle:
+        "short"
+    }
+  ).format(
+    date
+  );
+}
+
+
+function relativeTime(
+  value
+) {
+  if (!value) {
+    return "";
+  }
+
+
+  const date =
+    new Date(
+      value
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+
+  const difference =
+    date.getTime() -
+    Date.now();
+
+
+  const minute =
+    60 *
+    1000;
+
+
+  const hour =
+    60 *
+    minute;
+
+
+  const day =
+    24 *
+    hour;
+
+
+  const formatter =
+    new Intl.RelativeTimeFormat(
+      "en",
+      {
+        numeric:
+          "auto"
+      }
+    );
+
+
+  if (
+    Math.abs(
+      difference
+    ) <
+    hour
+  ) {
+    return formatter.format(
+      Math.round(
+        difference /
+        minute
+      ),
+      "minute"
+    );
+  }
+
+
+  if (
+    Math.abs(
+      difference
+    ) <
+    day
+  ) {
+    return formatter.format(
+      Math.round(
+        difference /
+        hour
+      ),
+      "hour"
+    );
+  }
+
+
+  return formatter.format(
+    Math.round(
+      difference /
+      day
+    ),
+    "day"
+  );
+}
+
+
+function notificationIcon(
+  type
+) {
+  const icons = {
+    challenge:
+      "⚔️",
+
+    competition:
+      "🏆",
+
+    module:
+      "📚",
+
+    achievement:
+      "🎯",
+
+    announcement:
+      "📢",
+
+    system:
+      "⚙️"
+  };
+
+
+  return (
+    icons[
+      normalizeType(
+        type
+      )
+    ] ||
+    icons.system
+  );
+}
+
+
+function isIosDevice() {
+  return /iphone|ipad|ipod/i.test(
+    navigator.userAgent
+  );
+}
+
+
+function isStandaloneMode() {
+  return (
+    window.matchMedia(
+      "(display-mode: standalone)"
+    ).matches ||
+    window.navigator.standalone ===
+      true
+  );
+}
+
+
+function deviceType() {
+  const userAgent =
+    navigator.userAgent
+      .toLowerCase();
+
+
+  if (
+    /iphone|ipad|ipod/.test(
+      userAgent
+    )
+  ) {
+    return "ios";
+  }
+
+
+  if (
+    /android/.test(
+      userAgent
+    )
+  ) {
+    return "android";
+  }
+
+
+  if (
+    /windows/.test(
+      userAgent
+    )
+  ) {
+    return "windows";
+  }
+
+
+  if (
+    /macintosh|mac os/.test(
+      userAgent
+    )
+  ) {
+    return "macos";
+  }
+
+
+  return "other";
+}
+
+
+function deviceLabel() {
+  const labels = {
+    ios:
+      "iPhone or iPad",
+
+    android:
+      "Android device",
+
+    windows:
+      "Windows computer",
+
+    macos:
+      "Mac computer",
+
+    other:
+      "This device"
+  };
+
+
+  return (
+    labels[
+      deviceType()
+    ] ||
+    labels.other
+  );
+}
+
+
+function urlBase64ToUint8Array(
+  base64String
+) {
+  const padding =
+    "=".repeat(
+      (
+        4 -
+        (
+          base64String.length %
+          4
         )
-          .trim()
-          .toLowerCase();
+      ) %
+      4
+    );
 
 
-      const storedEdition =
-        String(
-          localStorage.getItem(
-            "aclSelectedEdition"
-          ) || ""
-        )
-          .trim()
-          .toLowerCase();
-
-
-      const edition =
-        requestedEdition === "basic" ||
-        requestedEdition === "expert"
-          ? requestedEdition
-          : storedEdition === "basic" ||
-            storedEdition === "expert"
-            ? storedEdition
-            : "expert";
-
-
-      localStorage.setItem(
-        "aclSelectedEdition",
-        edition
+  const normalized =
+    (
+      base64String +
+      padding
+    )
+      .replace(
+        /-/g,
+        "+"
+      )
+      .replace(
+        /_/g,
+        "/"
       );
 
 
-      document.documentElement.classList.add(
-        edition === "basic"
-          ? "acl-notifications-basic"
-          : "acl-notifications-expert"
+  const rawData =
+    window.atob(
+      normalized
+    );
+
+
+  return Uint8Array.from(
+    [
+      ...rawData
+    ].map(
+      (character) =>
+        character.charCodeAt(
+          0
+        )
+    )
+  );
+}
+
+
+function arrayBufferToBase64(
+  buffer
+) {
+  if (!buffer) {
+    return null;
+  }
+
+
+  const bytes =
+    new Uint8Array(
+      buffer
+    );
+
+
+  let binary =
+    "";
+
+
+  for (
+    const byte of
+    bytes
+  ) {
+    binary +=
+      String.fromCharCode(
+        byte
+      );
+  }
+
+
+  return window.btoa(
+    binary
+  );
+}
+
+
+/* =========================================================
+   EDITION DISPLAY
+========================================================= */
+
+function renderEdition() {
+  const isBasic =
+    selectedEdition ===
+    "basic";
+
+
+  const editionBadge =
+    el(
+      "notificationsEditionBadge"
+    );
+
+
+  if (editionBadge) {
+    editionBadge.textContent =
+      isBasic
+        ? "BASIC EDITION"
+        : "EXPERT EDITION";
+  }
+
+
+  const themeColor =
+    el(
+      "notificationsThemeColor"
+    );
+
+
+  if (themeColor) {
+    themeColor.content =
+      isBasic
+        ? "#105541"
+        : "#123f72";
+  }
+
+
+  const modulesLink =
+    el(
+      "notificationsModulesLink"
+    );
+
+
+  const progressLink =
+    el(
+      "notificationsProgressLink"
+    );
+
+
+  if (modulesLink) {
+    modulesLink.href =
+      aclUrl(
+        "modules.html",
+        selectedEdition
+      );
+  }
+
+
+  if (progressLink) {
+    progressLink.href =
+      aclUrl(
+        "progress.html",
+        selectedEdition
+      );
+  }
+
+
+  document.title =
+    `${
+      isBasic
+        ? "Basic"
+        : "Expert"
+    } Edition Notifications | ACL`;
+
+
+  const currentUrl =
+    new URL(
+      window.location.href
+    );
+
+
+  currentUrl.searchParams.set(
+    "edition",
+    selectedEdition
+  );
+
+
+  window.history.replaceState(
+    {},
+    "",
+    currentUrl
+  );
+}
+
+
+/* =========================================================
+   SAFE NOTIFICATION URL
+========================================================= */
+
+function notificationActionUrl(
+  notification
+) {
+  const rawUrl =
+    String(
+      notification?.action_url ||
+      notification?.link_url ||
+      notification?.target_url ||
+      ""
+    ).trim();
+
+
+  if (!rawUrl) {
+    return "";
+  }
+
+
+  try {
+    const url =
+      new URL(
+        rawUrl,
+        window.location.href
       );
 
 
-      if (!parameters.get("edition")) {
-        const updatedUrl =
-          new URL(
-            window.location.href
+    if (
+      url.origin !==
+      window.location.origin
+    ) {
+      return "";
+    }
+
+
+    url.searchParams.set(
+      "edition",
+      selectedEdition
+    );
+
+
+    return (
+      `${url.pathname}` +
+      `${url.search}` +
+      `${url.hash}`
+    );
+  } catch (error) {
+    console.warn(
+      "INVALID NOTIFICATION URL:",
+      rawUrl,
+      error
+    );
+
+
+    return "";
+  }
+}
+
+
+/* =========================================================
+   PUSH SUPPORT
+========================================================= */
+
+function pushSupported() {
+  return (
+    "serviceWorker" in
+      navigator &&
+    "PushManager" in
+      window &&
+    "Notification" in
+      window
+  );
+}
+
+
+async function getServiceWorkerRegistration() {
+  if (
+    state.serviceWorkerRegistration
+  ) {
+    return state.serviceWorkerRegistration;
+  }
+
+
+  if (
+    window.aclPwa?.getRegistration
+  ) {
+    state.serviceWorkerRegistration =
+      await window.aclPwa
+        .getRegistration();
+
+
+    return state.serviceWorkerRegistration;
+  }
+
+
+  if (
+    window.aclServiceWorkerReady
+  ) {
+    state.serviceWorkerRegistration =
+      await window
+        .aclServiceWorkerReady;
+
+
+    return state.serviceWorkerRegistration;
+  }
+
+
+  state.serviceWorkerRegistration =
+    await navigator.serviceWorker.ready;
+
+
+  return state.serviceWorkerRegistration;
+}
+
+
+function renderPushStatus(
+  status,
+  message = ""
+) {
+  if (!pushStatusBadge) {
+    return;
+  }
+
+
+  pushStatusBadge.className =
+    "push-status-badge";
+
+
+  if (
+    status ===
+    "enabled"
+  ) {
+    pushStatusBadge.textContent =
+      "Enabled";
+
+
+    pushStatusBadge.classList.add(
+      "enabled"
+    );
+
+
+    if (enablePushButton) {
+      enablePushButton.hidden =
+        true;
+    }
+
+
+    if (disablePushButton) {
+      disablePushButton.hidden =
+        false;
+    }
+
+
+    if (testPushButton) {
+      testPushButton.hidden =
+        false;
+    }
+  } else if (
+    status ===
+    "blocked"
+  ) {
+    pushStatusBadge.textContent =
+      "Blocked";
+
+
+    pushStatusBadge.classList.add(
+      "blocked"
+    );
+
+
+    if (enablePushButton) {
+      enablePushButton.hidden =
+        true;
+    }
+
+
+    if (disablePushButton) {
+      disablePushButton.hidden =
+        true;
+    }
+
+
+    if (testPushButton) {
+      testPushButton.hidden =
+        true;
+    }
+  } else if (
+    status ===
+    "unsupported"
+  ) {
+    pushStatusBadge.textContent =
+      "Unsupported";
+
+
+    pushStatusBadge.classList.add(
+      "warning"
+    );
+
+
+    if (enablePushButton) {
+      enablePushButton.hidden =
+        true;
+    }
+
+
+    if (disablePushButton) {
+      disablePushButton.hidden =
+        true;
+    }
+
+
+    if (testPushButton) {
+      testPushButton.hidden =
+        true;
+    }
+  } else if (
+    status ===
+    "installation-required"
+  ) {
+    pushStatusBadge.textContent =
+      "Install required";
+
+
+    pushStatusBadge.classList.add(
+      "warning"
+    );
+
+
+    if (enablePushButton) {
+      enablePushButton.hidden =
+        false;
+
+
+      enablePushButton.textContent =
+        "Installation Instructions";
+    }
+
+
+    if (disablePushButton) {
+      disablePushButton.hidden =
+        true;
+    }
+
+
+    if (testPushButton) {
+      testPushButton.hidden =
+        true;
+    }
+  } else {
+    pushStatusBadge.textContent =
+      "Not enabled";
+
+
+    if (enablePushButton) {
+      enablePushButton.hidden =
+        false;
+
+
+      enablePushButton.textContent =
+        "Enable Notifications";
+    }
+
+
+    if (disablePushButton) {
+      disablePushButton.hidden =
+        true;
+    }
+
+
+    if (testPushButton) {
+      testPushButton.hidden =
+        true;
+    }
+  }
+
+
+  if (pushDeviceLabel) {
+    pushDeviceLabel.textContent =
+      message ||
+      deviceLabel();
+  }
+}
+
+
+/* =========================================================
+   PUSH SUBSCRIPTION DATABASE
+========================================================= */
+
+async function savePushSubscription(
+  subscription
+) {
+  const p256dh =
+    subscription.getKey(
+      "p256dh"
+    );
+
+
+  const auth =
+    subscription.getKey(
+      "auth"
+    );
+
+
+  const payload = {
+    user_id:
+      state.user.id,
+
+    endpoint:
+      subscription.endpoint,
+
+    p256dh:
+      arrayBufferToBase64(
+        p256dh
+      ),
+
+    auth:
+      arrayBufferToBase64(
+        auth
+      ),
+
+    user_agent:
+      navigator.userAgent,
+
+    device_type:
+      deviceType(),
+
+    edition:
+      selectedEdition,
+
+    is_active:
+      true,
+
+    updated_at:
+      new Date()
+        .toISOString()
+  };
+
+
+  const {
+    error
+  } =
+    await supabaseClient
+      .from(
+        "push_subscriptions"
+      )
+      .upsert(
+        payload,
+        {
+          onConflict:
+            "endpoint"
+        }
+      );
+
+
+  if (error) {
+    throw error;
+  }
+}
+
+
+async function deactivatePushSubscription(
+  endpoint
+) {
+  if (
+    !endpoint ||
+    !state.user
+  ) {
+    return;
+  }
+
+
+  const {
+    error
+  } =
+    await supabaseClient
+      .from(
+        "push_subscriptions"
+      )
+      .update({
+        is_active:
+          false,
+
+        updated_at:
+          new Date()
+            .toISOString()
+      })
+      .eq(
+        "endpoint",
+        endpoint
+      )
+      .eq(
+        "user_id",
+        state.user.id
+      );
+
+
+  if (error) {
+    console.warn(
+      "PUSH DEACTIVATION DATABASE ERROR:",
+      error
+    );
+  }
+}
+
+
+/* =========================================================
+   CHECK PUSH STATUS
+========================================================= */
+
+async function checkPushStatus() {
+  if (!pushSupported()) {
+    renderPushStatus(
+      "unsupported",
+      "Push notifications are not supported by this browser."
+    );
+
+
+    if (pushDescription) {
+      pushDescription.textContent =
+        "Use a modern browser or install the ACL app on your phone.";
+    }
+
+
+    return;
+  }
+
+
+  if (
+    isIosDevice() &&
+    !isStandaloneMode()
+  ) {
+    renderPushStatus(
+      "installation-required",
+      "On iPhone, add ACL to the Home Screen first."
+    );
+
+
+    if (pushDescription) {
+      pushDescription.textContent =
+        "Open ACL in Safari, tap Share, choose Add to Home Screen, then open the installed ACL app.";
+    }
+
+
+    return;
+  }
+
+
+  if (
+    Notification.permission ===
+    "denied"
+  ) {
+    renderPushStatus(
+      "blocked",
+      "Permission is blocked in browser or device settings."
+    );
+
+
+    return;
+  }
+
+
+  try {
+    const registration =
+      await getServiceWorkerRegistration();
+
+
+    const subscription =
+      await registration
+        .pushManager
+        .getSubscription();
+
+
+    state.pushSubscription =
+      subscription;
+
+
+    if (subscription) {
+      renderPushStatus(
+        "enabled",
+        `${deviceLabel()} is registered.`
+      );
+
+
+      try {
+        await savePushSubscription(
+          subscription
+        );
+      } catch (error) {
+        console.warn(
+          "PUSH DATABASE SYNC ERROR:",
+          error
+        );
+      }
+    } else {
+      renderPushStatus(
+        "disabled",
+        deviceLabel()
+      );
+    }
+  } catch (error) {
+    console.error(
+      "PUSH STATUS ERROR:",
+      error
+    );
+
+
+    renderPushStatus(
+      "disabled",
+      "Press Enable Notifications to continue."
+    );
+  }
+}
+
+
+/* =========================================================
+   ENABLE PUSH
+========================================================= */
+
+async function enablePushNotifications() {
+  if (
+    isIosDevice() &&
+    !isStandaloneMode()
+  ) {
+    window.alert(
+      "To enable ACL notifications on iPhone:\n\n" +
+      "1. Open ACL in Safari.\n" +
+      "2. Tap the Share button.\n" +
+      "3. Tap Add to Home Screen.\n" +
+      "4. Open ACL from the Home Screen.\n" +
+      "5. Open Notifications and press Enable Notifications."
+    );
+
+
+    return;
+  }
+
+
+  if (!pushSupported()) {
+    setStatus(
+      "This browser does not support push notifications.",
+      "error"
+    );
+
+
+    return;
+  }
+
+
+  if (!VAPID_PUBLIC_KEY) {
+    setStatus(
+      "The ACL VAPID public key is missing from config.js.",
+      "warning"
+    );
+
+
+    return;
+  }
+
+
+  setButtonBusy(
+    enablePushButton,
+    true,
+    "Enabling…",
+    "Enable Notifications"
+  );
+
+
+  setStatus(
+    "Requesting notification permission…"
+  );
+
+
+  try {
+    const permission =
+      await Notification
+        .requestPermission();
+
+
+    if (
+      permission !==
+      "granted"
+    ) {
+      if (
+        permission ===
+        "denied"
+      ) {
+        renderPushStatus(
+          "blocked",
+          "Permission was blocked."
+        );
+
+
+        setStatus(
+          "Notification permission was blocked. Enable it from your browser or device settings.",
+          "error"
+        );
+      } else {
+        setStatus(
+          "Notification permission was not granted.",
+          "warning"
+        );
+      }
+
+
+      return;
+    }
+
+
+    const registration =
+      await getServiceWorkerRegistration();
+
+
+    let subscription =
+      await registration
+        .pushManager
+        .getSubscription();
+
+
+    if (!subscription) {
+      subscription =
+        await registration
+          .pushManager
+          .subscribe({
+            userVisibleOnly:
+              true,
+
+            applicationServerKey:
+              urlBase64ToUint8Array(
+                VAPID_PUBLIC_KEY
+              )
+          });
+    }
+
+
+    state.pushSubscription =
+      subscription;
+
+
+    try {
+      await savePushSubscription(
+        subscription
+      );
+    } catch (databaseError) {
+      console.error(
+        "PUSH SUBSCRIPTION SAVE ERROR:",
+        databaseError
+      );
+
+
+      renderPushStatus(
+        "enabled",
+        `${deviceLabel()} is enabled locally.`
+      );
+
+
+      setStatus(
+        "Notification permission was enabled, but the push_subscriptions table must be created in Supabase.",
+        "warning"
+      );
+
+
+      return;
+    }
+
+
+    renderPushStatus(
+      "enabled",
+      `${deviceLabel()} is registered.`
+    );
+
+
+    setStatus(
+      "Push notifications enabled successfully on this device.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      "ENABLE PUSH ERROR:",
+      error
+    );
+
+
+    setStatus(
+      error.message ||
+      "Push notifications could not be enabled.",
+      "error"
+    );
+  } finally {
+    setButtonBusy(
+      enablePushButton,
+      false,
+      "Enabling…",
+      "Enable Notifications"
+    );
+  }
+}
+
+
+/* =========================================================
+   DISABLE PUSH
+========================================================= */
+
+async function disablePushNotifications() {
+  if (
+    !state.pushSubscription
+  ) {
+    await checkPushStatus();
+
+
+    return;
+  }
+
+
+  const confirmed =
+    window.confirm(
+      "Disable ACL push notifications on this device?"
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  setButtonBusy(
+    disablePushButton,
+    true,
+    "Disabling…",
+    "Disable"
+  );
+
+
+  try {
+    const endpoint =
+      state.pushSubscription
+        .endpoint;
+
+
+    await deactivatePushSubscription(
+      endpoint
+    );
+
+
+    await state.pushSubscription
+      .unsubscribe();
+
+
+    state.pushSubscription =
+      null;
+
+
+    renderPushStatus(
+      "disabled",
+      deviceLabel()
+    );
+
+
+    setStatus(
+      "Push notifications disabled on this device.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      "DISABLE PUSH ERROR:",
+      error
+    );
+
+
+    setStatus(
+      error.message ||
+      "Push notifications could not be disabled.",
+      "error"
+    );
+  } finally {
+    setButtonBusy(
+      disablePushButton,
+      false,
+      "Disabling…",
+      "Disable"
+    );
+  }
+}
+
+
+/* =========================================================
+   TEST NOTIFICATION
+========================================================= */
+
+async function testPushNotification() {
+  setButtonBusy(
+    testPushButton,
+    true,
+    "Sending…",
+    "Test Notification"
+  );
+
+
+  try {
+    if (
+      Notification.permission !==
+      "granted"
+    ) {
+      throw new Error(
+        "Notification permission has not been granted."
+      );
+    }
+
+
+    const registration =
+      await getServiceWorkerRegistration();
+
+
+    await registration
+      .showNotification(
+        "ACL Notifications Enabled",
+        {
+          body:
+            "This device is ready to receive Alexandria Cardiology League updates.",
+
+          icon:
+            "/Cardiology/assets/images/acl-icon-192.png",
+
+          badge:
+            "/Cardiology/assets/images/acl-icon-192.png",
+
+          tag:
+            "acl-notification-test",
+
+          data: {
+            url:
+              aclUrl(
+                "notifications.html",
+                selectedEdition
+              )
+          }
+        }
+      );
+
+
+    setStatus(
+      "Test notification sent successfully.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      "TEST NOTIFICATION ERROR:",
+      error
+    );
+
+
+    setStatus(
+      error.message ||
+      "The test notification could not be displayed.",
+      "error"
+    );
+  } finally {
+    setButtonBusy(
+      testPushButton,
+      false,
+      "Sending…",
+      "Test Notification"
+    );
+  }
+}
+
+
+/* =========================================================
+   LOAD IN-SITE NOTIFICATIONS
+========================================================= */
+
+async function loadNotifications() {
+  if (!state.user) {
+    return;
+  }
+
+
+  setStatus(
+    "Loading notifications…"
+  );
+
+
+  setButtonBusy(
+    refreshButton,
+    true,
+    "Refreshing…",
+    "Refresh"
+  );
+
+
+  try {
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from(
+          "notifications"
+        )
+        .select(
+          "*"
+        )
+        .eq(
+          "user_id",
+          state.user.id
+        )
+        .order(
+          "created_at",
+          {
+            ascending:
+              false
+          }
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    state.notifications =
+      (
+        data ||
+        []
+      ).filter(
+        (notification) => {
+          const notificationEdition =
+            normalizeEdition(
+              notification.edition
+            );
+
+
+          return (
+            !notificationEdition ||
+            notificationEdition ===
+              selectedEdition
+          );
+        }
+      );
+
+
+    applyFilters();
+
+
+    setStatus(
+      ""
+    );
+  } catch (error) {
+    console.error(
+      "NOTIFICATIONS LOAD ERROR:",
+      error
+    );
+
+
+    state.notifications =
+      [];
+
+
+    state.filteredNotifications =
+      [];
+
+
+    renderNotifications();
+    renderSummary();
+
+
+    setStatus(
+      error?.code ===
+        "42P01"
+        ? "The notifications database table has not been created yet."
+        : error.message ||
+          "Notifications could not be loaded.",
+      "error"
+    );
+  } finally {
+    setButtonBusy(
+      refreshButton,
+      false,
+      "Refreshing…",
+      "Refresh"
+    );
+  }
+}
+
+
+/* =========================================================
+   FILTERS AND SUMMARY
+========================================================= */
+
+function setCount(
+  id,
+  value
+) {
+  const target =
+    el(
+      id
+    );
+
+
+  if (target) {
+    target.textContent =
+      String(
+        Number(
+          value ||
+          0
+        )
+      );
+  }
+}
+
+
+function applyFilters() {
+  const selectedReadFilter =
+    readFilter?.value ||
+    "all";
+
+
+  const selectedTypeFilter =
+    typeFilter?.value ||
+    "all";
+
+
+  state.filteredNotifications =
+    state.notifications.filter(
+      (notification) => {
+        const isRead =
+          Boolean(
+            notification.is_read ||
+            notification.read_at
           );
 
 
-        updatedUrl.searchParams.set(
-          "edition",
-          edition
-        );
-
-
-        window.history.replaceState(
-          {},
-          "",
-          updatedUrl
-        );
-      }
-    })();
-  </script>
-
-
-  <style>
-    :root {
-      --notifications-primary: #123f72;
-      --notifications-secondary: #176aa1;
-      --notifications-soft: #eaf5ff;
-      --notifications-soft-2: #f7fbff;
-      --notifications-accent: #ffc928;
-      --notifications-success: #168067;
-      --notifications-danger: #b33443;
-      --notifications-warning: #b97a00;
-      --notifications-text: #17324d;
-      --notifications-muted: #687d90;
-      --notifications-border: #d9e6f2;
-      --notifications-card: #ffffff;
-      --notifications-shadow:
-        0 18px 45px
-        rgba(18, 63, 114, 0.12);
-    }
-
-
-    html.acl-notifications-basic {
-      --notifications-primary: #105541;
-      --notifications-secondary: #168067;
-      --notifications-soft: #eaf8f2;
-      --notifications-soft-2: #f8fcfa;
-      --notifications-text: #173e34;
-      --notifications-shadow:
-        0 18px 45px
-        rgba(16, 85, 65, 0.12);
-    }
-
-
-    * {
-      box-sizing: border-box;
-    }
-
-
-    html,
-    body {
-      min-height: 100%;
-    }
-
-
-    body {
-      margin: 0;
-      padding-top: 92px;
-
-      color:
-        var(--notifications-text);
-
-      background:
-        radial-gradient(
-          circle at 10% 6%,
-          rgba(255, 201, 40, 0.13),
-          transparent 24rem
-        ),
-        radial-gradient(
-          circle at 92% 8%,
-          color-mix(
-            in srgb,
-            var(--notifications-secondary) 12%,
-            transparent
-          ),
-          transparent 28rem
-        ),
-        linear-gradient(
-          145deg,
-          #ffffff,
-          var(--notifications-soft)
-        );
-    }
-
-
-    button,
-    select,
-    input {
-      font: inherit;
-    }
-
-
-    .topbar.acl-header-pending {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-
-    .topbar.acl-unified-header {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-    }
-
-
-    .notifications-shell {
-      width:
-        min(
-          1120px,
-          calc(100% - 28px)
-        );
-
-      margin: 0 auto;
-      padding: 30px 0 60px;
-    }
-
-
-    /* =====================================================
-       HERO
-    ===================================================== */
-
-    .notifications-hero {
-      position: relative;
-      overflow: hidden;
-
-      padding:
-        clamp(
-          28px,
-          5vw,
-          48px
-        );
-
-      border-radius: 28px;
-
-      color: #ffffff;
-
-      background:
-        linear-gradient(
-          125deg,
-          var(--notifications-primary),
-          var(--notifications-secondary)
-        );
-
-      box-shadow:
-        var(--notifications-shadow);
-    }
-
-
-    .notifications-hero::after {
-      content: "🔔";
-
-      position: absolute;
-      top: 50%;
-      right: 5%;
-
-      transform:
-        translateY(-50%)
-        rotate(-8deg);
-
-      opacity: 0.11;
-
-      font-size:
-        clamp(
-          110px,
-          20vw,
-          220px
-        );
-
-      pointer-events: none;
-    }
-
-
-    .notifications-hero-content {
-      position: relative;
-      z-index: 1;
-
-      max-width: 760px;
-    }
-
-
-    .notifications-hero-top {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-
-    .notifications-kicker,
-    .notifications-edition-badge {
-      display: inline-flex;
-      align-items: center;
-
-      min-height: 31px;
-      padding: 7px 12px;
-
-      border:
-        1px solid
-        rgba(255, 255, 255, 0.3);
-
-      border-radius: 999px;
-
-      color: #ffffff;
-
-      background:
-        rgba(255, 255, 255, 0.12);
-
-      font-size: 0.74rem;
-      font-weight: 900;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-    }
-
-
-    .notifications-edition-badge {
-      background:
-        rgba(255, 255, 255, 0.21);
-    }
-
-
-    .notifications-hero h1 {
-      margin: 15px 0 10px;
-
-      color: #ffffff;
-
-      font-size:
-        clamp(
-          2.3rem,
-          6vw,
-          4rem
-        );
-
-      line-height: 1;
-    }
-
-
-    .notifications-hero p {
-      margin: 0;
-
-      color:
-        rgba(255, 255, 255, 0.88);
-
-      font-size:
-        clamp(
-          0.98rem,
-          2vw,
-          1.08rem
-        );
-
-      line-height: 1.65;
-    }
-
-
-    /* =====================================================
-       PUSH NOTIFICATION CARD
-    ===================================================== */
-
-    .push-card {
-      display: grid;
-
-      grid-template-columns:
-        minmax(0, 1fr)
-        auto;
-
-      gap: 18px;
-      align-items: center;
-
-      margin-top: 20px;
-      padding: 21px;
-
-      border:
-        1px solid
-        var(--notifications-border);
-
-      border-radius: 20px;
-
-      background:
-        rgba(255, 255, 255, 0.98);
-
-      box-shadow:
-        0 12px 30px
-        rgba(18, 63, 114, 0.07);
-    }
-
-
-    .push-card-title {
-      display: flex;
-      align-items: flex-start;
-      gap: 13px;
-    }
-
-
-    .push-card-icon {
-      display: grid;
-      place-items: center;
-
-      width: 50px;
-      min-width: 50px;
-      height: 50px;
-
-      border-radius: 15px;
-
-      color: #ffffff;
-
-      background:
-        linear-gradient(
-          135deg,
-          var(--notifications-primary),
-          var(--notifications-secondary)
-        );
-
-      font-size: 1.25rem;
-    }
-
-
-    .push-card h2 {
-      margin: 0;
-
-      color:
-        var(--notifications-primary);
-
-      font-size: 1.15rem;
-    }
-
-
-    .push-card p {
-      margin: 6px 0 0;
-
-      color:
-        var(--notifications-muted);
-
-      font-size: 0.84rem;
-      line-height: 1.55;
-    }
-
-
-    .push-status-line {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-
-      margin-top: 11px;
-    }
-
-
-    .push-status-badge {
-      display: inline-flex;
-      align-items: center;
-
-      min-height: 28px;
-      padding: 5px 10px;
-
-      border-radius: 999px;
-
-      color:
-        var(--notifications-primary);
-
-      background:
-        var(--notifications-soft);
-
-      font-size: 0.69rem;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-
-    .push-status-badge.enabled {
-      color: #ffffff;
-
-      background:
-        var(--notifications-success);
-    }
-
-
-    .push-status-badge.blocked {
-      color: #ffffff;
-
-      background:
-        var(--notifications-danger);
-    }
-
-
-    .push-status-badge.warning {
-      color: #765000;
-
-      background: #fff0bf;
-    }
-
-
-    .push-device-label {
-      color:
-        var(--notifications-muted);
-
-      font-size: 0.74rem;
-    }
-
-
-    .push-actions {
-      display: flex;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      gap: 9px;
-    }
-
-
-    /* =====================================================
-       SUMMARY
-    ===================================================== */
-
-    .notifications-summary {
-      display: grid;
-
-      grid-template-columns:
-        repeat(
-          3,
-          minmax(0, 1fr)
-        );
-
-      gap: 16px;
-      margin-top: 20px;
-    }
-
-
-    .notifications-summary-card {
-      padding: 20px;
-
-      border:
-        1px solid
-        var(--notifications-border);
-
-      border-radius: 19px;
-
-      background:
-        rgba(255, 255, 255, 0.97);
-
-      box-shadow:
-        0 12px 30px
-        rgba(18, 63, 114, 0.07);
-    }
-
-
-    .notifications-summary-card span {
-      display: block;
-
-      color:
-        var(--notifications-muted);
-
-      font-size: 0.76rem;
-      font-weight: 850;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-
-    .notifications-summary-card strong {
-      display: block;
-      margin-top: 9px;
-
-      color:
-        var(--notifications-primary);
-
-      font-size: 2.2rem;
-      font-weight: 950;
-      line-height: 1;
-    }
-
-
-    /* =====================================================
-       CONTROLS
-    ===================================================== */
-
-    .notifications-toolbar {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 14px;
-
-      margin-top: 20px;
-      padding: 17px;
-
-      border:
-        1px solid
-        var(--notifications-border);
-
-      border-radius: 19px;
-
-      background:
-        rgba(255, 255, 255, 0.96);
-
-      box-shadow:
-        0 12px 30px
-        rgba(18, 63, 114, 0.07);
-    }
-
-
-    .notifications-filters {
-      display: flex;
-      align-items: flex-end;
-      flex-wrap: wrap;
-      gap: 11px;
-    }
-
-
-    .notifications-field {
-      display: grid;
-      gap: 6px;
-    }
-
-
-    .notifications-field label {
-      color:
-        var(--notifications-muted);
-
-      font-size: 0.72rem;
-      font-weight: 850;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-
-    .notifications-field select {
-      min-width: 155px;
-      min-height: 43px;
-      padding: 9px 12px;
-
-      border:
-        1px solid
-        var(--notifications-border);
-
-      border-radius: 11px;
-
-      color:
-        var(--notifications-text);
-
-      background: #ffffff;
-
-      font-weight: 750;
-    }
-
-
-    .notifications-toolbar-actions {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 9px;
-    }
-
-
-    .notifications-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-
-      min-height: 43px;
-      padding: 9px 15px;
-
-      border: 0;
-      border-radius: 11px;
-
-      cursor: pointer;
-
-      font-weight: 900;
-    }
-
-
-    .notifications-button-primary {
-      color: #ffffff;
-
-      background:
-        linear-gradient(
-          135deg,
-          var(--notifications-primary),
-          var(--notifications-secondary)
-        );
-    }
-
-
-    .notifications-button-secondary {
-      border:
-        1px solid
-        var(--notifications-border);
-
-      color:
-        var(--notifications-primary);
-
-      background: #ffffff;
-    }
-
-
-    .notifications-button-danger {
-      border: 1px solid #f0c6cc;
-
-      color:
-        var(--notifications-danger);
-
-      background: #fff5f6;
-    }
-
-
-    .notifications-button:disabled {
-      cursor: wait;
-      opacity: 0.65;
-    }
-
-
-    /* =====================================================
-       STATUS
-    ===================================================== */
-
-    .notifications-status {
-      margin-top: 15px;
-      padding: 14px 16px;
-
-      border:
-        1px solid
-        var(--notifications-border);
-
-      border-radius: 13px;
-
-      color:
-        var(--notifications-muted);
-
-      background: #ffffff;
-
-      font-weight: 750;
-    }
-
-
-    .notifications-status.error {
-      border-color: #f0c6cc;
-
-      color:
-        var(--notifications-danger);
-
-      background: #fff5f6;
-    }
-
-
-    .notifications-status.success {
-      border-color: #bfe7d6;
-
-      color:
-        var(--notifications-success);
-
-      background: #f2fbf7;
-    }
-
-
-    .notifications-status.warning {
-      border-color: #f4d8a2;
-
-      color:
-        var(--notifications-warning);
-
-      background: #fffaf0;
-    }
-
-
-    /* =====================================================
-       LIST
-    ===================================================== */
-
-    .notifications-list {
-      display: grid;
-      gap: 13px;
-
-      margin-top: 18px;
-    }
-
-
-    .notification-item {
-      position: relative;
-
-      display: grid;
-
-      grid-template-columns:
-        auto
-        minmax(0, 1fr)
-        auto;
-
-      gap: 15px;
-      align-items: flex-start;
-
-      padding: 18px;
-
-      border:
-        1px solid
-        var(--notifications-border);
-
-      border-radius: 18px;
-
-      background:
-        rgba(255, 255, 255, 0.98);
-
-      box-shadow:
-        0 10px 28px
-        rgba(18, 63, 114, 0.06);
-    }
-
-
-    .notification-item.unread {
-      border-color:
-        color-mix(
-          in srgb,
-          var(--notifications-secondary) 40%,
-          white
-        );
-
-      background:
-        linear-gradient(
-          145deg,
-          #ffffff,
-          var(--notifications-soft-2)
-        );
-    }
-
-
-    .notification-item.unread::before {
-      content: "";
-
-      position: absolute;
-      top: 16px;
-      left: 0;
-
-      width: 4px;
-      height:
-        calc(100% - 32px);
-
-      border-radius:
-        0 6px 6px 0;
-
-      background:
-        var(--notifications-secondary);
-    }
-
-
-    .notification-icon {
-      display: grid;
-      place-items: center;
-
-      width: 46px;
-      min-width: 46px;
-      height: 46px;
-
-      border-radius: 14px;
-
-      color: #ffffff;
-
-      background:
-        linear-gradient(
-          135deg,
-          var(--notifications-primary),
-          var(--notifications-secondary)
-        );
-
-      font-size: 1.12rem;
-    }
-
-
-    .notification-heading {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-
-    .notification-heading h2 {
-      margin: 0;
-
-      color:
-        var(--notifications-primary);
-
-      font-size: 1rem;
-    }
-
-
-    .notification-unread-badge {
-      display: inline-flex;
-      align-items: center;
-
-      padding: 4px 8px;
-
-      border-radius: 999px;
-
-      color: #ffffff;
-
-      background:
-        var(--notifications-secondary);
-
-      font-size: 0.65rem;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-
-    .notification-content p {
-      margin: 7px 0 0;
-
-      color:
-        var(--notifications-muted);
-
-      font-size: 0.88rem;
-      line-height: 1.55;
-    }
-
-
-    .notification-meta {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-
-      margin-top: 10px;
-
-      color:
-        var(--notifications-muted);
-
-      font-size: 0.74rem;
-    }
-
-
-    .notification-category {
-      display: inline-flex;
-      align-items: center;
-
-      padding: 5px 9px;
-
-      border-radius: 999px;
-
-      color:
-        var(--notifications-primary);
-
-      background:
-        var(--notifications-soft);
-
-      font-weight: 850;
-      text-transform: capitalize;
-    }
-
-
-    .notification-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      gap: 7px;
-    }
-
-
-    .notification-action {
-      min-height: 36px;
-      padding: 7px 11px;
-
-      border:
-        1px solid
-        var(--notifications-border);
-
-      border-radius: 10px;
-
-      color:
-        var(--notifications-primary);
-
-      background: #ffffff;
-
-      cursor: pointer;
-
-      font-size: 0.75rem;
-      font-weight: 850;
-      text-decoration: none;
-    }
-
-
-    .notification-action-danger {
-      color:
-        var(--notifications-danger);
-    }
-
-
-    /* =====================================================
-       EMPTY AND FOOTER
-    ===================================================== */
-
-    .notifications-empty {
-      margin-top: 18px;
-      padding: 50px 20px;
-
-      border:
-        1px dashed
-        var(--notifications-border);
-
-      border-radius: 20px;
-
-      color:
-        var(--notifications-muted);
-
-      background:
-        rgba(255, 255, 255, 0.9);
-
-      text-align: center;
-    }
-
-
-    .notifications-empty-icon {
-      display: grid;
-      place-items: center;
-
-      width: 66px;
-      height: 66px;
-
-      margin: 0 auto 14px;
-
-      border-radius: 20px;
-
-      color: #ffffff;
-
-      background:
-        linear-gradient(
-          135deg,
-          var(--notifications-primary),
-          var(--notifications-secondary)
-        );
-
-      font-size: 1.6rem;
-    }
-
-
-    .notifications-empty h2 {
-      margin: 0;
-
-      color:
-        var(--notifications-primary);
-    }
-
-
-    .notifications-empty p {
-      margin: 8px 0 0;
-      line-height: 1.55;
-    }
-
-
-    .notifications-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-
-      margin-top: 22px;
-    }
-
-
-    .notifications-footer p {
-      margin: 0;
-
-      color:
-        var(--notifications-muted);
-
-      font-size: 0.76rem;
-    }
-
-
-    .notifications-footer-links {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-
-    .notifications-footer-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-
-      min-height: 40px;
-      padding: 8px 13px;
-
-      border:
-        1px solid
-        var(--notifications-border);
-
-      border-radius: 10px;
-
-      color:
-        var(--notifications-primary);
-
-      background: #ffffff;
-
-      font-size: 0.78rem;
-      font-weight: 850;
-      text-decoration: none;
-    }
-
-
-    [hidden] {
-      display: none !important;
-    }
-
-
-    @media (max-width: 760px) {
-      body {
-        padding-top: 82px;
-      }
-
-
-      .notifications-shell {
-        width:
-          min(
-            calc(100% - 18px),
-            1120px
+        const matchesRead =
+          selectedReadFilter ===
+            "all" ||
+          (
+            selectedReadFilter ===
+              "read" &&
+            isRead
+          ) ||
+          (
+            selectedReadFilter ===
+              "unread" &&
+            !isRead
           );
 
-        padding-top: 18px;
+
+        const notificationType =
+          normalizeType(
+            notification.notification_type ||
+            notification.type
+          );
+
+
+        const matchesType =
+          selectedTypeFilter ===
+            "all" ||
+          notificationType ===
+            selectedTypeFilter;
+
+
+        return (
+          matchesRead &&
+          matchesType
+        );
       }
+    );
 
 
-      .push-card {
-        grid-template-columns: 1fr;
-      }
+  renderNotifications();
+  renderSummary();
+}
 
 
-      .push-actions {
-        justify-content: flex-start;
-      }
+function renderSummary() {
+  const unreadCount =
+    state.notifications.filter(
+      (notification) =>
+        !notification.is_read &&
+        !notification.read_at
+    ).length;
 
 
-      .notifications-summary {
-        grid-template-columns: 1fr;
-      }
+  const challengeCount =
+    state.notifications.filter(
+      (notification) =>
+        normalizeType(
+          notification.notification_type ||
+          notification.type
+        ) ===
+        "challenge"
+    ).length;
 
 
-      .notifications-toolbar {
-        align-items: stretch;
-        flex-direction: column;
-      }
+  setCount(
+    "notificationsTotalCount",
+    state.notifications.length
+  );
 
 
-      .notifications-filters {
-        display: grid;
-        grid-template-columns: 1fr;
-      }
+  setCount(
+    "notificationsUnreadCount",
+    unreadCount
+  );
 
 
-      .notifications-field select {
-        width: 100%;
-        min-width: 0;
-      }
+  setCount(
+    "notificationsChallengeCount",
+    challengeCount
+  );
 
 
-      .notifications-toolbar-actions {
-        width: 100%;
-      }
+  if (markAllReadButton) {
+    markAllReadButton.disabled =
+      unreadCount ===
+      0;
+  }
+}
 
 
-      .notifications-toolbar-actions button {
-        flex: 1;
-      }
+/* =========================================================
+   RENDER NOTIFICATIONS
+========================================================= */
+
+function renderNotifications() {
+  if (
+    !notificationsList ||
+    !emptyState
+  ) {
+    return;
+  }
 
 
-      .notification-item {
-        grid-template-columns:
-          auto
-          minmax(0, 1fr);
-      }
+  if (
+    !state.filteredNotifications.length
+  ) {
+    notificationsList.innerHTML =
+      "";
 
 
-      .notification-actions {
-        grid-column: 1 / -1;
-        justify-content: flex-start;
-      }
-    }
+    emptyState.hidden =
+      false;
 
 
-    @media (max-width: 480px) {
-      .push-actions,
-      .notifications-toolbar-actions {
-        display: grid;
-        grid-template-columns: 1fr;
-      }
+    return;
+  }
 
 
-      .push-actions button,
-      .notifications-toolbar-actions button {
-        width: 100%;
-      }
+  emptyState.hidden =
+    true;
 
 
-      .notification-item {
-        grid-template-columns: 1fr;
-      }
+  notificationsList.innerHTML =
+    state.filteredNotifications
+      .map(
+        notificationHtml
+      )
+      .join(
+        ""
+      );
+}
 
 
-      .notification-actions {
-        grid-column: auto;
-      }
-    }
-  </style>
+function notificationHtml(
+  notification
+) {
+  const notificationType =
+    normalizeType(
+      notification.notification_type ||
+      notification.type
+    );
 
-</head>
+
+  const isRead =
+    Boolean(
+      notification.is_read ||
+      notification.read_at
+    );
 
 
-<body>
+  const actionUrl =
+    notificationActionUrl(
+      notification
+    );
 
-  <header class="topbar acl-header-pending">
 
-    <a
-      class="brand brand-link"
-      href="pathways.html"
-      aria-label="Alexandria Cardiology League"
+  return `
+    <article
+      class="
+        notification-item
+        ${
+          isRead
+            ? "read"
+            : "unread"
+        }
+      "
+      data-notification-id="${escapeHtml(
+        notification.id
+      )}"
     >
-      Alexandria Cardiology League
-    </a>
+
+      <div
+        class="notification-icon"
+        aria-hidden="true"
+      >
+        ${notificationIcon(
+          notificationType
+        )}
+      </div>
 
 
-    <nav aria-label="Main navigation">
+      <div class="notification-content">
 
-      <a
-        id="userChip"
-        class="user-chip"
-        href="profile.html"
-        aria-label="Open profile"
-      ></a>
+        <div class="notification-heading">
 
-    </nav>
+          <h2>
+            ${escapeHtml(
+              notification.title ||
+              humanizeType(
+                notificationType
+              )
+            )}
+          </h2>
 
-  </header>
+
+          ${
+            !isRead
+              ? `
+                <span class="notification-unread-badge">
+                  New
+                </span>
+              `
+              : ""
+          }
+
+        </div>
 
 
-  <main class="notifications-shell">
+        <p>
+          ${escapeHtml(
+            notification.message ||
+            "You have a new ACL notification."
+          )}
+        </p>
 
-    <section class="notifications-hero">
 
-      <div class="notifications-hero-content">
+        <div class="notification-meta">
 
-        <div class="notifications-hero-top">
-
-          <span class="notifications-kicker">
-            ACL UPDATES
+          <span class="notification-category">
+            ${escapeHtml(
+              humanizeType(
+                notificationType
+              )
+            )}
           </span>
 
 
           <span
-            id="notificationsEditionBadge"
-            class="notifications-edition-badge"
+            title="${escapeHtml(
+              formatDateTime(
+                notification.created_at
+              )
+            )}"
           >
-            EDITION
+            ${escapeHtml(
+              relativeTime(
+                notification.created_at
+              ) ||
+              formatDateTime(
+                notification.created_at
+              )
+            )}
           </span>
 
         </div>
 
-
-        <h1>
-          Notifications
-        </h1>
-
-
-        <p>
-          Receive official ACL announcements, competition reminders,
-          challenge invitations, module updates, and achievement alerts.
-        </p>
-
-      </div>
-
-    </section>
-
-
-    <section
-      class="push-card"
-      aria-labelledby="pushNotificationsTitle"
-    >
-
-      <div class="push-card-title">
-
-        <div
-          class="push-card-icon"
-          aria-hidden="true"
-        >
-          🔔
-        </div>
-
-
-        <div>
-
-          <h2 id="pushNotificationsTitle">
-            Phone push notifications
-          </h2>
-
-
-          <p id="pushNotificationsDescription">
-            Enable ACL alerts on this iPhone, Android phone, tablet,
-            or computer.
-          </p>
-
-
-          <div class="push-status-line">
-
-            <span
-              id="pushStatusBadge"
-              class="push-status-badge"
-            >
-              Checking…
-            </span>
-
-
-            <span
-              id="pushDeviceLabel"
-              class="push-device-label"
-            ></span>
-
-          </div>
-
-        </div>
-
       </div>
 
 
-      <div class="push-actions">
+      <div class="notification-actions">
+
+        ${
+          actionUrl
+            ? `
+              <a
+                class="notification-action"
+                href="${escapeHtml(
+                  actionUrl
+                )}"
+                data-open-notification="${escapeHtml(
+                  notification.id
+                )}"
+              >
+                Open
+              </a>
+            `
+            : ""
+        }
+
+
+        ${
+          !isRead
+            ? `
+              <button
+                class="notification-action"
+                type="button"
+                data-mark-notification-read="${escapeHtml(
+                  notification.id
+                )}"
+              >
+                Mark read
+              </button>
+            `
+            : ""
+        }
+
 
         <button
-          id="enablePushNotifications"
           class="
-            notifications-button
-            notifications-button-primary
+            notification-action
+            notification-action-danger
           "
           type="button"
+          data-delete-notification="${escapeHtml(
+            notification.id
+          )}"
         >
-          Enable Notifications
-        </button>
-
-
-        <button
-          id="testPushNotification"
-          class="
-            notifications-button
-            notifications-button-secondary
-          "
-          type="button"
-          hidden
-        >
-          Test Notification
-        </button>
-
-
-        <button
-          id="disablePushNotifications"
-          class="
-            notifications-button
-            notifications-button-danger
-          "
-          type="button"
-          hidden
-        >
-          Disable
+          Delete
         </button>
 
       </div>
 
-    </section>
-
-
-    <section
-      class="notifications-summary"
-      aria-label="Notification summary"
-    >
-
-      <article class="notifications-summary-card">
-
-        <span>
-          Total notifications
-        </span>
-
-        <strong id="notificationsTotalCount">
-          —
-        </strong>
-
-      </article>
-
-
-      <article class="notifications-summary-card">
-
-        <span>
-          Unread
-        </span>
-
-        <strong id="notificationsUnreadCount">
-          —
-        </strong>
-
-      </article>
-
-
-      <article class="notifications-summary-card">
-
-        <span>
-          Challenge invitations
-        </span>
-
-        <strong id="notificationsChallengeCount">
-          —
-        </strong>
-
-      </article>
-
-    </section>
-
-
-    <section
-      class="notifications-toolbar"
-      aria-label="Notification controls"
-    >
-
-      <div class="notifications-filters">
-
-        <div class="notifications-field">
-
-          <label for="notificationsReadFilter">
-            Status
-          </label>
-
-          <select id="notificationsReadFilter">
-
-            <option value="all">
-              All notifications
-            </option>
-
-            <option value="unread">
-              Unread only
-            </option>
-
-            <option value="read">
-              Read only
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <div class="notifications-field">
-
-          <label for="notificationsTypeFilter">
-            Type
-          </label>
-
-          <select id="notificationsTypeFilter">
-
-            <option value="all">
-              All types
-            </option>
-
-            <option value="challenge">
-              Challenge
-            </option>
-
-            <option value="competition">
-              Competition
-            </option>
-
-            <option value="module">
-              Module
-            </option>
-
-            <option value="achievement">
-              Achievement
-            </option>
-
-            <option value="announcement">
-              Announcement
-            </option>
-
-            <option value="system">
-              System
-            </option>
-
-          </select>
-
-        </div>
-
-      </div>
-
-
-      <div class="notifications-toolbar-actions">
-
-        <button
-          id="markAllNotificationsRead"
-          class="
-            notifications-button
-            notifications-button-secondary
-          "
-          type="button"
-        >
-          Mark all as read
-        </button>
-
-
-        <button
-          id="refreshNotifications"
-          class="
-            notifications-button
-            notifications-button-primary
-          "
-          type="button"
-        >
-          Refresh
-        </button>
-
-      </div>
-
-    </section>
-
-
-    <div
-      id="notificationsStatus"
-      class="notifications-status"
-      role="status"
-      aria-live="polite"
-    >
-      Loading notifications…
-    </div>
-
-
-    <section
-      id="notificationsList"
-      class="notifications-list"
-      aria-label="Notifications"
-    ></section>
-
-
-    <section
-      id="notificationsEmptyState"
-      class="notifications-empty"
-      hidden
-    >
-
-      <div
-        class="notifications-empty-icon"
-        aria-hidden="true"
-      >
-        ✉
-      </div>
-
-
-      <h2>
-        No notifications found
-      </h2>
-
-
-      <p>
-        New ACL updates, invitations, and achievements will appear here.
-      </p>
-
-    </section>
-
-
-    <footer class="notifications-footer">
-
-      <p>
-        Notifications are private and visible only to your ACL account.
-      </p>
-
-
-      <div class="notifications-footer-links">
-
-        <a
-          id="notificationsModulesLink"
-          class="notifications-footer-link"
-          href="modules.html"
-        >
-          Modules
-        </a>
-
-
-        <a
-          id="notificationsProgressLink"
-          class="notifications-footer-link"
-          href="progress.html"
-        >
-          My Progress
-        </a>
-
-
-        <a
-          class="notifications-footer-link"
-          href="pathways.html"
-        >
-          Switch Edition
-        </a>
-
-      </div>
-
-    </footer>
-
-  </main>
-
-
-  <script
-    type="module"
-    src="assets/js/notifications.js?v=2.0.0"
-  ></script>
-
-
-  <script
-    type="module"
-    src="assets/js/pwa.js?v=1.7.0"
-  ></script>
-
-</body>
-
-</html>
+    </article>
+  `;
+}
+
+
+/* =========================================================
+   UPDATE IN-SITE NOTIFICATIONS
+========================================================= */
+
+async function markNotificationRead(
+  notificationId
+) {
+  const notification =
+    state.notifications.find(
+      (item) =>
+        String(
+          item.id
+        ) ===
+        String(
+          notificationId
+        )
+    );
+
+
+  if (
+    !notification ||
+    notification.is_read ||
+    notification.read_at
+  ) {
+    return;
+  }
+
+
+  const readAt =
+    new Date()
+      .toISOString();
+
+
+  const {
+    error
+  } =
+    await supabaseClient
+      .from(
+        "notifications"
+      )
+      .update({
+        is_read:
+          true,
+
+        read_at:
+          readAt
+      })
+      .eq(
+        "id",
+        notificationId
+      )
+      .eq(
+        "user_id",
+        state.user.id
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  notification.is_read =
+    true;
+
+
+  notification.read_at =
+    readAt;
+
+
+  applyFilters();
+}
+
+
+async function markAllNotificationsRead() {
+  const unreadIds =
+    state.notifications
+      .filter(
+        (notification) =>
+          !notification.is_read &&
+          !notification.read_at
+      )
+      .map(
+        (notification) =>
+          notification.id
+      );
+
+
+  if (!unreadIds.length) {
+    return;
+  }
+
+
+  setButtonBusy(
+    markAllReadButton,
+    true,
+    "Updating…",
+    "Mark all as read"
+  );
+
+
+  try {
+    const readAt =
+      new Date()
+        .toISOString();
+
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .from(
+          "notifications"
+        )
+        .update({
+          is_read:
+            true,
+
+          read_at:
+            readAt
+        })
+        .eq(
+          "user_id",
+          state.user.id
+        )
+        .in(
+          "id",
+          unreadIds
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    state.notifications.forEach(
+      (notification) => {
+        if (
+          unreadIds.includes(
+            notification.id
+          )
+        ) {
+          notification.is_read =
+            true;
+
+
+          notification.read_at =
+            readAt;
+        }
+      }
+    );
+
+
+    applyFilters();
+
+
+    setStatus(
+      "All notifications marked as read.",
+      "success"
+    );
+  } catch (error) {
+    setStatus(
+      error.message ||
+      "Notifications could not be updated.",
+      "error"
+    );
+  } finally {
+    setButtonBusy(
+      markAllReadButton,
+      false,
+      "Updating…",
+      "Mark all as read"
+    );
+
+
+    renderSummary();
+  }
+}
+
+
+async function deleteNotification(
+  notificationId
+) {
+  if (
+    !window.confirm(
+      "Delete this notification?"
+    )
+  ) {
+    return;
+  }
+
+
+  const {
+    error
+  } =
+    await supabaseClient
+      .from(
+        "notifications"
+      )
+      .delete()
+      .eq(
+        "id",
+        notificationId
+      )
+      .eq(
+        "user_id",
+        state.user.id
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  state.notifications =
+    state.notifications.filter(
+      (notification) =>
+        String(
+          notification.id
+        ) !==
+        String(
+          notificationId
+        )
+    );
+
+
+  applyFilters();
+
+
+  setStatus(
+    "Notification deleted.",
+    "success"
+  );
+}
+
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+enablePushButton
+  ?.addEventListener(
+    "click",
+    enablePushNotifications
+  );
+
+
+disablePushButton
+  ?.addEventListener(
+    "click",
+    disablePushNotifications
+  );
+
+
+testPushButton
+  ?.addEventListener(
+    "click",
+    testPushNotification
+  );
+
+
+readFilter
+  ?.addEventListener(
+    "change",
+    applyFilters
+  );
+
+
+typeFilter
+  ?.addEventListener(
+    "change",
+    applyFilters
+  );
+
+
+refreshButton
+  ?.addEventListener(
+    "click",
+    loadNotifications
+  );
+
+
+markAllReadButton
+  ?.addEventListener(
+    "click",
+    markAllNotificationsRead
+  );
+
+
+document.addEventListener(
+  "click",
+  async (
+    event
+  ) => {
+    const readButton =
+      event.target.closest(
+        "[data-mark-notification-read]"
+      );
+
+
+    if (readButton) {
+      try {
+        await markNotificationRead(
+          readButton.dataset
+            .markNotificationRead
+        );
+      } catch (error) {
+        setStatus(
+          error.message ||
+          "The notification could not be updated.",
+          "error"
+        );
+      }
+
+
+      return;
+    }
+
+
+    const deleteButton =
+      event.target.closest(
+        "[data-delete-notification]"
+      );
+
+
+    if (deleteButton) {
+      try {
+        await deleteNotification(
+          deleteButton.dataset
+            .deleteNotification
+        );
+      } catch (error) {
+        setStatus(
+          error.message ||
+          "The notification could not be deleted.",
+          "error"
+        );
+      }
+
+
+      return;
+    }
+
+
+    const openLink =
+      event.target.closest(
+        "[data-open-notification]"
+      );
+
+
+    if (openLink) {
+      try {
+        await markNotificationRead(
+          openLink.dataset
+            .openNotification
+        );
+      } catch (error) {
+        console.warn(
+          "OPEN NOTIFICATION ERROR:",
+          error
+        );
+      }
+    }
+  }
+);
+
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+async function startNotificationsPage() {
+  try {
+    renderEdition();
+
+
+    const profile =
+      await protectAndRender(
+        "login.html"
+      );
+
+
+    if (!profile) {
+      return;
+    }
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .auth
+        .getUser();
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    if (!data?.user) {
+      throw new Error(
+        "Please sign in to view notifications."
+      );
+    }
+
+
+    state.user =
+      data.user;
+
+
+    state.profile =
+      profile;
+
+
+    if (pushDeviceLabel) {
+      pushDeviceLabel.textContent =
+        deviceLabel();
+    }
+
+
+    await Promise.allSettled([
+      loadNotifications(),
+      checkPushStatus()
+    ]);
+  } catch (error) {
+    console.error(
+      "NOTIFICATIONS INITIALIZATION ERROR:",
+      error
+    );
+
+
+    renderPushStatus(
+      "disabled",
+      "Press Enable Notifications to continue."
+    );
+
+
+    setStatus(
+      error.message ||
+      "Notifications could not be initialized.",
+      "error"
+    );
+  }
+}
+
+
+if (
+  document.readyState ===
+  "loading"
+) {
+  document.addEventListener(
+    "DOMContentLoaded",
+    startNotificationsPage,
+    {
+      once:
+        true
+    }
+  );
+} else {
+  void startNotificationsPage();
+}
