@@ -15,7 +15,7 @@ import {
 
 
 console.log(
-  "ACL NOTIFICATION ONBOARDING v1.0.0 LOADED"
+  "ACL NOTIFICATION ONBOARDING v1.1.0 LOADED"
 );
 
 
@@ -44,6 +44,14 @@ const REMIND_AFTER_KEY =
 
 const REMIND_AFTER_DAYS =
   7;
+
+
+const PROMPT_DELAY_MS =
+  1200;
+
+
+const SUCCESS_CLOSE_DELAY_MS =
+  1200;
 
 
 /* =========================================================
@@ -86,6 +94,12 @@ const installButton =
   );
 
 
+const backdrop =
+  document.getElementById(
+    "aclNotificationOnboardingBackdrop"
+  );
+
+
 /* =========================================================
    STATE
 ========================================================= */
@@ -94,7 +108,9 @@ const state = {
   user: null,
   registration: null,
   subscription: null,
-  busy: false
+  busy: false,
+  previousFocusedElement: null,
+  openTimer: null
 };
 
 
@@ -208,16 +224,18 @@ function setBusy(
   busy
 ) {
   state.busy =
-    busy;
+    Boolean(
+      busy
+    );
 
 
   if (enableButton) {
     enableButton.disabled =
-      busy;
+      state.busy;
 
 
     enableButton.textContent =
-      busy
+      state.busy
         ? "Enabling…"
         : "Enable Notifications";
   }
@@ -225,13 +243,19 @@ function setBusy(
 
   if (laterButton) {
     laterButton.disabled =
-      busy;
+      state.busy;
   }
 
 
   if (closeButton) {
     closeButton.disabled =
-      busy;
+      state.busy;
+  }
+
+
+  if (installButton) {
+    installButton.disabled =
+      state.busy;
   }
 }
 
@@ -328,13 +352,29 @@ function arrayBufferToBase64(
 ========================================================= */
 
 function openPrompt() {
-  if (!modal) {
+  if (
+    !modal ||
+    !modal.hidden
+  ) {
     return;
   }
 
 
+  state.previousFocusedElement =
+    document.activeElement instanceof
+      HTMLElement
+      ? document.activeElement
+      : null;
+
+
   modal.hidden =
     false;
+
+
+  modal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
 
 
   document.body.classList.add(
@@ -344,7 +384,15 @@ function openPrompt() {
 
   window.setTimeout(
     () => {
-      enableButton
+      const preferredButton =
+        !enableButton?.hidden
+          ? enableButton
+          : !installButton?.hidden
+            ? installButton
+            : laterButton;
+
+
+      preferredButton
         ?.focus();
     },
     80
@@ -358,17 +406,51 @@ function closePrompt() {
   }
 
 
+  if (
+    state.openTimer
+  ) {
+    window.clearTimeout(
+      state.openTimer
+    );
+
+
+    state.openTimer =
+      null;
+  }
+
+
   modal.hidden =
     true;
+
+
+  modal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
 
 
   document.body.classList.remove(
     "acl-notification-onboarding-open"
   );
+
+
+  state.previousFocusedElement
+    ?.focus?.();
+
+
+  state.previousFocusedElement =
+    null;
 }
 
 
 function dismissPrompt() {
+  if (
+    state.busy
+  ) {
+    return;
+  }
+
+
   sessionStorage.setItem(
     SESSION_DISMISS_KEY,
     "true"
@@ -418,13 +500,31 @@ function promptRecentlyDismissed() {
     );
 
 
-  return (
-    Number.isFinite(
+  if (
+    !Number.isFinite(
       remindAfter
-    ) &&
-    remindAfter >
-      Date.now()
-  );
+    ) ||
+    remindAfter <=
+      0
+  ) {
+    return false;
+  }
+
+
+  if (
+    remindAfter <=
+    Date.now()
+  ) {
+    localStorage.removeItem(
+      REMIND_AFTER_KEY
+    );
+
+
+    return false;
+  }
+
+
+  return true;
 }
 
 
@@ -482,6 +582,24 @@ async function getRegistration() {
 async function saveSubscription(
   subscription
 ) {
+  if (
+    !state.user?.id
+  ) {
+    throw new Error(
+      "Your ACL login session is unavailable. Sign out, sign in again, and retry."
+    );
+  }
+
+
+  if (
+    !subscription?.endpoint
+  ) {
+    throw new Error(
+      "The browser did not provide a valid push subscription endpoint."
+    );
+  }
+
+
   const p256dh =
     subscription.getKey(
       "p256dh"
@@ -494,7 +612,53 @@ async function saveSubscription(
     );
 
 
+  if (
+    !p256dh ||
+    !auth
+  ) {
+    throw new Error(
+      "The browser push subscription is missing its encryption keys."
+    );
+  }
+
+
+  const payload = {
+    user_id:
+      state.user.id,
+
+    endpoint:
+      subscription.endpoint,
+
+    p256dh:
+      arrayBufferToBase64(
+        p256dh
+      ),
+
+    auth:
+      arrayBufferToBase64(
+        auth
+      ),
+
+    user_agent:
+      navigator.userAgent,
+
+    device_type:
+      deviceType(),
+
+    edition:
+      selectedEdition,
+
+    is_active:
+      true,
+
+    updated_at:
+      new Date()
+        .toISOString()
+  };
+
+
   const {
+    data,
     error
   } =
     await supabaseClient
@@ -502,49 +666,119 @@ async function saveSubscription(
         "push_subscriptions"
       )
       .upsert(
-        {
-          user_id:
-            state.user.id,
-
-          endpoint:
-            subscription.endpoint,
-
-          p256dh:
-            arrayBufferToBase64(
-              p256dh
-            ),
-
-          auth:
-            arrayBufferToBase64(
-              auth
-            ),
-
-          user_agent:
-            navigator.userAgent,
-
-          device_type:
-            deviceType(),
-
-          edition:
-            selectedEdition,
-
-          is_active:
-            true,
-
-          updated_at:
-            new Date()
-              .toISOString()
-        },
+        payload,
         {
           onConflict:
             "endpoint"
         }
-      );
+      )
+      .select(
+        "id, user_id, endpoint, device_type, edition, is_active, updated_at"
+      )
+      .single();
 
 
   if (error) {
-    throw error;
+    console.error(
+      "ACL ONBOARDING SUBSCRIPTION DATABASE ERROR:",
+      {
+        code:
+          error.code,
+
+        message:
+          error.message,
+
+        details:
+          error.details,
+
+        hint:
+          error.hint
+      }
+    );
+
+
+    const enhancedError =
+      new Error(
+        error.message ||
+        "The device subscription could not be saved."
+      );
+
+
+    enhancedError.code =
+      error.code;
+
+
+    enhancedError.details =
+      error.details;
+
+
+    enhancedError.hint =
+      error.hint;
+
+
+    throw enhancedError;
   }
+
+
+  return data;
+}
+
+
+function subscriptionErrorMessage(
+  error
+) {
+  const code =
+    String(
+      error?.code ||
+      ""
+    ).trim();
+
+
+  const message =
+    String(
+      error?.message ||
+      error?.details ||
+      ""
+    ).trim();
+
+
+  if (
+    code ===
+    "42501"
+  ) {
+    return "Supabase rejected the device registration. Sign out, sign in again, and retry.";
+  }
+
+
+  if (
+    code ===
+    "42P01"
+  ) {
+    return "The push subscription database table could not be found.";
+  }
+
+
+  if (
+    code ===
+    "23505"
+  ) {
+    return "This browser subscription already exists but could not be updated. Refresh the page and retry.";
+  }
+
+
+  if (
+    /jwt|session|authenticated|auth/i.test(
+      message
+    )
+  ) {
+    return "Your ACL login session expired. Sign out, sign in again, and retry.";
+  }
+
+
+  return (
+    message ||
+    "This device could not be registered for ACL notifications."
+  );
 }
 
 
@@ -553,7 +787,9 @@ async function saveSubscription(
 ========================================================= */
 
 async function enableNotifications() {
-  if (state.busy) {
+  if (
+    state.busy
+  ) {
     return;
   }
 
@@ -571,6 +807,12 @@ async function enableNotifications() {
     if (installButton) {
       installButton.hidden =
         false;
+    }
+
+
+    if (enableButton) {
+      enableButton.hidden =
+        true;
     }
 
 
@@ -605,9 +847,17 @@ async function enableNotifications() {
     "denied"
   ) {
     setStatus(
-      "Notifications are blocked. Open your browser or device settings and allow notifications for ACL.",
+      isIosDevice()
+        ? "Notifications are blocked. Open iPhone Settings, select ACL under Notifications, allow notifications, then reopen the installed app."
+        : "Notifications are blocked. Open this browser's site permissions or your device notification settings and allow notifications for ACL.",
       "error"
     );
+
+
+    if (enableButton) {
+      enableButton.hidden =
+        true;
+    }
 
 
     return;
@@ -644,6 +894,16 @@ async function enableNotifications() {
           ? "error"
           : "warning"
       );
+
+
+      if (
+        permission ===
+          "denied" &&
+        enableButton
+      ) {
+        enableButton.hidden =
+          true;
+      }
 
 
       return;
@@ -696,14 +956,30 @@ async function enableNotifications() {
 
 
     setStatus(
-      "Notifications enabled successfully.",
+      "Notifications enabled successfully on this device.",
       "success"
+    );
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "acl-notifications-enabled",
+        {
+          detail: {
+            edition:
+              selectedEdition,
+
+            deviceType:
+              deviceType()
+          }
+        }
+      )
     );
 
 
     window.setTimeout(
       closePrompt,
-      1100
+      SUCCESS_CLOSE_DELAY_MS
     );
   } catch (
     error
@@ -715,8 +991,9 @@ async function enableNotifications() {
 
 
     setStatus(
-      error.message ||
-      "Notifications could not be enabled.",
+      subscriptionErrorMessage(
+        error
+      ),
       "error"
     );
   } finally {
@@ -788,7 +1065,7 @@ async function shouldShowPrompt() {
     Notification.permission ===
     "denied"
   ) {
-    return false;
+    return true;
   }
 
 
@@ -810,30 +1087,33 @@ async function shouldShowPrompt() {
       .getSubscription();
 
 
-  if (subscription) {
-    state.subscription =
-      subscription;
-
-
-    try {
-      await saveSubscription(
-        subscription
-      );
-    } catch (
-      error
-    ) {
-      console.warn(
-        "ACL PUSH SUBSCRIPTION SYNC ERROR:",
-        error
-      );
-    }
-
-
-    return false;
+  if (!subscription) {
+    return true;
   }
 
 
-  return true;
+  state.subscription =
+    subscription;
+
+
+  try {
+    await saveSubscription(
+      subscription
+    );
+
+
+    return false;
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL PUSH SUBSCRIPTION SYNC ERROR:",
+      error
+    );
+
+
+    return true;
+  }
 }
 
 
@@ -869,6 +1149,12 @@ async function initializeNotificationOnboarding() {
       data.user;
 
 
+    modal.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+
     const shouldShow =
       await shouldShowPrompt();
 
@@ -879,6 +1165,28 @@ async function initializeNotificationOnboarding() {
 
 
     if (
+      Notification.permission ===
+      "denied"
+    ) {
+      if (enableButton) {
+        enableButton.hidden =
+          true;
+      }
+
+
+      if (installButton) {
+        installButton.hidden =
+          true;
+      }
+
+
+      setStatus(
+        isIosDevice()
+          ? "Notifications are blocked. Open iPhone Settings, select ACL under Notifications, and allow notifications."
+          : "Notifications are blocked. Allow them from your browser or device notification settings.",
+        "error"
+      );
+    } else if (
       isIosDevice() &&
       !isStandaloneMode()
     ) {
@@ -888,17 +1196,46 @@ async function initializeNotificationOnboarding() {
       }
 
 
+      if (enableButton) {
+        enableButton.hidden =
+          true;
+      }
+
+
       setStatus(
         "On iPhone, install ACL on the Home Screen before enabling notifications.",
         "warning"
       );
+    } else {
+      if (installButton) {
+        installButton.hidden =
+          true;
+      }
+
+
+      if (enableButton) {
+        enableButton.hidden =
+          false;
+      }
+
+
+      setStatus(
+        ""
+      );
     }
 
 
-    window.setTimeout(
-      openPrompt,
-      850
-    );
+    state.openTimer =
+      window.setTimeout(
+        () => {
+          state.openTimer =
+            null;
+
+
+          openPrompt();
+        },
+        PROMPT_DELAY_MS
+      );
   } catch (
     error
   ) {
@@ -942,13 +1279,21 @@ installButton
   );
 
 
-document
-  .getElementById(
-    "aclNotificationOnboardingBackdrop"
-  )
+backdrop
   ?.addEventListener(
     "click",
     dismissPrompt
+  );
+
+
+modal
+  ?.addEventListener(
+    "click",
+    (
+      event
+    ) => {
+      event.stopPropagation();
+    }
   );
 
 
@@ -965,6 +1310,45 @@ document.addEventListener(
     ) {
       dismissPrompt();
     }
+  }
+);
+
+
+window.addEventListener(
+  "acl-app-installed",
+  () => {
+    if (
+      !modal ||
+      modal.hidden
+    ) {
+      return;
+    }
+
+
+    if (
+      isIosDevice() &&
+      !isStandaloneMode()
+    ) {
+      return;
+    }
+
+
+    if (installButton) {
+      installButton.hidden =
+        true;
+    }
+
+
+    if (enableButton) {
+      enableButton.hidden =
+        false;
+    }
+
+
+    setStatus(
+      "ACL is installed. You can now enable notifications.",
+      "success"
+    );
   }
 );
 
