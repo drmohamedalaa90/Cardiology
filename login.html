@@ -1,64 +1,773 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
+
+  <meta charset="utf-8">
+
   <meta
     name="referrer"
     content="strict-origin-when-cross-origin"
   >
-
-  <meta charset="utf-8">
 
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
   >
 
+  <meta
+    name="theme-color"
+    content="#0b5791"
+  >
+
   <title>
-  Account Access | Alexandria Cardiology League
-</title>
+    Account Access | Alexandria Cardiology League
+  </title>
+
+
+  <link
+    rel="manifest"
+    href="manifest.json"
+  >
+
+
+  <link
+    rel="apple-touch-icon"
+    href="assets/images/acl-icon-192.png"
+  >
+
 
   <link
     rel="stylesheet"
-    href="assets/css/main.css?v=3.5.0"
+    href="assets/css/main.css?v=5.0.1"
   >
+
 
   <link
     rel="stylesheet"
-    href="assets/css/auth.css?v=1.5.2"
+    href="assets/css/auth.css?v=1.5.3"
   >
+
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <style>
+    :root {
+      --login-primary: #0b5791;
+      --login-primary-dark: #073d6d;
+      --login-secondary: #1787c9;
+      --login-gold: #ffc928;
+      --login-soft: #eaf6ff;
+      --login-border: #cfe2f1;
+      --login-text: #14324e;
+      --login-muted: #667f94;
+      --login-success: #168067;
+      --login-danger: #b33443;
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
+    body.acl-neutral-auth-page {
+      margin: 0;
+
+      color:
+        var(--login-text);
+
+      background:
+        radial-gradient(
+          circle at 8% 7%,
+          rgba(255, 201, 40, 0.16),
+          transparent 25rem
+        ),
+        radial-gradient(
+          circle at 92% 12%,
+          rgba(23, 135, 201, 0.13),
+          transparent 29rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          #edf7ff
+        );
+    }
+
+
+    .login-neutral-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+
+      min-height: 72px;
+      padding:
+        12px
+        clamp(
+          16px,
+          5vw,
+          70px
+        );
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          110deg,
+          #061c3d,
+          #0b5791
+        );
+
+      border-bottom:
+        4px solid
+        var(--login-gold);
+
+      box-shadow:
+        0 8px 24px
+        rgba(5, 37, 70, 0.18);
+    }
+
+
+    .login-neutral-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      color: #ffffff;
+      text-decoration: none;
+    }
+
+
+    .login-neutral-brand span {
+      display: grid;
+      place-items: center;
+
+      width: 43px;
+      height: 43px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.4);
+
+      border-radius: 13px;
+
+      background:
+        rgba(255, 255, 255, 0.1);
+
+      color:
+        var(--login-gold);
+
+      font-size: 0.84rem;
+      font-weight: 950;
+    }
+
+
+    .login-neutral-brand strong {
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          0.94rem,
+          2vw,
+          1.18rem
+        );
+
+      font-weight: 950;
+      letter-spacing: 0.02em;
+    }
+
+
+    .login-home-button {
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.45);
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.08);
+
+      text-decoration: none;
+    }
+
+
+    .auth-shell {
+      width:
+        min(
+          1080px,
+          calc(100% - 24px)
+        );
+
+      margin:
+        30px auto
+        60px;
+
+      display: grid;
+
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(300px, 0.72fr);
+
+      gap: 20px;
+      align-items: start;
+    }
+
+
+    .auth-card,
+    .login-install-card {
+      border:
+        1px solid
+        var(--login-border);
+
+      border-radius: 24px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 18px 45px
+        rgba(11, 87, 145, 0.1);
+    }
+
+
+    .auth-card {
+      padding:
+        clamp(
+          20px,
+          4vw,
+          32px
+        );
+    }
+
+
+    .login-install-card {
+      position: sticky;
+      top: 20px;
+
+      overflow: hidden;
+    }
+
+
+    .login-install-hero {
+      position: relative;
+      overflow: hidden;
+
+      padding: 28px 25px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--login-primary-dark),
+          var(--login-secondary)
+        );
+    }
+
+
+    .login-install-hero::after {
+      content: "📱";
+
+      position: absolute;
+      right: -12px;
+      bottom: -32px;
+
+      opacity: 0.12;
+
+      font-size: 120px;
+      transform: rotate(-8deg);
+    }
+
+
+    .login-install-kicker {
+      display: inline-flex;
+
+      padding: 7px 10px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      background:
+        rgba(255, 255, 255, 0.1);
+
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+
+    .login-install-hero h2 {
+      position: relative;
+      z-index: 1;
+
+      margin: 14px 0 9px;
+
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          1.55rem,
+          4vw,
+          2.2rem
+        );
+
+      line-height: 1.05;
+    }
+
+
+    .login-install-hero p {
+      position: relative;
+      z-index: 1;
+
+      margin: 0;
+
+      color:
+        rgba(255, 255, 255, 0.86);
+
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+
+    .login-install-content {
+      padding: 22px;
+    }
+
+
+    .login-install-benefits {
+      display: grid;
+      gap: 10px;
+
+      margin: 0 0 18px;
+      padding: 0;
+
+      list-style: none;
+    }
+
+
+    .login-install-benefits li {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+
+      color:
+        var(--login-text);
+
+      font-size: 0.82rem;
+      font-weight: 750;
+      line-height: 1.45;
+    }
+
+
+    .login-install-benefits li::before {
+      content: "✓";
+
+      display: grid;
+      place-items: center;
+
+      width: 21px;
+      height: 21px;
+      flex: 0 0 21px;
+
+      border-radius: 50%;
+
+      color: #ffffff;
+
+      background:
+        var(--login-success);
+
+      font-size: 0.7rem;
+      font-weight: 950;
+    }
+
+
+    #pwaInstallSection {
+      display: grid;
+      gap: 10px;
+    }
+
+
+    #installAclAppButton {
+      width: 100%;
+      min-height: 47px;
+
+      border: 0;
+      border-radius: 13px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--login-primary),
+          var(--login-secondary)
+        );
+
+      cursor: pointer;
+
+      font-weight: 900;
+    }
+
+
+    #installAclAppButton:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+
+    #pwaInstallStatus {
+      min-height: 20px;
+      margin: 0;
+
+      color:
+        var(--login-muted);
+
+      font-size: 0.76rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+
+    .login-install-note {
+      margin: 16px 0 0;
+      padding: 12px;
+
+      border:
+        1px solid
+        #f0d587;
+
+      border-radius: 12px;
+
+      color: #725500;
+
+      background: #fff9df;
+
+      font-size: 0.75rem;
+      line-height: 1.45;
+    }
+
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 8px;
+
+      padding: 6px;
+
+      border:
+        1px solid
+        var(--login-border);
+
+      border-radius: 15px;
+
+      background:
+        var(--login-soft);
+    }
+
+
+    .auth-tab {
+      min-height: 43px;
+
+      border: 0;
+      border-radius: 11px;
+
+      color:
+        var(--login-muted);
+
+      background: transparent;
+
+      cursor: pointer;
+
+      font-weight: 900;
+    }
+
+
+    .auth-tab.active {
+      color:
+        var(--login-primary);
+
+      background: #ffffff;
+
+      box-shadow:
+        0 5px 15px
+        rgba(11, 87, 145, 0.1);
+    }
+
+
+    .auth-card form {
+      margin-top: 24px;
+    }
+
+
+    .auth-card h1 {
+      margin: 0;
+
+      color:
+        var(--login-primary-dark);
+
+      font-size:
+        clamp(
+          1.8rem,
+          5vw,
+          2.7rem
+        );
+    }
+
+
+    .auth-card .muted {
+      color:
+        var(--login-muted);
+
+      line-height: 1.5;
+    }
+
+
+    .form-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 15px;
+
+      margin-top: 20px;
+    }
+
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+
+    .field label {
+      color:
+        var(--login-muted);
+
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-height: 45px;
+      padding: 10px 12px;
+
+      border:
+        1px solid
+        var(--login-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--login-text);
+
+      background: #ffffff;
+      outline: none;
+    }
+
+
+    .field input:focus,
+    .field select:focus {
+      border-color:
+        var(--login-secondary);
+
+      box-shadow:
+        0 0 0 3px
+        rgba(23, 135, 201, 0.13);
+    }
+
+
+    .field small {
+      color:
+        var(--login-muted);
+
+      font-size: 0.72rem;
+    }
+
+
+    .auth-card .primary-btn {
+      min-height: 45px;
+
+      border: 0;
+      border-radius: 12px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--login-primary),
+          var(--login-secondary)
+        );
+    }
+
+
+    .message {
+      min-height: 22px;
+      margin-top: 13px;
+
+      font-size: 0.82rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+
+    .message.error {
+      color:
+        var(--login-danger);
+    }
+
+
+    .message.success {
+      color:
+        var(--login-success);
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
+
+    @media (max-width: 820px) {
+      .auth-shell {
+        grid-template-columns: 1fr;
+      }
+
+
+      .login-install-card {
+        position: static;
+        order: -1;
+      }
+
+
+      .login-install-card {
+        display: grid;
+
+        grid-template-columns:
+          minmax(0, 0.85fr)
+          minmax(0, 1.15fr);
+      }
+
+
+      .login-install-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+    }
+
+
+    @media (max-width: 620px) {
+      .login-neutral-header {
+        padding-inline: 12px;
+      }
+
+
+      .login-neutral-brand strong {
+        font-size: 0.82rem;
+      }
+
+
+      .login-neutral-brand span {
+        width: 38px;
+        height: 38px;
+      }
+
+
+      .auth-shell {
+        width:
+          min(
+            calc(100% - 16px),
+            1080px
+          );
+
+        margin-top: 16px;
+      }
+
+
+      .login-install-card {
+        display: block;
+      }
+
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .field.full {
+        grid-column: auto;
+      }
+    }
+  </style>
+
 </head>
 
 
-<body>
+<body class="acl-neutral-auth-page">
 
-  <header class="topbar login-neutral-header">
+  <header class="login-neutral-header">
 
-  <a
-    class="login-neutral-brand"
-    href="index.html"
-    aria-label="Alexandria Cardiology League home"
-  >
-    <span>
-      ACL
-    </span>
+    <a
+      class="login-neutral-brand"
+      href="index.html"
+      aria-label="Alexandria Cardiology League home"
+    >
 
-    <strong>
-      Alexandria Cardiology League
-    </strong>
-  </a>
+      <span>
+        ACL
+      </span>
 
 
-  <a
-    class="nav-btn login-home-button"
-    href="index.html"
-  >
-    Home
-  </a>
+      <strong>
+        Alexandria Cardiology League
+      </strong>
 
-</header>
+    </a>
+
+
+    <a
+      class="nav-btn login-home-button"
+      href="index.html"
+    >
+      Home
+    </a>
+
+  </header>
+
 
   <main class="auth-shell">
 
@@ -67,12 +776,16 @@
       <div
         class="auth-tabs"
         role="tablist"
+        aria-label="Account access"
       >
 
         <button
           id="signInTab"
           class="auth-tab active"
           type="button"
+          role="tab"
+          aria-controls="signInForm"
+          aria-selected="true"
         >
           Sign in
         </button>
@@ -82,6 +795,9 @@
           id="registerTab"
           class="auth-tab"
           type="button"
+          role="tab"
+          aria-controls="registerForm"
+          aria-selected="false"
         >
           Create account
         </button>
@@ -89,15 +805,12 @@
       </div>
 
 
-      <!-- =================================================
-           SIGN IN
-      ================================================== -->
-
       <form id="signInForm">
 
         <h1>
           Welcome back
         </h1>
+
 
         <p class="muted">
           Use your username or verified email and password.
@@ -111,6 +824,7 @@
             <label for="identifier">
               Username or email
             </label>
+
 
             <input
               id="identifier"
@@ -126,6 +840,7 @@
             <label for="loginPassword">
               Password
             </label>
+
 
             <input
               id="loginPassword"
@@ -174,10 +889,6 @@
       </form>
 
 
-      <!-- =================================================
-           CREATE ACCOUNT
-      ================================================== -->
-
       <form
         id="registerForm"
         hidden
@@ -186,6 +897,7 @@
         <h1>
           Create your account
         </h1>
+
 
         <p class="muted">
           Email confirmation is required once. Afterwards,
@@ -200,6 +912,7 @@
             <label for="name">
               Full name
             </label>
+
 
             <input
               id="name"
@@ -217,6 +930,7 @@
               Username
             </label>
 
+
             <input
               id="username"
               name="username"
@@ -226,6 +940,7 @@
               pattern="[A-Za-z0-9._]+"
               required
             >
+
 
             <small>
               Letters, numbers, dots and underscores only.
@@ -239,6 +954,7 @@
             <label for="email">
               Email
             </label>
+
 
             <input
               id="email"
@@ -257,6 +973,7 @@
               WhatsApp
             </label>
 
+
             <input
               id="whatsapp"
               name="whatsapp"
@@ -274,6 +991,7 @@
             <label for="position">
               Position
             </label>
+
 
             <select
               id="position"
@@ -336,6 +1054,7 @@
               Institution
             </label>
 
+
             <input
               id="institution"
               name="institution"
@@ -350,6 +1069,7 @@
             <label for="registerPassword">
               Password
             </label>
+
 
             <input
               id="registerPassword"
@@ -368,6 +1088,7 @@
             <label for="confirmPassword">
               Confirm password
             </label>
+
 
             <input
               id="confirmPassword"
@@ -411,7 +1132,88 @@
 
     </section>
 
+
+    <aside
+      id="pwaInstallSection"
+      class="login-install-card"
+    >
+
+      <div class="login-install-hero">
+
+        <span class="login-install-kicker">
+          ACL ON YOUR DEVICE
+        </span>
+
+
+        <h2>
+          Install the ACL App
+        </h2>
+
+
+        <p>
+          Add ACL to your phone, tablet, or computer for faster
+          access and the complete app experience.
+        </p>
+
+      </div>
+
+
+      <div class="login-install-content">
+
+        <ul class="login-install-benefits">
+
+          <li>
+            Open ACL directly from your Home Screen.
+          </li>
+
+          <li>
+            Use the platform in a dedicated full-screen window.
+          </li>
+
+          <li>
+            Receive competition, module, and challenge notifications.
+          </li>
+
+          <li>
+            Keep important pages available when the connection is weak.
+          </li>
+
+        </ul>
+
+
+        <button
+          id="installAclAppButton"
+          type="button"
+        >
+          Install ACL App
+        </button>
+
+
+        <p
+          id="pwaInstallStatus"
+          role="status"
+          aria-live="polite"
+        >
+          Installation is optional. You can also continue in your browser.
+        </p>
+
+
+        <p class="login-install-note">
+          On iPhone or iPad, open ACL in Safari, tap Share,
+          then choose Add to Home Screen.
+        </p>
+
+      </div>
+
+    </aside>
+
   </main>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.8.0"
+  ></script>
 
 
   <script
@@ -419,6 +1221,6 @@
     src="assets/js/auth.js?v=3.0.0"
   ></script>
 
-<body class="acl-neutral-auth-page">
+</body>
 
 </html>
