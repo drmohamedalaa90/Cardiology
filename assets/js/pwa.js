@@ -1,10 +1,10 @@
 /* =========================================================
    ACL PWA REGISTRATION AND INSTALLATION
-   Version: 1.8.0
+   Version: 1.9.0
 ========================================================= */
 
 console.log(
-  "ACL PWA v1.8.0 LOADED"
+  "ACL PWA v1.9.0 LOADED"
 );
 
 
@@ -19,6 +19,12 @@ let serviceWorkerRegistration =
 let serviceWorkerReadyPromise =
   null;
 
+let updateReloadPending =
+  false;
+
+
+let connectionBannerTimer =
+  null;
 
 /* =========================================================
    PLATFORM
@@ -196,7 +202,18 @@ function updateConnectionStatus() {
   const banner =
     createConnectionBanner();
 
+if (
+  connectionBannerTimer
+) {
+  window.clearTimeout(
+    connectionBannerTimer
+  );
 
+
+  connectionBannerTimer =
+    null;
+}
+   
   if (!navigator.onLine) {
     banner.textContent =
       "You are offline. Saved pages remain available, but new progress cannot synchronize.";
@@ -238,10 +255,15 @@ function updateConnectionStatus() {
     false;
 
 
+  connectionBannerTimer =
   window.setTimeout(
     () => {
       banner.hidden =
         true;
+
+
+      connectionBannerTimer =
+        null;
     },
     2500
   );
@@ -281,6 +303,13 @@ function showAppUpdateNotice(
   }
 
 
+  if (
+    !registration?.waiting
+  ) {
+    return;
+  }
+
+
   const notice =
     document.createElement(
       "section"
@@ -295,6 +324,18 @@ function showAppUpdateNotice(
     "acl-update-notice";
 
 
+  notice.setAttribute(
+    "role",
+    "status"
+  );
+
+
+  notice.setAttribute(
+    "aria-live",
+    "polite"
+  );
+
+
   notice.innerHTML = `
     <div>
       <strong>
@@ -302,7 +343,7 @@ function showAppUpdateNotice(
       </strong>
 
       <span>
-        Refresh to receive the latest improvements.
+        Update now to receive the latest improvements.
       </span>
     </div>
 
@@ -325,11 +366,41 @@ function showAppUpdateNotice(
   )
     ?.addEventListener(
       "click",
-      async (
+      (
         event
       ) => {
         const button =
           event.currentTarget;
+
+
+        if (
+          updateReloadPending
+        ) {
+          return;
+        }
+
+
+        const waitingWorker =
+          registration.waiting;
+
+
+        if (
+          !waitingWorker
+        ) {
+          button.textContent =
+            "Update unavailable";
+
+
+          button.disabled =
+            true;
+
+
+          return;
+        }
+
+
+        updateReloadPending =
+          true;
 
 
         button.disabled =
@@ -340,86 +411,93 @@ function showAppUpdateNotice(
           "Updating…";
 
 
-        try {
-          await registration.update();
-
-
-          if (
-            registration.waiting
-          ) {
-            registration.waiting
-              .postMessage({
-                type:
-                  "SKIP_WAITING"
-              });
-          }
-
-
-          if (
-            "caches" in
-            window
-          ) {
-            const cacheNames =
-              await caches.keys();
-
-
-            await Promise.all(
-              cacheNames
-                .filter(
-                  (cacheName) =>
-                    cacheName.startsWith(
-                      "acl-pwa-"
-                    )
-                )
-                .map(
-                  (cacheName) =>
-                    caches.delete(
-                      cacheName
-                    )
-                )
-            );
-          }
-
-
-          const refreshedUrl =
-            new URL(
-              window.location.href
-            );
-
-
-          refreshedUrl.searchParams.set(
-            "acl_refresh",
-            Date.now().toString()
-          );
-
-
-          window.location.replace(
-            refreshedUrl.toString()
-          );
-        } catch (
-          error
-        ) {
-          console.error(
-            "ACL APP UPDATE ERROR:",
-            error
-          );
-
-
-          button.disabled =
-            false;
-
-
-          button.textContent =
-            "Reload manually";
-        }
+        waitingWorker.postMessage({
+          type:
+            "SKIP_WAITING"
+        });
       }
     );
 }
 
-
 /* =========================================================
    SERVICE WORKER
 ========================================================= */
+if (
+  "serviceWorker" in
+  navigator
+) {
+  navigator.serviceWorker
+    .addEventListener(
+      "controllerchange",
+      () => {
+        if (
+          !updateReloadPending
+        ) {
+          return;
+        }
+
+
+        updateReloadPending =
+          false;
+
+
+        const refreshedUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        refreshedUrl.searchParams.set(
+          "acl_refresh",
+          Date.now()
+            .toString()
+        );
+
+
+        window.location.replace(
+          refreshedUrl.toString()
+        );
+      }
+    );
+
+
+  navigator.serviceWorker
+    .addEventListener(
+      "message",
+      (
+        event
+      ) => {
+        const message =
+          event.data ||
+          {};
+
+
+        if (
+          message.type ===
+          "ACL_SERVICE_WORKER_ACTIVATED"
+        ) {
+          console.log(
+            "ACL service worker activated:",
+            message.version ||
+            message.cacheName ||
+            "latest"
+          );
+        }
+
+
+        if (
+          message.type ===
+          "ACL_CACHE_CLEARED"
+        ) {
+          console.log(
+            "ACL cache rebuilt:",
+            message.cacheName ||
+            "current cache"
+          );
+        }
+      }
+    );
+}
 
 async function registerServiceWorker() {
   if (
@@ -457,7 +535,16 @@ async function registerServiceWorker() {
     "ACL PWA registered:",
     serviceWorkerRegistration.scope
   );
-
+   
+if (
+  serviceWorkerRegistration.waiting &&
+  navigator.serviceWorker.controller
+) {
+  showAppUpdateNotice(
+    serviceWorkerRegistration
+  );
+}
+   
 
   serviceWorkerRegistration
     .addEventListener(
@@ -478,15 +565,17 @@ async function registerServiceWorker() {
             "statechange",
             () => {
               if (
-                installingWorker.state ===
-                  "installed" &&
-                navigator.serviceWorker
-                  .controller
-              ) {
-                showAppUpdateNotice(
-                  serviceWorkerRegistration
-                );
-              }
+  installingWorker.state ===
+    "installed" &&
+  navigator.serviceWorker
+    .controller &&
+  serviceWorkerRegistration
+    .waiting
+) {
+  showAppUpdateNotice(
+    serviceWorkerRegistration
+  );
+}   
             }
           );
       }
@@ -527,7 +616,22 @@ function getServiceWorkerRegistration() {
       return navigator
         .serviceWorker
         .ready;
-    })();
+    })()
+      .catch(
+        (
+          error
+        ) => {
+          serviceWorkerReadyPromise =
+            null;
+
+
+          serviceWorkerRegistration =
+            null;
+
+
+          throw error;
+        }
+      );
 
 
   window.aclServiceWorkerReady =
@@ -536,39 +640,6 @@ function getServiceWorkerRegistration() {
 
   return serviceWorkerReadyPromise;
 }
-
-
-if (
-  "serviceWorker" in
-  navigator
-) {
-  window.addEventListener(
-    "load",
-    () => {
-      void getServiceWorkerRegistration()
-        .catch(
-          (
-            error
-          ) => {
-            console.error(
-              "ACL PWA registration failed:",
-              error
-            );
-
-
-            setInstallStatus(
-              "App installation is temporarily unavailable."
-            );
-          }
-        );
-    },
-    {
-      once:
-        true
-    }
-  );
-}
-
 
 /* =========================================================
    IOS INSTRUCTIONS
@@ -909,9 +980,13 @@ window.aclPwa = {
     requestAppInstall,
 
   isInstalled:
-    () =>
-      runningStandalone,
-
+  () =>
+    window.matchMedia(
+      "(display-mode: standalone)"
+    ).matches ||
+    window.navigator.standalone ===
+      true,
+   
   isIos:
     () =>
       isIosDevice,
