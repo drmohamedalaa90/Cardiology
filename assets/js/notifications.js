@@ -11,11 +11,11 @@ import {
   protectAndRender,
   resolveAclEdition,
   aclUrl
-} from "./session-ui.js?v=4.6.0";
+} from "./session-ui.js?v=4.7.0";
 
 
 console.log(
-  "ACL NOTIFICATIONS v2.0.3 LOADED"
+  "ACL NOTIFICATIONS v2.0.4 LOADED"
 );
 
 
@@ -1001,6 +1001,22 @@ function renderPushStatus(
 async function savePushSubscription(
   subscription
 ) {
+  if (!state.user?.id) {
+    throw new Error(
+      "Your ACL login session is not available. Sign out, sign in again, then retry."
+    );
+  }
+
+
+  if (
+    !subscription?.endpoint
+  ) {
+    throw new Error(
+      "The browser did not provide a valid push subscription endpoint."
+    );
+  }
+
+
   const p256dh =
     subscription.getKey(
       "p256dh"
@@ -1011,6 +1027,16 @@ async function savePushSubscription(
     subscription.getKey(
       "auth"
     );
+
+
+  if (
+    !p256dh ||
+    !auth
+  ) {
+    throw new Error(
+      "The browser push subscription is missing its encryption keys."
+    );
+  }
 
 
   const payload = {
@@ -1049,6 +1075,7 @@ async function savePushSubscription(
 
 
   const {
+    data,
     error
   } =
     await supabaseClient
@@ -1061,15 +1088,57 @@ async function savePushSubscription(
           onConflict:
             "endpoint"
         }
-      );
+      )
+      .select(
+        "id, user_id, endpoint, device_type, edition, is_active, updated_at"
+      )
+      .single();
 
 
   if (error) {
-    throw error;
+    console.error(
+      "PUSH SUBSCRIPTION DATABASE ERROR:",
+      {
+        message:
+          error.message,
+
+        code:
+          error.code,
+
+        details:
+          error.details,
+
+        hint:
+          error.hint
+      }
+    );
+
+
+    const enhancedError =
+      new Error(
+        error.message ||
+        "The device subscription could not be saved."
+      );
+
+
+    enhancedError.code =
+      error.code;
+
+
+    enhancedError.details =
+      error.details;
+
+
+    enhancedError.hint =
+      error.hint;
+
+
+    throw enhancedError;
   }
+
+
+  return data;
 }
-
-
 async function deactivatePushSubscription(
   endpoint
 ) {
@@ -1157,13 +1226,27 @@ async function checkPushStatus() {
   }
 
 
-  if (
+    if (
     Notification.permission ===
     "denied"
   ) {
     renderPushStatus(
       "blocked",
-      "Permission is blocked in browser or device settings."
+      "Permission is blocked for this device."
+    );
+
+
+    if (pushDescription) {
+      pushDescription.textContent =
+        isIosDevice()
+          ? "Open iPhone Settings, find ACL under Notifications, and allow notifications. Then reopen the installed ACL app."
+          : "Open this browser's site permissions or your device notification settings and allow notifications for ACL.";
+    }
+
+
+    setStatus(
+      "Notifications are blocked in browser or device settings.",
+      "warning"
     );
 
 
@@ -1352,7 +1435,9 @@ async function enablePushNotifications() {
       await savePushSubscription(
         subscription
       );
-    } catch (databaseError) {
+    } catch (
+      databaseError
+    ) {
       console.error(
         "PUSH SUBSCRIPTION SAVE ERROR:",
         databaseError
@@ -1361,13 +1446,60 @@ async function enablePushNotifications() {
 
       renderPushStatus(
         "enabled",
-        `${deviceLabel()} is enabled locally.`
+        `${deviceLabel()} has browser permission, but ACL registration is incomplete.`
       );
 
 
+      const errorCode =
+        String(
+          databaseError?.code ||
+          ""
+        ).trim();
+
+
+      const errorMessage =
+        String(
+          databaseError?.message ||
+          databaseError?.details ||
+          "Unknown database error."
+        ).trim();
+
+
+      let userMessage =
+        `Notification permission was enabled, but this device could not be registered with ACL: ${errorMessage}`;
+
+
+      if (
+        errorCode ===
+        "42501"
+      ) {
+        userMessage =
+          "Notification permission was enabled, but Supabase rejected the device registration. Sign out, sign in again, and retry. If it continues, review the push_subscriptions RLS policies.";
+      } else if (
+        errorCode ===
+        "42P01"
+      ) {
+        userMessage =
+          "The push_subscriptions database table could not be found.";
+      } else if (
+        errorCode ===
+        "23505"
+      ) {
+        userMessage =
+          "This browser subscription already exists but could not be updated. Refresh the page and try again.";
+      } else if (
+        /jwt|session|authenticated|auth/i.test(
+          errorMessage
+        )
+      ) {
+        userMessage =
+          "Your ACL login session expired. Sign out, sign in again, then enable notifications.";
+      }
+
+
       setStatus(
-        "Notification permission was enabled, but the push_subscriptions table must be created in Supabase.",
-        "warning"
+        userMessage,
+        "error"
       );
 
 
