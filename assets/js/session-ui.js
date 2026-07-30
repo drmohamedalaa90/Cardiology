@@ -3,6 +3,11 @@ import {
 } from "./supabase-client.js";
 
 
+console.log(
+  "ACL SESSION UI v4.7.0 LOADED"
+);
+
+
 /* =========================================================
    CONSTANTS
 ========================================================= */
@@ -814,6 +819,18 @@ const iconSvgs = {
     </svg>
   `,
 
+  notifications: `
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+      />
+      <path d="M10 21h4"/>
+    </svg>
+  `,
+
   contact: `
     <svg
       viewBox="0 0 24 24"
@@ -1413,6 +1430,25 @@ function buildUnifiedHeader() {
   iconNav.appendChild(
     createHeaderLink({
       type:
+        "notifications",
+
+      label:
+        "Notifications",
+
+      href:
+        editionAwarePath(
+          "notifications.html"
+        ),
+
+      className:
+        "acl-header-notifications-icon"
+    })
+  );
+
+
+  iconNav.appendChild(
+    createHeaderLink({
+      type:
         "contact",
 
       label:
@@ -1885,6 +1921,22 @@ function buildDrawer(
   menu.appendChild(
     createDrawerItem({
       type:
+        "notifications",
+
+      label:
+        "Notifications",
+
+      href:
+        editionAwarePath(
+          "notifications.html"
+        )
+    })
+  );
+
+
+  menu.appendChild(
+    createDrawerItem({
+      type:
         "contact",
 
       label:
@@ -2017,7 +2069,8 @@ function updateEditionNavigation() {
       "modules.html",
       "progress.html",
       "profile.html",
-      "settings.html"
+      "settings.html",
+      "notifications.html"
     ]);
 
 
