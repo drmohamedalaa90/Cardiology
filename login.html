@@ -104,6 +104,13 @@
     }
 
 
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+
     .login-neutral-header {
       display: flex;
       align-items: center;
@@ -463,6 +470,7 @@
 
     .auth-tabs {
       display: grid;
+
       grid-template-columns:
         repeat(
           2,
@@ -510,6 +518,20 @@
       box-shadow:
         0 5px 15px
         rgba(11, 87, 145, 0.1);
+    }
+
+
+    .auth-tab:focus-visible,
+    .login-home-button:focus-visible,
+    #installAclAppButton:focus-visible,
+    .primary-btn:focus-visible,
+    .field input:focus-visible,
+    .field select:focus-visible {
+      outline:
+        3px solid
+        rgba(23, 135, 201, 0.25);
+
+      outline-offset: 2px;
     }
 
 
@@ -670,10 +692,7 @@
       .login-install-card {
         position: static;
         order: -1;
-      }
 
-
-      .login-install-card {
         display: grid;
 
         grid-template-columns:
@@ -732,6 +751,42 @@
         grid-column: auto;
       }
     }
+
+
+    @media (max-width: 430px) {
+      .login-neutral-header {
+        gap: 8px;
+      }
+
+
+      .login-neutral-brand {
+        gap: 8px;
+      }
+
+
+      .login-neutral-brand strong {
+        max-width: 190px;
+        line-height: 1.2;
+      }
+
+
+      .login-home-button {
+        min-height: 38px;
+        padding: 7px 10px;
+
+        font-size: 0.76rem;
+      }
+
+
+      .auth-card {
+        padding: 18px;
+      }
+
+
+      .login-install-content {
+        padding: 18px;
+      }
+    }
   </style>
 
 </head>
@@ -747,7 +802,7 @@
       aria-label="Alexandria Cardiology League home"
     >
 
-      <span>
+      <span aria-hidden="true">
         ACL
       </span>
 
@@ -771,7 +826,10 @@
 
   <main class="auth-shell">
 
-    <section class="auth-card">
+    <section
+      class="auth-card"
+      aria-labelledby="accountAccessTitle"
+    >
 
       <div
         class="auth-tabs"
@@ -805,9 +863,12 @@
       </div>
 
 
-      <form id="signInForm">
+      <form
+        id="signInForm"
+        novalidate
+      >
 
-        <h1>
+        <h1 id="accountAccessTitle">
           Welcome back
         </h1>
 
@@ -828,7 +889,10 @@
 
             <input
               id="identifier"
+              name="identifier"
               autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
               required
             >
 
@@ -844,6 +908,7 @@
 
             <input
               id="loginPassword"
+              name="loginPassword"
               type="password"
               autocomplete="current-password"
               minlength="6"
@@ -891,6 +956,7 @@
 
       <form
         id="registerForm"
+        novalidate
         hidden
       >
 
@@ -901,7 +967,7 @@
 
         <p class="muted">
           Email confirmation is required once. Afterwards,
-          sign in using username or email.
+          sign in using your username or email.
         </p>
 
 
@@ -935,6 +1001,8 @@
               id="username"
               name="username"
               autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
               minlength="3"
               maxlength="30"
               pattern="[A-Za-z0-9._]+"
@@ -961,6 +1029,8 @@
               name="email"
               type="email"
               autocomplete="email"
+              autocapitalize="none"
+              spellcheck="false"
               required
             >
 
@@ -1058,6 +1128,7 @@
             <input
               id="institution"
               name="institution"
+              autocomplete="organization"
               required
             >
 
@@ -1136,6 +1207,7 @@
     <aside
       id="pwaInstallSection"
       class="login-install-card"
+      aria-labelledby="installAclTitle"
     >
 
       <div class="login-install-hero">
@@ -1145,7 +1217,7 @@
         </span>
 
 
-        <h2>
+        <h2 id="installAclTitle">
           Install the ACL App
         </h2>
 
@@ -1194,7 +1266,7 @@
           role="status"
           aria-live="polite"
         >
-          Installation is optional. You can also continue in your browser.
+          Installation is optional. You can continue in your browser.
         </p>
 
 
@@ -1212,7 +1284,7 @@
 
   <script
     type="module"
-    src="assets/js/pwa.js?v=1.8.0"
+    src="assets/js/pwa.js?v=1.9.0"
   ></script>
 
 
