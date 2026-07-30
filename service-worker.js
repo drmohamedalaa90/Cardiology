@@ -1,10 +1,10 @@
 /* =========================================================
    ACL PWA SERVICE WORKER
-   Version: 1.12.0
+   Version: 1.13.0
 ========================================================= */
 
 const CACHE_NAME =
-  "acl-pwa-v1.12.0";
+  "acl-pwa-v1.13.0";
 
 
 const CACHE_PREFIX =
@@ -36,6 +36,9 @@ const CORE_FILES = [
   `${BASE_PATH}/index.html`,
   `${BASE_PATH}/login.html`,
   `${BASE_PATH}/pathways.html`,
+  `${BASE_PATH}/modules.html`,
+  `${BASE_PATH}/progress.html`,
+  `${BASE_PATH}/notifications.html`,
   `${BASE_PATH}/offline.html`,
   `${BASE_PATH}/manifest.json`,
   `${BASE_PATH}/assets/css/main.css`,
@@ -299,9 +302,6 @@ self.addEventListener(
     event.waitUntil(
       cacheCoreFiles()
     );
-
-
-    self.skipWaiting();
   }
 );
 
@@ -346,6 +346,19 @@ self.addEventListener(
 
         self.clients.claim()
       ])
+        .then(
+          () =>
+            broadcastToClients({
+              type:
+                "ACL_SERVICE_WORKER_ACTIVATED",
+
+              version:
+                "1.13.0",
+
+              cacheName:
+                CACHE_NAME
+            })
+        )
     );
   }
 );
@@ -379,34 +392,48 @@ self.addEventListener(
       "CLEAR_ACL_CACHE"
     ) {
       event.waitUntil(
-        caches
-          .keys()
-          .then(
-            (
-              cacheNames
-            ) =>
-              Promise.all(
-                cacheNames
-                  .filter(
-                    (
-                      cacheName
-                    ) =>
-                      cacheName.startsWith(
-                        CACHE_PREFIX
-                      )
-                  )
-                  .map(
-                    (
-                      cacheName
-                    ) =>
-                      caches.delete(
-                        cacheName
-                      )
-                  )
-              )
-          )
-      );
+  caches
+    .keys()
+    .then(
+      (
+        cacheNames
+      ) =>
+        Promise.all(
+          cacheNames
+            .filter(
+              (
+                cacheName
+              ) =>
+                cacheName.startsWith(
+                  CACHE_PREFIX
+                )
+            )
+            .map(
+              (
+                cacheName
+              ) =>
+                caches.delete(
+                  cacheName
+                )
+            )
+        )
+    )
+    .then(
+      () =>
+        cacheCoreFiles()
+    )
+    .then(
+      () =>
+        broadcastToClients({
+          type:
+            "ACL_CACHE_CLEARED",
 
+          cacheName:
+            CACHE_NAME
+        })
+    )
+);
+       
 
       return;
     }
@@ -689,9 +716,11 @@ self.addEventListener(
 
 
               if (
-                networkResponse &&
-                networkResponse.ok
-              ) {
+  networkResponse &&
+  networkResponse.ok &&
+  networkResponse.type !==
+    "opaque"
+) {
                 const cache =
                   await caches.open(
                     CACHE_NAME
@@ -982,13 +1011,26 @@ self.addEventListener(
 
 
             if (
-              self.clients.openWindow
-            ) {
-              return self.clients.openWindow(
-                targetUrl
-              );
-            }
+  self.clients.openWindow
+) {
+  try {
+    return await self.clients.openWindow(
+      targetUrl
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL NOTIFICATION WINDOW OPEN ERROR:",
+      error
+    );
 
+
+    return self.clients.openWindow(
+      DEFAULT_NOTIFICATION_URL
+    );
+  }
+}
 
             return null;
           }
