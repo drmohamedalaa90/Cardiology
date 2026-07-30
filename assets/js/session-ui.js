@@ -4,7 +4,7 @@ import {
 
 
 console.log(
-  "ACL SESSION UI v4.7.0 LOADED"
+  "ACL SESSION UI v4.8.0 LOADED"
 );
 
 
@@ -19,16 +19,126 @@ const ACL_VALID_EDITIONS =
   ]);
 
 
+const ACL_EDITION_STORAGE_KEY =
+  "aclSelectedEdition";
+
+
+const ACL_EDITION_AWARE_PAGES =
+  new Set([
+    "modules.html",
+    "progress.html",
+    "profile.html",
+    "settings.html",
+    "notifications.html",
+    "competitions.html",
+    "challenge.html"
+  ]);
+
+
+/* =========================================================
+   INTERNAL STATE
+========================================================= */
+
+const sessionUiState = {
+  drawerOpen: false,
+  previousFocusedElement: null,
+  headerHydrationPromise: null,
+  navigationInitialized: false,
+  authListenerAttached: false
+};
+
+
+/* =========================================================
+   TEXT HELPERS
+========================================================= */
+
+function escapeHtml(
+  value = ""
+) {
+  return String(
+    value
+  ).replace(
+    /[&<>'"]/g,
+    (
+      character
+    ) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "'": "&#39;",
+        '"': "&quot;"
+      })[
+        character
+      ]
+  );
+}
+
+
+/* =========================================================
+   STORAGE HELPERS
+========================================================= */
+
+function readStoredEdition() {
+  try {
+    return String(
+      localStorage.getItem(
+        ACL_EDITION_STORAGE_KEY
+      ) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL EDITION STORAGE READ ERROR:",
+      error
+    );
+
+
+    return "";
+  }
+}
+
+
+function saveStoredEdition(
+  edition
+) {
+  try {
+    localStorage.setItem(
+      ACL_EDITION_STORAGE_KEY,
+      edition
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL EDITION STORAGE WRITE ERROR:",
+      error
+    );
+  }
+}
+
+
 /* =========================================================
    PATH HELPERS
 ========================================================= */
 
+function isNestedModulePage() {
+  return window.location.pathname
+    .toLowerCase()
+    .includes(
+      "/modules/"
+    );
+}
+
+
 function nestedPath(
   file
 ) {
-  return window.location.pathname.includes(
-    "/modules/"
-  )
+  return isNestedModulePage()
     ? `../../${file}`
     : file;
 }
@@ -48,6 +158,45 @@ function isValidEdition(
 }
 
 
+function normalizeEdition(
+  edition
+) {
+  const normalized =
+    String(
+      edition ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  return isValidEdition(
+    normalized
+  )
+    ? normalized
+    : "";
+}
+
+
+function internalRelativeUrl(
+  url
+) {
+  if (
+    url.origin !==
+    window.location.origin
+  ) {
+    return url.toString();
+  }
+
+
+  return (
+    `${url.pathname}` +
+    `${url.search}` +
+    `${url.hash}`
+  );
+}
+
+
 /* =========================================================
    ACTIVE EDITION
 ========================================================= */
@@ -60,23 +209,15 @@ function getActiveAclEdition() {
 
 
   const urlEdition =
-    String(
+    normalizeEdition(
       parameters.get(
         "edition"
-      ) ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
+      )
+    );
 
 
-  if (
-    isValidEdition(
-      urlEdition
-    )
-  ) {
-    localStorage.setItem(
-      "aclSelectedEdition",
+  if (urlEdition) {
+    saveStoredEdition(
       urlEdition
     );
 
@@ -86,26 +227,13 @@ function getActiveAclEdition() {
 
 
   const savedEdition =
-    String(
-      localStorage.getItem(
-        "aclSelectedEdition"
-      ) ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
+    normalizeEdition(
+      readStoredEdition()
+    );
 
 
-  if (
-    isValidEdition(
-      savedEdition
-    )
-  ) {
-    return savedEdition;
-  }
-
-
-  return null;
+  return savedEdition ||
+    null;
 }
 
 
@@ -124,38 +252,22 @@ export function resolveAclEdition({
 
 
   let edition =
-    String(
+    normalizeEdition(
       parameters.get(
         "edition"
-      ) ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  if (
-    !isValidEdition(
-      edition
-    )
-  ) {
-    edition =
-      String(
-        localStorage.getItem(
-          "aclSelectedEdition"
-        ) ||
-        ""
       )
-        .trim()
-        .toLowerCase();
+    );
+
+
+  if (!edition) {
+    edition =
+      normalizeEdition(
+        readStoredEdition()
+      );
   }
 
 
-  if (
-    !isValidEdition(
-      edition
-    )
-  ) {
+  if (!edition) {
     if (requireEdition) {
       window.location.replace(
         nestedPath(
@@ -169,8 +281,7 @@ export function resolveAclEdition({
   }
 
 
-  localStorage.setItem(
-    "aclSelectedEdition",
+  saveStoredEdition(
     edition
   );
 
@@ -183,7 +294,8 @@ export function resolveAclEdition({
 
 
   document.body.classList.add(
-    edition === "basic"
+    edition ===
+      "basic"
       ? "acl-theme-basic"
       : "acl-theme-expert"
   );
@@ -191,8 +303,10 @@ export function resolveAclEdition({
 
   if (
     updateUrl &&
-    !parameters.get(
-      "edition"
+    !normalizeEdition(
+      parameters.get(
+        "edition"
+      )
     )
   ) {
     const updatedUrl =
@@ -224,15 +338,10 @@ export function aclUrl(
   edition
 ) {
   const resolvedEdition =
-    isValidEdition(
+    normalizeEdition(
       edition
-    )
-      ? String(
-          edition
-        )
-          .trim()
-          .toLowerCase()
-      : getActiveAclEdition();
+    ) ||
+    getActiveAclEdition();
 
 
   const url =
@@ -242,9 +351,7 @@ export function aclUrl(
     );
 
 
-  if (
-    resolvedEdition
-  ) {
+  if (resolvedEdition) {
     url.searchParams.set(
       "edition",
       resolvedEdition
@@ -252,19 +359,9 @@ export function aclUrl(
   }
 
 
-  if (
-    url.origin ===
-    window.location.origin
-  ) {
-    return (
-      `${url.pathname}` +
-      `${url.search}` +
-      `${url.hash}`
-    );
-  }
-
-
-  return url.toString();
+  return internalRelativeUrl(
+    url
+  );
 }
 
 
@@ -278,9 +375,14 @@ function editionAwarePath(
 
 
   if (
-    file === "pathways.html" ||
-    file === "login.html" ||
-    file === "admin.html"
+    file ===
+      "pathways.html" ||
+    file ===
+      "login.html" ||
+    file ===
+      "admin.html" ||
+    file ===
+      "index.html"
   ) {
     return path;
   }
@@ -382,11 +484,16 @@ export async function loadProfile() {
         "id",
         user.id
       )
-      .single();
+      .maybeSingle();
 
 
   if (error) {
     throw error;
+  }
+
+
+  if (!data) {
+    return null;
   }
 
 
@@ -396,12 +503,12 @@ export async function loadProfile() {
 
 
   const displayName =
-    data?.display_name ||
-    data?.full_name ||
+    data.display_name ||
+    data.full_name ||
     metadata.display_name ||
     metadata.full_name ||
     metadata.name ||
-    data?.username ||
+    data.username ||
     user.email ||
     "ACL User";
 
@@ -409,21 +516,27 @@ export async function loadProfile() {
   return {
     ...data,
 
+    id:
+      data.id ||
+      user.id,
+
     email:
-      user.email,
+      user.email ||
+      data.email ||
+      "",
 
     display_name:
       displayName,
 
     full_name:
-      data?.full_name ||
+      data.full_name ||
       metadata.full_name ||
       metadata.name ||
       metadata.display_name ||
       displayName,
 
     avatar_url:
-      data?.avatar_url ||
+      data.avatar_url ||
       metadata.avatar_url ||
       metadata.picture ||
       metadata.photo_url ||
@@ -471,7 +584,9 @@ export function renderUserChip(
         2
       )
       .map(
-        (part) =>
+        (
+          part
+        ) =>
           part.charAt(
             0
           )
@@ -489,43 +604,130 @@ export function renderUserChip(
     );
 
 
-  chip.innerHTML =
-    profile.avatar_url
-      ? `
-        <img
-          src="${profile.avatar_url}"
-          alt=""
-        >
+  chip.replaceChildren();
 
-        <span class="user-chip-copy">
 
-          <span class="user-name">
-            ${displayName}
-          </span>
+  if (profile.avatar_url) {
+    const image =
+      document.createElement(
+        "img"
+      );
 
-          <span class="edit-profile-link">
-            / Edit profile
-          </span>
 
-        </span>
-      `
-      : `
-        <span class="avatar-placeholder">
-          ${initials}
-        </span>
+    image.src =
+      profile.avatar_url;
 
-        <span class="user-chip-copy">
 
-          <span class="user-name">
-            ${displayName}
-          </span>
+    image.alt =
+      "";
 
-          <span class="edit-profile-link">
-            / Edit profile
-          </span>
 
-        </span>
-      `;
+    image.addEventListener(
+      "error",
+      () => {
+        image.remove();
+
+
+        const placeholder =
+          document.createElement(
+            "span"
+          );
+
+
+        placeholder.className =
+          "avatar-placeholder";
+
+
+        placeholder.textContent =
+          initials;
+
+
+        chip.prepend(
+          placeholder
+        );
+      },
+      {
+        once:
+          true
+      }
+    );
+
+
+    chip.appendChild(
+      image
+    );
+  } else {
+    const placeholder =
+      document.createElement(
+        "span"
+      );
+
+
+    placeholder.className =
+      "avatar-placeholder";
+
+
+    placeholder.textContent =
+      initials;
+
+
+    chip.appendChild(
+      placeholder
+    );
+  }
+
+
+  const copy =
+    document.createElement(
+      "span"
+    );
+
+
+  copy.className =
+    "user-chip-copy";
+
+
+  const name =
+    document.createElement(
+      "span"
+    );
+
+
+  name.className =
+    "user-name";
+
+
+  name.textContent =
+    displayName;
+
+
+  const edit =
+    document.createElement(
+      "span"
+    );
+
+
+  edit.className =
+    "edit-profile-link";
+
+
+  edit.textContent =
+    "/ Edit profile";
+
+
+  copy.appendChild(
+    name
+  );
+
+
+  copy.appendChild(
+    edit
+  );
+
+
+  chip.appendChild(
+    copy
+  );
 }
 
 
@@ -554,10 +756,12 @@ async function applyAdminStatus(
 
     if (
       !rpcAdminError &&
-      rpcAdmin === true
+      rpcAdmin ===
+        true
     ) {
       profile.role =
         "admin";
+
 
       profile.is_admin =
         true;
@@ -565,7 +769,9 @@ async function applyAdminStatus(
 
       return profile;
     }
-  } catch (error) {
+  } catch (
+    error
+  ) {
     console.warn(
       "Could not verify ACL administrator status:",
       error
@@ -574,15 +780,13 @@ async function applyAdminStatus(
 
 
   profile.is_admin =
-    profile?.role ===
+    profile.role ===
       "admin" ||
-    profile?.role ===
+    profile.role ===
       "administrator";
 
 
-  if (
-    profile.is_admin
-  ) {
+  if (profile.is_admin) {
     profile.role =
       "admin";
   }
@@ -610,8 +814,23 @@ export async function protectAndRender(
   }
 
 
-  let profile =
-    await loadProfile();
+  let profile;
+
+
+  try {
+    profile =
+      await loadProfile();
+  } catch (
+    error
+  ) {
+    console.error(
+      "ACL PROFILE LOAD ERROR:",
+      error
+    );
+
+
+    return null;
+  }
 
 
   if (!profile) {
@@ -674,6 +893,9 @@ export async function protectAndRender(
   buildUnifiedHeader();
 
 
+  updateEditionNavigation();
+
+
   return profile;
 }
 
@@ -683,9 +905,21 @@ export async function protectAndRender(
 ========================================================= */
 
 export async function signOut() {
-  await supabaseClient
-    .auth
-    .signOut();
+  closeAclDrawer();
+
+
+  try {
+    await supabaseClient
+      .auth
+      .signOut();
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL SIGN OUT ERROR:",
+      error
+    );
+  }
 
 
   window.location.replace(
@@ -913,7 +1147,7 @@ function createHeaderLink({
   if (
     href &&
     element instanceof
-    HTMLAnchorElement
+      HTMLAnchorElement
   ) {
     element.href =
       href;
@@ -964,15 +1198,45 @@ function createDrawerItem({
     }`;
 
 
-  item.innerHTML = `
-    <span class="acl-drawer-item-icon">
-      ${iconSvgs[type] || ""}
-    </span>
+  const icon =
+    document.createElement(
+      "span"
+    );
 
-    <span class="acl-drawer-item-label">
-      ${label}
-    </span>
-  `;
+
+  icon.className =
+    "acl-drawer-item-icon";
+
+
+  icon.innerHTML =
+    iconSvgs[
+      type
+    ] ||
+    "";
+
+
+  const labelElement =
+    document.createElement(
+      "span"
+    );
+
+
+  labelElement.className =
+    "acl-drawer-item-label";
+
+
+  labelElement.textContent =
+    label;
+
+
+  item.appendChild(
+    icon
+  );
+
+
+  item.appendChild(
+    labelElement
+  );
 
 
   item.addEventListener(
@@ -985,7 +1249,8 @@ function createDrawerItem({
         typeof action ===
         "function"
       ) {
-        action();
+        void action();
+
 
         return;
       }
@@ -1009,33 +1274,92 @@ function createDrawerItem({
 ========================================================= */
 
 function openAclDrawer() {
+  const drawer =
+    document.querySelector(
+      ".acl-side-drawer"
+    );
+
+
+  const overlay =
+    document.querySelector(
+      ".acl-drawer-overlay"
+    );
+
+
+  if (
+    !drawer ||
+    !overlay
+  ) {
+    return;
+  }
+
+
+  sessionUiState.drawerOpen =
+    true;
+
+
+  sessionUiState.previousFocusedElement =
+    document.activeElement instanceof
+      HTMLElement
+      ? document.activeElement
+      : null;
+
+
   document.body.classList.add(
     "acl-drawer-open"
   );
 
 
-  document
-    .querySelector(
-      ".acl-side-drawer"
-    )
-    ?.setAttribute(
-      "aria-hidden",
-      "false"
-    );
+  drawer.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+
+  overlay.setAttribute(
+    "aria-hidden",
+    "false"
+  );
 
 
   document
     .querySelector(
-      ".acl-drawer-overlay"
+      ".acl-menu-button"
     )
     ?.setAttribute(
-      "aria-hidden",
-      "false"
+      "aria-expanded",
+      "true"
     );
+
+
+  window.setTimeout(
+    () => {
+      drawer
+        .querySelector(
+          ".acl-drawer-close"
+        )
+        ?.focus();
+    },
+    60
+  );
 }
 
 
 function closeAclDrawer() {
+  if (
+    !sessionUiState.drawerOpen &&
+    !document.body.classList.contains(
+      "acl-drawer-open"
+    )
+  ) {
+    return;
+  }
+
+
+  sessionUiState.drawerOpen =
+    false;
+
+
   document.body.classList.remove(
     "acl-drawer-open"
   );
@@ -1059,6 +1383,25 @@ function closeAclDrawer() {
       "aria-hidden",
       "true"
     );
+
+
+  document
+    .querySelector(
+      ".acl-menu-button"
+    )
+    ?.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+
+
+  sessionUiState
+    .previousFocusedElement
+    ?.focus?.();
+
+
+  sessionUiState.previousFocusedElement =
+    null;
 }
 
 
@@ -1078,7 +1421,8 @@ function createRollingBrand() {
 
 
   const editionLabel =
-    edition === "basic"
+    edition ===
+      "basic"
       ? "THE BASIC EDITION"
       : "THE EXPERT EDITION";
 
@@ -1124,7 +1468,9 @@ function createRollingBrand() {
     </span>
 
     <strong class="acl-expert-edition acl-edition-title">
-      ${editionLabel}
+      ${escapeHtml(
+        editionLabel
+      )}
     </strong>
   `;
 
@@ -1169,9 +1515,7 @@ function buildUnifiedHeader() {
     getActiveAclEdition();
 
 
-  if (
-    activeEdition
-  ) {
+  if (activeEdition) {
     document.body.classList.remove(
       "acl-theme-basic",
       "acl-theme-expert",
@@ -1221,7 +1565,9 @@ function buildUnifiedHeader() {
     topbar.children
   )
     .forEach(
-      (child) => {
+      (
+        child
+      ) => {
         if (
           !child.classList.contains(
             "acl-header-layout"
@@ -1284,6 +1630,18 @@ function buildUnifiedHeader() {
   menuButton.setAttribute(
     "aria-label",
     "Open navigation menu"
+  );
+
+
+  menuButton.setAttribute(
+    "aria-haspopup",
+    "true"
+  );
+
+
+  menuButton.setAttribute(
+    "aria-expanded",
+    "false"
   );
 
 
@@ -1549,6 +1907,10 @@ function buildDrawer(
     ?.remove();
 
 
+  sessionUiState.drawerOpen =
+    false;
+
+
   const overlay =
     document.createElement(
       "button"
@@ -1594,6 +1956,12 @@ function buildDrawer(
   drawer.setAttribute(
     "aria-hidden",
     "true"
+  );
+
+
+  drawer.setAttribute(
+    "aria-label",
+    "ACL navigation menu"
   );
 
 
@@ -1655,7 +2023,9 @@ function buildDrawer(
         2
       )
       .map(
-        (part) =>
+        (
+          part
+        ) =>
           part.charAt(
             0
           )
@@ -1817,6 +2187,12 @@ function buildDrawer(
 
   menu.className =
     "acl-drawer-menu";
+
+
+  menu.setAttribute(
+    "aria-label",
+    "ACL navigation links"
+  );
 
 
   if (isAdmin) {
@@ -1992,10 +2368,6 @@ function buildDrawer(
    HEADER PROFILE HYDRATION
 ========================================================= */
 
-let aclHeaderHydrationPromise =
-  null;
-
-
 async function hydrateHeaderProfile() {
   if (
     window.aclCurrentProfile
@@ -2005,13 +2377,15 @@ async function hydrateHeaderProfile() {
 
 
   if (
-    aclHeaderHydrationPromise
+    sessionUiState
+      .headerHydrationPromise
   ) {
-    return aclHeaderHydrationPromise;
+    return sessionUiState
+      .headerHydrationPromise;
   }
 
 
-  aclHeaderHydrationPromise =
+  sessionUiState.headerHydrationPromise =
     (async () => {
       try {
         let profile =
@@ -2034,7 +2408,9 @@ async function hydrateHeaderProfile() {
 
 
         return profile;
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.warn(
           "Could not hydrate header profile:",
           error
@@ -2043,10 +2419,18 @@ async function hydrateHeaderProfile() {
 
         return null;
       }
-    })();
+    })()
+      .finally(
+        () => {
+          sessionUiState
+            .headerHydrationPromise =
+              null;
+        }
+      );
 
 
-  return aclHeaderHydrationPromise;
+  return sessionUiState
+    .headerHydrationPromise;
 }
 
 
@@ -2064,22 +2448,14 @@ function updateEditionNavigation() {
   }
 
 
-  const editionPages =
-    new Set([
-      "modules.html",
-      "progress.html",
-      "profile.html",
-      "settings.html",
-      "notifications.html"
-    ]);
-
-
   document
     .querySelectorAll(
       "a[href]"
     )
     .forEach(
-      (link) => {
+      (
+        link
+      ) => {
         const href =
           link.getAttribute(
             "href"
@@ -2092,24 +2468,54 @@ function updateEditionNavigation() {
             "#"
           ) ||
           href.startsWith(
-            "http"
+            "http:"
+          ) ||
+          href.startsWith(
+            "https:"
           ) ||
           href.startsWith(
             "mailto:"
           ) ||
           href.startsWith(
             "tel:"
+          ) ||
+          href.startsWith(
+            "javascript:"
           )
         ) {
           return;
         }
 
 
-        const url =
-          new URL(
+        let url;
+
+
+        try {
+          url =
+            new URL(
+              href,
+              window.location.href
+            );
+        } catch (
+          error
+        ) {
+          console.warn(
+            "ACL INVALID NAVIGATION LINK:",
             href,
-            window.location.href
+            error
           );
+
+
+          return;
+        }
+
+
+        if (
+          url.origin !==
+          window.location.origin
+        ) {
+          return;
+        }
 
 
         const pageName =
@@ -2121,7 +2527,7 @@ function updateEditionNavigation() {
 
 
         if (
-          !editionPages.has(
+          !ACL_EDITION_AWARE_PAGES.has(
             pageName
           )
         ) {
@@ -2137,10 +2543,8 @@ function updateEditionNavigation() {
 
         link.setAttribute(
           "href",
-          (
-            `${url.pathname}` +
-            `${url.search}` +
-            `${url.hash}`
+          internalRelativeUrl(
+            url
           )
         );
       }
@@ -2149,12 +2553,65 @@ function updateEditionNavigation() {
 
 
 /* =========================================================
-   INITIALIZATION
+   AUTH STATE
 ========================================================= */
 
-let navigationInitialized =
-  false;
+function attachAuthStateListener() {
+  if (
+    sessionUiState
+      .authListenerAttached
+  ) {
+    return;
+  }
 
+
+  sessionUiState.authListenerAttached =
+    true;
+
+
+  supabaseClient
+    .auth
+    .onAuthStateChange(
+      (
+        event,
+        session
+      ) => {
+        if (
+          event ===
+            "SIGNED_OUT" ||
+          !session
+        ) {
+          window.aclCurrentProfile =
+            null;
+
+
+          closeAclDrawer();
+
+
+          return;
+        }
+
+
+        if (
+          event ===
+            "TOKEN_REFRESHED" ||
+          event ===
+            "USER_UPDATED"
+        ) {
+          window.aclCurrentProfile =
+            null;
+
+
+          void initializeNavigation();
+        }
+      }
+    );
+}
+
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
 
 async function initializeNavigation() {
   await hydrateHeaderProfile();
@@ -2167,19 +2624,22 @@ async function initializeNavigation() {
 
 
   if (
-    navigationInitialized
+    sessionUiState
+      .navigationInitialized
   ) {
     return;
   }
 
 
-  navigationInitialized =
+  sessionUiState.navigationInitialized =
     true;
 
 
   document.addEventListener(
     "keydown",
-    (event) => {
+    (
+      event
+    ) => {
       if (
         event.key ===
         "Escape"
@@ -2188,12 +2648,21 @@ async function initializeNavigation() {
       }
     }
   );
+
+
+  attachAuthStateListener();
 }
 
 
 document.addEventListener(
   "DOMContentLoaded",
-  initializeNavigation
+  () => {
+    void initializeNavigation();
+  },
+  {
+    once:
+      true
+  }
 );
 
 
