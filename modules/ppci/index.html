@@ -6,569 +6,945 @@
 
   <meta charset="utf-8">
 
-
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
   >
-
 
   <meta
     name="referrer"
     content="strict-origin-when-cross-origin"
   >
 
-
   <meta
     name="theme-color"
-    content="#0b5791"
+    content="#8f2030"
   >
-
-
-  <meta
-    name="description"
-    content="Choose the Basic or Expert Alexandria Cardiology League learning pathway."
-  >
-
-
-  <meta
-    name="apple-mobile-web-app-capable"
-    content="yes"
-  >
-
-
-  <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="default"
-  >
-
-
-  <meta
-    name="apple-mobile-web-app-title"
-    content="ACL"
-  >
-
-
-  <meta
-    name="mobile-web-app-capable"
-    content="yes"
-  >
-
 
   <title>
-    Choose Your ACL Pathway
+    Primary PCI Fundamentals | ACL Expert Edition
   </title>
 
-
   <link
-    rel="manifest"
-    href="manifest.json"
+    rel="stylesheet"
+    href="../../assets/css/main.css?v=5.0.1"
   >
-
-
-  <link
-    rel="icon"
-    href="assets/images/acl-icon-192.png"
-    type="image/png"
-  >
-
-
-  <link
-    rel="apple-touch-icon"
-    href="assets/images/acl-icon-192.png"
-  >
-
 
   <link
     rel="stylesheet"
-    href="assets/css/main.css?v=5.0.1"
+    href="../../assets/css/learning-feedback.css?v=4.1.2"
   >
-
-
-  <link
-    rel="stylesheet"
-    href="assets/css/pathways.css?v=3.2.0"
-  >
-
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 
   <style>
     [hidden] {
       display: none !important;
     }
 
-
-    .pathways-access-links {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-
-      margin-top: 18px;
+    body {
+      min-height: 100vh;
     }
 
-
-    .pathways-access-links a {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-
-      min-height: 42px;
-      padding: 9px 15px;
-
-      border:
-        1px solid
-        rgba(11, 87, 145, 0.2);
-
-      border-radius: 12px;
-
-      color: #0b5791;
-      background: #ffffff;
-
-      font-size: 0.8rem;
-      font-weight: 850;
-      text-decoration: none;
+    body.ppci-modal-open,
+    body.acl-settings-open {
+      overflow: hidden;
     }
 
+    /*
+     * Keep the header area visible while session-ui.js
+     * creates the unified ACL header.
+     */
 
-    .pathways-access-links a:first-child {
-      border-color: transparent;
-
-      color: #ffffff;
-
-      background:
-        linear-gradient(
-          135deg,
-          #0b5791,
-          #1787c9
-        );
+    .topbar {
+      min-height: 82px;
+      opacity: 1;
+      visibility: visible;
     }
 
+    .topbar > :not(.acl-header-layout) {
+      display: none !important;
+    }
 
-    .pwa-install-section {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
+    .topbar .acl-header-layout {
+      display: grid;
+    }
 
-      margin-top: 24px;
-      padding: 20px;
+    .ppci-learning-shell {
+      width: min(1050px, calc(100% - 32px));
+      margin: 30px auto 60px;
+    }
 
-      border:
-        1px solid
-        #cfe2f1;
+    /* =====================================================
+       MODULE HEADER
+    ===================================================== */
 
-      border-radius: 20px;
+    .ppci-stage {
+      margin-bottom: 18px;
+      overflow: hidden;
+
+      border: 1px solid #df9ca5;
+      border-radius: 22px;
 
       background:
         linear-gradient(
           145deg,
           #ffffff,
-          #f1f9ff
+          #fff4f5
         );
 
       box-shadow:
-        0 12px 30px
-        rgba(11, 87, 145, 0.08);
+        0 13px 34px
+        rgba(117, 24, 35, 0.1);
     }
 
-
-    .pwa-install-copy {
+    .ppci-stage-top {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 14px;
-    }
 
+      padding: 15px 20px;
 
-    .pwa-install-icon {
-      display: grid;
-      place-items: center;
-
-      width: 52px;
-      height: 52px;
-      flex: 0 0 52px;
-
-      border-radius: 16px;
-
-      background: #eaf6ff;
-
-      font-size: 1.45rem;
-    }
-
-
-    .pwa-install-copy h2 {
-      margin: 5px 0;
-
-      color: #073d6d;
-
-      font-size: 1.08rem;
-    }
-
-
-    .pwa-install-copy p {
-      margin: 0;
-
-      color: #667f94;
-
-      font-size: 0.8rem;
-      line-height: 1.5;
-    }
-
-
-    .pwa-install-button {
-      min-height: 44px;
-      padding: 10px 17px;
-      flex: 0 0 auto;
-
-      border: 0;
-      border-radius: 12px;
+      border-bottom: 1px solid #edc2c7;
 
       color: #ffffff;
 
       background:
         linear-gradient(
-          135deg,
-          #0b5791,
-          #1787c9
+          100deg,
+          #8f2030,
+          #c74755
         );
+    }
 
-      cursor: pointer;
+    .ppci-stage-label {
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.82;
+    }
 
+    .ppci-stage-top strong {
+      font-size: clamp(1rem, 2vw, 1.35rem);
+    }
+
+    .ppci-stage-body {
+      padding: 22px 24px;
+    }
+
+    .ppci-stage-body h1 {
+      margin: 0;
+
+      color: #8f2030;
+
+      font-size: clamp(1.65rem, 4vw, 2.8rem);
+      line-height: 1.05;
+    }
+
+    .ppci-stage-body p {
+      margin: 10px 0 0;
+
+      color: #5d7185;
+      line-height: 1.5;
+    }
+
+    /* =====================================================
+       QUIZ CARD
+    ===================================================== */
+
+    .ppci-learning-card {
+      padding: clamp(20px, 4vw, 36px) !important;
+
+      border: 1px solid #d4e1ec !important;
+      border-radius: 22px !important;
+
+      background: #ffffff !important;
+
+      box-shadow:
+        0 18px 42px
+        rgba(13, 59, 104, 0.1) !important;
+    }
+
+    .ppci-quiz-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .ppci-question-count {
+      color: #173f67;
       font-weight: 900;
     }
 
+    .ppci-save-pill {
+      display: inline-flex;
+      align-items: center;
 
-    .pwa-install-button:disabled {
-      opacity: 0.6;
-      cursor: wait;
+      min-height: 36px;
+      padding: 7px 13px;
+
+      border: 1px solid #b8d9ef;
+      border-radius: 999px;
+
+      color: #164e79;
+      background: #edf8ff;
+
+      font-size: 0.8rem;
+      font-weight: 900;
     }
 
+    .ppci-save-pill.error {
+      border-color: #e5a8ae;
 
-    .pwa-install-status {
-      min-height: 20px;
-      margin: 11px 0 0;
+      color: #a32635;
+      background: #fff1f2;
+    }
 
-      color: #667f94;
+    .ppci-timing-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
 
-      font-size: 0.75rem;
+      margin-top: 12px;
+    }
+
+    .ppci-active-time,
+    .ppci-timer {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 11px;
+
+      border: 1px solid #d5e3ed;
+      border-radius: 999px;
+
+      color: #45657f;
+      background: #f8fbfd;
+
+      font-size: 0.78rem;
+      font-weight: 850;
+    }
+
+    .ppci-timer.warning {
+      border-color: #e8bd74;
+      color: #865606;
+      background: #fff8e8;
+    }
+
+    .ppci-timer.danger {
+      border-color: #e5a8ae;
+      color: #a32635;
+      background: #fff1f2;
+    }
+
+    .ppci-progress {
+      height: 9px;
+      margin: 15px 0 26px;
+      overflow: hidden;
+
+      border-radius: 999px;
+      background: #e6eef5;
+    }
+
+    .ppci-progress span {
+      display: block;
+
+      width: 0;
+      height: 100%;
+
+      border-radius: inherit;
+
+      background:
+        linear-gradient(
+          90deg,
+          #9b2636,
+          #e85d68
+        );
+
+      transition: width 0.28s ease;
+    }
+
+    .ppci-topic-tools-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+
+      margin-bottom: 20px;
+    }
+
+    .ppci-topic {
+      display: inline-flex;
+      align-items: center;
+
+      padding: 7px 12px;
+
+      border: 1px solid #dc9ca5;
+      border-radius: 999px;
+
+      color: #8f2030;
+      background: #fff2f3;
+
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
+    .ppci-question-title {
+      margin: 18px 0 22px;
+
+      color: #082747;
+
+      font-size: clamp(1.2rem, 2vw, 1.65rem);
+      font-weight: 900;
+      line-height: 1.28;
+    }
+
+    /* =====================================================
+       ANSWER OPTIONS
+    ===================================================== */
+
+    .ppci-options {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+
+      width: 100%;
+      margin: 20px 0;
+    }
+
+    .ppci-option {
+      display: grid;
+      grid-template-columns:
+        auto
+        auto
+        minmax(0, 1fr);
+
+      align-items: center;
+      gap: 13px;
+
+      width: 100%;
+      min-height: 62px;
+      padding: 14px 17px;
+
+      border: 1px solid #b9cee1;
+      border-radius: 14px;
+
+      color: #102f4d;
+      background: #ffffff;
+
+      text-align: left;
+      cursor: pointer;
+
+      box-shadow:
+        0 4px 12px
+        rgba(14, 63, 113, 0.035);
+
+      transition:
+        transform 0.16s ease,
+        border-color 0.16s ease,
+        background 0.16s ease,
+        box-shadow 0.16s ease;
+    }
+
+    .ppci-option:hover:not(:disabled) {
+      transform: translateY(-1px);
+
+      border-color: #538cb7;
+      background: #f5fbff;
+
+      box-shadow:
+        0 7px 17px
+        rgba(14, 63, 113, 0.08);
+    }
+
+    .ppci-option-key {
+      display: grid;
+      place-items: center;
+
+      width: 34px;
+      height: 34px;
+
+      border-radius: 50%;
+
+      color: #ffffff;
+      background: #8f2030;
+
+      font-size: 0.86rem;
+      font-weight: 900;
+    }
+
+    .ppci-option-radio {
+      display: block;
+
+      width: 18px;
+      height: 18px;
+
+      border: 2px solid #a4b9ca;
+      border-radius: 50%;
+
+      background: #ffffff;
+    }
+
+    .ppci-option-copy {
+      color: #102f4d;
+
+      font-size: 1rem;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .ppci-option.selected {
+      border-color: #8f2030;
+      background: #fff5f6;
+
+      box-shadow:
+        0 0 0 3px
+        rgba(143, 32, 48, 0.09);
+    }
+
+    .ppci-option.selected .ppci-option-radio {
+      border: 5px solid #8f2030;
+    }
+
+    .ppci-option.correct {
+      border-color: #29945a;
+      background: #effbf4;
+    }
+
+    .ppci-option.correct .ppci-option-key {
+      background: #21834e;
+    }
+
+    .ppci-option.incorrect {
+      border-color: #c84552;
+      background: #fff1f2;
+    }
+
+    .ppci-option.incorrect .ppci-option-key {
+      background: #b73240;
+    }
+
+    .ppci-option.is-eliminated {
+      opacity: 0.4;
+      filter: grayscale(0.8);
+      text-decoration: line-through;
+      pointer-events: none;
+    }
+
+    /* =====================================================
+       LIFELINES
+    ===================================================== */
+
+    .ppci-lifelines {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      margin-left: auto;
+      padding: 5px 7px;
+
+      border: 1px solid rgba(160, 38, 53, 0.26);
+      border-radius: 999px;
+
+      background: #fff8f8;
+
+      box-shadow:
+        0 7px 18px
+        rgba(111, 20, 32, 0.07);
+    }
+
+    .ppci-lifelines-label {
+      padding-left: 6px;
+
+      color: #8f2030;
+
+      font-size: 0.65rem;
+      font-weight: 950;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .ppci-lifeline-button {
+      position: relative;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      width: 40px;
+      min-width: 40px;
+      height: 40px;
+      padding: 3px;
+
+      border: 1px solid rgba(160, 38, 53, 0.25);
+      border-radius: 999px;
+
+      color: #8f2030;
+      background: #ffffff;
+
+      cursor: pointer;
+    }
+
+    .ppci-lifeline-button:hover:not(:disabled) {
+      border-color: #c5404f;
+      transform: translateY(-1px);
+    }
+
+    .ppci-lifeline-button.is-used {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .ppci-lifeline-icon {
+      display: grid;
+      place-items: center;
+
+      width: 32px;
+      height: 32px;
+
+      border-radius: 50%;
+      background: #fff0f1;
+    }
+
+    .ppci-corazon-avatar {
+      display: block;
+
+      width: 32px;
+      height: 32px;
+
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+
+      object-fit: cover;
+      object-position: center top;
+    }
+
+    .ppci-lifeline-check {
+      position: absolute;
+      right: -1px;
+      bottom: -1px;
+
+      display: grid;
+      place-items: center;
+
+      width: 17px;
+      height: 17px;
+
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+
+      color: #ffffff;
+      background: #178547;
+
+      font-size: 0.62rem;
+      font-weight: 900;
+    }
+
+    .ppci-lifeline-counter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-width: 42px;
+      height: 30px;
+      padding: 0 8px;
+
+      border-radius: 999px;
+
+      color: #ffffff;
+      background: #8f2030;
+
+      font-size: 0.7rem;
+      font-weight: 900;
+    }
+
+    .ppci-lifeline-response {
+      margin: -6px 0 20px;
+      padding: 14px 17px;
+
+      border: 1px solid rgba(188, 52, 68, 0.3);
+      border-left: 5px solid #bc3444;
+      border-radius: 14px;
+
+      background: #fff6f7;
+    }
+
+    .ppci-lifeline-response strong {
+      color: #8f2030;
+    }
+
+    .ppci-lifeline-response p {
+      margin: 7px 0 0;
+
+      color: #263c53;
+      line-height: 1.55;
+    }
+
+    /* =====================================================
+       CONFIDENCE
+    ===================================================== */
+
+    .ppci-confidence-panel {
+      margin-top: 22px;
+      padding: 20px;
+
+      border: 1px solid #c7d9e8;
+      border-radius: 18px;
+
+      background:
+        linear-gradient(
+          145deg,
+          #f8fcff,
+          #eef7fc
+        );
+    }
+
+    .ppci-confidence-panel h3 {
+      margin: 0;
+
+      color: #102f4d;
+    }
+
+    .ppci-confidence-panel p {
+      margin: 7px 0 17px;
+
+      color: #60768a;
       line-height: 1.45;
+    }
+
+    .ppci-confidence-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .ppci-confidence-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+
+      min-height: 52px;
+      padding: 12px 16px;
+
+      border: 1px solid #a9c2d6;
+      border-radius: 13px;
+
+      color: #173f67;
+      background: #ffffff;
+
+      font-size: 0.94rem;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .ppci-confidence-button.high {
+      border-color: #8f2030;
+      color: #8f2030;
+    }
+
+    .ppci-confidence-button.low {
+      border-color: #4d7e9f;
+      color: #295d80;
+    }
+
+    .ppci-confidence-selection {
+      margin-top: 12px;
+
+      color: #60768a;
+
+      font-size: 0.82rem;
+      font-weight: 800;
       text-align: center;
     }
 
+    /* =====================================================
+       FEEDBACK
+    ===================================================== */
 
-    @media (max-width: 650px) {
-      .pwa-install-section {
-        align-items: stretch;
-        flex-direction: column;
-      }
+    .ppci-answer-feedback {
+      display: grid;
+      grid-template-columns:
+        minmax(140px, 220px)
+        minmax(0, 1fr);
 
+      align-items: center;
+      gap: 24px;
 
-      .pwa-install-button {
-        width: 100%;
-      }
+      margin-top: 24px;
+      padding: 22px;
+
+      border-radius: 18px;
     }
-  </style>
 
-</head>
+    .ppci-answer-feedback.correct {
+      border: 1px solid #91d1aa;
+      background: #effbf4;
+    }
 
+    .ppci-answer-feedback.incorrect {
+      border: 1px solid #e3a3aa;
+      background: #fff2f3;
+    }
 
-<body class="acl-pathways-page">
+    .ppci-feedback-mascot {
+      display: grid;
+      place-items: center;
 
-  <main class="pathways-shell">
+      min-height: 170px;
+    }
 
-    <section class="pathways-heading">
+    .ppci-feedback-mascot img {
+      display: block;
 
-      <span class="pathways-kicker">
-        ALEXANDRIA CARDIOLOGY LEAGUE
-      </span>
+      width: min(175px, 100%);
+      max-height: 190px;
 
+      object-fit: contain;
+    }
 
-      <h1>
-        Choose your learning pathway
-      </h1>
+    .ppci-feedback-copy h3 {
+      margin: 5px 0 10px;
 
+      color: #102f4d;
+      font-size: 1.45rem;
+    }
 
-      <p>
-        One account. Two pathways. Your progress stays connected.
-      </p>
+    .ppci-feedback-kicker {
+      color: #8f2030;
 
-    </section>
+      font-size: 0.72rem;
+      font-weight: 950;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
 
+    .ppci-feedback-copy p {
+      color: #344d64;
+      line-height: 1.6;
+    }
 
-    <section
-      class="pathways-grid"
-      aria-label="ACL learning pathways"
-    >
+    .ppci-answer-score {
+      display: inline-flex;
+      align-items: center;
 
-      <!-- ===============================================
-           BASIC EDITION
-      ================================================ -->
+      margin-top: 10px;
+      padding: 6px 11px;
 
-      <a
-        class="pathway-card pathway-basic"
-        data-edition="basic"
-        href="modules.html?edition=basic"
-        aria-label="Enter ACL Basic Edition"
-      >
+      border-radius: 999px;
 
-        <div
-          class="pathway-card-decoration"
-          aria-hidden="true"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+      color: #173f67;
+      background: rgba(255, 255, 255, 0.8);
 
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
 
-        <div
-          class="pathway-icon"
-          aria-hidden="true"
-        >
-          🎓
-        </div>
+    .ppci-explanation {
+      margin-top: 14px;
+      padding: 14px 16px;
 
+      border: 1px solid rgba(54, 99, 135, 0.16);
+      border-radius: 12px;
 
-        <span class="pathway-label">
-          ACL
-        </span>
+      background: rgba(255, 255, 255, 0.7);
+    }
 
+    .ppci-review-flashcard {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
 
-        <h2>
-          THE BASIC EDITION
-        </h2>
+      margin-bottom: 14px;
+      padding: 10px 15px;
 
+      border: 1px solid #b33344;
+      border-radius: 999px;
 
-        <p class="pathway-tagline">
-          Build strong cardiovascular foundations with clear,
-          structured, and clinically relevant learning.
-        </p>
+      color: #8f2030;
+      background: #ffffff;
 
+      font-weight: 900;
+      cursor: pointer;
+    }
 
-        <div class="pathway-audience">
+    .ppci-review-flashcard:hover {
+      color: #ffffff;
+      background: #8f2030;
+    }
 
-          <span>
-            Medical students
-          </span>
+    .ppci-actions {
+      display: flex;
+      justify-content: flex-end;
 
+      margin-top: 22px;
+    }
 
-          <span>
-            Interns
-          </span>
+    /* =====================================================
+       RESULT
+    ===================================================== */
 
+    .ppci-result {
+      padding: 20px;
+      text-align: center;
+    }
 
-          <span>
-            General practitioners
-          </span>
+    .ppci-result-icon {
+      display: grid;
+      place-items: center;
 
+      width: 78px;
+      height: 78px;
+      margin: 0 auto 14px;
 
-          <span>
-            Junior residents
-          </span>
+      border-radius: 50%;
 
-        </div>
+      color: #8f2030;
+      background: #fff0f1;
 
+      font-size: 2.3rem;
+      font-weight: 900;
+    }
 
-        <div class="pathway-action">
+    .ppci-result h2 {
+      color: #102f4d;
+    }
 
-          <strong>
-            Enter Basic Edition
-          </strong>
+    .ppci-result-score {
+      margin: 15px 0;
 
+      color: #8f2030;
 
-          <span aria-hidden="true">
-            →
-          </span>
+      font-size: 1.4rem;
+      font-weight: 900;
+    }
 
-        </div>
+    .ppci-result-detail {
+      margin-top: 8px;
 
-      </a>
+      color: #5d7185;
+      font-weight: 800;
+    }
 
+    .ppci-result-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
 
-      <!-- ===============================================
-           EXPERT EDITION
-      ================================================ -->
+      margin-top: 20px;
+    }
 
-      <a
-        class="pathway-card pathway-expert"
-        data-edition="expert"
-        href="modules.html?edition=expert"
-        aria-label="Enter ACL Expert Edition"
-      >
+    /* =====================================================
+       MODALS
+    ===================================================== */
 
-        <div
-          class="pathway-card-decoration"
-          aria-hidden="true"
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+    .ppci-flashcard-modal,
+    .acl-settings-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 11000;
 
+      display: grid;
+      place-items: center;
 
-        <div
-          class="pathway-icon"
-          aria-hidden="true"
-        >
-          🩺
-        </div>
+      padding: 22px;
+    }
 
+    .ppci-flashcard-backdrop,
+    .acl-settings-backdrop {
+      position: absolute;
+      inset: 0;
 
-        <span class="pathway-label">
-          ACL
-        </span>
+      width: 100%;
+      height: 100%;
 
+      border: 0;
 
-        <h2>
-          THE EXPERT EDITION
-        </h2>
+      background: rgba(6, 24, 42, 0.74);
 
+      backdrop-filter: blur(5px);
+      cursor: pointer;
+    }
 
-        <p class="pathway-tagline">
-          Advanced evidence-based cardiology, intervention,
-          trials, guidelines, and expert clinical decisions.
-        </p>
+    .ppci-flashcard-panel,
+    .acl-settings-panel {
+      position: relative;
+      z-index: 1;
 
+      width: min(860px, 100%);
+      max-height: 90vh;
+      overflow: hidden;
 
-        <div class="pathway-audience">
+      border: 1px solid #d7e2ec;
+      border-radius: 24px;
 
-          <span>
-            Cardiology residents
-          </span>
+      background: #ffffff;
 
+      box-shadow:
+        0 28px 80px
+        rgba(0, 20, 40, 0.34);
+    }
 
-          <span>
-            Specialists
-          </span>
+    .acl-settings-panel {
+      width: min(620px, 100%);
+    }
 
+    .ppci-flashcard-head,
+    .acl-settings-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
 
-          <span>
-            Academic cardiologists
-          </span>
+      padding: 22px 24px;
 
+      color: #ffffff;
 
-          <span>
-            Interventional cardiologists
-          </span>
+      background:
+        linear-gradient(
+          120deg,
+          #8f2030,
+          #c74655
+        );
+    }
 
-        </div>
+    .ppci-flashcard-head h2,
+    .acl-settings-head h2 {
+      margin: 0;
+      color: #ffffff;
+    }
 
+    .ppci-flashcard-type,
+    .acl-settings-kicker {
+      display: inline-flex;
 
-        <div class="pathway-action">
+      margin-bottom: 8px;
 
-          <strong>
-            Enter Expert Edition
-          </strong>
+      font-size: 0.7rem;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+    }
 
+    .ppci-flashcard-type {
+      padding: 5px 10px;
 
-          <span aria-hidden="true">
-            →
-          </span>
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 999px;
 
-        </div>
+      background: rgba(255, 255, 255, 0.14);
+    }
 
-      </a>
-
-    </section>
-
-
-    <p class="pathways-note">
-      You may switch editions at any time without creating another account.
-    </p>
-
-
-    <div
-      class="pathways-access-links"
-      aria-label="ACL account navigation"
-    >
-
-      <a href="login.html">
-        Sign In or Create Account
-      </a>
-
-
-      <a href="index.html">
-        Return to ACL Home
-      </a>
-
-    </div>
-
-
-    <section
-      id="pwaInstallSection"
-      class="pwa-install-section"
-      aria-labelledby="pwaInstallTitle"
-    >
-
-      <div class="pwa-install-copy">
-
-        <div
-          class="pwa-install-icon"
-          aria-hidden="true"
-        >
-          📱
-        </div>
-
-
-        <div>
-
-          <span class="pathways-kicker">
-            ACL MOBILE APP
-          </span>
-
-
-          <h2 id="pwaInstallTitle">
-            Install ACL on your device
-          </h2>
-
-
-          <p>
-            Open the platform like a normal app from your Home Screen
-            or desktop and receive important ACL notifications.
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <button
-        id="installAclAppButton"
-        class="pwa-install-button"
-        type="button"
-      >
-        Install ACL App
-      </button>
-
-    </section>
-
-
-    <p
-      id="pwaInstallStatus"
-      class="pwa-install-status"
-      role="status"
-      aria-live="polite"
-    >
-      Installation is optional. You can continue using ACL in your browser.
-    </p>
-
-  </main>
-
-
-  <script
-    type="module"
-    src="assets/js/pathways.js?v=2.0.0"
-  ></script>
-
-
-  <script
-    type="module"
-    src="assets/js/pwa.js?v=1.9.0"
-  ></script>
-
-</body>
-
-</html>
+    .ppci-flashcard-close,
+    .acl-settings-close {
+      display: grid;
+      place-items:
