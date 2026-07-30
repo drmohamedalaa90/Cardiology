@@ -861,4 +861,1015 @@ function buildPayload() {
     icon:
       "/Cardiology/assets/images/acl-icon-192.png",
 
-   
+    badge:
+      "/Cardiology/assets/images/acl-icon-192.png",
+
+    data: {
+      source:
+        "acl-admin-push",
+
+      sent_at:
+        new Date()
+          .toISOString(),
+
+      audience,
+
+      selected_user_count:
+        userIds.length
+    }
+  };
+}
+
+
+/* =========================================================
+   CONFIRMATION
+========================================================= */
+
+function confirmSend(
+  payload
+) {
+  const audience =
+    audienceSelect?.value ||
+    "all";
+
+
+  const audienceText =
+    audienceLabel(
+      audience
+    );
+
+
+  const selectedCount =
+    payload.user_ids
+      ?.length ||
+    0;
+
+
+  const selectedLine =
+    audience ===
+      "selected"
+      ? `\nSelected users: ${selectedCount}`
+      : "";
+
+
+  return window.confirm(
+    `Send this push notification?\n\n` +
+    `Audience: ${audienceText}` +
+    `${selectedLine}\n` +
+    `Type: ${titleCase(
+      payload.type
+    )}\n` +
+    `Title: ${payload.title}\n\n` +
+    `This action may immediately notify multiple devices.`
+  );
+}
+
+
+/* =========================================================
+   FUNCTION ERROR
+========================================================= */
+
+async function extractFunctionError(
+  error
+) {
+  if (!error) {
+    return {
+      message:
+        "The push notification could not be sent.",
+
+      details:
+        null
+    };
+  }
+
+
+  try {
+    if (
+      error.context &&
+      typeof error.context.json ===
+        "function"
+    ) {
+      const response =
+        await error.context
+          .json();
+
+
+      return {
+        message:
+          response?.message ||
+          response?.error ||
+          error.message ||
+          "The push notification could not be sent.",
+
+        details:
+          response?.details ||
+          null
+      };
+    }
+  } catch (
+    contextError
+  ) {
+    console.warn(
+      "PUSH ERROR CONTEXT READ FAILED:",
+      contextError
+    );
+  }
+
+
+  return {
+    message:
+      error.message ||
+      "The push notification could not be sent.",
+
+    details:
+      null
+  };
+}
+
+
+/* =========================================================
+   RESULT CONTAINER
+========================================================= */
+
+function ensureResultDetailsContainer() {
+  const resultBox =
+    byId(
+      "pushSendResult"
+    );
+
+
+  if (!resultBox) {
+    return null;
+  }
+
+
+  let details =
+    byId(
+      "pushResultDetails"
+    );
+
+
+  if (!details) {
+    details =
+      document.createElement(
+        "div"
+      );
+
+
+    details.id =
+      "pushResultDetails";
+
+
+    details.className =
+      "push-result-details";
+
+
+    resultBox.appendChild(
+      details
+    );
+  }
+
+
+  return details;
+}
+
+
+function setResultValue(
+  id,
+  value
+) {
+  const element =
+    byId(
+      id
+    );
+
+
+  if (element) {
+    element.textContent =
+      String(
+        Number(
+          value ||
+          0
+        )
+      );
+  }
+}
+
+
+/* =========================================================
+   FAILURE DETAILS
+========================================================= */
+
+function failureDescription(
+  failure
+) {
+  const status =
+    Number(
+      failure?.status ||
+      0
+    );
+
+
+  const statusText =
+    String(
+      failure?.statusText ||
+      ""
+    ).trim();
+
+
+  const errorText =
+    String(
+      failure?.error ||
+      ""
+    ).trim();
+
+
+  if (
+    status ===
+    404 ||
+    status ===
+    410
+  ) {
+    return (
+      errorText ||
+      "The browser subscription expired or was removed."
+    );
+  }
+
+
+  if (
+    status ===
+    401 ||
+    status ===
+    403
+  ) {
+    return (
+      errorText ||
+      "The push provider rejected the authentication details."
+    );
+  }
+
+
+  if (
+    status ===
+    429
+  ) {
+    return (
+      errorText ||
+      "The push provider temporarily rate-limited this delivery."
+    );
+  }
+
+
+  if (
+    status >=
+    500
+  ) {
+    return (
+      errorText ||
+      "The external push provider returned a server error."
+    );
+  }
+
+
+  return (
+    errorText ||
+    statusText ||
+    "The delivery failed for an unknown reason."
+  );
+}
+
+
+function renderFailureList(
+  failures
+) {
+  if (
+    !Array.isArray(
+      failures
+    ) ||
+    !failures.length
+  ) {
+    return "";
+  }
+
+
+  const items =
+    failures
+      .slice(
+        0,
+        20
+      )
+      .map(
+        (
+          failure
+        ) => {
+          const status =
+            Number(
+              failure?.status ||
+              0
+            );
+
+
+          const statusLabel =
+            status >
+            0
+              ? `HTTP ${status}`
+              : escapeHtml(
+                  failure?.statusText ||
+                  "Delivery error"
+                );
+
+
+          return `
+            <li class="push-result-failure-item">
+
+              <div class="push-result-failure-heading">
+
+                <strong>
+                  ${statusLabel}
+                </strong>
+
+                ${
+                  failure?.deactivated
+                    ? `
+                      <span class="push-result-deactivated-badge">
+                        Endpoint deactivated
+                      </span>
+                    `
+                    : ""
+                }
+
+              </div>
+
+
+              <p>
+                ${escapeHtml(
+                  failureDescription(
+                    failure
+                  )
+                )}
+              </p>
+
+
+              <small>
+                Provider:
+                ${escapeHtml(
+                  failure?.endpointHost ||
+                  "Unknown"
+                )}
+              </small>
+
+
+              ${
+                failure?.deactivationError
+                  ? `
+                    <small class="push-result-deactivation-error">
+                      Cleanup error:
+                      ${escapeHtml(
+                        failure.deactivationError
+                      )}
+                    </small>
+                  `
+                  : ""
+              }
+
+            </li>
+          `;
+        }
+      )
+      .join(
+        ""
+      );
+
+
+  return `
+    <details class="push-result-failure-details">
+
+      <summary>
+        Review ${failures.length}
+        ${pluralize(
+          failures.length,
+          "delivery failure"
+        )}
+      </summary>
+
+      <ul class="push-result-failure-list">
+        ${items}
+      </ul>
+
+    </details>
+  `;
+}
+
+
+/* =========================================================
+   RESULTS
+========================================================= */
+
+function renderResult(
+  result
+) {
+  const box =
+    byId(
+      "pushSendResult"
+    );
+
+
+  if (!box) {
+    return;
+  }
+
+
+  state.lastResult =
+    result;
+
+
+  const total =
+    Number(
+      result?.total ||
+      0
+    );
+
+
+  const sent =
+    Number(
+      result?.sent ||
+      0
+    );
+
+
+  const failed =
+    Number(
+      result?.failed ||
+      0
+    );
+
+
+  const deactivated =
+    Number(
+      result?.deactivated ||
+      0
+    );
+
+
+  const activeAfterDelivery =
+    Number(
+      result?.activeAfterDelivery ??
+      Math.max(
+        0,
+        total -
+        deactivated
+      )
+    );
+
+
+  setResultValue(
+    "pushResultTotal",
+    total
+  );
+
+
+  setResultValue(
+    "pushResultSent",
+    sent
+  );
+
+
+  setResultValue(
+    "pushResultFailed",
+    failed
+  );
+
+
+  setResultValue(
+    "pushResultDeactivated",
+    deactivated
+  );
+
+
+  const details =
+    ensureResultDetailsContainer();
+
+
+  if (details) {
+    details.innerHTML = `
+      <div class="push-result-extra-summary">
+
+        <span>
+          <strong>
+            ${deactivated}
+          </strong>
+
+          stale
+          ${pluralize(
+            deactivated,
+            "endpoint"
+          )}
+          deactivated
+        </span>
+
+
+        <span>
+          <strong>
+            ${activeAfterDelivery}
+          </strong>
+
+          active
+          ${pluralize(
+            activeAfterDelivery,
+            "subscription"
+          )}
+          remaining
+        </span>
+
+      </div>
+
+
+      ${
+        result?.message
+          ? `
+            <p class="push-result-server-message">
+              ${escapeHtml(
+                result.message
+              )}
+            </p>
+          `
+          : ""
+      }
+
+
+      ${renderFailureList(
+        result?.failures
+      )}
+    `;
+  }
+
+
+  box.dataset.resultType =
+    failed ===
+      0
+      ? "success"
+      : sent >
+          0
+        ? "partial"
+        : "error";
+
+
+  box.hidden =
+    false;
+}
+
+
+/* =========================================================
+   SEND
+========================================================= */
+
+async function sendPushNotification() {
+  if (
+    state.isSending
+  ) {
+    return;
+  }
+
+
+  const payload =
+    buildPayload();
+
+
+  if (
+    !confirmSend(
+      payload
+    )
+  ) {
+    return;
+  }
+
+
+  setSending(
+    true
+  );
+
+
+  setStatus(
+    "Sending push notification…"
+  );
+
+
+  const resultBox =
+    byId(
+      "pushSendResult"
+    );
+
+
+  if (resultBox) {
+    resultBox.hidden =
+      true;
+  }
+
+
+  try {
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .functions
+        .invoke(
+          "send-push",
+          {
+            body:
+              payload
+          }
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    renderResult(
+      data
+    );
+
+
+    const sent =
+      Number(
+        data?.sent ||
+        0
+      );
+
+
+    const failed =
+      Number(
+        data?.failed ||
+        0
+      );
+
+
+    const total =
+      Number(
+        data?.total ||
+        0
+      );
+
+
+    const deactivated =
+      Number(
+        data?.deactivated ||
+        0
+      );
+
+
+    if (
+      total ===
+      0
+    ) {
+      setStatus(
+        "No active push subscriptions matched this audience.",
+        "warning"
+      );
+
+
+      return;
+    }
+
+
+    if (
+      sent ===
+        0 &&
+      failed >
+        0
+    ) {
+      setStatus(
+        `Delivery failed for all ${failed} selected ${pluralize(
+          failed,
+          "subscription"
+        )}. Review the failure details below.`,
+        "error"
+      );
+
+
+      return;
+    }
+
+
+    if (
+      failed >
+      0
+    ) {
+      setStatus(
+        `Delivery completed with partial success: ${sent} sent, ${failed} failed${
+          deactivated >
+          0
+            ? `, and ${deactivated} stale ${pluralize(
+                deactivated,
+                "endpoint"
+              )} deactivated`
+            : ""
+        }.`,
+        "warning"
+      );
+
+
+      return;
+    }
+
+
+    setStatus(
+      `Push notification sent successfully to ${sent} registered ${pluralize(
+        sent,
+        "device"
+      )}.`,
+      "success"
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "ADMIN PUSH SEND ERROR:",
+      error
+    );
+
+
+    const extractedError =
+      await extractFunctionError(
+        error
+      );
+
+
+    setStatus(
+      extractedError.message,
+      "error"
+    );
+  } finally {
+    setSending(
+      false
+    );
+  }
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+function resetForm() {
+  if (
+    state.isSending
+  ) {
+    return;
+  }
+
+
+  form?.reset();
+
+
+  if (titleInput) {
+    titleInput.value =
+      "Alexandria Cardiology League";
+  }
+
+
+  if (bodyInput) {
+    bodyInput.value =
+      "";
+  }
+
+
+  if (urlInput) {
+    urlInput.value =
+      "/Cardiology/notifications.html";
+  }
+
+
+  if (audienceSelect) {
+    audienceSelect.value =
+      "all";
+  }
+
+
+  if (typeSelect) {
+    typeSelect.value =
+      "announcement";
+  }
+
+
+  if (tagInput) {
+    tagInput.value =
+      "";
+  }
+
+
+  if (userIdsInput) {
+    userIdsInput.value =
+      "";
+  }
+
+
+  if (
+    requireInteractionInput
+  ) {
+    requireInteractionInput.checked =
+      false;
+  }
+
+
+  setStatus(
+    ""
+  );
+
+
+  state.lastResult =
+    null;
+
+
+  const resultBox =
+    byId(
+      "pushSendResult"
+    );
+
+
+  if (resultBox) {
+    resultBox.hidden =
+      true;
+
+
+    resultBox.removeAttribute(
+      "data-result-type"
+    );
+  }
+
+
+  const details =
+    byId(
+      "pushResultDetails"
+    );
+
+
+  if (details) {
+    details.innerHTML =
+      "";
+  }
+
+
+  updatePreview();
+}
+
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+function bindEvents() {
+  form
+    ?.addEventListener(
+      "submit",
+      async (
+        event
+      ) => {
+        event.preventDefault();
+
+
+        try {
+          await sendPushNotification();
+        } catch (
+          error
+        ) {
+          console.error(
+            "ADMIN PUSH VALIDATION ERROR:",
+            error
+          );
+
+
+          setStatus(
+            error?.message ||
+            "Check the notification details.",
+            "error"
+          );
+        }
+      }
+    );
+
+
+  resetButton
+    ?.addEventListener(
+      "click",
+      resetForm
+    );
+
+
+  [
+    audienceSelect,
+    typeSelect,
+    titleInput,
+    bodyInput,
+    urlInput,
+    tagInput,
+    requireInteractionInput,
+    userIdsInput
+  ].forEach(
+    (
+      element
+    ) => {
+      element
+        ?.addEventListener(
+          "input",
+          updatePreview
+        );
+
+
+      element
+        ?.addEventListener(
+          "change",
+          updatePreview
+        );
+    }
+  );
+}
+
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+async function initializeAdminPush() {
+  try {
+    applyEditionContext();
+
+
+    const profile =
+      await protectAndRender(
+        "login.html"
+      );
+
+
+    if (!profile) {
+      return;
+    }
+
+
+    if (
+      !isAdminProfile(
+        profile
+      )
+    ) {
+      window.location.replace(
+        aclUrl(
+          "modules.html",
+          selectedEdition
+        )
+      );
+
+
+      return;
+    }
+
+
+    state.profile =
+      profile;
+
+
+    bindEvents();
+
+
+    updatePreview();
+
+
+    setStatus(
+      "Push sender ready.",
+      "success"
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "ADMIN PUSH INITIALIZATION ERROR:",
+      error
+    );
+
+
+    setStatus(
+      error?.message ||
+      "The push notification sender could not be initialized.",
+      "error"
+    );
+  }
+}
+
+
+if (
+  document.readyState ===
+  "loading"
+) {
+  document.addEventListener(
+    "DOMContentLoaded",
+    initializeAdminPush,
+    {
+      once:
+        true
+    }
+  );
+} else {
+  void initializeAdminPush();
+}
