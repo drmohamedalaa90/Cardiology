@@ -11,7 +11,7 @@ import {
 import {
   resolveAclEdition,
   aclUrl
-} from "./session-ui.js?v=4.7.0";
+} from "./session-ui.js?v=4.8.0";
 
 
 console.log(
