@@ -10,7 +10,56 @@ import {
 
 /* =========================================================
    ACL SEND PUSH EDGE FUNCTION
-   Version: 1.0.0
+   Version: 1.1.0
+
+   Improvements:
+   - Preserves multi-device subscriptions
+   - Automatically deactivates expired 404/410 endpoints
+   - Reports deactivated subscriptions separately
+   - Returns useful failure reasons to the admin page
+   - Adds request timeout protection
+   - Prevents one failed endpoint from stopping the batch
+   - Uses one notification ID for the whole announcement
+========================================================= */
+
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const MAX_SELECTED_USERS =
+  1000;
+
+
+const DELIVERY_BATCH_SIZE =
+  20;
+
+
+const DELIVERY_TIMEOUT_MS =
+  15000;
+
+
+const MAX_FAILURES_IN_RESPONSE =
+  30;
+
+
+const DEFAULT_ICON =
+  "/Cardiology/assets/images/acl-icon-192.png";
+
+
+const DEFAULT_ACTION_URL =
+  "/Cardiology/notifications.html";
+
+
+const ALLOWED_NOTIFICATION_HOSTS =
+  new Set([
+    "drmohamedalaa90.github.io",
+    "acl.drmohamedalaa.org"
+  ]);
+
+
+/* =========================================================
+   HEADERS
 ========================================================= */
 
 const corsHeaders = {
@@ -37,6 +86,12 @@ const jsonHeaders = {
    TYPES
 ========================================================= */
 
+type AclEdition =
+  "basic" |
+  "expert" |
+  null;
+
+
 type PushRequestBody = {
   title?: string;
   body?: string;
@@ -46,7 +101,7 @@ type PushRequestBody = {
   image?: string;
   tag?: string;
   type?: string;
-  edition?: "basic" | "expert" | null;
+  edition?: AclEdition;
   user_ids?: string[];
   requireInteraction?: boolean;
   data?: Record<string, unknown>;
@@ -67,9 +122,23 @@ type PushSubscriptionRow = {
 type PushResult = {
   subscriptionId: string;
   userId: string;
+  endpointHost: string;
   success: boolean;
   status: number;
+  statusText: string;
+  deactivated: boolean;
   error?: string;
+  deactivationError?: string;
+};
+
+
+type Environment = {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  serviceRoleKey: string;
+  vapidPublicKey: string;
+  vapidPrivateKey: string;
+  vapidSubject: string;
 };
 
 
@@ -107,10 +176,86 @@ function errorResponse(
       message,
 
       details:
-        details ?? null
+        details ??
+        null
     },
     status
   );
+}
+
+
+/* =========================================================
+   ENVIRONMENT
+========================================================= */
+
+function readRequiredEnvironment():
+  Environment {
+  const supabaseUrl =
+    Deno.env.get(
+      "SUPABASE_URL"
+    );
+
+
+  const supabaseAnonKey =
+    Deno.env.get(
+      "SUPABASE_ANON_KEY"
+    );
+
+
+  const serviceRoleKey =
+    Deno.env.get(
+      "SUPABASE_SERVICE_ROLE_KEY"
+    );
+
+
+  const vapidPublicKey =
+    Deno.env.get(
+      "VAPID_PUBLIC_KEY"
+    );
+
+
+  const vapidPrivateKey =
+    Deno.env.get(
+      "VAPID_PRIVATE_KEY"
+    );
+
+
+  const vapidSubject =
+    Deno.env.get(
+      "VAPID_SUBJECT"
+    );
+
+
+  if (
+    !supabaseUrl ||
+    !supabaseAnonKey ||
+    !serviceRoleKey
+  ) {
+    throw new Error(
+      "Required Supabase environment variables are missing."
+    );
+  }
+
+
+  if (
+    !vapidPublicKey ||
+    !vapidPrivateKey ||
+    !vapidSubject
+  ) {
+    throw new Error(
+      "Required VAPID secrets are missing."
+    );
+  }
+
+
+  return {
+    supabaseUrl,
+    supabaseAnonKey,
+    serviceRoleKey,
+    vapidPublicKey,
+    vapidPrivateKey,
+    vapidSubject
+  };
 }
 
 
@@ -135,14 +280,44 @@ function cleanText(
       );
 
 
-  return text ||
-    fallback;
+  return (
+    text ||
+    fallback
+  );
+}
+
+
+function truncateText(
+  value: unknown,
+  maximumLength = 500
+) {
+  const text =
+    String(
+      value ??
+      ""
+    ).trim();
+
+
+  if (
+    text.length <=
+    maximumLength
+  ) {
+    return text;
+  }
+
+
+  return (
+    `${text.slice(
+      0,
+      maximumLength
+    )}…`
+  );
 }
 
 
 function normalizeEdition(
   value: unknown
-): "basic" | "expert" | null {
+): AclEdition {
   const edition =
     String(
       value ??
@@ -202,7 +377,90 @@ function normalizeUserIds(
     )
   ].slice(
     0,
-    1000
+    MAX_SELECTED_USERS
+  );
+}
+
+
+function normalizeNotificationType(
+  value: unknown
+) {
+  const type =
+    cleanText(
+      value,
+      "announcement",
+      50
+    )
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9_-]/g,
+        "-"
+      );
+
+
+  return (
+    type ||
+    "announcement"
+  );
+}
+
+
+function normalizeTopic(
+  value: unknown
+) {
+  const topic =
+    cleanText(
+      value,
+      `acl-${Date.now()}`,
+      100
+    )
+      .replace(
+        /[^A-Za-z0-9_-]/g,
+        "-"
+      )
+      .replace(
+        /-+/g,
+        "-"
+      )
+      .replace(
+        /^[-_]+|[-_]+$/g,
+        ""
+      )
+      .slice(
+        0,
+        32
+      );
+
+
+  return (
+    topic ||
+    `acl-${Date.now()}`
+      .slice(
+        0,
+        32
+      )
+  );
+}
+
+
+function safeDataObject(
+  value: unknown
+): Record<string, unknown> {
+  if (
+    !value ||
+    typeof value !==
+      "object" ||
+    Array.isArray(
+      value
+    )
+  ) {
+    return {};
+  }
+
+
+  return (
+    value as
+      Record<string, unknown>
   );
 }
 
@@ -214,15 +472,20 @@ function normalizeUserIds(
 function safeActionUrl(
   value: unknown
 ) {
-  const fallback =
-    "/Cardiology/notifications.html";
-
-
   const supplied =
     String(
       value ??
-      fallback
+      DEFAULT_ACTION_URL
     ).trim();
+
+
+  if (
+    supplied.startsWith(
+      "/Cardiology/"
+    )
+  ) {
+    return supplied;
+  }
 
 
   try {
@@ -234,19 +497,33 @@ function safeActionUrl(
 
 
     if (
-      parsed.hostname !==
-      "drmohamedalaa90.github.io"
+      !ALLOWED_NOTIFICATION_HOSTS.has(
+        parsed.hostname
+      )
     ) {
-      return fallback;
+      return DEFAULT_ACTION_URL;
     }
 
 
     if (
       !parsed.pathname.startsWith(
         "/Cardiology/"
+      ) &&
+      parsed.hostname ===
+        "drmohamedalaa90.github.io"
+    ) {
+      return DEFAULT_ACTION_URL;
+    }
+
+
+    if (
+      parsed.hostname ===
+        "acl.drmohamedalaa.org" &&
+      !parsed.pathname.startsWith(
+        "/"
       )
     ) {
-      return fallback;
+      return DEFAULT_ACTION_URL;
     }
 
 
@@ -256,7 +533,20 @@ function safeActionUrl(
       `${parsed.hash}`
     );
   } catch {
-    return fallback;
+    return DEFAULT_ACTION_URL;
+  }
+}
+
+
+function endpointHost(
+  endpoint: string
+) {
+  try {
+    return new URL(
+      endpoint
+    ).hostname;
+  } catch {
+    return "invalid-endpoint";
   }
 }
 
@@ -363,9 +653,9 @@ function createPrivateJwk(
 
 
   /*
-   * A Web Push P-256 public key contains:
+   * Web Push P-256 public key:
    *
-   * Byte 0: 04
+   * Byte 0: uncompressed point marker 04
    * Bytes 1–32: X coordinate
    * Bytes 33–64: Y coordinate
    */
@@ -444,17 +734,20 @@ async function processInBatches<T, R>(
 
 
   for (
-    let index = 0;
+    let index =
+      0;
+
     index <
-    items.length;
+      items.length;
+
     index +=
-    batchSize
+      batchSize
   ) {
     const batch =
       items.slice(
         index,
         index +
-        batchSize
+          batchSize
       );
 
 
@@ -473,6 +766,79 @@ async function processInBatches<T, R>(
 
 
   return results;
+}
+
+
+/* =========================================================
+   PUSH RESPONSE MESSAGE
+========================================================= */
+
+async function readPushFailure(
+  response: Response
+) {
+  let responseBody =
+    "";
+
+
+  try {
+    responseBody =
+      await response.text();
+  } catch {
+    responseBody =
+      "";
+  }
+
+
+  const message =
+    responseBody ||
+    response.statusText ||
+    `Push provider returned HTTP ${response.status}.`;
+
+
+  return truncateText(
+    message,
+    700
+  );
+}
+
+
+/* =========================================================
+   DEACTIVATE EXPIRED SUBSCRIPTION
+========================================================= */
+
+async function deactivateSubscription(
+  adminClient: ReturnType<
+    typeof createClient
+  >,
+  subscriptionId: string
+) {
+  const {
+    error
+  } =
+    await adminClient
+      .from(
+        "push_subscriptions"
+      )
+      .update({
+        is_active:
+          false,
+
+        updated_at:
+          new Date()
+            .toISOString()
+      })
+      .eq(
+        "id",
+        subscriptionId
+      );
+
+
+  if (error) {
+    return error.message;
+  }
+
+
+  return null;
 }
 
 
@@ -514,64 +880,35 @@ Deno.serve(
          ENVIRONMENT
       =================================================== */
 
-      const supabaseUrl =
-        Deno.env.get(
-          "SUPABASE_URL"
-        );
+      let environment:
+        Environment;
 
 
-      const supabaseAnonKey =
-        Deno.env.get(
-          "SUPABASE_ANON_KEY"
-        );
-
-
-      const serviceRoleKey =
-        Deno.env.get(
-          "SUPABASE_SERVICE_ROLE_KEY"
-        );
-
-
-      const vapidPublicKey =
-        Deno.env.get(
-          "VAPID_PUBLIC_KEY"
-        );
-
-
-      const vapidPrivateKey =
-        Deno.env.get(
-          "VAPID_PRIVATE_KEY"
-        );
-
-
-      const vapidSubject =
-        Deno.env.get(
-          "VAPID_SUBJECT"
-        );
-
-
-      if (
-        !supabaseUrl ||
-        !supabaseAnonKey ||
-        !serviceRoleKey
+      try {
+        environment =
+          readRequiredEnvironment();
+      } catch (
+        environmentError
       ) {
         return errorResponse(
-          "Supabase environment variables are missing.",
+          environmentError instanceof
+            Error
+            ? environmentError.message
+            : "Required environment variables are missing.",
           500
         );
       }
 
 
-      if (
-        !vapidPublicKey ||
-        !vapidPrivateKey ||
-        !vapidSubject
-      ) {
-        return errorResponse(
-          "VAPID secrets are missing.",
-          500
-        );
-      }
+      const {
+        supabaseUrl,
+        supabaseAnonKey,
+        serviceRoleKey,
+        vapidPublicKey,
+        vapidPrivateKey,
+        vapidSubject
+      } =
+        environment;
 
 
       /* ===================================================
@@ -761,23 +1098,23 @@ Deno.serve(
 
 
       const notificationType =
-        cleanText(
-          requestBody.type,
-          "announcement",
-          50
+        normalizeNotificationType(
+          requestBody.type
         );
 
 
       const tag =
-        cleanText(
-          requestBody.tag,
-          `acl-${Date.now()}`,
-          100
+        normalizeTopic(
+          requestBody.tag
         );
 
 
+      const notificationId =
+        crypto.randomUUID();
+
+
       /* ===================================================
-         LOAD SUBSCRIPTIONS
+         LOAD ACTIVE SUBSCRIPTIONS
       =================================================== */
 
       let subscriptionQuery =
@@ -842,7 +1179,8 @@ Deno.serve(
         (
           subscriptionData ??
           []
-        ) as PushSubscriptionRow[];
+        ) as
+          PushSubscriptionRow[];
 
 
       if (
@@ -857,7 +1195,6 @@ Deno.serve(
 
           audience: {
             edition,
-
             userIds
           },
 
@@ -868,7 +1205,16 @@ Deno.serve(
             0,
 
           failed:
-            0
+            0,
+
+          deactivated:
+            0,
+
+          activeAfterDelivery:
+            0,
+
+          failures:
+            []
         });
       }
 
@@ -885,6 +1231,74 @@ Deno.serve(
 
 
       /* ===================================================
+         SHARED PAYLOAD
+      =================================================== */
+
+      const pushPayload = {
+        title,
+
+        body,
+
+        icon:
+          cleanText(
+            requestBody.icon,
+            DEFAULT_ICON,
+            500
+          ),
+
+        badge:
+          cleanText(
+            requestBody.badge,
+            DEFAULT_ICON,
+            500
+          ),
+
+        image:
+          cleanText(
+            requestBody.image,
+            "",
+            500
+          ) ||
+          undefined,
+
+        tag,
+
+        type:
+          notificationType,
+
+        edition,
+
+        notification_id:
+          notificationId,
+
+        requireInteraction:
+          Boolean(
+            requestBody.requireInteraction
+          ),
+
+        url:
+          actionUrl,
+
+        data: {
+          ...safeDataObject(
+            requestBody.data
+          ),
+
+          url:
+            actionUrl,
+
+          edition,
+
+          type:
+            notificationType,
+
+          notification_id:
+            notificationId
+        }
+      };
+
+
+      /* ===================================================
          SEND PUSH MESSAGES
       =================================================== */
 
@@ -894,71 +1308,48 @@ Deno.serve(
           PushResult
         >(
           subscriptions,
-          20,
+          DELIVERY_BATCH_SIZE,
           async (
             subscription
           ) => {
+            const host =
+              endpointHost(
+                subscription.endpoint
+              );
+
+
             try {
-              const pushPayload = {
-                title,
+              if (
+                !subscription.endpoint ||
+                !subscription.p256dh ||
+                !subscription.auth
+              ) {
+                return {
+                  subscriptionId:
+                    subscription.id,
 
-                body,
+                  userId:
+                    subscription.user_id,
 
-                icon:
-                  cleanText(
-                    requestBody.icon,
-                    "/Cardiology/assets/images/acl-icon-192.png",
-                    500
-                  ),
+                  endpointHost:
+                    host,
 
-                badge:
-                  cleanText(
-                    requestBody.badge,
-                    "/Cardiology/assets/images/acl-icon-192.png",
-                    500
-                  ),
+                  success:
+                    false,
 
-                image:
-                  cleanText(
-                    requestBody.image,
-                    "",
-                    500
-                  ) ||
-                  undefined,
+                  status:
+                    0,
 
-                tag,
+                  statusText:
+                    "Invalid subscription",
 
-                type:
-                  notificationType,
+                  deactivated:
+                    false,
 
-                edition,
-
-                notification_id:
-                  crypto.randomUUID(),
-
-                requireInteraction:
-                  Boolean(
-                    requestBody.requireInteraction
-                  ),
-
-                url:
-                  actionUrl,
-
-                data: {
-                  ...(
-                    requestBody.data ??
-                    {}
-                  ),
-
-                  url:
-                    actionUrl,
-
-                  edition,
-
-                  type:
-                    notificationType
-                }
-              };
+                  error:
+                    "The subscription record is missing its endpoint or encryption keys."
+                };
+              }
 
 
               const {
@@ -1001,10 +1392,7 @@ Deno.serve(
                         "high",
 
                       topic:
-                        tag.slice(
-                          0,
-                          32
-                        )
+                        tag
                     }
                   }
                 });
@@ -1020,7 +1408,12 @@ Deno.serve(
                     headers,
 
                     body:
-                      encryptedBody
+                      encryptedBody,
+
+                    signal:
+                      AbortSignal.timeout(
+                        DELIVERY_TIMEOUT_MS
+                      )
                   }
                 );
 
@@ -1035,47 +1428,57 @@ Deno.serve(
                   userId:
                     subscription.user_id,
 
+                  endpointHost:
+                    host,
+
                   success:
                     true,
 
                   status:
-                    pushResponse.status
+                    pushResponse.status,
+
+                  statusText:
+                    pushResponse.statusText ||
+                    "Delivered",
+
+                  deactivated:
+                    false
                 };
               }
 
 
-              const responseText =
-                await pushResponse
-                  .text();
+              const failureMessage =
+                await readPushFailure(
+                  pushResponse
+                );
 
 
-              /*
-               * 404 and 410 usually mean that the browser
-               * subscription has expired or was removed.
-               */
-
-              if (
+              const shouldDeactivate =
                 pushResponse.status ===
                   404 ||
                 pushResponse.status ===
-                  410
-              ) {
-                await adminClient
-                  .from(
-                    "push_subscriptions"
-                  )
-                  .update({
-                    is_active:
-                      false,
+                  410;
 
-                    updated_at:
-                      new Date()
-                        .toISOString()
-                  })
-                  .eq(
-                    "id",
+
+              let deactivationError:
+                string |
+                undefined;
+
+
+              if (
+                shouldDeactivate
+              ) {
+                const updateError =
+                  await deactivateSubscription(
+                    adminClient,
                     subscription.id
                   );
+
+
+                if (updateError) {
+                  deactivationError =
+                    updateError;
+                }
               }
 
 
@@ -1085,6 +1488,9 @@ Deno.serve(
 
                 userId:
                   subscription.user_id,
+
+                endpointHost:
+                  host,
 
                 success:
                   false,
@@ -1092,13 +1498,38 @@ Deno.serve(
                 status:
                   pushResponse.status,
 
+                statusText:
+                  pushResponse.statusText ||
+                  `HTTP ${pushResponse.status}`,
+
+                deactivated:
+                  shouldDeactivate &&
+                  !deactivationError,
+
                 error:
-                  responseText ||
-                  pushResponse.statusText
+                  failureMessage,
+
+                deactivationError
               };
             } catch (
               error
             ) {
+              const errorMessage =
+                error instanceof
+                  Error
+                  ? error.message
+                  : String(
+                      error
+                    );
+
+
+              const timedOut =
+                error instanceof
+                  DOMException &&
+                error.name ===
+                  "TimeoutError";
+
+
               return {
                 subscriptionId:
                   subscription.id,
@@ -1106,24 +1537,42 @@ Deno.serve(
                 userId:
                   subscription.user_id,
 
+                endpointHost:
+                  host,
+
                 success:
                   false,
 
                 status:
                   0,
 
+                statusText:
+                  timedOut
+                    ? "Delivery timeout"
+                    : "Delivery exception",
+
+                deactivated:
+                  false,
+
                 error:
-                  error instanceof
-                    Error
-                    ? error.message
-                    : String(
-                        error
+                  timedOut
+                    ? `The push provider did not respond within ${
+                        DELIVERY_TIMEOUT_MS /
+                        1000
+                      } seconds.`
+                    : truncateText(
+                        errorMessage,
+                        700
                       )
               };
             }
           }
         );
 
+
+      /* ===================================================
+         DELIVERY SUMMARY
+      =================================================== */
 
       const successfulResults =
         results.filter(
@@ -1143,67 +1592,47 @@ Deno.serve(
         );
 
 
-      return jsonResponse({
-        success:
-          failedResults.length ===
-          0,
-
-        message:
-          failedResults.length
-            ? "Push delivery completed with some failures."
-            : "Push notification sent successfully.",
-
-        audience: {
-          edition,
-
-          userIds
-        },
-
-        notification: {
-          title,
-
-          body,
-
-          url:
-            actionUrl,
-
-          type:
-            notificationType,
-
-          tag
-        },
-
-        total:
-          results.length,
-
-        sent:
-          successfulResults.length,
-
-        failed:
-          failedResults.length,
-
-        failures:
-          failedResults.slice(
-            0,
-            20
-          )
-      });
-    } catch (
-      error
-    ) {
-      console.error(
-        "SEND PUSH FUNCTION ERROR:",
-        error
-      );
+      const deactivatedResults =
+        results.filter(
+          (
+            result
+          ) =>
+            result.deactivated
+        );
 
 
-      return errorResponse(
-        error instanceof
-          Error
-          ? error.message
-          : "An unexpected push notification error occurred.",
-        500
-      );
-    }
-  }
-);
+      const activeAfterDelivery =
+        subscriptions.length -
+        deactivatedResults.length;
+
+
+      const statusBreakdown =
+        results.reduce<
+          Record<string, number>
+        >(
+          (
+            breakdown,
+            result
+          ) => {
+            const key =
+              result.status > 0
+                ? String(
+                    result.status
+                  )
+                : result.statusText;
+
+
+            breakdown[
+              key
+            ] =
+              (
+                breakdown[
+                  key
+                ] ??
+                0
+              ) +
+              1;
+
+
+            return breakdown;
+          },
