@@ -1,3 +1,8 @@
+console.log(
+  "ACL QUIZ ENGINE v5.2.1 LOADED"
+);
+
+
 export class QuizEngine {
   constructor({
     questions,
@@ -8,66 +13,200 @@ export class QuizEngine {
     confidenceEnabled = false
   }) {
     const safeQuestions =
-      Array.isArray(questions)
-        ? questions
+      Array.isArray(
+        questions
+      )
+        ? questions.filter(
+            (
+              question
+            ) =>
+              question &&
+              question.id !==
+                undefined &&
+              question.id !==
+                null
+          )
         : [];
 
-    const byId =
+
+    const questionsById =
       new Map(
         safeQuestions.map(
-          (question) => [
-            question.id,
+          (
+            question
+          ) => [
+            String(
+              question.id
+            ),
             question
           ]
         )
       );
 
-    this.questions =
-      Array.isArray(questionIds) &&
+
+    const restoredQuestions =
+      Array.isArray(
+        questionIds
+      ) &&
       questionIds.length
         ? questionIds
             .map(
-              (id) =>
-                byId.get(id)
+              (
+                id
+              ) =>
+                questionsById.get(
+                  String(
+                    id
+                  )
+                )
             )
-            .filter(Boolean)
-        : [...safeQuestions]
-            .sort(
-              () =>
-                Math.random() -
-                0.5
+            .filter(
+              Boolean
             )
-            .slice(
-              0,
-              count
-            );
+        : null;
+
+
+    const requestedCount =
+      Math.max(
+        0,
+        Math.floor(
+          Number(
+            count
+          ) ||
+          0
+        )
+      );
+
+
+    this.questions =
+      restoredQuestions ||
+      this.shuffleQuestions(
+        safeQuestions
+      ).slice(
+        0,
+        Math.min(
+          requestedCount,
+          safeQuestions.length
+        )
+      );
+
 
     this.index =
       Math.min(
         Math.max(
-          Number(currentIndex) ||
-            0,
+          Math.floor(
+            Number(
+              currentIndex
+            ) ||
+            0
+          ),
           0
         ),
         this.questions.length
       );
+
 
     this.confidenceEnabled =
       Boolean(
         confidenceEnabled
       );
 
+
     this.answers =
-      Array.isArray(answers)
+      Array.isArray(
+        answers
+      )
         ? answers
             .map(
-              (answer) =>
+              (
+                answer
+              ) =>
                 this.normalizeSavedAnswer(
                   answer
                 )
             )
-            .filter(Boolean)
+            .filter(
+              Boolean
+            )
         : [];
+  }
+
+
+  /* =========================================================
+     QUESTION SELECTION
+  ========================================================= */
+
+  shuffleQuestions(
+    questions
+  ) {
+    const shuffled =
+      [
+        ...questions
+      ];
+
+
+    for (
+      let index =
+        shuffled.length -
+        1;
+
+      index >
+        0;
+
+      index -=
+        1
+    ) {
+      const randomIndex =
+        Math.floor(
+          Math.random() *
+          (
+            index +
+            1
+          )
+        );
+
+
+      [
+        shuffled[index],
+        shuffled[randomIndex]
+      ] = [
+        shuffled[randomIndex],
+        shuffled[index]
+      ];
+    }
+
+
+    return shuffled;
+  }
+
+
+  /* =========================================================
+     QUESTION AND ANSWER ID HELPERS
+  ========================================================= */
+
+  sameQuestionId(
+    first,
+    second
+  ) {
+    return (
+      String(
+        first
+      ) ===
+      String(
+        second
+      )
+    );
+  }
+
+
+  answerQuestionId(
+    answer
+  ) {
+    return (
+      answer?.questionId ??
+      answer?.question_id ??
+      null
+    );
   }
 
 
@@ -79,7 +218,8 @@ export class QuizEngine {
     return (
       this.questions[
         this.index
-      ] || null
+      ] ||
+      null
     );
   }
 
@@ -88,16 +228,23 @@ export class QuizEngine {
     const question =
       this.current();
 
+
     if (!question) {
       return null;
     }
 
+
     return (
       this.answers.find(
-        (answer) =>
-          answer.questionId ===
-          question.id
-      ) || null
+        (
+          answer
+        ) =>
+          this.sameQuestionId(
+            answer.questionId,
+            question.id
+          )
+      ) ||
+      null
     );
   }
 
@@ -107,10 +254,15 @@ export class QuizEngine {
   ) {
     return (
       this.answers.find(
-        (answer) =>
-          answer.questionId ===
-          questionId
-      ) || null
+        (
+          answer
+        ) =>
+          this.sameQuestionId(
+            answer.questionId,
+            questionId
+          )
+      ) ||
+      null
     );
   }
 
@@ -130,7 +282,9 @@ export class QuizEngine {
     enabled
   ) {
     this.confidenceEnabled =
-      Boolean(enabled);
+      Boolean(
+        enabled
+      );
   }
 
 
@@ -143,20 +297,28 @@ export class QuizEngine {
     confidence
   ) {
     if (
-      confidence === null ||
-      confidence === undefined ||
-      confidence === ""
+      confidence ===
+        null ||
+      confidence ===
+        undefined ||
+      confidence ===
+        ""
     ) {
       return null;
     }
 
+
     const normalized =
-      String(confidence)
+      String(
+        confidence
+      )
         .trim()
         .toLowerCase();
 
+
     if (
-      normalized === "high" ||
+      normalized ===
+        "high" ||
       normalized ===
         "high-confidence" ||
       normalized ===
@@ -165,8 +327,10 @@ export class QuizEngine {
       return "high";
     }
 
+
     if (
-      normalized === "low" ||
+      normalized ===
+        "low" ||
       normalized ===
         "low-confidence" ||
       normalized ===
@@ -174,6 +338,7 @@ export class QuizEngine {
     ) {
       return "low";
     }
+
 
     return null;
   }
@@ -190,39 +355,25 @@ export class QuizEngine {
     confidenceEnabled =
       this.confidenceEnabled
   }) {
-    /*
-     * A timed-out or unanswered question
-     * always receives -1.
-     */
-
     if (timedOut) {
       return -1;
     }
 
-    /*
-     * Normal scoring when confidence
-     * answering is disabled.
-     */
 
-    if (!confidenceEnabled) {
+    if (
+      !confidenceEnabled
+    ) {
       return correct
         ? 1
         : 0;
     }
+
 
     const normalizedConfidence =
       this.normalizeConfidence(
         confidence
       );
 
-    /*
-     * Confidence scoring:
-     *
-     * Correct + High = +2
-     * Correct + Low  = +1
-     * Wrong + Low    =  0
-     * Wrong + High   = -1
-     */
 
     if (
       correct &&
@@ -232,6 +383,7 @@ export class QuizEngine {
       return 2;
     }
 
+
     if (
       correct &&
       normalizedConfidence ===
@@ -239,6 +391,7 @@ export class QuizEngine {
     ) {
       return 1;
     }
+
 
     if (
       !correct &&
@@ -248,6 +401,7 @@ export class QuizEngine {
       return 0;
     }
 
+
     if (
       !correct &&
       normalizedConfidence ===
@@ -256,12 +410,6 @@ export class QuizEngine {
       return -1;
     }
 
-    /*
-     * Defensive fallback.
-     *
-     * The interface should prevent this
-     * state when confidence is enabled.
-     */
 
     return correct
       ? 1
@@ -281,42 +429,46 @@ export class QuizEngine {
     const question =
       this.current();
 
+
     if (!question) {
       return {
-        accepted: false,
+        accepted:
+          false,
+
         reason:
           "no-current-question",
-        answer: null
+
+        answer:
+          null
       };
     }
 
+
     const existing =
-      this.answers.find(
-        (answer) =>
-          answer.questionId ===
-          question.id
+      this.getAnswerByQuestionId(
+        question.id
       );
+
 
     if (existing) {
       return {
-        accepted: false,
+        accepted:
+          false,
+
         reason:
           "already-answered",
+
         answer:
           existing
       };
     }
+
 
     const normalizedConfidence =
       this.normalizeConfidence(
         confidence
       );
 
-    /*
-     * When confidence answering is enabled,
-     * the candidate must select High or Low
-     * confidence before submission.
-     */
 
     if (
       this.confidenceEnabled &&
@@ -324,41 +476,86 @@ export class QuizEngine {
       !normalizedConfidence
     ) {
       return {
-        accepted: false,
+        accepted:
+          false,
+
         reason:
           "confidence-required",
-        answer: null
+
+        answer:
+          null
       };
     }
 
+
     const numericChoice =
       timedOut ||
-      choice === null ||
-      choice === undefined ||
-      choice === ""
+      choice ===
+        null ||
+      choice ===
+        undefined ||
+      choice ===
+        ""
         ? null
-        : Number(choice);
+        : Number(
+            choice
+          );
+
+
+    const validChoice =
+      numericChoice !==
+        null &&
+      Number.isInteger(
+        numericChoice
+      ) &&
+      Array.isArray(
+        question.options
+      ) &&
+      numericChoice >=
+        0 &&
+      numericChoice <
+        question.options.length;
+
+
+    if (
+      !timedOut &&
+      !validChoice
+    ) {
+      return {
+        accepted:
+          false,
+
+        reason:
+          "invalid-choice",
+
+        answer:
+          null
+      };
+    }
+
 
     const correct =
       !timedOut &&
-      numericChoice !== null &&
-      Number.isFinite(
-        numericChoice
-      ) &&
+      validChoice &&
       numericChoice ===
         Number(
           question.answer
         );
 
+
     const points =
       this.calculatePoints({
         correct,
+
         confidence:
           normalizedConfidence,
+
         timedOut,
+
         confidenceEnabled:
           this.confidenceEnabled
       });
+
 
     const answerRecord = {
       questionId:
@@ -378,41 +575,35 @@ export class QuizEngine {
         this.confidenceEnabled,
 
       timedOut:
-        Boolean(timedOut),
+        Boolean(
+          timedOut
+        ),
 
       points,
 
       answeredAt:
-        new Date().toISOString()
+        new Date()
+          .toISOString()
     };
+
 
     this.answers.push(
       answerRecord
     );
 
+
     return {
-      accepted: true,
-      reason: null,
+      accepted:
+        true,
+
+      reason:
+        null,
+
       answer:
         answerRecord
     };
   }
 
-
-  /*
-   * Backward-compatible method.
-   *
-   * Existing code that currently calls:
-   *
-   * engine.answer(choice)
-   *
-   * will continue to work.
-   *
-   * Confidence-aware code can call:
-   *
-   * engine.answer(choice, "high")
-   * engine.answer(choice, "low")
-   */
 
   answer(
     choice,
@@ -422,8 +613,10 @@ export class QuizEngine {
       this.submitAnswer({
         choice,
         confidence,
-        timedOut: false
+        timedOut:
+          false
       });
+
 
     if (
       result.reason ===
@@ -431,6 +624,7 @@ export class QuizEngine {
     ) {
       return null;
     }
+
 
     return (
       result.answer?.correct ??
@@ -441,9 +635,14 @@ export class QuizEngine {
 
   markTimedOut() {
     return this.submitAnswer({
-      choice: null,
-      confidence: null,
-      timedOut: true
+      choice:
+        null,
+
+      confidence:
+        null,
+
+      timedOut:
+        true
     });
   }
 
@@ -457,25 +656,37 @@ export class QuizEngine {
       this.index <
       this.questions.length
     ) {
-      this.index += 1;
+      this.index +=
+        1;
     }
+
 
     return this.current();
   }
 
 
   previous() {
-    if (this.index > 0) {
-      this.index -= 1;
+    if (
+      this.index >
+      0
+    ) {
+      this.index -=
+        1;
     }
+
 
     return this.current();
   }
 
 
-  goTo(index) {
+  goTo(
+    index
+  ) {
     const targetIndex =
-      Number(index);
+      Number(
+        index
+      );
+
 
     if (
       !Number.isInteger(
@@ -485,6 +696,7 @@ export class QuizEngine {
       return this.current();
     }
 
+
     this.index =
       Math.min(
         Math.max(
@@ -493,6 +705,7 @@ export class QuizEngine {
         ),
         this.questions.length
       );
+
 
     return this.current();
   }
@@ -511,7 +724,7 @@ export class QuizEngine {
         total +
         Number(
           answer.points ||
-            0
+          0
         ),
       0
     );
@@ -520,16 +733,22 @@ export class QuizEngine {
 
   correctCount() {
     return this.answers.filter(
-      (answer) =>
-        answer.correct
+      (
+        answer
+      ) =>
+        answer.correct ===
+        true
     ).length;
   }
 
 
   incorrectCount() {
     return this.answers.filter(
-      (answer) =>
-        !answer.correct &&
+      (
+        answer
+      ) =>
+        answer.correct !==
+          true &&
         !answer.timedOut
     ).length;
   }
@@ -537,8 +756,11 @@ export class QuizEngine {
 
   timedOutCount() {
     return this.answers.filter(
-      (answer) =>
-        answer.timedOut
+      (
+        answer
+      ) =>
+        answer.timedOut ===
+        true
     ).length;
   }
 
@@ -551,13 +773,19 @@ export class QuizEngine {
   remainingCount() {
     return Math.max(
       this.questions.length -
-        this.answers.length,
+      this.answers.length,
       0
     );
   }
 
 
   maximumPossibleScore() {
+    /*
+     * Use the scoring mode selected for this attempt.
+     * Existing saved answers keep their original points even if
+     * the user changes the setting later.
+     */
+
     return (
       this.questions.length *
       (
@@ -577,6 +805,24 @@ export class QuizEngine {
   }
 
 
+  accuracyPercentage() {
+    if (
+      !this.questions.length
+    ) {
+      return 0;
+    }
+
+
+    return Math.round(
+      (
+        this.correctCount() /
+        this.questions.length
+      ) *
+      100
+    );
+  }
+
+
   /* =========================================================
      SAVED ANSWER COMPATIBILITY
   ========================================================= */
@@ -586,22 +832,54 @@ export class QuizEngine {
   ) {
     if (
       !answer ||
-      !answer.questionId
+      typeof answer !==
+        "object"
     ) {
       return null;
     }
 
+
+    const questionId =
+      this.answerQuestionId(
+        answer
+      );
+
+
+    if (
+      questionId ===
+        null ||
+      questionId ===
+        undefined ||
+      questionId ===
+        ""
+    ) {
+      return null;
+    }
+
+
     const question =
       this.questions.find(
-        (item) =>
-          item.id ===
-          answer.questionId
+        (
+          item
+        ) =>
+          this.sameQuestionId(
+            item.id,
+            questionId
+          )
       );
+
+
+    if (!question) {
+      return null;
+    }
+
 
     const timedOut =
       Boolean(
-        answer.timedOut
+        answer.timedOut ??
+        answer.timed_out
       );
+
 
     const confidenceEnabled =
       answer.confidenceEnabled !==
@@ -609,38 +887,73 @@ export class QuizEngine {
         ? Boolean(
             answer.confidenceEnabled
           )
-        : Boolean(
-            answer.confidence
-          );
+        : answer.confidence_enabled !==
+            undefined
+          ? Boolean(
+              answer.confidence_enabled
+            )
+          : Boolean(
+              answer.confidence
+            );
+
 
     const confidence =
       this.normalizeConfidence(
         answer.confidence
       );
 
+
+    const rawChoice =
+      answer.choice ??
+      answer.selectedChoice ??
+      answer.selected_choice ??
+      null;
+
+
     const choice =
-      answer.choice === null ||
-      answer.choice ===
+      rawChoice ===
+        null ||
+      rawChoice ===
         undefined ||
-      answer.choice === ""
+      rawChoice ===
+        ""
         ? null
         : Number(
-            answer.choice
+            rawChoice
           );
+
+
+    const validChoice =
+      choice !==
+        null &&
+      Number.isInteger(
+        choice
+      ) &&
+      Array.isArray(
+        question.options
+      ) &&
+      choice >=
+        0 &&
+      choice <
+        question.options.length;
+
 
     const correct =
       typeof answer.correct ===
         "boolean"
         ? answer.correct
-        : Boolean(
-            question &&
-            !timedOut &&
-            choice !== null &&
-            choice ===
-              Number(
-                question.answer
-              )
-          );
+        : typeof answer.is_correct ===
+            "boolean"
+          ? answer.is_correct
+          : Boolean(
+              !timedOut &&
+              validChoice &&
+              choice ===
+                Number(
+                  question.answer
+                )
+            );
+
 
     const points =
       Number.isFinite(
@@ -653,18 +966,25 @@ export class QuizEngine {
           )
         : this.calculatePoints({
             correct,
+
             confidence,
+
             timedOut,
+
             confidenceEnabled
           });
+
 
     return {
       ...answer,
 
       questionId:
-        answer.questionId,
+        question.id,
 
-      choice,
+      choice:
+        validChoice
+          ? choice
+          : null,
 
       correct,
 
@@ -681,7 +1001,9 @@ export class QuizEngine {
 
       answeredAt:
         answer.answeredAt ||
-        new Date().toISOString()
+        answer.answered_at ||
+        new Date()
+          .toISOString()
     };
   }
 
@@ -694,7 +1016,9 @@ export class QuizEngine {
     return {
       questionIds:
         this.questions.map(
-          (question) =>
+          (
+            question
+          ) =>
             question.id
         ),
 
@@ -702,7 +1026,13 @@ export class QuizEngine {
         this.index,
 
       answers:
-        this.answers,
+        this.answers.map(
+          (
+            answer
+          ) => ({
+            ...answer
+          })
+        ),
 
       score:
         this.score(),
