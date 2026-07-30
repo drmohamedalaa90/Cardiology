@@ -28,6 +28,18 @@
 
 
   <link
+    rel="manifest"
+    href="manifest.json"
+  >
+
+
+  <link
+    rel="apple-touch-icon"
+    href="assets/images/acl-icon-192.png"
+  >
+
+
+  <link
     rel="stylesheet"
     href="assets/css/main.css?v=5.0.1"
   >
@@ -52,7 +64,10 @@
 
       const requestedEdition =
         String(
-          parameters.get("edition") || ""
+          parameters.get(
+            "edition"
+          ) ||
+          ""
         )
           .trim()
           .toLowerCase();
@@ -62,18 +77,23 @@
         String(
           localStorage.getItem(
             "aclSelectedEdition"
-          ) || ""
+          ) ||
+          ""
         )
           .trim()
           .toLowerCase();
 
 
       const edition =
-        requestedEdition === "basic" ||
-        requestedEdition === "expert"
+        requestedEdition ===
+          "basic" ||
+        requestedEdition ===
+          "expert"
           ? requestedEdition
-          : storedEdition === "basic" ||
-            storedEdition === "expert"
+          : storedEdition ===
+              "basic" ||
+            storedEdition ===
+              "expert"
             ? storedEdition
             : "expert";
 
@@ -84,14 +104,21 @@
       );
 
 
-      document.documentElement.classList.add(
-        edition === "basic"
-          ? "acl-admin-push-basic"
-          : "acl-admin-push-expert"
-      );
+      document.documentElement
+        .classList
+        .add(
+          edition ===
+            "basic"
+            ? "acl-admin-push-basic"
+            : "acl-admin-push-expert"
+        );
 
 
-      if (!parameters.get("edition")) {
+      if (
+        !parameters.get(
+          "edition"
+        )
+      ) {
         const updatedUrl =
           new URL(
             window.location.href
@@ -128,6 +155,7 @@
       --push-muted: #687d90;
       --push-border: #d9e6f2;
       --push-card: #ffffff;
+
       --push-shadow:
         0 18px 45px
         rgba(18, 63, 114, 0.12);
@@ -140,6 +168,7 @@
       --push-soft: #eaf8f2;
       --push-soft-2: #f8fcfa;
       --push-text: #173e34;
+
       --push-shadow:
         0 18px 45px
         rgba(16, 85, 65, 0.12);
@@ -424,7 +453,9 @@
 
 
     .danger-btn {
-      border: 1px solid #f0c6cc;
+      border:
+        1px solid
+        #f0c6cc;
 
       color:
         var(--push-danger);
@@ -581,7 +612,6 @@
 
     .admin-push-field textarea {
       resize: vertical;
-
       line-height: 1.55;
     }
 
@@ -834,11 +864,33 @@
 
 
     .audience-summary-row strong {
+      max-width: 68%;
+
       color:
         var(--push-primary);
 
       font-size: 0.78rem;
       text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+
+    .push-safety-note {
+      margin-top: 16px;
+      padding: 13px;
+
+      border:
+        1px solid
+        #efd694;
+
+      border-radius: 12px;
+
+      color: #735500;
+
+      background: #fff9df;
+
+      font-size: 0.76rem;
+      line-height: 1.5;
     }
 
 
@@ -915,12 +967,59 @@
     }
 
 
+    .push-result[data-result-type="success"] {
+      border-color: #bfe7d6;
+      background: #f3fbf7;
+    }
+
+
+    .push-result[data-result-type="partial"] {
+      border-color: #efd694;
+      background: #fffaf0;
+    }
+
+
+    .push-result[data-result-type="error"] {
+      border-color: #f0c6cc;
+      background: #fff5f6;
+    }
+
+
+    .push-result-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+
+      margin-bottom: 14px;
+    }
+
+
+    .push-result-heading h3 {
+      margin: 0;
+
+      color:
+        var(--push-primary);
+
+      font-size: 1rem;
+    }
+
+
+    .push-result-heading span {
+      color:
+        var(--push-muted);
+
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+
     .push-result-grid {
       display: grid;
 
       grid-template-columns:
         repeat(
-          3,
+          4,
           minmax(0, 1fr)
         );
 
@@ -964,6 +1063,201 @@
 
       font-size: 1.7rem;
       line-height: 1;
+    }
+
+
+    .push-result-card.sent strong {
+      color:
+        var(--push-success);
+    }
+
+
+    .push-result-card.failed strong {
+      color:
+        var(--push-danger);
+    }
+
+
+    .push-result-card.deactivated strong {
+      color:
+        var(--push-warning);
+    }
+
+
+    /* =====================================================
+       RESULT DETAILS CREATED BY ADMIN-PUSH.JS
+    ===================================================== */
+
+    .push-result-details {
+      margin-top: 14px;
+    }
+
+
+    .push-result-extra-summary {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 10px;
+    }
+
+
+    .push-result-extra-summary span {
+      padding: 11px 12px;
+
+      border:
+        1px solid
+        var(--push-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--push-muted);
+
+      background: #ffffff;
+
+      font-size: 0.76rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+
+    .push-result-extra-summary strong {
+      color:
+        var(--push-primary);
+    }
+
+
+    .push-result-server-message {
+      margin: 12px 0 0;
+      padding: 11px 12px;
+
+      border-radius: 11px;
+
+      color:
+        var(--push-muted);
+
+      background:
+        rgba(255, 255, 255, 0.82);
+
+      font-size: 0.79rem;
+      line-height: 1.45;
+    }
+
+
+    .push-result-failure-details {
+      margin-top: 13px;
+
+      border:
+        1px solid
+        #efc4ca;
+
+      border-radius: 12px;
+
+      background: #ffffff;
+    }
+
+
+    .push-result-failure-details summary {
+      padding: 12px 13px;
+
+      color:
+        var(--push-danger);
+
+      cursor: pointer;
+
+      font-size: 0.8rem;
+      font-weight: 900;
+    }
+
+
+    .push-result-failure-list {
+      display: grid;
+      gap: 9px;
+
+      margin: 0;
+      padding:
+        0 12px
+        12px;
+
+      list-style: none;
+    }
+
+
+    .push-result-failure-item {
+      padding: 12px;
+
+      border:
+        1px solid
+        #f1d3d7;
+
+      border-radius: 11px;
+
+      background: #fff8f8;
+    }
+
+
+    .push-result-failure-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+
+    .push-result-failure-heading strong {
+      color:
+        var(--push-danger);
+
+      font-size: 0.8rem;
+    }
+
+
+    .push-result-deactivated-badge {
+      padding: 4px 7px;
+
+      border-radius: 999px;
+
+      color: #6b5000;
+      background: #fff0b9;
+
+      font-size: 0.62rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+
+    .push-result-failure-item p {
+      margin: 7px 0;
+
+      color:
+        var(--push-text);
+
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
+
+    .push-result-failure-item small {
+      display: block;
+
+      color:
+        var(--push-muted);
+
+      font-size: 0.68rem;
+      overflow-wrap: anywhere;
+    }
+
+
+    .push-result-deactivation-error {
+      margin-top: 5px;
+      color:
+        var(--push-danger) !important;
     }
 
 
@@ -1029,6 +1323,15 @@
 
 
       .push-result-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+
+
+      .push-result-extra-summary {
         grid-template-columns: 1fr;
       }
     }
@@ -1043,6 +1346,17 @@
 
       .admin-push-hero-actions a {
         width: 100%;
+      }
+
+
+      .push-result-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .push-result-heading {
+        align-items: flex-start;
+        flex-direction: column;
       }
     }
   </style>
@@ -1107,7 +1421,8 @@
 
         <p>
           Send official ACL announcements, competition reminders,
-          module alerts, and urgent updates to registered devices.
+          module alerts, challenge updates, and important platform
+          messages to registered devices.
         </p>
 
       </div>
@@ -1156,8 +1471,8 @@
 
 
         <p class="admin-push-card-intro">
-          Choose the audience and message. Only devices that enabled
-          ACL push notifications can receive it.
+          Choose the audience and message. Only devices that have
+          enabled ACL push notifications can receive the alert.
         </p>
 
 
@@ -1176,7 +1491,10 @@
               </label>
 
 
-              <select id="pushAudience">
+              <select
+                id="pushAudience"
+                required
+              >
 
                 <option value="all">
                   All registered devices
@@ -1206,7 +1524,10 @@
               </label>
 
 
-              <select id="pushType">
+              <select
+                id="pushType"
+                required
+              >
 
                 <option value="announcement">
                   Announcement
@@ -1256,8 +1577,8 @@
 
 
               <p class="admin-push-help">
-                These must be Supabase Auth user IDs, not usernames or
-                email addresses.
+                These must be Supabase Auth user IDs, not usernames
+                or email addresses.
               </p>
 
             </div>
@@ -1321,8 +1642,8 @@
 
 
               <p class="admin-push-help">
-                Use an internal ACL path beginning with
-                /Cardiology/.
+                Use an internal ACL destination such as
+                /Cardiology/notifications.html.
               </p>
 
             </div>
@@ -1341,6 +1662,12 @@
                 placeholder="Optional grouping tag"
               >
 
+
+              <p class="admin-push-help">
+                Notifications with the same tag may replace one
+                another on the receiving device.
+              </p>
+
             </div>
 
 
@@ -1358,7 +1685,8 @@
                   type="checkbox"
                 >
 
-                Keep notification visible until the user interacts with it
+                Keep the notification visible until the user
+                interacts with it
 
               </label>
 
@@ -1394,8 +1722,23 @@
         <section
           id="pushSendResult"
           class="push-result"
+          aria-live="polite"
           hidden
         >
+
+          <div class="push-result-heading">
+
+            <h3>
+              Delivery report
+            </h3>
+
+
+            <span>
+              Results from the latest send
+            </span>
+
+          </div>
+
 
           <div class="push-result-grid">
 
@@ -1405,6 +1748,7 @@
                 Total
               </span>
 
+
               <strong id="pushResultTotal">
                 0
               </strong>
@@ -1412,11 +1756,12 @@
             </article>
 
 
-            <article class="push-result-card">
+            <article class="push-result-card sent">
 
               <span>
                 Sent
               </span>
+
 
               <strong id="pushResultSent">
                 0
@@ -1425,11 +1770,12 @@
             </article>
 
 
-            <article class="push-result-card">
+            <article class="push-result-card failed">
 
               <span>
                 Failed
               </span>
+
 
               <strong id="pushResultFailed">
                 0
@@ -1437,7 +1783,24 @@
 
             </article>
 
+
+            <article class="push-result-card deactivated">
+
+              <span>
+                Deactivated
+              </span>
+
+
+              <strong id="pushResultDeactivated">
+                0
+              </strong>
+
+            </article>
+
           </div>
+
+
+          <div id="pushResultDetails"></div>
 
         </section>
 
@@ -1505,6 +1868,7 @@
               Audience
             </span>
 
+
             <strong id="pushPreviewAudience">
               All registered devices
             </strong>
@@ -1517,6 +1881,7 @@
             <span>
               Type
             </span>
+
 
             <strong id="pushPreviewType">
               Announcement
@@ -1531,12 +1896,20 @@
               Opens
             </span>
 
+
             <strong id="pushPreviewUrl">
               /Cardiology/notifications.html
             </strong>
 
           </div>
 
+        </div>
+
+
+        <div class="push-safety-note">
+          A confirmation window appears before every send. The Send
+          button is disabled during delivery to prevent accidental
+          duplicate notifications.
         </div>
 
       </aside>
@@ -1548,7 +1921,7 @@
 
   <script
     type="module"
-    src="assets/js/pwa.js?v=1.7.0"
+    src="assets/js/pwa.js?v=1.8.0"
   ></script>
 
 
