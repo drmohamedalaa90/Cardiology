@@ -1,12 +1,16 @@
 /* =========================================================
    ACL PWA REGISTRATION AND INSTALLATION
-   Version: 1.9.0
+   Version: 2.0.0
 ========================================================= */
 
 console.log(
-  "ACL PWA v1.9.0 LOADED"
+  "ACL PWA v2.0.0 LOADED"
 );
 
+
+/* =========================================================
+   STATE
+========================================================= */
 
 let deferredInstallPrompt =
   null;
@@ -19,6 +23,7 @@ let serviceWorkerRegistration =
 let serviceWorkerReadyPromise =
   null;
 
+
 let updateReloadPending =
   false;
 
@@ -26,16 +31,32 @@ let updateReloadPending =
 let connectionBannerTimer =
   null;
 
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const ACL_BASE_PATH =
+  "/Cardiology/";
+
+
+const ACL_SERVICE_WORKER_URL =
+  `${ACL_BASE_PATH}service-worker.js`;
+
+
 /* =========================================================
    PLATFORM
 ========================================================= */
 
-const runningStandalone =
-  window.matchMedia(
-    "(display-mode: standalone)"
-  ).matches ||
-  window.navigator.standalone ===
-    true;
+function isRunningStandalone() {
+  return (
+    window.matchMedia(
+      "(display-mode: standalone)"
+    ).matches ||
+    window.navigator.standalone ===
+      true
+  );
+}
 
 
 const isIosDevice =
@@ -51,7 +72,7 @@ const isSafariBrowser =
 
 
 /* =========================================================
-   ELEMENTS
+   ELEMENT HELPERS
 ========================================================= */
 
 function byId(
@@ -85,7 +106,7 @@ function installStatus() {
 
 
 /* =========================================================
-   INSTALL STATUS
+   INSTALL UI
 ========================================================= */
 
 function setInstallStatus(
@@ -102,13 +123,11 @@ function setInstallStatus(
 }
 
 
-function setInstallButton(
-  {
-    hidden,
-    disabled,
-    text
-  } = {}
-) {
+function setInstallButton({
+  hidden,
+  disabled,
+  text
+} = {}) {
   const button =
     installButton();
 
@@ -136,7 +155,10 @@ function setInstallButton(
   }
 
 
-  if (text) {
+  if (
+    typeof text ===
+      "string"
+  ) {
     button.textContent =
       text;
   }
@@ -198,13 +220,14 @@ function createConnectionBanner() {
 }
 
 
-function updateConnectionStatus() {
-  const banner =
-    createConnectionBanner();
+function clearConnectionBannerTimer() {
+  if (
+    !connectionBannerTimer
+  ) {
+    return;
+  }
 
-if (
-  connectionBannerTimer
-) {
+
   window.clearTimeout(
     connectionBannerTimer
   );
@@ -213,8 +236,19 @@ if (
   connectionBannerTimer =
     null;
 }
-   
-  if (!navigator.onLine) {
+
+
+function updateConnectionStatus() {
+  const banner =
+    createConnectionBanner();
+
+
+  clearConnectionBannerTimer();
+
+
+  if (
+    !navigator.onLine
+  ) {
     banner.textContent =
       "You are offline. Saved pages remain available, but new progress cannot synchronize.";
 
@@ -256,17 +290,17 @@ if (
 
 
   connectionBannerTimer =
-  window.setTimeout(
-    () => {
-      banner.hidden =
-        true;
+    window.setTimeout(
+      () => {
+        banner.hidden =
+          true;
 
 
-      connectionBannerTimer =
-        null;
-    },
-    2500
-  );
+        connectionBannerTimer =
+          null;
+      },
+      2500
+    );
 }
 
 
@@ -282,14 +316,16 @@ window.addEventListener(
 );
 
 
-if (!navigator.onLine) {
-  updateConnectionStatus();
-}
-
-
 /* =========================================================
    UPDATE NOTICE
 ========================================================= */
+
+function removeAppUpdateNotice() {
+  byId(
+    "aclUpdateNotice"
+  )?.remove();
+}
+
 
 function showAppUpdateNotice(
   registration
@@ -297,13 +333,7 @@ function showAppUpdateNotice(
   if (
     byId(
       "aclUpdateNotice"
-    )
-  ) {
-    return;
-  }
-
-
-  if (
+    ) ||
     !registration?.waiting
   ) {
     return;
@@ -338,6 +368,7 @@ function showAppUpdateNotice(
 
   notice.innerHTML = `
     <div>
+
       <strong>
         A new ACL version is available
       </strong>
@@ -345,7 +376,9 @@ function showAppUpdateNotice(
       <span>
         Update now to receive the latest improvements.
       </span>
+
     </div>
+
 
     <button
       id="applyAclUpdate"
@@ -419,9 +452,11 @@ function showAppUpdateNotice(
     );
 }
 
+
 /* =========================================================
-   SERVICE WORKER
+   SERVICE WORKER EVENTS
 ========================================================= */
+
 if (
   "serviceWorker" in
   navigator
@@ -439,6 +474,9 @@ if (
 
         updateReloadPending =
           false;
+
+
+        removeAppUpdateNotice();
 
 
         const refreshedUrl =
@@ -468,8 +506,11 @@ if (
         event
       ) => {
         const message =
-          event.data ||
-          {};
+          event.data &&
+          typeof event.data ===
+            "object"
+            ? event.data
+            : {};
 
 
         if (
@@ -499,6 +540,11 @@ if (
     );
 }
 
+
+/* =========================================================
+   SERVICE WORKER REGISTRATION
+========================================================= */
+
 async function registerServiceWorker() {
   if (
     !(
@@ -523,28 +569,35 @@ async function registerServiceWorker() {
     await navigator
       .serviceWorker
       .register(
-        "/Cardiology/service-worker.js",
+        ACL_SERVICE_WORKER_URL,
         {
           scope:
-            "/Cardiology/"
+            ACL_BASE_PATH,
+
+          updateViaCache:
+            "none"
         }
       );
 
 
   console.log(
     "ACL PWA registered:",
-    serviceWorkerRegistration.scope
-  );
-   
-if (
-  serviceWorkerRegistration.waiting &&
-  navigator.serviceWorker.controller
-) {
-  showAppUpdateNotice(
     serviceWorkerRegistration
+      .scope
   );
-}
-   
+
+
+  if (
+    serviceWorkerRegistration
+      .waiting &&
+    navigator.serviceWorker
+      .controller
+  ) {
+    showAppUpdateNotice(
+      serviceWorkerRegistration
+    );
+  }
+
 
   serviceWorkerRegistration
     .addEventListener(
@@ -555,7 +608,9 @@ if (
             .installing;
 
 
-        if (!installingWorker) {
+        if (
+          !installingWorker
+        ) {
           return;
         }
 
@@ -565,17 +620,19 @@ if (
             "statechange",
             () => {
               if (
-  installingWorker.state ===
-    "installed" &&
-  navigator.serviceWorker
-    .controller &&
-  serviceWorkerRegistration
-    .waiting
-) {
-  showAppUpdateNotice(
-    serviceWorkerRegistration
-  );
-}   
+                installingWorker
+                  .state ===
+                  "installed" &&
+                navigator
+                  .serviceWorker
+                  .controller &&
+                serviceWorkerRegistration
+                  .waiting
+              ) {
+                showAppUpdateNotice(
+                  serviceWorkerRegistration
+                );
+              }
             }
           );
       }
@@ -617,6 +674,17 @@ function getServiceWorkerRegistration() {
         .serviceWorker
         .ready;
     })()
+      .then(
+        (
+          registration
+        ) => {
+          serviceWorkerRegistration =
+            registration;
+
+
+          return registration;
+        }
+      )
       .catch(
         (
           error
@@ -641,8 +709,9 @@ function getServiceWorkerRegistration() {
   return serviceWorkerReadyPromise;
 }
 
+
 /* =========================================================
-   IOS INSTRUCTIONS
+   IOS INSTALL INSTRUCTIONS
 ========================================================= */
 
 function showIosInstallInstructions() {
@@ -664,7 +733,7 @@ function showIosInstallInstructions() {
 
 async function requestAppInstall() {
   if (
-    runningStandalone
+    isRunningStandalone()
   ) {
     setInstallStatus(
       "ACL is already installed on this device."
@@ -726,13 +795,21 @@ async function requestAppInstall() {
   });
 
 
+  const promptEvent =
+    deferredInstallPrompt;
+
+
+  deferredInstallPrompt =
+    null;
+
+
   try {
-    await deferredInstallPrompt
+    await promptEvent
       .prompt();
 
 
     const choice =
-      await deferredInstallPrompt
+      await promptEvent
         .userChoice;
 
 
@@ -748,10 +825,6 @@ async function requestAppInstall() {
         "Installation was cancelled. You can continue in the browser."
       );
     }
-
-
-    deferredInstallPrompt =
-      null;
 
 
     return choice;
@@ -872,7 +945,7 @@ window.addEventListener(
 
 
 /* =========================================================
-   BUTTON BINDING
+   INSTALL BUTTON
 ========================================================= */
 
 function bindInstallButton() {
@@ -897,12 +970,14 @@ function bindInstallButton() {
 
   button.addEventListener(
     "click",
-    requestAppInstall
+    () => {
+      void requestAppInstall();
+    }
   );
 
 
   if (
-    runningStandalone
+    isRunningStandalone()
   ) {
     setInstallButton({
       hidden:
@@ -927,6 +1002,9 @@ function bindInstallButton() {
       hidden:
         false,
 
+      disabled:
+        false,
+
       text:
         "How to install on iPhone"
     });
@@ -945,9 +1023,41 @@ function bindInstallButton() {
     hidden:
       false,
 
+    disabled:
+      false,
+
     text:
       "Install ACL App"
   });
+}
+
+
+/* =========================================================
+   START
+========================================================= */
+
+function startPwa() {
+  bindInstallButton();
+
+
+  if (
+    !navigator.onLine
+  ) {
+    updateConnectionStatus();
+  }
+
+
+  getServiceWorkerRegistration()
+    .catch(
+      (
+        error
+      ) => {
+        console.warn(
+          "ACL service worker registration failed:",
+          error
+        );
+      }
+    );
 }
 
 
@@ -957,14 +1067,14 @@ if (
 ) {
   document.addEventListener(
     "DOMContentLoaded",
-    bindInstallButton,
+    startPwa,
     {
       once:
         true
     }
   );
 } else {
-  bindInstallButton();
+  startPwa();
 }
 
 
@@ -980,13 +1090,8 @@ window.aclPwa = {
     requestAppInstall,
 
   isInstalled:
-  () =>
-    window.matchMedia(
-      "(display-mode: standalone)"
-    ).matches ||
-    window.navigator.standalone ===
-      true,
-   
+    isRunningStandalone,
+
   isIos:
     () =>
       isIosDevice,
