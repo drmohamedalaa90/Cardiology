@@ -4,8 +4,16 @@ import {
 
 
 console.log(
-  "ACL CLOUD PROGRESS v2.1.0 LOADED"
+  "ACL CLOUD PROGRESS v2.2.0 LOADED"
 );
+
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const ACL_META_KEY =
+  "_aclMeta";
 
 
 /* =========================================================
@@ -62,27 +70,112 @@ async function currentUser() {
 function safeArray(
   value
 ) {
-  return Array.isArray(
-    value
-  )
-    ? value
-    : [];
+  if (
+    Array.isArray(
+      value
+    )
+  ) {
+    return value;
+  }
+
+
+  if (
+    typeof value ===
+      "string"
+  ) {
+    const trimmed =
+      value.trim();
+
+
+    if (!trimmed) {
+      return [];
+    }
+
+
+    try {
+      const parsed =
+        JSON.parse(
+          trimmed
+        );
+
+
+      return Array.isArray(
+        parsed
+      )
+        ? parsed
+        : [];
+    } catch (
+      error
+    ) {
+      console.warn(
+        "ACL ARRAY PARSE ERROR:",
+        error
+      );
+    }
+  }
+
+
+  return [];
 }
 
 
 function safeObject(
   value
 ) {
-  return (
+  if (
     value &&
     typeof value ===
       "object" &&
     !Array.isArray(
       value
     )
-  )
-    ? value
-    : {};
+  ) {
+    return value;
+  }
+
+
+  if (
+    typeof value ===
+      "string"
+  ) {
+    const trimmed =
+      value.trim();
+
+
+    if (!trimmed) {
+      return {};
+    }
+
+
+    try {
+      const parsed =
+        JSON.parse(
+          trimmed
+        );
+
+
+      return (
+        parsed &&
+        typeof parsed ===
+          "object" &&
+        !Array.isArray(
+          parsed
+        )
+      )
+        ? parsed
+        : {};
+    } catch (
+      error
+    ) {
+      console.warn(
+        "ACL OBJECT PARSE ERROR:",
+        error
+      );
+    }
+  }
+
+
+  return {};
 }
 
 
@@ -104,6 +197,231 @@ function safeNumber(
 }
 
 
+function safeNonNegativeNumber(
+  value,
+  fallback = 0
+) {
+  return Math.max(
+    0,
+    safeNumber(
+      value,
+      fallback
+    )
+  );
+}
+
+
+function safeInteger(
+  value,
+  fallback = 0
+) {
+  return Math.max(
+    0,
+    Math.floor(
+      safeNumber(
+        value,
+        fallback
+      )
+    )
+  );
+}
+
+
+function safeNullableNumber(
+  value
+) {
+  if (
+    value ===
+      null ||
+    value ===
+      undefined ||
+    value ===
+      ""
+  ) {
+    return null;
+  }
+
+
+  const parsed =
+    Number(
+      value
+    );
+
+
+  return Number.isFinite(
+    parsed
+  )
+    ? parsed
+    : null;
+}
+
+
+function safeString(
+  value,
+  fallback = ""
+) {
+  const normalized =
+    String(
+      value ??
+      fallback
+    ).trim();
+
+
+  return (
+    normalized ||
+    fallback
+  );
+}
+
+
+/* =========================================================
+   TIMER HELPERS
+========================================================= */
+
+function normalizeTimerMode(
+  value
+) {
+  const normalized =
+    String(
+      value ||
+      "none"
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const aliases = {
+    none:
+      "none",
+
+    off:
+      "none",
+
+    disabled:
+      "none",
+
+    quiz:
+      "quiz",
+
+    per_quiz:
+      "quiz",
+
+    "per-quiz":
+      "quiz",
+
+    whole_quiz:
+      "quiz",
+
+    question:
+      "question",
+
+    per_question:
+      "question",
+
+    "per-question":
+      "question"
+  };
+
+
+  return (
+    aliases[
+      normalized
+    ] ||
+    "none"
+  );
+}
+
+
+/* =========================================================
+   ANTI-CHEAT HELPERS
+========================================================= */
+
+function normalizeFinalViolationAction(
+  value
+) {
+  const normalized =
+    String(
+      value ||
+      "none"
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    normalized ===
+      "terminate" ||
+    normalized ===
+      "omit"
+  ) {
+    return normalized;
+  }
+
+
+  return "none";
+}
+
+
+/* =========================================================
+   METADATA HELPERS
+========================================================= */
+
+function metadataFromLifelines(
+  lifelines
+) {
+  const source =
+    safeObject(
+      lifelines
+    );
+
+
+  return safeObject(
+    source[
+      ACL_META_KEY
+    ]
+  );
+}
+
+
+function cleanLifelines(
+  lifelines
+) {
+  const source = {
+    ...safeObject(
+      lifelines
+    )
+  };
+
+
+  delete source[
+    ACL_META_KEY
+  ];
+
+
+  return source;
+}
+
+
+function mergeMetadataIntoLifelines(
+  lifelines,
+  metadata
+) {
+  return {
+    ...cleanLifelines(
+      lifelines
+    ),
+
+    [
+      ACL_META_KEY
+    ]: {
+      ...safeObject(
+        metadata
+      )
+    }
+  };
+}
+
+
 /* =========================================================
    ATTEMPT STATE NORMALIZATION
 ========================================================= */
@@ -118,7 +436,7 @@ function normalizeAttemptState(
     );
 
 
-  const lifelines =
+  const rawLifelines =
     lifelinesOverride !==
       null
       ? safeObject(
@@ -137,6 +455,12 @@ function normalizeAttemptState(
           );
 
 
+  const existingMetadata =
+    metadataFromLifelines(
+      rawLifelines
+    );
+
+
   const questionIds =
     safeArray(
       source.questionIds ??
@@ -150,19 +474,171 @@ function normalizeAttemptState(
     );
 
 
+  const activeTimeSeconds =
+    safeNonNegativeNumber(
+      source.activeTimeSeconds ??
+      source.active_time_seconds ??
+      source.durationSeconds ??
+      source.duration_seconds ??
+      existingMetadata.activeTimeSeconds ??
+      existingMetadata.durationSeconds,
+      0
+    );
+
+
+  const questionTimeSeconds =
+    safeNonNegativeNumber(
+      source.questionTimeSeconds ??
+      source.question_time_seconds ??
+      existingMetadata.questionTimeSeconds,
+      0
+    );
+
+
+  const metadata = {
+    ...existingMetadata,
+
+    correctCount:
+      safeInteger(
+        source.correctCount ??
+        source.correct_count ??
+        existingMetadata.correctCount,
+        0
+      ),
+
+    incorrectCount:
+      safeInteger(
+        source.incorrectCount ??
+        source.incorrect_count ??
+        existingMetadata.incorrectCount,
+        0
+      ),
+
+    timedOutCount:
+      safeInteger(
+        source.timedOutCount ??
+        source.timed_out_count ??
+        existingMetadata.timedOutCount,
+        0
+      ),
+
+    answeredCount:
+      safeInteger(
+        source.answeredCount ??
+        source.answered_count ??
+        answers.length,
+        answers.length
+      ),
+
+    confidenceEnabled:
+      Boolean(
+        source.confidenceEnabled ??
+        source.confidence_enabled ??
+        existingMetadata.confidenceEnabled
+      ),
+
+    timerMode:
+      normalizeTimerMode(
+        source.timerMode ??
+        source.timer_mode ??
+        existingMetadata.timerMode
+      ),
+
+    quizDurationSeconds:
+      safeNonNegativeNumber(
+        source.quizDurationSeconds ??
+        source.quiz_duration_seconds ??
+        existingMetadata.quizDurationSeconds,
+        0
+      ),
+
+    defaultQuestionTimeSeconds:
+      safeNonNegativeNumber(
+        source.defaultQuestionTimeSeconds ??
+        source.default_question_time_seconds ??
+        existingMetadata.defaultQuestionTimeSeconds,
+        0
+      ),
+
+    activeTimeSeconds,
+
+    durationSeconds:
+      activeTimeSeconds,
+
+    questionTimeSeconds,
+
+    questionStartedAt:
+      source.questionStartedAt ??
+      source.question_started_at ??
+      existingMetadata.questionStartedAt ??
+      null,
+
+    quizRemainingSeconds:
+      safeNullableNumber(
+        source.quizRemainingSeconds ??
+        source.quiz_remaining_seconds ??
+        existingMetadata.quizRemainingSeconds
+      ),
+
+    questionRemainingSeconds:
+      safeNullableNumber(
+        source.questionRemainingSeconds ??
+        source.question_remaining_seconds ??
+        existingMetadata.questionRemainingSeconds
+      ),
+
+    antiCheatEnabled:
+      Boolean(
+        source.antiCheatEnabled ??
+        source.anti_cheat_enabled ??
+        existingMetadata.antiCheatEnabled
+      ),
+
+    violationCount:
+      safeInteger(
+        source.violationCount ??
+        source.violation_count ??
+        existingMetadata.violationCount,
+        0
+      ),
+
+    antiCheatPenalty:
+      safeNumber(
+        source.antiCheatPenalty ??
+        source.anti_cheat_penalty ??
+        existingMetadata.antiCheatPenalty,
+        0
+      ),
+
+    antiCheatStatus:
+      safeString(
+        source.antiCheatStatus ??
+        source.anti_cheat_status ??
+        existingMetadata.antiCheatStatus,
+        "active"
+      ),
+
+    finalViolationAction:
+      normalizeFinalViolationAction(
+        source.finalViolationAction ??
+        source.final_violation_action ??
+        existingMetadata.finalViolationAction
+      ),
+
+    savedAt:
+      new Date()
+        .toISOString()
+  };
+
+
   return {
     questionIds,
 
     currentIndex:
-      Math.max(
-        0,
-        Math.floor(
-          safeNumber(
-            source.currentIndex ??
-            source.current_question_index,
-            0
-          )
-        )
+      safeInteger(
+        source.currentIndex ??
+        source.current_question_index,
+        0
       ),
 
     answers,
@@ -173,49 +649,12 @@ function normalizeAttemptState(
         0
       ),
 
-    correctCount:
-      Math.max(
-        0,
-        Math.floor(
-          safeNumber(
-            source.correctCount ??
-            source.correct_count,
-            0
-          )
-        )
+    lifelines:
+      cleanLifelines(
+        rawLifelines
       ),
 
-    incorrectCount:
-      Math.max(
-        0,
-        Math.floor(
-          safeNumber(
-            source.incorrectCount ??
-            source.incorrect_count,
-            0
-          )
-        )
-      ),
-
-    timedOutCount:
-      Math.max(
-        0,
-        Math.floor(
-          safeNumber(
-            source.timedOutCount ??
-            source.timed_out_count,
-            0
-          )
-        )
-      ),
-
-    confidenceEnabled:
-      Boolean(
-        source.confidenceEnabled ??
-        source.confidence_enabled
-      ),
-
-    lifelines
+    metadata
   };
 }
 
@@ -322,6 +761,13 @@ function moduleMapEntry(
       String(
         module?.slug ||
         ""
+      ),
+
+    launchPath:
+      String(
+        module?.launch_path ||
+        module?.launchPath ||
+        ""
       )
   };
 }
@@ -364,70 +810,105 @@ async function loadModuleEditionMap({
               id,
               slug,
               title,
-              edition
+              edition,
+              launch_path
             `);
 
 
         if (error) {
-          throw error;
+          /*
+           * Some older module tables may not yet contain
+           * launch_path. Retry with the confirmed core fields.
+           */
+
+          const fallbackResult =
+            await supabaseClient
+              .from(
+                "modules"
+              )
+              .select(`
+                id,
+                slug,
+                title,
+                edition
+              `);
+
+
+          if (
+            fallbackResult.error
+          ) {
+            throw fallbackResult.error;
+          }
+
+
+          return fallbackResult.data;
         }
 
 
-        const map =
-          new Map();
-
-
-        safeArray(
-          data
-        ).forEach(
-          (
-            module
-          ) => {
-            const entry =
-              moduleMapEntry(
-                module
-              );
-
-
-            if (!entry) {
-              return;
-            }
-
-
-            if (
-              module.id !==
-                null &&
-              module.id !==
-                undefined
-            ) {
-              map.set(
-                String(
-                  module.id
-                ),
-                entry
-              );
-            }
-
-
-            if (module.slug) {
-              map.set(
-                String(
-                  module.slug
-                ),
-                entry
-              );
-            }
-          }
-        );
-
-
-        cloudProgressState
-          .moduleEditionMap =
-            map;
-
-
-        return map;
+        return data;
       })()
+        .then(
+          (
+            modules
+          ) => {
+            const map =
+              new Map();
+
+
+            safeArray(
+              modules
+            ).forEach(
+              (
+                module
+              ) => {
+                const entry =
+                  moduleMapEntry(
+                    module
+                  );
+
+
+                if (!entry) {
+                  return;
+                }
+
+
+                if (
+                  module.id !==
+                    null &&
+                  module.id !==
+                    undefined
+                ) {
+                  map.set(
+                    String(
+                      module.id
+                    ),
+                    entry
+                  );
+                }
+
+
+                if (
+                  module.slug
+                ) {
+                  map.set(
+                    String(
+                      module.slug
+                    ),
+                    entry
+                  );
+                }
+              }
+            );
+
+
+            cloudProgressState
+              .moduleEditionMap =
+                map;
+
+
+            return map;
+          }
+        )
         .finally(
           () => {
             cloudProgressState
@@ -484,10 +965,42 @@ function enrichAttempt(
     );
 
 
+  const lifelines =
+    safeObject(
+      attempt?.lifelines
+    );
+
+
+  const metadata =
+    metadataFromLifelines(
+      lifelines
+    );
+
+
   return {
     ...attempt,
 
+    lifelines:
+      cleanLifelines(
+        lifelines
+      ),
+
+    lifelines_state:
+      cleanLifelines(
+        lifelines
+      ),
+
+    lifelinesState:
+      cleanLifelines(
+        lifelines
+      ),
+
     module_edition:
+      existingEdition ||
+      matchedModule?.edition ||
+      null,
+
+    edition:
       existingEdition ||
       matchedModule?.edition ||
       null,
@@ -502,7 +1015,139 @@ function enrichAttempt(
       attempt?.module_slug ||
       attempt?.modules?.slug ||
       matchedModule?.slug ||
-      null
+      null,
+
+    launch_path:
+      attempt?.launch_path ||
+      attempt?.module_launch_path ||
+      attempt?.modules?.launch_path ||
+      matchedModule?.launchPath ||
+      null,
+
+    correct_count:
+      safeInteger(
+        attempt?.correct_count ??
+        metadata.correctCount,
+        0
+      ),
+
+    incorrect_count:
+      safeInteger(
+        attempt?.incorrect_count ??
+        metadata.incorrectCount,
+        0
+      ),
+
+    timed_out_count:
+      safeInteger(
+        attempt?.timed_out_count ??
+        metadata.timedOutCount,
+        0
+      ),
+
+    confidence_enabled:
+      Boolean(
+        attempt?.confidence_enabled ??
+        metadata.confidenceEnabled
+      ),
+
+    timer_mode:
+      normalizeTimerMode(
+        attempt?.timer_mode ??
+        metadata.timerMode
+      ),
+
+    quiz_duration_seconds:
+      safeNonNegativeNumber(
+        attempt?.quiz_duration_seconds ??
+        metadata.quizDurationSeconds,
+        0
+      ),
+
+    default_question_time_seconds:
+      safeNonNegativeNumber(
+        attempt?.default_question_time_seconds ??
+        metadata.defaultQuestionTimeSeconds,
+        0
+      ),
+
+    active_time_seconds:
+      safeNonNegativeNumber(
+        attempt?.active_time_seconds ??
+        attempt?.duration_seconds ??
+        metadata.activeTimeSeconds ??
+        metadata.durationSeconds,
+        0
+      ),
+
+    duration_seconds:
+      safeNonNegativeNumber(
+        attempt?.duration_seconds ??
+        attempt?.active_time_seconds ??
+        metadata.durationSeconds ??
+        metadata.activeTimeSeconds,
+        0
+      ),
+
+    question_time_seconds:
+      safeNonNegativeNumber(
+        attempt?.question_time_seconds ??
+        metadata.questionTimeSeconds,
+        0
+      ),
+
+    question_started_at:
+      attempt?.question_started_at ??
+      metadata.questionStartedAt ??
+      null,
+
+    quiz_remaining_seconds:
+      safeNullableNumber(
+        attempt?.quiz_remaining_seconds ??
+        metadata.quizRemainingSeconds
+      ),
+
+    question_remaining_seconds:
+      safeNullableNumber(
+        attempt?.question_remaining_seconds ??
+        metadata.questionRemainingSeconds
+      ),
+
+    anti_cheat_enabled:
+      Boolean(
+        attempt?.anti_cheat_enabled ??
+        metadata.antiCheatEnabled
+      ),
+
+    violation_count:
+      safeInteger(
+        attempt?.violation_count ??
+        metadata.violationCount,
+        0
+      ),
+
+    anti_cheat_penalty:
+      safeNumber(
+        attempt?.anti_cheat_penalty ??
+        metadata.antiCheatPenalty,
+        0
+      ),
+
+    anti_cheat_status:
+      safeString(
+        attempt?.anti_cheat_status ??
+        metadata.antiCheatStatus,
+        "active"
+      ),
+
+    final_violation_action:
+      normalizeFinalViolationAction(
+        attempt?.final_violation_action ??
+        metadata.finalViolationAction
+      ),
+
+    acl_metadata:
+      metadata
   };
 }
 
@@ -644,7 +1289,8 @@ export async function createAttempt({
   quizTitle = null,
   mode = "learning",
   questionIds = [],
-  lifelines = {}
+  lifelines = {},
+  state = {}
 }) {
   if (!moduleId) {
     throw new Error(
@@ -669,6 +1315,26 @@ export async function createAttempt({
       "ACL Module"
     ).trim() ||
     "ACL Module";
+
+
+  const normalized =
+    normalizeAttemptState(
+      {
+        ...safeObject(
+          state
+        ),
+
+        questionIds:
+          safeQuestionIds,
+
+        currentIndex:
+          0,
+
+        answers:
+          []
+      },
+      lifelines
+    );
 
 
   const row = {
@@ -709,8 +1375,9 @@ export async function createAttempt({
       [],
 
     lifelines:
-      safeObject(
-        lifelines
+      mergeMetadataIntoLifelines(
+        normalized.lifelines,
+        normalized.metadata
       ),
 
     score:
@@ -739,12 +1406,6 @@ export async function createAttempt({
 
 
   if (error) {
-    /*
-     * An open-attempt uniqueness constraint may reject
-     * duplicate starts. In that case, recover the existing
-     * unfinished attempt instead of creating another one.
-     */
-
     if (
       error.code ===
       "23505"
@@ -756,7 +1417,9 @@ export async function createAttempt({
         );
 
 
-      if (existingAttempt) {
+      if (
+        existingAttempt
+      ) {
         return existingAttempt;
       }
     }
@@ -828,7 +1491,9 @@ async function updateAttempt(
   }
 
 
-  return data;
+  return enrichAttemptSafely(
+    data
+  );
 }
 
 
@@ -864,7 +1529,10 @@ export async function saveAttempt(
         normalized.score,
 
       lifelines:
-        normalized.lifelines,
+        mergeMetadataIntoLifelines(
+          normalized.lifelines,
+          normalized.metadata
+        ),
 
       status:
         "in_progress"
@@ -905,7 +1573,10 @@ export async function completeAttempt(
         normalized.score,
 
       lifelines:
-        normalized.lifelines,
+        mergeMetadataIntoLifelines(
+          normalized.lifelines,
+          normalized.metadata
+        ),
 
       status:
         "completed",
@@ -924,7 +1595,7 @@ export async function completeAttempt(
 
 export async function listAttempts({
   edition = activeEdition(),
-  includeUnmatched = false,
+  includeUnmatched = true,
   forceModuleRefresh = false
 } = {}) {
   const user =
@@ -1009,7 +1680,9 @@ export async function listAttempts({
     );
 
 
-  if (!selectedEdition) {
+  if (
+    !selectedEdition
+  ) {
     return enrichedAttempts;
   }
 
@@ -1024,7 +1697,9 @@ export async function listAttempts({
         );
 
 
-      if (!editionValue) {
+      if (
+        !editionValue
+      ) {
         return Boolean(
           includeUnmatched
         );
