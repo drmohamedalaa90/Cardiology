@@ -7,11 +7,11 @@ import {
   protectAndRender,
   resolveAclEdition,
   aclUrl
-} from "./session-ui.js?v=4.6.0";
+} from "./session-ui.js?v=4.7.0";
 
 
 console.log(
-  "ACL ADMIN PUSH v1.0.0 LOADED"
+  "ACL ADMIN PUSH v1.1.0 LOADED"
 );
 
 
@@ -32,7 +32,8 @@ const byId =
 
 const state = {
   profile: null,
-  isSending: false
+  isSending: false,
+  lastResult: null
 };
 
 
@@ -116,6 +117,39 @@ const resetButton =
    HELPERS
 ========================================================= */
 
+function escapeHtml(
+  value = ""
+) {
+  return String(
+    value ??
+    ""
+  ).replace(
+    /[&<>'"]/g,
+    (
+      character
+    ) =>
+      ({
+        "&":
+          "&amp;",
+
+        "<":
+          "&lt;",
+
+        ">":
+          "&gt;",
+
+        "'":
+          "&#39;",
+
+        '"':
+          "&quot;"
+      })[
+        character
+      ]
+  );
+}
+
+
 function titleCase(
   value = ""
 ) {
@@ -128,9 +162,25 @@ function titleCase(
     )
     .replace(
       /\b\w/g,
-      (character) =>
+      (
+        character
+      ) =>
         character.toUpperCase()
     );
+}
+
+
+function pluralize(
+  value,
+  singular,
+  plural = `${singular}s`
+) {
+  return Number(
+    value
+  ) ===
+    1
+    ? singular
+    : plural;
 }
 
 
@@ -148,8 +198,10 @@ function isAdminProfile(
 
   return Boolean(
     profile?.is_admin ||
-    role === "admin" ||
-    role === "administrator"
+    role ===
+      "admin" ||
+    role ===
+      "administrator"
   );
 }
 
@@ -186,16 +238,26 @@ function setSending(
   sending
 ) {
   state.isSending =
-    sending;
+    Boolean(
+      sending
+    );
 
 
   if (sendButton) {
     sendButton.disabled =
-      sending;
+      state.isSending;
+
+
+    sendButton.setAttribute(
+      "aria-busy",
+      state.isSending
+        ? "true"
+        : "false"
+    );
 
 
     sendButton.textContent =
-      sending
+      state.isSending
         ? "Sending…"
         : "Send Push Notification";
   }
@@ -203,8 +265,29 @@ function setSending(
 
   if (resetButton) {
     resetButton.disabled =
-      sending;
+      state.isSending;
   }
+
+
+  [
+    audienceSelect,
+    typeSelect,
+    userIdsInput,
+    titleInput,
+    bodyInput,
+    urlInput,
+    tagInput,
+    requireInteractionInput
+  ].forEach(
+    (
+      element
+    ) => {
+      if (element) {
+        element.disabled =
+          state.isSending;
+      }
+    }
+  );
 }
 
 
@@ -230,9 +313,18 @@ function normalizeInternalUrl(
       );
 
 
+    const allowedHosts =
+      new Set([
+        window.location.hostname,
+        "drmohamedalaa90.github.io",
+        "acl.drmohamedalaa.org"
+      ]);
+
+
     if (
-      parsed.origin !==
-      window.location.origin
+      !allowedHosts.has(
+        parsed.hostname
+      )
     ) {
       throw new Error(
         "The destination must be an ACL page."
@@ -241,11 +333,27 @@ function normalizeInternalUrl(
 
 
     if (
+      parsed.hostname ===
+        "drmohamedalaa90.github.io" &&
       !parsed.pathname.startsWith(
         "/Cardiology/"
-      ) &&
-      parsed.pathname !==
+      )
+    ) {
+      throw new Error(
+        "The GitHub Pages destination must begin with /Cardiology/."
+      );
+    }
+
+
+    if (
+      parsed.hostname ===
+        window.location.hostname &&
+      window.location.pathname.startsWith(
         "/Cardiology/"
+      ) &&
+      !parsed.pathname.startsWith(
+        "/Cardiology/"
+      )
     ) {
       throw new Error(
         "The destination path must begin with /Cardiology/."
@@ -258,9 +366,11 @@ function normalizeInternalUrl(
       `${parsed.search}` +
       `${parsed.hash}`
     );
-  } catch (error) {
+  } catch (
+    error
+  ) {
     throw new Error(
-      error.message ||
+      error?.message ||
       "Enter a valid internal ACL URL."
     );
   }
@@ -280,7 +390,9 @@ function parseUserIds(
           /[\s,;]+/
         )
         .map(
-          (item) =>
+          (
+            item
+          ) =>
             item.trim()
         )
         .filter(
@@ -306,16 +418,16 @@ function audienceLabel(
 ) {
   const labels = {
     all:
-      "All registered devices",
+      "all active registered devices",
 
     basic:
-      "Basic Edition devices",
+      "all active Basic Edition devices",
 
     expert:
-      "Expert Edition devices",
+      "all active Expert Edition devices",
 
     selected:
-      "Selected users"
+      "the selected users' active devices"
   };
 
 
@@ -325,6 +437,21 @@ function audienceLabel(
     ] ||
     labels.all
   );
+}
+
+
+function selectedUserCount() {
+  if (
+    audienceSelect?.value !==
+      "selected"
+  ) {
+    return 0;
+  }
+
+
+  return parseUserIds(
+    userIdsInput?.value
+  ).length;
 }
 
 
@@ -546,16 +673,53 @@ function updatePreview() {
 ========================================================= */
 
 function buildPayload() {
+  if (
+    !audienceSelect ||
+    !titleInput ||
+    !bodyInput ||
+    !typeSelect ||
+    !urlInput ||
+    !tagInput ||
+    !requireInteractionInput
+  ) {
+    throw new Error(
+      "The push notification form is incomplete."
+    );
+  }
+
+
   const audience =
     audienceSelect.value;
 
 
+  const allowedAudiences =
+    new Set([
+      "all",
+      "basic",
+      "expert",
+      "selected"
+    ]);
+
+
+  if (
+    !allowedAudiences.has(
+      audience
+    )
+  ) {
+    throw new Error(
+      "Choose a valid notification audience."
+    );
+  }
+
+
   const title =
-    titleInput.value.trim();
+    titleInput.value
+      .trim();
 
 
   const body =
-    bodyInput.value.trim();
+    bodyInput.value
+      .trim();
 
 
   const notificationType =
@@ -569,13 +733,15 @@ function buildPayload() {
 
 
   const tag =
-    tagInput.value.trim();
+    tagInput.value
+      .trim();
 
 
   const userIds =
-    audience === "selected"
+    audience ===
+      "selected"
       ? parseUserIds(
-          userIdsInput.value
+          userIdsInput?.value
         )
       : [];
 
@@ -583,6 +749,16 @@ function buildPayload() {
   if (!title) {
     throw new Error(
       "Notification title is required."
+    );
+  }
+
+
+  if (
+    title.length >
+    120
+  ) {
+    throw new Error(
+      "Notification title cannot exceed 120 characters."
     );
   }
 
@@ -605,7 +781,8 @@ function buildPayload() {
 
 
   if (
-    audience === "selected" &&
+    audience ===
+      "selected" &&
     !userIds.length
   ) {
     throw new Error(
@@ -614,9 +791,21 @@ function buildPayload() {
   }
 
 
+  if (
+    userIds.length >
+    1000
+  ) {
+    throw new Error(
+      "A maximum of 1,000 selected users can be included in one send."
+    );
+  }
+
+
   const invalidUserIds =
     userIds.filter(
-      (id) =>
+      (
+        id
+      ) =>
         !validUuid(
           id
         )
@@ -647,13 +836,16 @@ function buildPayload() {
       notificationType,
 
     edition:
-      audience === "basic" ||
-      audience === "expert"
+      audience ===
+        "basic" ||
+      audience ===
+        "expert"
         ? audience
         : null,
 
     user_ids:
-      audience === "selected"
+      audience ===
+        "selected"
         ? userIds
         : [],
 
@@ -662,474 +854,11 @@ function buildPayload() {
       `acl-${notificationType}-${Date.now()}`,
 
     requireInteraction:
-      requireInteractionInput.checked,
+      Boolean(
+        requireInteractionInput.checked
+      ),
 
     icon:
       "/Cardiology/assets/images/acl-icon-192.png",
 
-    badge:
-      "/Cardiology/assets/images/acl-icon-192.png",
-
-    data: {
-      source:
-        "acl-admin-push",
-
-      sent_at:
-        new Date()
-          .toISOString(),
-
-      audience
-    }
-  };
-}
-
-
-/* =========================================================
-   FUNCTION ERROR
-========================================================= */
-
-async function extractFunctionError(
-  error
-) {
-  if (!error) {
-    return "The push notification could not be sent.";
-  }
-
-
-  try {
-    if (
-      error.context &&
-      typeof error.context.json ===
-        "function"
-    ) {
-      const response =
-        await error.context.json();
-
-
-      return (
-        response?.message ||
-        response?.error ||
-        error.message
-      );
-    }
-  } catch (contextError) {
-    console.warn(
-      "PUSH ERROR CONTEXT READ FAILED:",
-      contextError
-    );
-  }
-
-
-  return (
-    error.message ||
-    "The push notification could not be sent."
-  );
-}
-
-
-/* =========================================================
-   RESULTS
-========================================================= */
-
-function renderResult(
-  result
-) {
-  const box =
-    byId(
-      "pushSendResult"
-    );
-
-
-  if (!box) {
-    return;
-  }
-
-
-  byId(
-    "pushResultTotal"
-  ).textContent =
-    String(
-      Number(
-        result?.total ||
-        0
-      )
-    );
-
-
-  byId(
-    "pushResultSent"
-  ).textContent =
-    String(
-      Number(
-        result?.sent ||
-        0
-      )
-    );
-
-
-  byId(
-    "pushResultFailed"
-  ).textContent =
-    String(
-      Number(
-        result?.failed ||
-        0
-      )
-    );
-
-
-  box.hidden =
-    false;
-}
-
-
-/* =========================================================
-   SEND
-========================================================= */
-
-async function sendPushNotification() {
-  if (state.isSending) {
-    return;
-  }
-
-
-  const payload =
-    buildPayload();
-
-
-  const audience =
-    audienceLabel(
-      audienceSelect.value
-    );
-
-
-  const confirmed =
-    window.confirm(
-      `Send this notification to ${audience}?`
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  setSending(
-    true
-  );
-
-
-  setStatus(
-    "Sending push notification…"
-  );
-
-
-  const resultBox =
-    byId(
-      "pushSendResult"
-    );
-
-
-  if (resultBox) {
-    resultBox.hidden =
-      true;
-  }
-
-
-  try {
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .functions
-        .invoke(
-          "send-push",
-          {
-            body:
-              payload
-          }
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    renderResult(
-      data
-    );
-
-
-    const sent =
-      Number(
-        data?.sent ||
-        0
-      );
-
-
-    const failed =
-      Number(
-        data?.failed ||
-        0
-      );
-
-
-    const total =
-      Number(
-        data?.total ||
-        0
-      );
-
-
-    if (
-      total ===
-      0
-    ) {
-      setStatus(
-        "No active push subscriptions matched this audience.",
-        "warning"
-      );
-
-
-      return;
-    }
-
-
-    if (
-      failed >
-      0
-    ) {
-      setStatus(
-        `Push delivery completed: ${sent} sent and ${failed} failed.`,
-        "warning"
-      );
-
-
-      return;
-    }
-
-
-    setStatus(
-      `Push notification sent successfully to ${sent} registered device${
-        sent === 1
-          ? ""
-          : "s"
-      }.`,
-      "success"
-    );
-  } catch (error) {
-    console.error(
-      "ADMIN PUSH SEND ERROR:",
-      error
-    );
-
-
-    setStatus(
-      await extractFunctionError(
-        error
-      ),
-      "error"
-    );
-  } finally {
-    setSending(
-      false
-    );
-  }
-}
-
-
-/* =========================================================
-   RESET
-========================================================= */
-
-function resetForm() {
-  form.reset();
-
-
-  titleInput.value =
-    "Alexandria Cardiology League";
-
-
-  bodyInput.value =
-    "";
-
-
-  urlInput.value =
-    "/Cardiology/notifications.html";
-
-
-  audienceSelect.value =
-    "all";
-
-
-  typeSelect.value =
-    "announcement";
-
-
-  setStatus(
-    ""
-  );
-
-
-  const resultBox =
-    byId(
-      "pushSendResult"
-    );
-
-
-  if (resultBox) {
-    resultBox.hidden =
-      true;
-  }
-
-
-  updatePreview();
-}
-
-
-/* =========================================================
-   EVENTS
-========================================================= */
-
-function bindEvents() {
-  form?.addEventListener(
-    "submit",
-    async (
-      event
-    ) => {
-      event.preventDefault();
-
-
-      try {
-        await sendPushNotification();
-      } catch (error) {
-        console.error(
-          "ADMIN PUSH VALIDATION ERROR:",
-          error
-        );
-
-
-        setStatus(
-          error.message ||
-          "Check the notification details.",
-          "error"
-        );
-      }
-    }
-  );
-
-
-  resetButton
-    ?.addEventListener(
-      "click",
-      resetForm
-    );
-
-
-  [
-    audienceSelect,
-    typeSelect,
-    titleInput,
-    bodyInput,
-    urlInput,
-    tagInput,
-    requireInteractionInput
-  ].forEach(
-    (element) => {
-      element?.addEventListener(
-        "input",
-        updatePreview
-      );
-
-
-      element?.addEventListener(
-        "change",
-        updatePreview
-      );
-    }
-  );
-}
-
-
-/* =========================================================
-   INITIALIZATION
-========================================================= */
-
-async function initializeAdminPush() {
-  try {
-    applyEditionContext();
-
-
-    const profile =
-      await protectAndRender(
-        "login.html"
-      );
-
-
-    if (!profile) {
-      return;
-    }
-
-
-    if (
-      !isAdminProfile(
-        profile
-      )
-    ) {
-      window.location.replace(
-        aclUrl(
-          "modules.html",
-          selectedEdition
-        )
-      );
-
-
-      return;
-    }
-
-
-    state.profile =
-      profile;
-
-
-    bindEvents();
-    updatePreview();
-
-
-    setStatus(
-      "Push sender ready.",
-      "success"
-    );
-  } catch (error) {
-    console.error(
-      "ADMIN PUSH INITIALIZATION ERROR:",
-      error
-    );
-
-
-    setStatus(
-      error.message ||
-      "The push notification sender could not be initialized.",
-      "error"
-    );
-  }
-}
-
-
-if (
-  document.readyState ===
-  "loading"
-) {
-  document.addEventListener(
-    "DOMContentLoaded",
-    initializeAdminPush,
-    {
-      once:
-        true
-    }
-  );
-} else {
-  void initializeAdminPush();
-}
+   
