@@ -7,7 +7,12 @@ import {
   protectAndRender,
   resolveAclEdition,
   aclUrl
-} from "./session-ui.js?v=4.6.0";
+} from "./session-ui.js?v=4.8.0";
+
+
+console.log(
+  "ACL PROGRESS PAGE v2.2.0 LOADED"
+);
 
 
 /* =========================================================
@@ -19,56 +24,94 @@ const selectedEdition =
 
 
 document.title =
-  selectedEdition === "basic"
+  selectedEdition ===
+    "basic"
     ? "Basic Edition Progress | ACL"
     : "Expert Edition Progress | ACL";
 
 
 /* =========================================================
-   STATE
+   PAGE STATE
 ========================================================= */
 
-const byId =
-  (id) =>
-    document.getElementById(
-      id
+const progressState = {
+  attempts: [],
+  questionCache: new Map(),
+  loading: false,
+  reviewing: false,
+  statusTimer: null
+};
+
+
+/* =========================================================
+   ELEMENT HELPERS
+========================================================= */
+
+function byId(
+  id
+) {
+  return document.getElementById(
+    id
+  );
+}
+
+
+function setButtonState(
+  button,
+  {
+    disabled,
+    text
+  }
+) {
+  if (!button) {
+    return;
+  }
+
+
+  button.disabled =
+    Boolean(
+      disabled
     );
 
 
-let attempts =
-  [];
-
-
-let questionCache =
-  new Map();
+  button.textContent =
+    text;
+}
 
 
 /* =========================================================
    TEXT HELPERS
 ========================================================= */
 
-function esc(
+function escapeHtml(
   value = ""
 ) {
   return String(
     value
   ).replace(
     /[&<>'"]/g,
-    (character) =>
+    (
+      character
+    ) =>
       ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         "'": "&#39;",
         '"': "&quot;"
-      })[character]
+      })[
+        character
+      ]
   );
 }
 
 
-function show(
-  message,
-  type = "success"
+function showStatus(
+  message = "",
+  type = "",
+  {
+    autoHide = true
+  } = {}
 ) {
   const box =
     byId(
@@ -81,25 +124,64 @@ function show(
   }
 
 
+  if (
+    progressState.statusTimer
+  ) {
+    window.clearTimeout(
+      progressState.statusTimer
+    );
+
+
+    progressState.statusTimer =
+      null;
+  }
+
+
   box.textContent =
     message;
 
 
   box.className =
-    `status-box show ${type}`;
+    `status-box ${
+      message
+        ? "show"
+        : ""
+    } ${type}`.trim();
 
 
-  window.setTimeout(
-    () => {
-      box.className =
-        "status-box";
-    },
-    3500
-  );
+  box.hidden =
+    !message;
+
+
+  if (
+    message &&
+    autoHide
+  ) {
+    progressState.statusTimer =
+      window.setTimeout(
+        () => {
+          box.textContent =
+            "";
+
+
+          box.className =
+            "status-box";
+
+
+          box.hidden =
+            true;
+
+
+          progressState.statusTimer =
+            null;
+        },
+        3500
+      );
+  }
 }
 
 
-function fmtDate(
+function formatDate(
   value
 ) {
   if (!value) {
@@ -135,7 +217,7 @@ function fmtDate(
 }
 
 
-function fmtDuration(
+function formatDuration(
   seconds,
   started,
   ended
@@ -152,22 +234,39 @@ function fmtDuration(
     ) &&
     started
   ) {
-    total =
-      Math.max(
-        0,
-        Math.round(
-          (
-            new Date(
-              ended ||
-              Date.now()
-            ) -
-            new Date(
-              started
-            )
-          ) /
-          1000
-        )
-      );
+    const startTime =
+      new Date(
+        started
+      ).getTime();
+
+
+    const endTime =
+      new Date(
+        ended ||
+        Date.now()
+      ).getTime();
+
+
+    if (
+      Number.isFinite(
+        startTime
+      ) &&
+      Number.isFinite(
+        endTime
+      )
+    ) {
+      total =
+        Math.max(
+          0,
+          Math.round(
+            (
+              endTime -
+              startTime
+            ) /
+            1000
+          )
+        );
+    }
   }
 
 
@@ -178,6 +277,15 @@ function fmtDuration(
   ) {
     return "—";
   }
+
+
+  total =
+    Math.max(
+      0,
+      Math.round(
+        total
+      )
+    );
 
 
   const hours =
@@ -216,37 +324,121 @@ function fmtDuration(
 }
 
 
-function pct(
+/* =========================================================
+   ATTEMPT HELPERS
+========================================================= */
+
+function attemptAnswers(
+  attempt
+) {
+  return Array.isArray(
+    attempt?.answers
+  )
+    ? attempt.answers
+    : [];
+}
+
+
+function answeredCount(
+  attempt
+) {
+  return attemptAnswers(
+    attempt
+  ).filter(
+    (
+      answer
+    ) =>
+      answer &&
+      (
+        answer.choice !==
+          undefined ||
+        answer.selected_option_id ||
+        answer.selected_option_ids ||
+        answer.selectedOptionId ||
+        answer.selectedOptionIds
+      )
+  ).length;
+}
+
+
+function correctAnswerCount(
+  attempt
+) {
+  const answers =
+    attemptAnswers(
+      attempt
+    );
+
+
+  const calculatedCorrect =
+    answers.filter(
+      (
+        answer
+      ) =>
+        answer?.correct ===
+          true ||
+        answer?.is_correct ===
+          true
+    ).length;
+
+
+  if (
+    answers.length
+  ) {
+    return calculatedCorrect;
+  }
+
+
+  const storedCorrect =
+    Number(
+      attempt?.correct_count ??
+      attempt?.correct_answers
+    );
+
+
+  return Number.isFinite(
+    storedCorrect
+  )
+    ? storedCorrect
+    : 0;
+}
+
+
+function accuracyPercentage(
   attempt
 ) {
   const questionCount =
     Number(
-      attempt.question_count ||
+      attempt?.question_count ||
       0
     );
 
 
-  if (!questionCount) {
+  if (
+    questionCount <=
+    0
+  ) {
     return 0;
   }
 
 
-  return Math.round(
-    (
-      Number(
-        attempt.score ||
-        0
-      ) /
-      questionCount
-    ) *
-    100
+  return Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(
+        (
+          correctAnswerCount(
+            attempt
+          ) /
+          questionCount
+        ) *
+        100
+      )
+    )
   );
 }
 
-
-/* =========================================================
-   EDITION HELPERS
-========================================================= */
 
 function attemptEdition(
   attempt
@@ -265,30 +457,55 @@ function attemptEdition(
 function belongsToSelectedEdition(
   attempt
 ) {
-  const edition =
+  return (
     attemptEdition(
       attempt
-    );
-
-
-  /*
-   * Show only attempts with a confirmed edition.
-   * Unmatched legacy attempts are hidden.
-   */
-
-  return (
-    edition ===
+    ) ===
     selectedEdition
   );
 }
 
 
-function moduleUrl(
-  id
+function attemptModuleTitle(
+  attempt
 ) {
+  return (
+    attempt?.module_title ||
+    attempt?.modules?.title ||
+    attempt?.quiz_title ||
+    "ACL Module"
+  );
+}
+
+
+function moduleUrl(
+  attempt
+) {
+  const storedLaunchPath =
+    attempt?.launch_path ||
+    attempt?.module_launch_path ||
+    attempt?.modules?.launch_path ||
+    "";
+
+
+  if (storedLaunchPath) {
+    return aclUrl(
+      storedLaunchPath,
+      selectedEdition
+    );
+  }
+
+
+  const moduleId =
+    String(
+      attempt?.module_id ||
+      ""
+    );
+
+
   const path =
-    id ===
-    "ppci-fundamentals"
+    moduleId ===
+      "ppci-fundamentals"
       ? "modules/ppci/index.html"
       : "modules.html";
 
@@ -311,13 +528,16 @@ function renderEditionBadge() {
     );
 
 
-  if (badge) {
-    badge.textContent =
-      selectedEdition ===
-        "basic"
-        ? "BASIC EDITION PROGRESS"
-        : "EXPERT EDITION PROGRESS";
+  if (!badge) {
+    return;
   }
+
+
+  badge.textContent =
+    selectedEdition ===
+      "basic"
+      ? "BASIC EDITION PROGRESS"
+      : "EXPERT EDITION PROGRESS";
 }
 
 
@@ -327,16 +547,20 @@ function renderEditionBadge() {
 
 function updateStats() {
   const completed =
-    attempts.filter(
-      (attempt) =>
+    progressState.attempts.filter(
+      (
+        attempt
+      ) =>
         attempt.status ===
         "completed"
     );
 
 
   const open =
-    attempts.filter(
-      (attempt) =>
+    progressState.attempts.filter(
+      (
+        attempt
+      ) =>
         attempt.status ===
         "in_progress"
     );
@@ -357,16 +581,15 @@ function updateStats() {
     );
 
 
-  const totalScore =
+  const totalCorrect =
     completed.reduce(
       (
         total,
         attempt
       ) =>
         total +
-        Number(
-          attempt.score ||
-          0
+        correctAnswerCount(
+          attempt
         ),
       0
     );
@@ -390,7 +613,7 @@ function updateStats() {
     );
 
 
-  const totalCorrect =
+  const totalCorrectElement =
     byId(
       "totalCorrect"
     );
@@ -398,22 +621,27 @@ function updateStats() {
 
   if (completedCount) {
     completedCount.textContent =
-      completed.length;
+      String(
+        completed.length
+      );
   }
 
 
   if (openCount) {
     openCount.textContent =
-      open.length;
+      String(
+        open.length
+      );
   }
 
 
   if (overallAccuracy) {
     overallAccuracy.textContent =
-      totalQuestions
+      totalQuestions >
+        0
         ? `${Math.round(
             (
-              totalScore /
+              totalCorrect /
               totalQuestions
             ) *
             100
@@ -422,9 +650,11 @@ function updateStats() {
   }
 
 
-  if (totalCorrect) {
-    totalCorrect.textContent =
-      totalScore;
+  if (totalCorrectElement) {
+    totalCorrectElement.textContent =
+      String(
+        totalCorrect
+      );
   }
 }
 
@@ -433,7 +663,7 @@ function updateStats() {
    OPEN ATTEMPTS
 ========================================================= */
 
-function renderOpen() {
+function renderOpenAttempts() {
   const container =
     byId(
       "openAttempts"
@@ -445,15 +675,17 @@ function renderOpen() {
   }
 
 
-  const open =
-    attempts.filter(
-      (attempt) =>
+  const openAttempts =
+    progressState.attempts.filter(
+      (
+        attempt
+      ) =>
         attempt.status ===
         "in_progress"
     );
 
 
-  if (!open.length) {
+  if (!openAttempts.length) {
     container.innerHTML = `
       <div class="card empty-progress">
 
@@ -461,13 +693,15 @@ function renderOpen() {
           No unfinished attempts
         </h3>
 
+
         <p class="muted">
           Start a module and your progress will be saved here automatically.
         </p>
 
+
         <a
           class="secondary-btn"
-          href="${esc(
+          href="${escapeHtml(
             aclUrl(
               "modules.html",
               selectedEdition
@@ -480,21 +714,21 @@ function renderOpen() {
       </div>
     `;
 
+
     return;
   }
 
 
   container.innerHTML =
-    open
+    openAttempts
       .map(
-        (attempt) => {
+        (
+          attempt
+        ) => {
           const answered =
-            Array.isArray(
-              attempt.answers
-            )
-              ? attempt.answers
-                  .length
-              : 0;
+            answeredCount(
+              attempt
+            );
 
 
           const questionCount =
@@ -505,15 +739,19 @@ function renderOpen() {
 
 
           const progress =
-            questionCount
+            questionCount >
+              0
               ? Math.min(
                   100,
-                  Math.round(
-                    (
-                      answered /
-                      questionCount
-                    ) *
-                    100
+                  Math.max(
+                    0,
+                    Math.round(
+                      (
+                        answered /
+                        questionCount
+                      ) *
+                      100
+                    )
                   )
                 )
               : 0;
@@ -532,14 +770,17 @@ function renderOpen() {
                     In progress
                   </span>
 
+
                   <h3>
-                    ${esc(
-                      attempt.module_title ||
-                      "ACL Module"
+                    ${escapeHtml(
+                      attemptModuleTitle(
+                        attempt
+                      )
                     )}
                   </h3>
 
                 </div>
+
 
                 <strong>
                   ${answered}/${questionCount}
@@ -548,10 +789,17 @@ function renderOpen() {
               </div>
 
 
-              <div class="progress-track">
+              <div
+                class="progress-track"
+                role="progressbar"
+                aria-label="Attempt progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="${progress}"
+              >
 
                 <span
-                  style="width:${progress}%"
+                  style="width: ${progress}%"
                 ></span>
 
               </div>
@@ -561,17 +809,18 @@ function renderOpen() {
 
                 <span>
                   Last saved:
-                  ${fmtDate(
+                  ${formatDate(
                     attempt.updated_at
                   )}
                 </span>
 
+
                 <span>
                   Current score:
-                  ${esc(
-                    attempt.score ||
+                  ${escapeHtml(
+                    attempt.score ??
                     0
-                  )}/${questionCount}
+                  )}
                 </span>
 
               </div>
@@ -579,9 +828,9 @@ function renderOpen() {
 
               <a
                 class="primary-btn attempt-action"
-                href="${esc(
+                href="${escapeHtml(
                   moduleUrl(
-                    attempt.module_id
+                    attempt
                   )
                 )}"
               >
@@ -592,7 +841,9 @@ function renderOpen() {
           `;
         }
       )
-      .join("");
+      .join(
+        ""
+      );
 }
 
 
@@ -612,27 +863,69 @@ function populateFilter() {
   }
 
 
-  const current =
+  const currentValue =
     select.value;
+
+
+  const moduleMap =
+    new Map();
+
+
+  progressState.attempts
+    .filter(
+      (
+        attempt
+      ) =>
+        attempt.status ===
+        "completed"
+    )
+    .forEach(
+      (
+        attempt
+      ) => {
+        const moduleId =
+          String(
+            attempt.module_id ||
+            ""
+          );
+
+
+        if (
+          !moduleId ||
+          moduleMap.has(
+            moduleId
+          )
+        ) {
+          return;
+        }
+
+
+        moduleMap.set(
+          moduleId,
+          attemptModuleTitle(
+            attempt
+          )
+        );
+      }
+    );
 
 
   const modules =
     [
-      ...new Map(
-        attempts
-          .filter(
-            (attempt) =>
-              attempt.status ===
-              "completed"
+      ...moduleMap.entries()
+    ].sort(
+      (
+        first,
+        second
+      ) =>
+        String(
+          first[1]
+        ).localeCompare(
+          String(
+            second[1]
           )
-          .map(
-            (attempt) => [
-              attempt.module_id,
-              attempt.module_title
-            ]
-          )
-      ).entries()
-    ];
+        )
+    );
 
 
   select.innerHTML =
@@ -647,28 +940,33 @@ function populateFilter() {
           id,
           title
         ]) => `
-          <option value="${esc(id)}">
-            ${esc(
-              title ||
-              "ACL Module"
+          <option value="${escapeHtml(
+            id
+          )}">
+            ${escapeHtml(
+              title
             )}
           </option>
         `
       )
-      .join("");
+      .join(
+        ""
+      );
 
 
   if (
     [
       ...select.options
     ].some(
-      (option) =>
+      (
+        option
+      ) =>
         option.value ===
-        current
+        currentValue
     )
   ) {
     select.value =
-      current;
+      currentValue;
   }
 }
 
@@ -677,7 +975,7 @@ function populateFilter() {
    COMPLETED ATTEMPTS
 ========================================================= */
 
-function renderCompleted() {
+function renderCompletedAttempts() {
   const container =
     byId(
       "completedAttempts"
@@ -697,14 +995,18 @@ function renderCompleted() {
 
 
   const rows =
-    attempts.filter(
-      (attempt) =>
+    progressState.attempts.filter(
+      (
+        attempt
+      ) =>
         attempt.status ===
           "completed" &&
         (
           filter ===
             "all" ||
-          attempt.module_id ===
+          String(
+            attempt.module_id
+          ) ===
             filter
         )
     );
@@ -718,12 +1020,15 @@ function renderCompleted() {
           No completed attempts yet
         </h3>
 
+
         <p class="muted">
-          Finished quizzes will appear here with score, duration, and review details.
+          Finished quizzes will appear here with score, duration,
+          accuracy, and review details.
         </p>
 
       </div>
     `;
+
 
     return;
   }
@@ -732,105 +1037,123 @@ function renderCompleted() {
   container.innerHTML =
     rows
       .map(
-        (attempt) => `
-          <article class="card completed-attempt">
-
-            <div
-              class="score-ring"
-              style="--score:${pct(
-                attempt
-              )}"
-            >
-              <span>
-                ${pct(
-                  attempt
-                )}%
-              </span>
-            </div>
+        (
+          attempt
+        ) => {
+          const accuracy =
+            accuracyPercentage(
+              attempt
+            );
 
 
-            <div class="completed-main">
+          const correct =
+            correctAnswerCount(
+              attempt
+            );
 
-              <div class="attempt-top">
 
-                <div>
+          const questionCount =
+            Number(
+              attempt.question_count ||
+              0
+            );
 
-                  <span class="attempt-status completed">
-                    Completed
-                  </span>
 
-                  <h3>
-                    ${esc(
-                      attempt.module_title ||
-                      "ACL Module"
+          return `
+            <article class="card completed-attempt">
+
+              <div
+                class="score-ring"
+                style="--score: ${accuracy}"
+                aria-label="${accuracy}% accuracy"
+              >
+
+                <span>
+                  ${accuracy}%
+                </span>
+
+              </div>
+
+
+              <div class="completed-main">
+
+                <div class="attempt-top">
+
+                  <div>
+
+                    <span class="attempt-status completed">
+                      Completed
+                    </span>
+
+
+                    <h3>
+                      ${escapeHtml(
+                        attemptModuleTitle(
+                          attempt
+                        )
+                      )}
+                    </h3>
+
+                  </div>
+
+
+                  <strong>
+                    ${escapeHtml(
+                      attempt.score ??
+                      0
                     )}
-                  </h3>
+                    pts
+                  </strong>
 
                 </div>
 
-                <strong>
-                  ${esc(
-                    attempt.score ||
-                    0
-                  )}
-                  /
-                  ${Number(
-                    attempt.question_count ||
-                    0
-                  )}
-                </strong>
+
+                <div class="attempt-meta">
+
+                  <span>
+                    ${formatDate(
+                      attempt.completed_at ||
+                      attempt.updated_at
+                    )}
+                  </span>
+
+
+                  <span>
+                    ${formatDuration(
+                      attempt.duration_seconds,
+                      attempt.started_at,
+                      attempt.completed_at
+                    )}
+                  </span>
+
+
+                  <span>
+                    ${correct}/${questionCount}
+                    correct
+                  </span>
+
+                </div>
 
               </div>
 
 
-              <div class="attempt-meta">
+              <button
+                class="secondary-btn review-btn"
+                type="button"
+                data-id="${escapeHtml(
+                  attempt.id
+                )}"
+              >
+                Review
+              </button>
 
-                <span>
-                  ${fmtDate(
-                    attempt.completed_at ||
-                    attempt.updated_at
-                  )}
-                </span>
-
-                <span>
-                  ${fmtDuration(
-                    attempt.duration_seconds,
-                    attempt.started_at,
-                    attempt.completed_at
-                  )}
-                </span>
-
-                <span>
-                  ${
-                    Array.isArray(
-                      attempt.answers
-                    )
-                      ? attempt.answers
-                          .length
-                      : 0
-                  }
-                  answered
-                </span>
-
-              </div>
-
-            </div>
-
-
-            <button
-              class="secondary-btn review-btn"
-              type="button"
-              data-id="${esc(
-                attempt.id
-              )}"
-            >
-              Review
-            </button>
-
-          </article>
-        `
+            </article>
+          `;
+        }
       )
-      .join("");
+      .join(
+        ""
+      );
 }
 
 
@@ -842,246 +1165,181 @@ async function getQuestionMap(
   moduleId
 ) {
   if (
-    questionCache.has(
-      moduleId
-    )
+    progressState
+      .questionCache
+      .has(
+        moduleId
+      )
   ) {
-    return questionCache.get(
-      moduleId
-    );
+    return progressState
+      .questionCache
+      .get(
+        moduleId
+      );
   }
 
 
-  let questions =
-    [];
+  let questions = [];
 
 
   if (
     moduleId ===
     "ppci-fundamentals"
   ) {
-    ({
-      PPCI_QUESTIONS:
-        questions
-    } =
+    const questionModule =
       await import(
         "../../modules/ppci/questions.js"
-      ));
+      );
+
+
+    questions =
+      questionModule
+        .PPCI_QUESTIONS ||
+      [];
   }
 
 
   const map =
     new Map(
-      (
-        questions ||
-        []
-      ).map(
-        (question) => [
-          question.id,
+      questions.map(
+        (
+          question
+        ) => [
+          String(
+            question.id
+          ),
           question
         ]
       )
     );
 
 
-  questionCache.set(
-    moduleId,
-    map
-  );
+  progressState
+    .questionCache
+    .set(
+      moduleId,
+      map
+    );
 
 
   return map;
 }
 
 
+function findAttemptAnswer(
+  answers,
+  questionId
+) {
+  return answers.find(
+    (
+      answer
+    ) =>
+      String(
+        answer.questionId ??
+        answer.question_id
+      ) ===
+      String(
+        questionId
+      )
+  );
+}
+
+
+function selectedAnswerText(
+  question,
+  answer
+) {
+  if (!answer) {
+    return "Not answered";
+  }
+
+
+  const optionIndex =
+    Number(
+      answer.choice
+    );
+
+
+  if (
+    question &&
+    Number.isInteger(
+      optionIndex
+    ) &&
+    Array.isArray(
+      question.options
+    )
+  ) {
+    return (
+      question.options[
+        optionIndex
+      ] ||
+      `Choice ${
+        optionIndex +
+        1
+      }`
+    );
+  }
+
+
+  return (
+    answer.selected_option_text ||
+    answer.option_text ||
+    (
+      Number.isInteger(
+        optionIndex
+      )
+        ? `Choice ${
+            optionIndex +
+            1
+          }`
+        : "Answer recorded"
+    )
+  );
+}
+
+
+function correctAnswerText(
+  question
+) {
+  if (!question) {
+    return "Unavailable";
+  }
+
+
+  const answerIndex =
+    Number(
+      question.answer
+    );
+
+
+  if (
+    Number.isInteger(
+      answerIndex
+    ) &&
+    Array.isArray(
+      question.options
+    )
+  ) {
+    return (
+      question.options[
+        answerIndex
+      ] ||
+      "Unavailable"
+    );
+  }
+
+
+  return "Unavailable";
+}
+
+
 async function openReview(
   attempt
 ) {
-  const map =
-    await getQuestionMap(
-      attempt.module_id
-    );
-
-
-  const answers =
-    Array.isArray(
-      attempt.answers
-    )
-      ? attempt.answers
-      : [];
-
-
-  const rows =
-    (
-      attempt.question_ids ||
-      []
-    )
-      .map(
-        (
-          id,
-          index
-        ) => {
-          const question =
-            map.get(
-              id
-            );
-
-
-          const answer =
-            answers.find(
-              (item) =>
-                item.questionId ===
-                id
-            );
-
-
-          const selectedChoice =
-            question &&
-            answer
-              ? question.options?.[
-                  Number(
-                    answer.choice
-                  )
-                ]
-              : answer
-                ? `Choice ${
-                    Number(
-                      answer.choice
-                    ) +
-                    1
-                  }`
-                : "Not answered";
-
-
-          const correctChoice =
-            question
-              ? question.options?.[
-                  Number(
-                    question.answer
-                  )
-                ]
-              : "Unavailable";
-
-
-          return `
-            <div
-              class="
-                review-item
-                ${
-                  answer?.correct
-                    ? "correct"
-                    : "incorrect"
-                }
-              "
-            >
-
-              <div class="review-number">
-                ${index + 1}
-              </div>
-
-
-              <div>
-
-                <h4>
-                  ${esc(
-                    question?.stem ||
-                    `Question ${id}`
-                  )}
-                </h4>
-
-                <p>
-                  <b>Your answer:</b>
-                  ${esc(
-                    selectedChoice
-                  )}
-                </p>
-
-                ${
-                  answer?.correct
-                    ? ""
-                    : `
-                      <p>
-                        <b>Correct answer:</b>
-                        ${esc(
-                          correctChoice
-                        )}
-                      </p>
-                    `
-                }
-
-                ${
-                  question
-                    ?.explanation
-                    ? `
-                      <p class="muted">
-                        ${esc(
-                          question.explanation
-                        )}
-                      </p>
-                    `
-                    : ""
-                }
-
-              </div>
-
-
-              <span class="review-mark">
-                ${
-                  answer?.correct
-                    ? "✓"
-                    : "×"
-                }
-              </span>
-
-            </div>
-          `;
-        }
-      )
-      .join("");
-
-
-  const reviewContent =
-    byId(
-      "reviewContent"
-    );
-
-
-  if (reviewContent) {
-    reviewContent.innerHTML = `
-      <h2>
-        ${esc(
-          attempt.module_title ||
-          "ACL Module"
-        )}
-      </h2>
-
-      <p class="muted">
-        Score
-        ${esc(
-          attempt.score ||
-          0
-        )}
-        /
-        ${Number(
-          attempt.question_count ||
-          0
-        )}
-        ·
-        ${pct(
-          attempt
-        )}%
-        ·
-        ${fmtDuration(
-          attempt.duration_seconds,
-          attempt.started_at,
-          attempt.completed_at
-        )}
-      </p>
-
-      <div class="review-list">
-        ${rows}
-      </div>
-    `;
+  if (
+    progressState.reviewing
+  ) {
+    return;
   }
 
 
@@ -1091,42 +1349,383 @@ async function openReview(
     );
 
 
+  const reviewContent =
+    byId(
+      "reviewContent"
+    );
+
+
   if (
-    reviewDialog &&
+    !reviewDialog ||
+    !reviewContent
+  ) {
+    return;
+  }
+
+
+  progressState.reviewing =
+    true;
+
+
+  reviewContent.innerHTML = `
+    <h2>
+      Loading attempt review…
+    </h2>
+
+    <p class="muted">
+      Preparing your saved answers.
+    </p>
+  `;
+
+
+  if (
     typeof reviewDialog
       .showModal ===
-      "function"
+      "function" &&
+    !reviewDialog.open
   ) {
     reviewDialog.showModal();
+  }
+
+
+  try {
+    const map =
+      await getQuestionMap(
+        attempt.module_id
+      );
+
+
+    const answers =
+      attemptAnswers(
+        attempt
+      );
+
+
+    const questionIds =
+      Array.isArray(
+        attempt.question_ids
+      ) &&
+      attempt.question_ids.length
+        ? attempt.question_ids
+        : answers
+            .map(
+              (
+                answer
+              ) =>
+                answer.questionId ??
+                answer.question_id
+            )
+            .filter(
+              Boolean
+            );
+
+
+    const reviewRows =
+      questionIds
+        .map(
+          (
+            questionId,
+            index
+          ) => {
+            const question =
+              map.get(
+                String(
+                  questionId
+                )
+              );
+
+
+            const answer =
+              findAttemptAnswer(
+                answers,
+                questionId
+              );
+
+
+            const isCorrect =
+              answer?.correct ===
+                true ||
+              answer?.is_correct ===
+                true;
+
+
+            const selectedChoice =
+              selectedAnswerText(
+                question,
+                answer
+              );
+
+
+            const correctChoice =
+              correctAnswerText(
+                question
+              );
+
+
+            return `
+              <div
+                class="
+                  review-item
+                  ${
+                    isCorrect
+                      ? "correct"
+                      : "incorrect"
+                  }
+                "
+              >
+
+                <div class="review-number">
+                  ${index + 1}
+                </div>
+
+
+                <div>
+
+                  <h4>
+                    ${escapeHtml(
+                      question?.stem ||
+                      question?.question_text ||
+                      `Question ${
+                        index +
+                        1
+                      }`
+                    )}
+                  </h4>
+
+
+                  <p>
+                    <b>Your answer:</b>
+                    ${escapeHtml(
+                      selectedChoice
+                    )}
+                  </p>
+
+
+                  ${
+                    !isCorrect &&
+                    correctChoice !==
+                      "Unavailable"
+                      ? `
+                        <p>
+                          <b>Correct answer:</b>
+                          ${escapeHtml(
+                            correctChoice
+                          )}
+                        </p>
+                      `
+                      : ""
+                  }
+
+
+                  ${
+                    question?.explanation
+                      ? `
+                        <p class="muted">
+                          ${escapeHtml(
+                            question.explanation
+                          )}
+                        </p>
+                      `
+                      : ""
+                  }
+
+                </div>
+
+
+                <span
+                  class="review-mark"
+                  aria-label="${
+                    isCorrect
+                      ? "Correct"
+                      : "Incorrect"
+                  }"
+                >
+                  ${
+                    isCorrect
+                      ? "✓"
+                      : "×"
+                  }
+                </span>
+
+              </div>
+            `;
+          }
+        )
+        .join(
+          ""
+        );
+
+
+    const accuracy =
+      accuracyPercentage(
+        attempt
+      );
+
+
+    reviewContent.innerHTML = `
+      <h2 id="reviewDialogTitle">
+        ${escapeHtml(
+          attemptModuleTitle(
+            attempt
+          )
+        )}
+      </h2>
+
+
+      <p class="muted">
+        Confidence-adjusted score:
+        ${escapeHtml(
+          attempt.score ??
+          0
+        )}
+        points
+        ·
+        Accuracy:
+        ${accuracy}%
+        ·
+        ${formatDuration(
+          attempt.duration_seconds,
+          attempt.started_at,
+          attempt.completed_at
+        )}
+      </p>
+
+
+      <div class="review-list">
+
+        ${
+          reviewRows ||
+          `
+            <div class="card muted">
+              No saved question-level review is available for this attempt.
+            </div>
+          `
+        }
+
+      </div>
+    `;
+  } catch (
+    error
+  ) {
+    console.error(
+      "ACL ATTEMPT REVIEW ERROR:",
+      error
+    );
+
+
+    reviewContent.innerHTML = `
+      <h2 id="reviewDialogTitle">
+        Review unavailable
+      </h2>
+
+
+      <p class="muted">
+        ${escapeHtml(
+          error.message ||
+          "This attempt could not be reviewed."
+        )}
+      </p>
+    `;
+  } finally {
+    progressState.reviewing =
+      false;
   }
 }
 
 
 /* =========================================================
-   LOAD
+   LOAD PROGRESS
 ========================================================= */
 
-async function load() {
-  const loadedAttempts =
-    await listAttempts();
-
-
-  attempts =
-    (
-      Array.isArray(
-        loadedAttempts
-      )
-        ? loadedAttempts
-        : []
-    ).filter(
-      belongsToSelectedEdition
+function renderLoadingState() {
+  const openContainer =
+    byId(
+      "openAttempts"
     );
 
 
-  updateStats();
-  populateFilter();
-  renderOpen();
-  renderCompleted();
+  const completedContainer =
+    byId(
+      "completedAttempts"
+    );
+
+
+  if (openContainer) {
+    openContainer.innerHTML = `
+      <div class="card muted">
+        Loading unfinished attempts…
+      </div>
+    `;
+  }
+
+
+  if (completedContainer) {
+    completedContainer.innerHTML = `
+      <div class="card muted">
+        Loading completed attempts…
+      </div>
+    `;
+  }
+}
+
+
+async function loadProgress() {
+  if (
+    progressState.loading
+  ) {
+    return;
+  }
+
+
+  progressState.loading =
+    true;
+
+
+  renderLoadingState();
+
+
+  try {
+    const loadedAttempts =
+      await listAttempts();
+
+
+    progressState.attempts =
+      (
+        Array.isArray(
+          loadedAttempts
+        )
+          ? loadedAttempts
+          : []
+      )
+        .filter(
+          belongsToSelectedEdition
+        )
+        .sort(
+          (
+            first,
+            second
+          ) =>
+            new Date(
+              second.updated_at ||
+              second.completed_at ||
+              0
+            ).getTime() -
+            new Date(
+              first.updated_at ||
+              first.completed_at ||
+              0
+            ).getTime()
+        );
+
+
+    updateStats();
+    populateFilter();
+    renderOpenAttempts();
+    renderCompletedAttempts();
+  } finally {
+    progressState.loading =
+      false;
+  }
 }
 
 
@@ -1139,7 +1738,7 @@ byId(
 )
   ?.addEventListener(
     "change",
-    renderCompleted
+    renderCompletedAttempts
   );
 
 
@@ -1148,18 +1747,61 @@ byId(
 )
   ?.addEventListener(
     "click",
-    async () => {
-      try {
-        await load();
+    async (
+      event
+    ) => {
+      const button =
+        event.currentTarget;
 
-        show(
-          "Progress refreshed."
+
+      setButtonState(
+        button,
+        {
+          disabled:
+            true,
+
+          text:
+            "Refreshing…"
+        }
+      );
+
+
+      try {
+        await loadProgress();
+
+
+        showStatus(
+          "Progress refreshed.",
+          "success"
         );
-      } catch (error) {
-        show(
+      } catch (
+        error
+      ) {
+        console.error(
+          "ACL PROGRESS REFRESH ERROR:",
+          error
+        );
+
+
+        showStatus(
           error.message ||
           "Could not refresh progress.",
-          "error"
+          "error",
+          {
+            autoHide:
+              false
+          }
+        );
+      } finally {
+        setButtonState(
+          button,
+          {
+            disabled:
+              false,
+
+            text:
+              "Refresh"
+          }
         );
       }
     }
@@ -1171,7 +1813,9 @@ byId(
 )
   ?.addEventListener(
     "click",
-    async (event) => {
+    (
+      event
+    ) => {
       const button =
         event.target.closest(
           "button[data-id]"
@@ -1184,8 +1828,10 @@ byId(
 
 
       const attempt =
-        attempts.find(
-          (item) =>
+        progressState.attempts.find(
+          (
+            item
+          ) =>
             String(
               item.id
             ) ===
@@ -1196,7 +1842,7 @@ byId(
 
 
       if (attempt) {
-        await openReview(
+        void openReview(
           attempt
         );
       }
@@ -1208,26 +1854,59 @@ byId(
    START
 ========================================================= */
 
-try {
-  await protectAndRender(
-    "login.html"
-  );
+async function startProgressPage() {
+  try {
+    const profile =
+      await protectAndRender(
+        "login.html"
+      );
 
 
-  renderEditionBadge();
+    if (!profile) {
+      return;
+    }
 
 
-  await load();
-} catch (error) {
-  console.error(
-    "PROGRESS PAGE ERROR:",
+    renderEditionBadge();
+
+
+    await loadProgress();
+  } catch (
     error
-  );
+  ) {
+    console.error(
+      "ACL PROGRESS PAGE ERROR:",
+      error
+    );
 
 
-  show(
-    error.message ||
-    "Could not load your progress.",
-    "error"
+    showStatus(
+      error.message ||
+      "Could not load your progress.",
+      "error",
+      {
+        autoHide:
+          false
+      }
+    );
+  }
+}
+
+
+if (
+  document.readyState ===
+  "loading"
+) {
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+      void startProgressPage();
+    },
+    {
+      once:
+        true
+    }
   );
+} else {
+  void startProgressPage();
 }
