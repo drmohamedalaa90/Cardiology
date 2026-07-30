@@ -1,18 +1,35 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
+
+  <meta charset="utf-8">
+
+
   <meta
     name="referrer"
     content="strict-origin-when-cross-origin"
   >
 
-  <meta charset="utf-8">
 
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
   >
+
+
+  <meta
+    name="theme-color"
+    content="#0b5791"
+  >
+
+
+  <meta
+    name="description"
+    content="Manage your Alexandria Cardiology League profile, achievements, pathway, photo, and account security."
+  >
+
 
   <title>
     My Profile | Alexandria Cardiology League
@@ -20,13 +37,33 @@
 
 
   <link
-    rel="stylesheet"
-    href="assets/css/main.css?v=3.6.0"
+    rel="manifest"
+    href="manifest.json"
   >
+
+
+  <link
+    rel="icon"
+    href="assets/images/acl-icon-192.png"
+    type="image/png"
+  >
+
+
+  <link
+    rel="apple-touch-icon"
+    href="assets/images/acl-icon-192.png"
+  >
+
 
   <link
     rel="stylesheet"
-    href="assets/css/auth.css?v=1.5.2"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=1.5.3"
   >
 
 
@@ -34,316 +71,520 @@
 
 
   <style>
-    /* =====================================================
-       PROFILE PAGE LAYOUT
-    ===================================================== */
+    :root {
+      --profile-primary: #0b5791;
+      --profile-primary-dark: #073d6d;
+      --profile-secondary: #1787c9;
+      --profile-green: #146b54;
+      --profile-gold: #ffc928;
+      --profile-text: #173d5e;
+      --profile-muted: #647f96;
+      --profile-border: #cfe2f1;
+      --profile-soft: #eef7ff;
+      --profile-danger: #b33443;
+      --profile-success: #168067;
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
 
     body {
-      padding-top:
-        92px;
+      min-height: 100vh;
+      padding-top: 92px;
     }
 
 
     .profile-page {
-      padding-top:
-        28px;
-
-      padding-bottom:
-        60px;
+      padding-top: 28px;
+      padding-bottom: 60px;
     }
 
 
     .profile-page h1,
     .profile-page h2 {
-      margin-top:
-        0;
+      margin-top: 0;
+    }
+
+
+    .profile-page h1 {
+      margin-bottom: 8px;
+    }
+
+
+    .profile-page h2 {
+      margin-bottom: 8px;
+    }
+
+
+    .profile-page-section {
+      margin-top: 20px;
     }
 
 
     .profile-readonly-note {
-      display:
-        block;
+      display: block;
 
-      margin-top:
-        7px;
+      margin-top: 7px;
 
       color:
-        #647f96;
+        var(--profile-muted);
 
-      font-size:
-        0.84rem;
-
-      line-height:
-        1.45;
-    }
-
-
-    .profile-avatar-upload {
-      margin-top:
-        18px;
-    }
-
-
-    .profile-avatar-upload input {
-      width:
-        100%;
+      font-size: 0.8rem;
+      line-height: 1.45;
     }
 
 
     #profileStatus:empty,
     #passwordStatus:empty,
     #profileTrophiesStatus:empty {
-      display:
-        none;
+      display: none;
     }
 
 
     /* =====================================================
-       PROFILE HERO
+       PAGE HERO
     ===================================================== */
 
     .profile-page-hero {
-      display:
-        flex;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
 
-      align-items:
-        center;
-
-      justify-content:
-        space-between;
-
-      gap:
-        22px;
-
-      margin-bottom:
-        20px;
+      margin-bottom: 20px;
     }
 
 
     .profile-page-hero-copy {
-      min-width:
-        0;
-    }
-
-
-    .profile-page-hero-copy h1 {
-      margin-bottom:
-        8px;
+      min-width: 0;
     }
 
 
     .profile-page-hero-copy p {
-      margin:
-        0;
+      margin: 0;
     }
 
 
     /* =====================================================
-       CURRENT PATHWAY CARD
+       CURRENT PATHWAY
     ===================================================== */
 
     .profile-pathway-card {
-      display:
-        flex;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
 
-      align-items:
-        center;
-
-      justify-content:
-        space-between;
-
-      gap:
-        20px;
-
-      margin-bottom:
-        20px;
-
-      padding:
-        20px 22px;
+      margin-bottom: 20px;
+      padding: 20px 22px;
     }
 
 
     .profile-pathway-main {
-      display:
-        flex;
+      display: flex;
+      align-items: center;
+      gap: 15px;
 
-      align-items:
-        center;
-
-      gap:
-        15px;
-
-      min-width:
-        0;
+      min-width: 0;
     }
 
 
     .profile-pathway-icon {
-      display:
-        grid;
+      display: grid;
+      place-items: center;
 
-      flex:
-        0 0 auto;
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
 
-      width:
-        48px;
+      border-radius: 15px;
 
-      height:
-        48px;
-
-      place-items:
-        center;
-
-      border-radius:
-        15px;
-
-      background:
-        rgba(
-          20,
-          86,
-          125,
-          0.09
-        );
-
-      font-size:
-        1.45rem;
+      font-size: 1.45rem;
     }
 
 
     .profile-pathway-copy {
-      min-width:
-        0;
+      min-width: 0;
     }
 
 
     .profile-pathway-label {
-      display:
-        block;
+      display: block;
 
-      margin-bottom:
-        4px;
+      margin-bottom: 4px;
 
       color:
         #657d91;
 
-      font-size:
-        0.74rem;
-
-      font-weight:
-        800;
-
-      letter-spacing:
-        0.09em;
-
-      text-transform:
-        uppercase;
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
     }
 
 
     .profile-pathway-name {
-      display:
-        block;
+      display: block;
 
       color:
-        #173d5e;
+        var(--profile-text);
 
-      font-size:
-        1.13rem;
-
-      font-weight:
-        900;
+      font-size: 1.13rem;
+      font-weight: 900;
     }
 
 
     .profile-pathway-actions {
-      display:
-        flex;
-
-      align-items:
-        center;
-
-      gap:
-        10px;
-
-      flex-wrap:
-        wrap;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
 
     .profile-edition-badge {
-      display:
-        inline-flex;
+      display: inline-flex;
+      align-items: center;
 
-      align-items:
-        center;
+      min-height: 31px;
+      padding: 6px 12px;
 
-      min-height:
-        31px;
+      border-radius: 999px;
 
-      padding:
-        6px 12px;
+      color: #ffffff;
 
-      border-radius:
-        999px;
-
-      font-size:
-        0.73rem;
-
-      font-weight:
-        850;
-
-      letter-spacing:
-        0.07em;
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.07em;
     }
 
 
     body.acl-theme-basic
     .profile-edition-badge {
-      color:
-        #ffffff;
-
       background:
-        #146b54;
+        var(--profile-green);
     }
 
 
     body.acl-theme-expert
     .profile-edition-badge {
-      color:
-        #ffffff;
-
       background:
-        #123f72;
+        var(--profile-primary-dark);
     }
 
 
     body.acl-theme-basic
     .profile-pathway-icon {
       color:
-        #146b54;
+        var(--profile-green);
 
       background:
-        rgba(
-          20,
-          107,
-          84,
-          0.11
-        );
+        rgba(20, 107, 84, 0.11);
     }
 
 
     body.acl-theme-expert
     .profile-pathway-icon {
       color:
-        #123f72;
+        var(--profile-primary-dark);
 
       background:
-        rgba(
-          18,
-          63,
-          114,
-          0.11
+        rgba(11, 87, 145, 0.11);
+    }
+
+
+    /* =====================================================
+       PROFILE DETAILS
+    ===================================================== */
+
+    .profile-layout {
+      display: grid;
+
+      grid-template-columns:
+        minmax(190px, 240px)
+        minmax(0, 1fr);
+
+      gap: 28px;
+      align-items: start;
+    }
+
+
+    .profile-avatar-card {
+      padding: 20px;
+
+      border:
+        1px solid
+        var(--profile-border);
+
+      border-radius: 20px;
+
+      background:
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--profile-soft)
         );
+
+      text-align: center;
+    }
+
+
+    .profile-avatar-large {
+      display: block;
+
+      width: 150px;
+      height: 150px;
+
+      margin: 0 auto;
+
+      border:
+        4px solid
+        #ffffff;
+
+      border-radius: 50%;
+
+      object-fit: cover;
+
+      box-shadow:
+        0 10px 28px
+        rgba(11, 87, 145, 0.17);
+    }
+
+
+    .profile-avatar-placeholder {
+      display: grid;
+      place-items: center;
+
+      width: 150px;
+      height: 150px;
+
+      margin: 0 auto;
+
+      border-radius: 50%;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--profile-primary),
+          var(--profile-secondary)
+        );
+
+      font-size: 2rem;
+      font-weight: 950;
+
+      box-shadow:
+        0 10px 28px
+        rgba(11, 87, 145, 0.17);
+    }
+
+
+    .profile-avatar-upload {
+      margin-top: 18px;
+
+      text-align: left;
+    }
+
+
+    .profile-avatar-upload label {
+      display: block;
+
+      margin-bottom: 8px;
+
+      color:
+        var(--profile-muted);
+
+      font-size: 0.73rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .profile-avatar-upload input {
+      width: 100%;
+    }
+
+
+    .profile-save-button,
+    .profile-password-button {
+      margin-top: 18px;
+    }
+
+
+    /* =====================================================
+       TROPHIES
+    ===================================================== */
+
+    .profile-trophies-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+
+      margin-bottom: 18px;
+    }
+
+
+    .profile-trophies-heading p {
+      margin-bottom: 0;
+    }
+
+
+    .profile-trophies-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap: 14px;
+    }
+
+
+    .profile-trophy {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+
+      min-height: 112px;
+      padding: 17px;
+
+      border:
+        1px solid
+        var(--profile-border);
+
+      border-radius: 18px;
+
+      background: #ffffff;
+
+      box-shadow:
+        0 10px 24px
+        rgba(11, 87, 145, 0.06);
+    }
+
+
+    .profile-trophy-icon {
+      display: grid;
+      place-items: center;
+
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+
+      border-radius: 15px;
+
+      font-size: 1.4rem;
+    }
+
+
+    .profile-trophy div {
+      display: grid;
+      gap: 5px;
+
+      min-width: 0;
+    }
+
+
+    .profile-trophy div > span {
+      color:
+        var(--profile-muted);
+
+      font-size: 0.73rem;
+      font-weight: 850;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+
+    .profile-trophy strong {
+      color:
+        var(--profile-text);
+
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+
+    .trophy-gold
+    .profile-trophy-icon {
+      background: #fff7d5;
+    }
+
+
+    .trophy-blue
+    .profile-trophy-icon {
+      background: #eaf6ff;
+    }
+
+
+    .trophy-orange
+    .profile-trophy-icon {
+      background: #fff1df;
+    }
+
+
+    .trophy-purple
+    .profile-trophy-icon {
+      background: #f3edff;
+    }
+
+
+    .trophy-green
+    .profile-trophy-icon {
+      background: #eaf8f1;
+    }
+
+
+    .trophy-red
+    .profile-trophy-icon {
+      background: #fff0f2;
+    }
+
+
+    /* =====================================================
+       SECURITY
+    ===================================================== */
+
+    .profile-security-heading {
+      margin-bottom: 18px;
+    }
+
+
+    .profile-security-heading p {
+      margin: 0;
+    }
+
+
+    .profile-password-note {
+      margin: 15px 0 0;
+      padding: 12px 13px;
+
+      border:
+        1px solid
+        var(--profile-border);
+
+      border-radius: 12px;
+
+      color:
+        var(--profile-muted);
+
+      background:
+        var(--profile-soft);
+
+      font-size: 0.77rem;
+      line-height: 1.5;
     }
 
 
@@ -351,47 +592,74 @@
        MOBILE
     ===================================================== */
 
-    @media (
-      max-width:
-      760px
-    ) {
+    @media (max-width: 900px) {
+      .profile-trophies-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+    }
+
+
+    @media (max-width: 760px) {
       body {
-        padding-top:
-          82px;
+        padding-top: 82px;
       }
 
 
       .profile-page {
-        padding-top:
-          20px;
+        padding-top: 20px;
       }
 
 
       .profile-page-hero,
-      .profile-pathway-card {
-        align-items:
-          stretch;
+      .profile-pathway-card,
+      .profile-trophies-heading {
+        align-items: stretch;
+        flex-direction: column;
+      }
 
-        flex-direction:
-          column;
+
+      .profile-layout {
+        grid-template-columns: 1fr;
+      }
+
+
+      .profile-avatar-card {
+        width: 100%;
       }
 
 
       .profile-pathway-actions {
-        width:
-          100%;
+        width: 100%;
       }
 
 
-      .profile-pathway-actions a {
-        flex:
-          1;
+      .profile-pathway-actions a,
+      .profile-page-hero > a,
+      #refreshProfileTrophies {
+        width: 100%;
+        justify-content: center;
+      }
+    }
 
-        justify-content:
-          center;
+
+    @media (max-width: 560px) {
+      .profile-trophies-grid {
+        grid-template-columns: 1fr;
+      }
+
+
+      .profile-avatar-large,
+      .profile-avatar-placeholder {
+        width: 126px;
+        height: 126px;
       }
     }
   </style>
+
 </head>
 
 
@@ -399,9 +667,6 @@
 
   <!-- =====================================================
        FALLBACK HEADER
-
-       Hidden initially to prevent the old-header flash.
-       session-ui.js converts it into the unified header.
   ====================================================== -->
 
   <header class="topbar acl-header-pending">
@@ -476,13 +741,15 @@
           PERSONAL ACCOUNT
         </span>
 
+
         <h1>
           My Profile
         </h1>
 
+
         <p class="muted">
           Manage your personal information, profile photo,
-          achievements, and account security.
+          achievements, pathway, and account security.
         </p>
 
       </div>
@@ -520,6 +787,7 @@
           <span class="profile-pathway-label">
             Current pathway
           </span>
+
 
           <strong
             id="profileEditionName"
@@ -564,29 +832,19 @@
 
       <div class="profile-layout">
 
-        <!-- ===============================================
-             PROFILE PHOTO
-        ================================================ -->
-
         <aside class="profile-avatar-card">
 
           <img
             id="avatarPreview"
             class="profile-avatar-large"
             alt="Profile photo"
-            style="display: none"
+            hidden
           >
 
 
           <div
             id="avatarPlaceholder"
-            class="avatar-placeholder"
-            style="
-              width: 150px;
-              height: 150px;
-              margin: auto;
-              font-size: 2rem;
-            "
+            class="profile-avatar-placeholder"
             aria-hidden="true"
           >
             ACL
@@ -599,24 +857,23 @@
               Profile photo
             </label>
 
+
             <input
               id="avatarFile"
+              name="avatarFile"
               type="file"
               accept="image/png,image/jpeg,image/webp"
             >
 
+
             <small class="profile-readonly-note">
-              Accepted formats: PNG, JPEG or WebP.
+              Accepted formats: PNG, JPEG, or WebP.
             </small>
 
           </div>
 
         </aside>
 
-
-        <!-- ===============================================
-             PROFILE FORM
-        ================================================ -->
 
         <form id="profileForm">
 
@@ -628,8 +885,10 @@
                 Display name
               </label>
 
+
               <input
                 id="displayName"
+                name="displayName"
                 type="text"
                 minlength="2"
                 maxlength="60"
@@ -637,9 +896,10 @@
                 required
               >
 
+
               <small class="profile-readonly-note">
                 This name appears in your header, profile,
-                leaderboards and connections.
+                leaderboards, and connections.
               </small>
 
             </div>
@@ -651,8 +911,10 @@
                 Email
               </label>
 
+
               <input
                 id="email"
+                name="email"
                 class="readonly-field"
                 type="email"
                 autocomplete="email"
@@ -668,13 +930,16 @@
                 Username
               </label>
 
+
               <input
                 id="username"
+                name="username"
                 class="readonly-field"
                 type="text"
                 autocomplete="username"
                 readonly
               >
+
 
               <small class="profile-readonly-note">
                 Your username is permanent and cannot be changed.
@@ -689,10 +954,13 @@
                 WhatsApp
               </label>
 
+
               <input
                 id="whatsapp"
+                name="whatsapp"
                 type="tel"
                 autocomplete="tel"
+                inputmode="tel"
                 required
               >
 
@@ -705,8 +973,10 @@
                 Position
               </label>
 
+
               <select
                 id="academicYear"
+                name="academicYear"
                 required
               >
 
@@ -718,37 +988,46 @@
                   Select position
                 </option>
 
+
                 <option value="Consultant">
                   Consultant
                 </option>
+
 
                 <option value="Specialist">
                   Specialist
                 </option>
 
+
                 <option value="Assistant Lecturer">
                   Assistant Lecturer
                 </option>
+
 
                 <option value="Resident">
                   Resident
                 </option>
 
+
                 <option value="General Practitioner">
                   General Practitioner
                 </option>
+
 
                 <option value="Intern">
                   Intern
                 </option>
 
+
                 <option value="Medical Student">
                   Medical Student
                 </option>
 
+
                 <option value="Nurse">
                   Nurse
                 </option>
+
 
                 <option value="Technician">
                   Technician
@@ -765,9 +1044,12 @@
                 Institution
               </label>
 
+
               <input
                 id="institution"
+                name="institution"
                 type="text"
+                maxlength="150"
                 autocomplete="organization"
                 required
               >
@@ -778,9 +1060,8 @@
 
 
           <button
-            class="primary-btn"
+            class="primary-btn profile-save-button"
             type="submit"
-            style="margin-top: 18px"
           >
             Save profile
           </button>
@@ -804,10 +1085,7 @@
          TROPHIES AND ACHIEVEMENTS
     ==================================================== -->
 
-    <section
-      class="card profile-trophies-card"
-      style="margin-top: 20px"
-    >
+    <section class="card profile-page-section">
 
       <div class="profile-trophies-heading">
 
@@ -817,12 +1095,14 @@
             ACL ACHIEVEMENTS
           </span>
 
+
           <h2>
             My Trophies
           </h2>
 
+
           <p class="muted">
-            Your learning, competition and activity achievements.
+            Your learning, competition, and activity achievements.
           </p>
 
         </div>
@@ -864,11 +1144,13 @@
             🏆
           </span>
 
+
           <div>
 
             <span>
               Challenges Won
             </span>
+
 
             <strong id="trophyChallengeWins">
               0
@@ -888,11 +1170,13 @@
             📚
           </span>
 
+
           <div>
 
             <span>
               Modules Completed
             </span>
+
 
             <strong id="trophyModulesCompleted">
               0
@@ -912,11 +1196,13 @@
             🔥
           </span>
 
+
           <div>
 
             <span>
               Current Streak
             </span>
+
 
             <strong>
               <span id="trophyCurrentStreak">
@@ -939,11 +1225,13 @@
             ⚡
           </span>
 
+
           <div>
 
             <span>
               Best Streak
             </span>
+
 
             <strong>
               <span id="trophyBestStreak">
@@ -966,11 +1254,13 @@
             ✅
           </span>
 
+
           <div>
 
             <span>
               Completed Attempts
             </span>
+
 
             <strong id="trophyCompletedAttempts">
               0
@@ -990,11 +1280,13 @@
             🎯
           </span>
 
+
           <div>
 
             <span>
               Perfect Scores
             </span>
+
 
             <strong id="trophyPerfectScores">
               0
@@ -1013,14 +1305,25 @@
          CHANGE PASSWORD
     ==================================================== -->
 
-    <section
-      class="card"
-      style="margin-top: 20px"
-    >
+    <section class="card profile-page-section">
 
-      <h2>
-        Change password
-      </h2>
+      <div class="profile-security-heading">
+
+        <span class="admin-kicker">
+          ACCOUNT SECURITY
+        </span>
+
+
+        <h2>
+          Change password
+        </h2>
+
+
+        <p class="muted">
+          Verify your current password before choosing a new one.
+        </p>
+
+      </div>
 
 
       <form id="passwordForm">
@@ -1033,8 +1336,10 @@
               Current password
             </label>
 
+
             <input
               id="currentPassword"
+              name="currentPassword"
               type="password"
               autocomplete="current-password"
               required
@@ -1049,8 +1354,10 @@
               New password
             </label>
 
+
             <input
               id="profileNewPassword"
+              name="profileNewPassword"
               type="password"
               autocomplete="new-password"
               minlength="8"
@@ -1066,8 +1373,10 @@
               Confirm new password
             </label>
 
+
             <input
               id="profileConfirmPassword"
+              name="profileConfirmPassword"
               type="password"
               autocomplete="new-password"
               minlength="8"
@@ -1079,10 +1388,15 @@
         </div>
 
 
+        <p class="profile-password-note">
+          Use at least 8 characters and avoid reusing a password
+          from another website or account.
+        </p>
+
+
         <button
-          class="primary-btn"
+          class="primary-btn profile-password-button"
           type="submit"
-          style="margin-top: 18px"
         >
           Change password
         </button>
@@ -1102,10 +1416,6 @@
   </main>
 
 
-  <!-- =====================================================
-       APPLICATION SCRIPTS
-  ====================================================== -->
-
   <script
     type="module"
     src="assets/js/profile-editor.js?v=1.3.1"
@@ -1114,7 +1424,7 @@
 
   <script
     type="module"
-    src="assets/js/pwa.js?v=1.6.0"
+    src="assets/js/pwa.js?v=1.9.0"
   ></script>
 
 </body>
