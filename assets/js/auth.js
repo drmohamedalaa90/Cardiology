@@ -5,18 +5,47 @@ import {
 
 import {
   ACL_CONFIG
-} from "./config.js";
+} from "./config.js?v=1.1.0";
+
+
+console.log(
+  "ACL AUTH v3.1.0 LOADED"
+);
+
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const VALID_EDITIONS =
+  new Set([
+    "basic",
+    "expert"
+  ]);
+
+
+const EDITION_STORAGE_KEY =
+  "aclSelectedEdition";
+
+
+const authState = {
+  signingIn: false,
+  registering: false,
+  redirecting: false
+};
 
 
 /* =========================================================
    ELEMENT HELPERS
 ========================================================= */
 
-const byId =
-  (id) =>
-    document.getElementById(
-      id
-    );
+function byId(
+  id
+) {
+  return document.getElementById(
+    id
+  );
+}
 
 
 function setMessage(
@@ -29,10 +58,64 @@ function setMessage(
     );
 
 
-  if (element) {
-    element.textContent =
-      message;
+  if (!element) {
+    return;
   }
+
+
+  element.textContent =
+    message;
+
+
+  element.hidden =
+    !message;
+}
+
+
+function clearSignInMessages() {
+  setMessage(
+    "signInError"
+  );
+
+
+  setMessage(
+    "signInSuccess"
+  );
+}
+
+
+function clearRegisterMessages() {
+  setMessage(
+    "registerError"
+  );
+
+
+  setMessage(
+    "registerSuccess"
+  );
+}
+
+
+function setSubmitButtonState(
+  button,
+  {
+    disabled,
+    text
+  }
+) {
+  if (!button) {
+    return;
+  }
+
+
+  button.disabled =
+    Boolean(
+      disabled
+    );
+
+
+  button.textContent =
+    text;
 }
 
 
@@ -62,6 +145,28 @@ function validUsername(
 }
 
 
+function normalizeEmail(
+  value
+) {
+  return String(
+    value ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+
+function validEmail(
+  value
+) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    .test(
+      value
+    );
+}
+
+
 function normalizeEgyptWhatsapp(
   value
 ) {
@@ -70,8 +175,9 @@ function normalizeEgyptWhatsapp(
       value ||
       ""
     )
+      .trim()
       .replace(
-        /[^0-9+]/g,
+        /[\s().-]/g,
         ""
       );
 
@@ -83,17 +189,30 @@ function normalizeEgyptWhatsapp(
   ) {
     raw =
       `0${raw.slice(3)}`;
-  }
-
-
-  if (
+  } else if (
     raw.startsWith(
       "0020"
     )
   ) {
     raw =
       `0${raw.slice(4)}`;
+  } else if (
+    raw.startsWith(
+      "20"
+    ) &&
+    raw.length ===
+      12
+  ) {
+    raw =
+      `0${raw.slice(2)}`;
   }
+
+
+  raw =
+    raw.replace(
+      /\D/g,
+      ""
+    );
 
 
   if (
@@ -110,41 +229,64 @@ function normalizeEgyptWhatsapp(
 
 
 /* =========================================================
-   POST-AUTH DESTINATION
+   STORAGE
 ========================================================= */
 
 function getSavedEdition() {
-  const savedEdition =
-    String(
-      localStorage.getItem(
-        "aclSelectedEdition"
-      ) ||
-      ""
+  try {
+    const savedEdition =
+      String(
+        localStorage.getItem(
+          EDITION_STORAGE_KEY
+        ) ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
+
+
+    return VALID_EDITIONS.has(
+      savedEdition
     )
-      .trim()
-      .toLowerCase();
-
-
-  if (
-    savedEdition === "basic" ||
-    savedEdition === "expert"
+      ? savedEdition
+      : null;
+  } catch (
+    error
   ) {
-    return savedEdition;
+    console.warn(
+      "ACL EDITION STORAGE READ ERROR:",
+      error
+    );
+
+
+    return null;
   }
-
-
-  return null;
 }
 
+
+function clearSavedEdition() {
+  try {
+    localStorage.removeItem(
+      EDITION_STORAGE_KEY
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL EDITION STORAGE CLEAR ERROR:",
+      error
+    );
+  }
+}
+
+
+/* =========================================================
+   POST-AUTH DESTINATION
+========================================================= */
 
 function getPostLoginDestination(
   isAdmin = false
 ) {
-  /*
-   * Administrators retain direct access to
-   * the administration dashboard.
-   */
-
   if (isAdmin) {
     return "admin.html";
   }
@@ -154,24 +296,157 @@ function getPostLoginDestination(
     getSavedEdition();
 
 
-  /*
-   * Returning user:
-   * reopen the last selected pathway.
-   */
-
   if (savedEdition) {
     return (
-      `modules.html?edition=${savedEdition}`
+      `modules.html?edition=${encodeURIComponent(
+        savedEdition
+      )}`
     );
   }
 
 
-  /*
-   * First-time user or no remembered pathway:
-   * choose an edition first.
-   */
-
   return "pathways.html";
+}
+
+
+function redirectTo(
+  destination
+) {
+  if (
+    authState.redirecting
+  ) {
+    return;
+  }
+
+
+  authState.redirecting =
+    true;
+
+
+  window.location.replace(
+    destination
+  );
+}
+
+
+/* =========================================================
+   ERROR HELPERS
+========================================================= */
+
+async function readFunctionError(
+  error
+) {
+  const fallbackMessage =
+    error?.message ||
+    "The sign-in request failed.";
+
+
+  const context =
+    error?.context;
+
+
+  if (
+    !context ||
+    typeof context.json !==
+      "function"
+  ) {
+    return fallbackMessage;
+  }
+
+
+  try {
+    const payload =
+      await context.json();
+
+
+    return (
+      payload?.error ||
+      payload?.message ||
+      fallbackMessage
+    );
+  } catch (
+    parseError
+  ) {
+    console.warn(
+      "ACL FUNCTION ERROR RESPONSE COULD NOT BE PARSED:",
+      parseError
+    );
+
+
+    return fallbackMessage;
+  }
+}
+
+
+function friendlyAuthError(
+  error,
+  fallbackMessage
+) {
+  const message =
+    String(
+      error?.message ||
+      ""
+    ).trim();
+
+
+  if (
+    /invalid login credentials/i.test(
+      message
+    )
+  ) {
+    return "Invalid username, email, or password.";
+  }
+
+
+  if (
+    /email not confirmed/i.test(
+      message
+    )
+  ) {
+    return "Confirm your email address before signing in.";
+  }
+
+
+  if (
+    /user already registered/i.test(
+      message
+    )
+  ) {
+    return "An account already exists with this email address.";
+  }
+
+
+  if (
+    /password should be at least/i.test(
+      message
+    )
+  ) {
+    return "Password does not meet the minimum security requirements.";
+  }
+
+
+  if (
+    /rate limit|too many requests/i.test(
+      message
+    )
+  ) {
+    return "Too many attempts were made. Wait briefly, then try again.";
+  }
+
+
+  if (
+    /failed to fetch|network|load failed/i.test(
+      message
+    )
+  ) {
+    return "The ACL server could not be reached. Check your internet connection and retry.";
+  }
+
+
+  return (
+    message ||
+    fallbackMessage
+  );
 }
 
 
@@ -180,11 +455,15 @@ function getPostLoginDestination(
 ========================================================= */
 
 function showPanel(
-  panel
+  panel,
+  {
+    updateHistory = true,
+    focusField = true
+  } = {}
 ) {
-  const signIn =
-    panel ===
-    "signin";
+  const showSignIn =
+    panel !==
+    "register";
 
 
   const signInForm =
@@ -213,13 +492,29 @@ function showPanel(
 
   if (signInForm) {
     signInForm.hidden =
-      !signIn;
+      !showSignIn;
+
+
+    signInForm.setAttribute(
+      "aria-hidden",
+      showSignIn
+        ? "false"
+        : "true"
+    );
   }
 
 
   if (registerForm) {
     registerForm.hidden =
-      signIn;
+      showSignIn;
+
+
+    registerForm.setAttribute(
+      "aria-hidden",
+      showSignIn
+        ? "true"
+        : "false"
+    );
   }
 
 
@@ -227,7 +522,7 @@ function showPanel(
     ?.classList
     .toggle(
       "active",
-      signIn
+      showSignIn
     );
 
 
@@ -235,19 +530,858 @@ function showPanel(
     ?.classList
     .toggle(
       "active",
-      !signIn
+      !showSignIn
     );
 
 
-  history.replaceState(
-    null,
-    "",
-    signIn
-      ? "login.html"
-      : "login.html#register"
+  signInTab
+    ?.setAttribute(
+      "aria-selected",
+      showSignIn
+        ? "true"
+        : "false"
+    );
+
+
+  registerTab
+    ?.setAttribute(
+      "aria-selected",
+      showSignIn
+        ? "false"
+        : "true"
+    );
+
+
+  signInTab
+    ?.setAttribute(
+      "tabindex",
+      showSignIn
+        ? "0"
+        : "-1"
+    );
+
+
+  registerTab
+    ?.setAttribute(
+      "tabindex",
+      showSignIn
+        ? "-1"
+        : "0"
+    );
+
+
+  if (updateHistory) {
+    const updatedUrl =
+      new URL(
+        window.location.href
+      );
+
+
+    updatedUrl.hash =
+      showSignIn
+        ? ""
+        : "register";
+
+
+    window.history.replaceState(
+      null,
+      "",
+      updatedUrl
+    );
+  }
+
+
+  if (focusField) {
+    window.setTimeout(
+      () => {
+        byId(
+          showSignIn
+            ? "identifier"
+            : "name"
+        )
+          ?.focus();
+      },
+      50
+    );
+  }
+}
+
+
+function initializePanel() {
+  showPanel(
+    window.location.hash ===
+      "#register"
+      ? "register"
+      : "signin",
+    {
+      updateHistory:
+        false,
+
+      focusField:
+        false
+    }
   );
 }
 
+
+/* =========================================================
+   ADMIN CHECK
+========================================================= */
+
+async function currentUserIsAdmin() {
+  try {
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .rpc(
+          "acl_is_admin"
+        );
+
+
+    return (
+      !error &&
+      data ===
+        true
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL ADMIN CHECK ERROR:",
+      error
+    );
+
+
+    return false;
+  }
+}
+
+
+/* =========================================================
+   EXISTING SESSION
+========================================================= */
+
+async function redirectExistingSession() {
+  try {
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .auth
+        .getSession();
+
+
+    if (
+      error ||
+      !data?.session
+    ) {
+      return;
+    }
+
+
+    const isAdmin =
+      await currentUserIsAdmin();
+
+
+    redirectTo(
+      getPostLoginDestination(
+        isAdmin
+      )
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL EXISTING SESSION CHECK ERROR:",
+      error
+    );
+  }
+}
+
+
+/* =========================================================
+   SIGN IN
+========================================================= */
+
+async function handleSignIn(
+  event
+) {
+  event.preventDefault();
+
+
+  if (
+    authState.signingIn ||
+    authState.redirecting
+  ) {
+    return;
+  }
+
+
+  clearSignInMessages();
+
+
+  const identifier =
+    String(
+      byId(
+        "identifier"
+      )?.value ||
+      ""
+    ).trim();
+
+
+  const password =
+    String(
+      byId(
+        "loginPassword"
+      )?.value ||
+      ""
+    );
+
+
+  if (
+    !identifier ||
+    !password
+  ) {
+    setMessage(
+      "signInError",
+      "Enter your username or email and password."
+    );
+
+
+    return;
+  }
+
+
+  const submitButton =
+    event.submitter ||
+    event.currentTarget
+      ?.querySelector(
+        'button[type="submit"]'
+      );
+
+
+  authState.signingIn =
+    true;
+
+
+  setSubmitButtonState(
+    submitButton,
+    {
+      disabled:
+        true,
+
+      text:
+        "Signing in…"
+    }
+  );
+
+
+  try {
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .functions
+        .invoke(
+          "username-login",
+          {
+            body: {
+              identifier,
+              password
+            }
+          }
+        );
+
+
+    if (error) {
+      const functionMessage =
+        await readFunctionError(
+          error
+        );
+
+
+      throw new Error(
+        functionMessage
+      );
+    }
+
+
+    if (
+      data?.error
+    ) {
+      throw new Error(
+        data.error
+      );
+    }
+
+
+    const accessToken =
+      data?.session
+        ?.access_token;
+
+
+    const refreshToken =
+      data?.session
+        ?.refresh_token;
+
+
+    if (
+      !accessToken ||
+      !refreshToken
+    ) {
+      throw new Error(
+        "Invalid username, email, or password."
+      );
+    }
+
+
+    const {
+      error: sessionError
+    } =
+      await supabaseClient
+        .auth
+        .setSession({
+          access_token:
+            accessToken,
+
+          refresh_token:
+            refreshToken
+        });
+
+
+    if (sessionError) {
+      throw sessionError;
+    }
+
+
+    const isAdmin =
+      await currentUserIsAdmin();
+
+
+    setMessage(
+      "signInSuccess",
+      "Signed in successfully. Opening your ACL platform…"
+    );
+
+
+    redirectTo(
+      getPostLoginDestination(
+        isAdmin
+      )
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "ACL SIGN IN ERROR:",
+      error
+    );
+
+
+    setMessage(
+      "signInError",
+      friendlyAuthError(
+        error,
+        "Could not sign in."
+      )
+    );
+  } finally {
+    authState.signingIn =
+      false;
+
+
+    if (
+      !authState.redirecting
+    ) {
+      setSubmitButtonState(
+        submitButton,
+        {
+          disabled:
+            false,
+
+          text:
+            "Sign in"
+        }
+      );
+    }
+  }
+}
+
+
+/* =========================================================
+   USERNAME AVAILABILITY
+========================================================= */
+
+async function usernameIsTaken(
+  username
+) {
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from(
+        "profiles"
+      )
+      .select(
+        "id"
+      )
+      .ilike(
+        "username",
+        username
+      )
+      .limit(
+        1
+      );
+
+
+  if (error) {
+    /*
+     * Some RLS configurations intentionally prevent
+     * public profile searches. In that case, continue
+     * to Supabase sign-up and allow the database's
+     * unique username constraint to provide protection.
+     */
+
+    if (
+      error.code ===
+        "42501" ||
+      /row-level security|permission denied/i.test(
+        error.message ||
+        ""
+      )
+    ) {
+      console.warn(
+        "ACL USERNAME PRECHECK BLOCKED BY RLS:",
+        error
+      );
+
+
+      return false;
+    }
+
+
+    throw error;
+  }
+
+
+  return (
+    Array.isArray(
+      data
+    ) &&
+    data.length >
+      0
+  );
+}
+
+
+/* =========================================================
+   CREATE ACCOUNT
+========================================================= */
+
+async function handleRegistration(
+  event
+) {
+  event.preventDefault();
+
+
+  if (
+    authState.registering ||
+    authState.redirecting
+  ) {
+    return;
+  }
+
+
+  clearRegisterMessages();
+
+
+  const fullName =
+    String(
+      byId(
+        "name"
+      )?.value ||
+      ""
+    ).trim();
+
+
+  const username =
+    normalizeUsername(
+      byId(
+        "username"
+      )?.value
+    );
+
+
+  const email =
+    normalizeEmail(
+      byId(
+        "email"
+      )?.value
+    );
+
+
+  const whatsapp =
+    normalizeEgyptWhatsapp(
+      byId(
+        "whatsapp"
+      )?.value
+    );
+
+
+  const position =
+    String(
+      (
+        byId(
+          "position"
+        ) ||
+        byId(
+          "academicYear"
+        )
+      )?.value ||
+      ""
+    ).trim();
+
+
+  const institution =
+    String(
+      byId(
+        "institution"
+      )?.value ||
+      ""
+    ).trim();
+
+
+  const password =
+    String(
+      byId(
+        "registerPassword"
+      )?.value ||
+      ""
+    );
+
+
+  const confirmation =
+    String(
+      byId(
+        "confirmPassword"
+      )?.value ||
+      ""
+    );
+
+
+  if (
+    !fullName ||
+    !username ||
+    !email ||
+    !whatsapp ||
+    !position ||
+    !institution ||
+    !password ||
+    !confirmation
+  ) {
+    setMessage(
+      "registerError",
+      "Please complete all required fields."
+    );
+
+
+    return;
+  }
+
+
+  if (
+    fullName.length <
+      2 ||
+    fullName.length >
+      100
+  ) {
+    setMessage(
+      "registerError",
+      "Enter a valid full name."
+    );
+
+
+    return;
+  }
+
+
+  if (
+    !validUsername(
+      username
+    )
+  ) {
+    setMessage(
+      "registerError",
+      "Username must be 3–30 characters using letters, numbers, dots, or underscores."
+    );
+
+
+    return;
+  }
+
+
+  if (
+    !validEmail(
+      email
+    )
+  ) {
+    setMessage(
+      "registerError",
+      "Enter a valid email address."
+    );
+
+
+    return;
+  }
+
+
+  if (!whatsapp) {
+    setMessage(
+      "registerError",
+      "Enter a valid Egyptian WhatsApp number, such as +201XXXXXXXXX."
+    );
+
+
+    return;
+  }
+
+
+  if (
+    institution.length >
+    150
+  ) {
+    setMessage(
+      "registerError",
+      "Institution must be 150 characters or fewer."
+    );
+
+
+    return;
+  }
+
+
+  if (
+    password.length <
+    8
+  ) {
+    setMessage(
+      "registerError",
+      "Password must contain at least 8 characters."
+    );
+
+
+    return;
+  }
+
+
+  if (
+    password !==
+    confirmation
+  ) {
+    setMessage(
+      "registerError",
+      "Passwords do not match."
+    );
+
+
+    return;
+  }
+
+
+  const submitButton =
+    event.submitter ||
+    event.currentTarget
+      ?.querySelector(
+        'button[type="submit"]'
+      );
+
+
+  authState.registering =
+    true;
+
+
+  setSubmitButtonState(
+    submitButton,
+    {
+      disabled:
+        true,
+
+      text:
+        "Creating account…"
+    }
+  );
+
+
+  try {
+    const taken =
+      await usernameIsTaken(
+        username
+      );
+
+
+    if (taken) {
+      throw new Error(
+        "This username is already taken."
+      );
+    }
+
+
+    const confirmationUrl =
+      new URL(
+        "confirm.html",
+        `${window.location.origin}${ACL_CONFIG.siteBase}`
+      )
+        .toString();
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .auth
+        .signUp({
+          email,
+          password,
+
+          options: {
+            emailRedirectTo:
+              confirmationUrl,
+
+            data: {
+              full_name:
+                fullName,
+
+              display_name:
+                fullName,
+
+              username,
+
+              whatsapp,
+
+              phone_e164:
+                whatsapp,
+
+              position,
+
+              institution
+            }
+          }
+        });
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    if (
+      !data?.user
+    ) {
+      throw new Error(
+        "The account could not be created."
+      );
+    }
+
+
+    if (!data.session) {
+      setMessage(
+        "registerSuccess",
+        "Account created. Open the confirmation email, confirm your address, then return here to sign in."
+      );
+
+
+      event.currentTarget
+        .reset();
+
+
+      window.setTimeout(
+        () => {
+          showPanel(
+            "signin"
+          );
+
+
+          setMessage(
+            "signInSuccess",
+            "Your account was created. Confirm your email, then sign in."
+          );
+        },
+        1800
+      );
+
+
+      return;
+    }
+
+
+    clearSavedEdition();
+
+
+    setMessage(
+      "registerSuccess",
+      "Account created successfully. Opening pathway selection…"
+    );
+
+
+    redirectTo(
+      "pathways.html"
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "ACL REGISTER ERROR:",
+      error
+    );
+
+
+    const message =
+      friendlyAuthError(
+        error,
+        "Could not create account."
+      );
+
+
+    setMessage(
+      "registerError",
+      /duplicate key|username.*unique|profiles_username/i.test(
+        message
+      )
+        ? "This username is already taken."
+        : message
+    );
+  } finally {
+    authState.registering =
+      false;
+
+
+    if (
+      !authState.redirecting
+    ) {
+      setSubmitButtonState(
+        submitButton,
+        {
+          disabled:
+            false,
+
+          text:
+            "Create account"
+        }
+      );
+    }
+  }
+}
+
+
+/* =========================================================
+   EVENTS
+========================================================= */
 
 byId(
   "signInTab"
@@ -275,468 +1409,143 @@ byId(
   );
 
 
-if (
-  location.hash ===
-  "#register"
-) {
-  showPanel(
-    "register"
+byId(
+  "signInTab"
+)
+  ?.addEventListener(
+    "keydown",
+    (
+      event
+    ) => {
+      if (
+        event.key ===
+        "ArrowRight"
+    ) {
+      event.preventDefault();
+
+
+      showPanel(
+        "register"
+      );
+
+
+      byId(
+        "registerTab"
+      )
+        ?.focus();
+    }
   );
-}
 
 
-/* =========================================================
-   SIGN IN
-========================================================= */
+byId(
+  "registerTab"
+)
+  ?.addEventListener(
+    "keydown",
+    (
+      event
+    ) => {
+      if (
+        event.key ===
+        "ArrowLeft"
+    ) {
+      event.preventDefault();
+
+
+      showPanel(
+        "signin"
+      );
+
+
+      byId(
+        "signInTab"
+      )
+        ?.focus();
+    }
+  );
+
 
 byId(
   "signInForm"
 )
   ?.addEventListener(
     "submit",
-    async (event) => {
-      event.preventDefault();
-
-
-      setMessage(
-        "signInError"
-      );
-
-
-      setMessage(
-        "signInSuccess"
-      );
-
-
-      const identifier =
-        byId(
-          "identifier"
-        )
-          ?.value
-          ?.trim() ||
-        "";
-
-
-      const password =
-        byId(
-          "loginPassword"
-        )
-          ?.value ||
-        "";
-
-
-      const submitButton =
-        event.submitter;
-
-
-      if (submitButton) {
-        submitButton.disabled =
-          true;
-
-        submitButton.textContent =
-          "Signing in…";
-      }
-
-
-      try {
-        const {
-          data,
-          error
-        } =
-          await supabaseClient
-            .functions
-            .invoke(
-              "username-login",
-              {
-                body: {
-                  identifier,
-                  password
-                }
-              }
-            );
-
-
-        if (error) {
-          throw error;
-        }
-
-
-        if (
-          !data?.session
-            ?.access_token ||
-          !data?.session
-            ?.refresh_token
-        ) {
-          throw new Error(
-            data?.error ||
-            "Invalid username/email or password."
-          );
-        }
-
-
-        const {
-          error: sessionError
-        } =
-          await supabaseClient
-            .auth
-            .setSession({
-              access_token:
-                data.session
-                  .access_token,
-
-              refresh_token:
-                data.session
-                  .refresh_token
-            });
-
-
-        if (sessionError) {
-          throw sessionError;
-        }
-
-
-        const {
-          data: isAdmin,
-          error: adminError
-        } =
-          await supabaseClient
-            .rpc(
-              "acl_is_admin"
-            );
-
-
-        const userIsAdmin =
-          !adminError &&
-          isAdmin === true;
-
-
-        setMessage(
-          "signInSuccess",
-          "Signed in successfully. Opening your ACL platform…"
-        );
-
-
-        window.location.replace(
-          getPostLoginDestination(
-            userIsAdmin
-          )
-        );
-      } catch (error) {
-        console.error(
-          "SIGN IN ERROR:",
-          error
-        );
-
-
-        setMessage(
-          "signInError",
-          error.message ||
-          "Could not sign in."
-        );
-      } finally {
-        if (submitButton) {
-          submitButton.disabled =
-            false;
-
-          submitButton.textContent =
-            "Sign in";
-        }
-      }
-    }
+    handleSignIn
   );
 
-
-/* =========================================================
-   CREATE ACCOUNT
-========================================================= */
 
 byId(
   "registerForm"
 )
   ?.addEventListener(
     "submit",
-    async (event) => {
-      event.preventDefault();
+    handleRegistration
+  );
 
 
-      setMessage(
-        "registerError"
-      );
-
-
-      setMessage(
-        "registerSuccess"
-      );
-
-
-      const fullName =
-        byId(
-          "name"
-        )
-          ?.value
-          ?.trim() ||
-        "";
-
-
-      const username =
-        normalizeUsername(
-          byId(
-            "username"
-          )
-            ?.value
-        );
-
-
-      const email =
-        byId(
-          "email"
-        )
-          ?.value
-          ?.trim()
-          ?.toLowerCase() ||
-        "";
-
-
-      const whatsapp =
-        normalizeEgyptWhatsapp(
-          byId(
-            "whatsapp"
-          )
-            ?.value
-        );
-
-
-      const position =
-        (
-          byId(
-            "position"
-          ) ||
-          byId(
-            "academicYear"
-          )
-        )
-          ?.value
-          ?.trim() ||
-        "";
-
-
-      const institution =
-        byId(
-          "institution"
-        )
-          ?.value
-          ?.trim() ||
-        "";
-
-
-      const password =
-        byId(
-          "registerPassword"
-        )
-          ?.value ||
-        "";
-
-
-      const confirmation =
-        byId(
-          "confirmPassword"
-        )
-          ?.value ||
-        "";
-
-
-      if (
-        !fullName ||
-        !email ||
-        !whatsapp ||
-        !position ||
-        !institution
-      ) {
-        setMessage(
-          "registerError",
-          "Please complete all required fields."
-        );
-
-        return;
+window.addEventListener(
+  "hashchange",
+  () => {
+    showPanel(
+      window.location.hash ===
+        "#register"
+        ? "register"
+        : "signin",
+      {
+        updateHistory:
+          false
       }
+    );
+  }
+);
 
 
-      if (
-        !validUsername(
-          username
-        )
-      ) {
-        setMessage(
-          "registerError",
-          "Username must be 3–30 characters using letters, numbers, dots or underscores."
-        );
+/* =========================================================
+   INITIALIZATION
+========================================================= */
 
-        return;
-      }
+async function initializeAuthPage() {
+  initializePanel();
 
 
-      if (
-        password.length <
-        8
-      ) {
-        setMessage(
-          "registerError",
-          "Password must contain at least 8 characters."
-        );
-
-        return;
-      }
+  setMessage(
+    "signInError"
+  );
 
 
-      if (
-        password !==
-        confirmation
-      ) {
-        setMessage(
-          "registerError",
-          "Passwords do not match."
-        );
-
-        return;
-      }
+  setMessage(
+    "signInSuccess"
+  );
 
 
-      const submitButton =
-        event.submitter;
+  setMessage(
+    "registerError"
+  );
 
 
-      if (submitButton) {
-        submitButton.disabled =
-          true;
-
-        submitButton.textContent =
-          "Creating account…";
-      }
+  setMessage(
+    "registerSuccess"
+  );
 
 
-      try {
-        const {
-          data: taken,
-          error: usernameCheckError
-        } =
-          await supabaseClient
-            .from(
-              "profiles"
-            )
-            .select(
-              "id"
-            )
-            .ilike(
-              "username",
-              username
-            )
-            .maybeSingle();
+  await redirectExistingSession();
+}
 
 
-        if (
-          usernameCheckError
-        ) {
-          throw usernameCheckError;
-        }
-
-
-        if (taken) {
-          throw new Error(
-            "This username is already taken."
-          );
-        }
-
-
-        const {
-          data,
-          error
-        } =
-          await supabaseClient
-            .auth
-            .signUp({
-              email,
-              password,
-
-              options: {
-                emailRedirectTo:
-                  `${window.location.origin}${ACL_CONFIG.siteBase}confirm.html`,
-
-                data: {
-                  full_name:
-                    fullName,
-
-                  display_name:
-                    fullName,
-
-                  username,
-
-                  whatsapp,
-
-                  position,
-
-                  institution
-                }
-              }
-            });
-
-
-        if (error) {
-          throw error;
-        }
-
-
-        /*
-         * Email confirmation is still required.
-         */
-
-        if (!data.session) {
-          setMessage(
-            "registerSuccess",
-            "Account created. Open the confirmation email, confirm your address, then return to sign in."
-          );
-
-
-          event.target.reset();
-
-
-          return;
-        }
-
-
-        /*
-         * When confirmation is disabled and Supabase
-         * creates a session immediately, always send a
-         * newly registered user to pathway selection.
-         */
-
-        localStorage.removeItem(
-          "aclSelectedEdition"
-        );
-
-
-        window.location.replace(
-          "pathways.html"
-        );
-      } catch (error) {
-        console.error(
-          "REGISTER ERROR:",
-          error
-        );
-
-
-        setMessage(
-          "registerError",
-          error.message ||
-          "Could not create account."
-        );
-      } finally {
-        if (submitButton) {
-          submitButton.disabled =
-            false;
-
-          submitButton.textContent =
-            "Create account";
-        }
-      }
+if (
+  document.readyState ===
+  "loading"
+) {
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+      void initializeAuthPage();
+    },
+    {
+      once:
+        true
     }
   );
+} else {
+  void initializeAuthPage();
+}
