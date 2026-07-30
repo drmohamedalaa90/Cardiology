@@ -11,7 +11,7 @@ import {
 
 
 console.log(
-  "ACL PROGRESS PAGE v2.2.0 LOADED"
+  "ACL PROGRESS PAGE v2.3.0 LOADED"
 );
 
 
@@ -24,8 +24,7 @@ const selectedEdition =
 
 
 document.title =
-  selectedEdition ===
-    "basic"
+  selectedEdition === "basic"
     ? "Basic Edition Progress | ACL"
     : "Expert Edition Progress | ACL";
 
@@ -39,7 +38,8 @@ const progressState = {
   questionCache: new Map(),
   loading: false,
   reviewing: false,
-  statusTimer: null
+  statusTimer: null,
+  lastReviewTrigger: null
 };
 
 
@@ -217,73 +217,30 @@ function formatDate(
 }
 
 
-function formatDuration(
-  seconds,
-  started,
-  ended
+function formatSeconds(
+  value
 ) {
-  let total =
+  const numericValue =
     Number(
-      seconds
+      value
     );
 
 
   if (
     !Number.isFinite(
-      total
-    ) &&
-    started
-  ) {
-    const startTime =
-      new Date(
-        started
-      ).getTime();
-
-
-    const endTime =
-      new Date(
-        ended ||
-        Date.now()
-      ).getTime();
-
-
-    if (
-      Number.isFinite(
-        startTime
-      ) &&
-      Number.isFinite(
-        endTime
-      )
-    ) {
-      total =
-        Math.max(
-          0,
-          Math.round(
-            (
-              endTime -
-              startTime
-            ) /
-            1000
-          )
-        );
-    }
-  }
-
-
-  if (
-    !Number.isFinite(
-      total
-    )
+      numericValue
+    ) ||
+    numericValue < 0
   ) {
     return "—";
   }
 
 
-  total =
+  const total =
     Math.max(
       0,
       Math.round(
-        total
+        numericValue
       )
     );
 
@@ -305,22 +262,142 @@ function formatDuration(
     );
 
 
-  const secondsRemaining =
+  const seconds =
     total %
     60;
 
 
-  if (hours) {
-    return `${hours}h ${minutes}m`;
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
   }
 
 
-  if (minutes) {
-    return `${minutes}m ${secondsRemaining}s`;
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
   }
 
 
-  return `${secondsRemaining}s`;
+  return `${seconds}s`;
+}
+
+
+function attemptDurationSeconds(
+  attempt
+) {
+  const candidates = [
+    attempt?.active_time_seconds,
+    attempt?.activeTimeSeconds,
+    attempt?.elapsed_active_seconds,
+    attempt?.elapsedActiveSeconds,
+    attempt?.duration_seconds,
+    attempt?.durationSeconds
+  ];
+
+
+  for (
+    const candidate of
+    candidates
+  ) {
+    const numericValue =
+      Number(
+        candidate
+      );
+
+
+    if (
+      Number.isFinite(
+        numericValue
+      ) &&
+      numericValue >= 0
+    ) {
+      return numericValue;
+    }
+  }
+
+
+  return null;
+}
+
+
+function formatAttemptDuration(
+  attempt
+) {
+  const duration =
+    attemptDurationSeconds(
+      attempt
+    );
+
+
+  /*
+   * Do not calculate duration using started_at → completed_at.
+   * That would include periods when the module was closed,
+   * left in the background, or resumed later.
+   */
+
+  return duration === null
+    ? "Timing unavailable"
+    : formatSeconds(
+        duration
+      );
+}
+
+
+/* =========================================================
+   ARRAY AND JSON HELPERS
+========================================================= */
+
+function parseArrayValue(
+  value
+) {
+  if (
+    Array.isArray(
+      value
+    )
+  ) {
+    return value;
+  }
+
+
+  if (
+    typeof value ===
+      "string"
+  ) {
+    const trimmed =
+      value.trim();
+
+
+    if (!trimmed) {
+      return [];
+    }
+
+
+    try {
+      const parsed =
+        JSON.parse(
+          trimmed
+        );
+
+
+      return Array.isArray(
+        parsed
+      )
+        ? parsed
+        : [];
+    } catch (
+      error
+    ) {
+      console.warn(
+        "ACL ARRAY PARSE FAILED:",
+        error
+      );
+
+
+      return [];
+    }
+  }
+
+
+  return [];
 }
 
 
@@ -331,11 +408,180 @@ function formatDuration(
 function attemptAnswers(
   attempt
 ) {
-  return Array.isArray(
-    attempt?.answers
+  const candidates = [
+    attempt?.answers,
+    attempt?.attempt_answers,
+    attempt?.attemptAnswers
+  ];
+
+
+  for (
+    const candidate of
+    candidates
+  ) {
+    const parsed =
+      parseArrayValue(
+        candidate
+      );
+
+
+    if (
+      parsed.length
+    ) {
+      return parsed;
+    }
+  }
+
+
+  return [];
+}
+
+
+function attemptQuestionIds(
+  attempt
+) {
+  const candidates = [
+    attempt?.question_ids,
+    attempt?.questionIds,
+    attempt?.questions_order,
+    attempt?.questionOrder
+  ];
+
+
+  for (
+    const candidate of
+    candidates
+  ) {
+    const parsed =
+      parseArrayValue(
+        candidate
+      )
+        .map(
+          (
+            value
+          ) =>
+            String(
+              value
+            ).trim()
+        )
+        .filter(
+          Boolean
+        );
+
+
+    if (
+      parsed.length
+    ) {
+      return parsed;
+    }
+  }
+
+
+  return attemptAnswers(
+    attempt
   )
-    ? attempt.answers
-    : [];
+    .map(
+      (
+        answer
+      ) =>
+        answer?.questionId ??
+        answer?.question_id ??
+        answer?.id
+    )
+    .filter(
+      (
+        value
+      ) =>
+        value !==
+          undefined &&
+        value !==
+          null &&
+        String(
+          value
+        ).trim()
+    )
+    .map(
+      (
+        value
+      ) =>
+        String(
+          value
+        )
+    );
+}
+
+
+function attemptQuestionCount(
+  attempt
+) {
+  const storedCount =
+    Number(
+      attempt?.question_count ??
+      attempt?.questionCount
+    );
+
+
+  if (
+    Number.isFinite(
+      storedCount
+    ) &&
+    storedCount > 0
+  ) {
+    return storedCount;
+  }
+
+
+  const questionIds =
+    attemptQuestionIds(
+      attempt
+    );
+
+
+  if (
+    questionIds.length
+  ) {
+    return questionIds.length;
+  }
+
+
+  return attemptAnswers(
+    attempt
+  ).length;
+}
+
+
+function answerHasSelection(
+  answer
+) {
+  if (!answer) {
+    return false;
+  }
+
+
+  return (
+    answer.choice !==
+      undefined &&
+    answer.choice !==
+      null
+  ) ||
+  Boolean(
+    answer.selected_option_id
+  ) ||
+  Boolean(
+    answer.selected_option_ids
+  ) ||
+  Boolean(
+    answer.selectedOptionId
+  ) ||
+  Boolean(
+    answer.selectedOptionIds
+  ) ||
+  Boolean(
+    answer.selected_option_text
+  ) ||
+  Boolean(
+    answer.option_text
+  );
 }
 
 
@@ -345,19 +591,24 @@ function answeredCount(
   return attemptAnswers(
     attempt
   ).filter(
-    (
-      answer
-    ) =>
-      answer &&
-      (
-        answer.choice !==
-          undefined ||
-        answer.selected_option_id ||
-        answer.selected_option_ids ||
-        answer.selectedOptionId ||
-        answer.selectedOptionIds
-      )
+    answerHasSelection
   ).length;
+}
+
+
+function answerHasCorrectnessData(
+  answer
+) {
+  return (
+    answer?.correct ===
+      true ||
+    answer?.correct ===
+      false ||
+    answer?.is_correct ===
+      true ||
+    answer?.is_correct ===
+      false
+  );
 }
 
 
@@ -370,36 +621,43 @@ function correctAnswerCount(
     );
 
 
-  const calculatedCorrect =
+  const answersWithCorrectness =
     answers.filter(
-      (
-        answer
-      ) =>
-        answer?.correct ===
-          true ||
-        answer?.is_correct ===
-          true
-    ).length;
+      answerHasCorrectnessData
+    );
 
 
   if (
-    answers.length
+    answersWithCorrectness.length
   ) {
-    return calculatedCorrect;
+    return answersWithCorrectness.filter(
+      (
+        answer
+      ) =>
+        answer.correct ===
+          true ||
+        answer.is_correct ===
+          true
+    ).length;
   }
 
 
   const storedCorrect =
     Number(
       attempt?.correct_count ??
-      attempt?.correct_answers
+      attempt?.correctCount ??
+      attempt?.correct_answers ??
+      attempt?.correctAnswers
     );
 
 
   return Number.isFinite(
     storedCorrect
   )
-    ? storedCorrect
+    ? Math.max(
+        0,
+        storedCorrect
+      )
     : 0;
 }
 
@@ -408,15 +666,13 @@ function accuracyPercentage(
   attempt
 ) {
   const questionCount =
-    Number(
-      attempt?.question_count ||
-      0
+    attemptQuestionCount(
+      attempt
     );
 
 
   if (
-    questionCount <=
-    0
+    questionCount <= 0
   ) {
     return 0;
   }
@@ -446,6 +702,7 @@ function attemptEdition(
   return String(
     attempt?.edition ||
     attempt?.module_edition ||
+    attempt?.moduleEdition ||
     attempt?.modules?.edition ||
     ""
   )
@@ -457,11 +714,21 @@ function attemptEdition(
 function belongsToSelectedEdition(
   attempt
 ) {
-  return (
+  const edition =
     attemptEdition(
       attempt
-    ) ===
-    selectedEdition
+    );
+
+
+  /*
+   * Keep legacy attempts visible when they were created
+   * before an edition value was stored.
+   */
+
+  return (
+    !edition ||
+    edition ===
+      selectedEdition
   );
 }
 
@@ -471,9 +738,23 @@ function attemptModuleTitle(
 ) {
   return (
     attempt?.module_title ||
+    attempt?.moduleTitle ||
     attempt?.modules?.title ||
     attempt?.quiz_title ||
+    attempt?.quizTitle ||
     "ACL Module"
+  );
+}
+
+
+function attemptModuleId(
+  attempt
+) {
+  return String(
+    attempt?.module_id ||
+    attempt?.moduleId ||
+    attempt?.modules?.id ||
+    ""
   );
 }
 
@@ -483,12 +764,16 @@ function moduleUrl(
 ) {
   const storedLaunchPath =
     attempt?.launch_path ||
+    attempt?.launchPath ||
     attempt?.module_launch_path ||
+    attempt?.moduleLaunchPath ||
     attempt?.modules?.launch_path ||
     "";
 
 
-  if (storedLaunchPath) {
+  if (
+    storedLaunchPath
+  ) {
     return aclUrl(
       storedLaunchPath,
       selectedEdition
@@ -497,9 +782,8 @@ function moduleUrl(
 
 
   const moduleId =
-    String(
-      attempt?.module_id ||
-      ""
+    attemptModuleId(
+      attempt
     );
 
 
@@ -573,9 +857,8 @@ function updateStats() {
         attempt
       ) =>
         total +
-        Number(
-          attempt.question_count ||
-          0
+        attemptQuestionCount(
+          attempt
         ),
       0
     );
@@ -619,7 +902,9 @@ function updateStats() {
     );
 
 
-  if (completedCount) {
+  if (
+    completedCount
+  ) {
     completedCount.textContent =
       String(
         completed.length
@@ -627,7 +912,9 @@ function updateStats() {
   }
 
 
-  if (openCount) {
+  if (
+    openCount
+  ) {
     openCount.textContent =
       String(
         open.length
@@ -635,10 +922,11 @@ function updateStats() {
   }
 
 
-  if (overallAccuracy) {
+  if (
+    overallAccuracy
+  ) {
     overallAccuracy.textContent =
-      totalQuestions >
-        0
+      totalQuestions > 0
         ? `${Math.round(
             (
               totalCorrect /
@@ -650,7 +938,9 @@ function updateStats() {
   }
 
 
-  if (totalCorrectElement) {
+  if (
+    totalCorrectElement
+  ) {
     totalCorrectElement.textContent =
       String(
         totalCorrect
@@ -685,7 +975,9 @@ function renderOpenAttempts() {
     );
 
 
-  if (!openAttempts.length) {
+  if (
+    !openAttempts.length
+  ) {
     container.innerHTML = `
       <div class="card empty-progress">
 
@@ -693,11 +985,9 @@ function renderOpenAttempts() {
           No unfinished attempts
         </h3>
 
-
         <p class="muted">
           Start a module and your progress will be saved here automatically.
         </p>
-
 
         <a
           class="secondary-btn"
@@ -732,15 +1022,13 @@ function renderOpenAttempts() {
 
 
           const questionCount =
-            Number(
-              attempt.question_count ||
-              0
+            attemptQuestionCount(
+              attempt
             );
 
 
           const progress =
-            questionCount >
-              0
+            questionCount > 0
               ? Math.min(
                   100,
                   Math.max(
@@ -770,7 +1058,6 @@ function renderOpenAttempts() {
                     In progress
                   </span>
 
-
                   <h3>
                     ${escapeHtml(
                       attemptModuleTitle(
@@ -781,13 +1068,11 @@ function renderOpenAttempts() {
 
                 </div>
 
-
                 <strong>
                   ${answered}/${questionCount}
                 </strong>
 
               </div>
-
 
               <div
                 class="progress-track"
@@ -797,13 +1082,10 @@ function renderOpenAttempts() {
                 aria-valuemax="100"
                 aria-valuenow="${progress}"
               >
-
                 <span
                   style="width: ${progress}%"
                 ></span>
-
               </div>
-
 
               <div class="attempt-meta">
 
@@ -814,6 +1096,14 @@ function renderOpenAttempts() {
                   )}
                 </span>
 
+                <span>
+                  Active time:
+                  ${escapeHtml(
+                    formatAttemptDuration(
+                      attempt
+                    )
+                  )}
+                </span>
 
                 <span>
                   Current score:
@@ -824,7 +1114,6 @@ function renderOpenAttempts() {
                 </span>
 
               </div>
-
 
               <a
                 class="primary-btn attempt-action"
@@ -884,9 +1173,8 @@ function populateFilter() {
         attempt
       ) => {
         const moduleId =
-          String(
-            attempt.module_id ||
-            ""
+          attemptModuleId(
+            attempt
           );
 
 
@@ -1004,22 +1292,23 @@ function renderCompletedAttempts() {
         (
           filter ===
             "all" ||
-          String(
-            attempt.module_id
+          attemptModuleId(
+            attempt
           ) ===
             filter
         )
     );
 
 
-  if (!rows.length) {
+  if (
+    !rows.length
+  ) {
     container.innerHTML = `
       <div class="card empty-progress">
 
         <h3>
           No completed attempts yet
         </h3>
-
 
         <p class="muted">
           Finished quizzes will appear here with score, duration,
@@ -1053,9 +1342,8 @@ function renderCompletedAttempts() {
 
 
           const questionCount =
-            Number(
-              attempt.question_count ||
-              0
+            attemptQuestionCount(
+              attempt
             );
 
 
@@ -1067,13 +1355,10 @@ function renderCompletedAttempts() {
                 style="--score: ${accuracy}"
                 aria-label="${accuracy}% accuracy"
               >
-
                 <span>
                   ${accuracy}%
                 </span>
-
               </div>
-
 
               <div class="completed-main">
 
@@ -1085,7 +1370,6 @@ function renderCompletedAttempts() {
                       Completed
                     </span>
 
-
                     <h3>
                       ${escapeHtml(
                         attemptModuleTitle(
@@ -1095,7 +1379,6 @@ function renderCompletedAttempts() {
                     </h3>
 
                   </div>
-
 
                   <strong>
                     ${escapeHtml(
@@ -1107,7 +1390,6 @@ function renderCompletedAttempts() {
 
                 </div>
 
-
                 <div class="attempt-meta">
 
                   <span>
@@ -1117,15 +1399,14 @@ function renderCompletedAttempts() {
                     )}
                   </span>
 
-
                   <span>
-                    ${formatDuration(
-                      attempt.duration_seconds,
-                      attempt.started_at,
-                      attempt.completed_at
+                    Active time:
+                    ${escapeHtml(
+                      formatAttemptDuration(
+                        attempt
+                      )
                     )}
                   </span>
-
 
                   <span>
                     ${correct}/${questionCount}
@@ -1135,7 +1416,6 @@ function renderCompletedAttempts() {
                 </div>
 
               </div>
-
 
               <button
                 class="secondary-btn review-btn"
@@ -1158,23 +1438,30 @@ function renderCompletedAttempts() {
 
 
 /* =========================================================
-   QUESTION REVIEW
+   QUESTION REVIEW DATA
 ========================================================= */
 
 async function getQuestionMap(
   moduleId
 ) {
+  const normalizedModuleId =
+    String(
+      moduleId ||
+      ""
+    );
+
+
   if (
     progressState
       .questionCache
       .has(
-        moduleId
+        normalizedModuleId
       )
   ) {
     return progressState
       .questionCache
       .get(
-        moduleId
+        normalizedModuleId
       );
   }
 
@@ -1183,12 +1470,12 @@ async function getQuestionMap(
 
 
   if (
-    moduleId ===
+    normalizedModuleId ===
     "ppci-fundamentals"
   ) {
     const questionModule =
       await import(
-        "../../modules/ppci/questions.js"
+        "../../modules/ppci/questions.js?v=5.2.0"
       );
 
 
@@ -1217,12 +1504,24 @@ async function getQuestionMap(
   progressState
     .questionCache
     .set(
-      moduleId,
+      normalizedModuleId,
       map
     );
 
 
   return map;
+}
+
+
+function answerQuestionId(
+  answer
+) {
+  return (
+    answer?.questionId ??
+    answer?.question_id ??
+    answer?.question ??
+    null
+  );
 }
 
 
@@ -1235,8 +1534,9 @@ function findAttemptAnswer(
       answer
     ) =>
       String(
-        answer.questionId ??
-        answer.question_id
+        answerQuestionId(
+          answer
+        )
       ) ===
       String(
         questionId
@@ -1245,26 +1545,64 @@ function findAttemptAnswer(
 }
 
 
+function answerChoiceIndex(
+  answer
+) {
+  const candidates = [
+    answer?.choice,
+    answer?.selected_index,
+    answer?.selectedIndex,
+    answer?.option_index,
+    answer?.optionIndex
+  ];
+
+
+  for (
+    const candidate of
+    candidates
+  ) {
+    const numericValue =
+      Number(
+        candidate
+      );
+
+
+    if (
+      Number.isInteger(
+        numericValue
+      ) &&
+      numericValue >= 0
+    ) {
+      return numericValue;
+    }
+  }
+
+
+  return null;
+}
+
+
 function selectedAnswerText(
   question,
   answer
 ) {
-  if (!answer) {
+  if (
+    !answer
+  ) {
     return "Not answered";
   }
 
 
   const optionIndex =
-    Number(
-      answer.choice
+    answerChoiceIndex(
+      answer
     );
 
 
   if (
     question &&
-    Number.isInteger(
-      optionIndex
-    ) &&
+    optionIndex !==
+      null &&
     Array.isArray(
       question.options
     )
@@ -1283,11 +1621,12 @@ function selectedAnswerText(
 
   return (
     answer.selected_option_text ||
+    answer.selectedOptionText ||
     answer.option_text ||
+    answer.optionText ||
     (
-      Number.isInteger(
-        optionIndex
-      )
+      optionIndex !==
+        null
         ? `Choice ${
             optionIndex +
             1
@@ -1301,7 +1640,9 @@ function selectedAnswerText(
 function correctAnswerText(
   question
 ) {
-  if (!question) {
+  if (
+    !question
+  ) {
     return "Unavailable";
   }
 
@@ -1333,8 +1674,291 @@ function correctAnswerText(
 }
 
 
+function answerIsCorrect(
+  question,
+  answer
+) {
+  if (
+    answer?.correct ===
+      true ||
+    answer?.is_correct ===
+      true
+  ) {
+    return true;
+  }
+
+
+  if (
+    answer?.correct ===
+      false ||
+    answer?.is_correct ===
+      false
+  ) {
+    return false;
+  }
+
+
+  const selectedIndex =
+    answerChoiceIndex(
+      answer
+    );
+
+
+  const correctIndex =
+    Number(
+      question?.answer
+    );
+
+
+  return (
+    selectedIndex !==
+      null &&
+    Number.isInteger(
+      correctIndex
+    ) &&
+    selectedIndex ===
+      correctIndex
+  );
+}
+
+
+/* =========================================================
+   REVIEW DIALOG
+========================================================= */
+
+function getReviewDialog() {
+  return byId(
+    "reviewDialog"
+  );
+}
+
+
+function closeReview() {
+  const reviewDialog =
+    getReviewDialog();
+
+
+  if (
+    !reviewDialog
+  ) {
+    return;
+  }
+
+
+  if (
+    typeof reviewDialog
+      .close ===
+      "function" &&
+    reviewDialog.open
+  ) {
+    reviewDialog.close();
+  } else {
+    reviewDialog.removeAttribute(
+      "open"
+    );
+
+
+    reviewDialog.hidden =
+      true;
+  }
+
+
+  document.body.classList.remove(
+    "review-dialog-open"
+  );
+
+
+  if (
+    progressState.lastReviewTrigger instanceof
+    HTMLElement
+  ) {
+    progressState
+      .lastReviewTrigger
+      .focus();
+  }
+
+
+  progressState.lastReviewTrigger =
+    null;
+}
+
+
+function showReviewDialog() {
+  const reviewDialog =
+    getReviewDialog();
+
+
+  if (
+    !reviewDialog
+  ) {
+    return;
+  }
+
+
+  reviewDialog.hidden =
+    false;
+
+
+  if (
+    typeof reviewDialog
+      .showModal ===
+      "function"
+  ) {
+    if (
+      !reviewDialog.open
+    ) {
+      reviewDialog.showModal();
+    }
+  } else {
+    reviewDialog.setAttribute(
+      "open",
+      ""
+    );
+  }
+
+
+  document.body.classList.add(
+    "review-dialog-open"
+  );
+}
+
+
+function bindReviewDialogEvents() {
+  const reviewDialog =
+    getReviewDialog();
+
+
+  if (
+    !reviewDialog ||
+    reviewDialog.dataset
+      .aclEventsBound ===
+      "true"
+  ) {
+    return;
+  }
+
+
+  reviewDialog.dataset
+    .aclEventsBound =
+    "true";
+
+
+  /*
+   * Native dialog backdrop clicks are reported as clicks on
+   * the dialog itself. Close only when the click is outside
+   * the visible dialog content rectangle.
+   */
+
+  reviewDialog.addEventListener(
+    "click",
+    (
+      event
+    ) => {
+      if (
+        event.target !==
+        reviewDialog
+      ) {
+        return;
+      }
+
+
+      const rectangle =
+        reviewDialog
+          .getBoundingClientRect();
+
+
+      const clickedInside =
+        event.clientX >=
+          rectangle.left &&
+        event.clientX <=
+          rectangle.right &&
+        event.clientY >=
+          rectangle.top &&
+        event.clientY <=
+          rectangle.bottom;
+
+
+      if (
+        !clickedInside ||
+        event.target ===
+          reviewDialog
+      ) {
+        closeReview();
+      }
+    }
+  );
+
+
+  reviewDialog.addEventListener(
+    "cancel",
+    (
+      event
+    ) => {
+      event.preventDefault();
+
+
+      closeReview();
+    }
+  );
+
+
+  reviewDialog.addEventListener(
+    "close",
+    () => {
+      document.body.classList.remove(
+        "review-dialog-open"
+      );
+    }
+  );
+
+
+  reviewDialog
+    .querySelectorAll(
+      [
+        "[data-close-review]",
+        "#closeReviewDialog",
+        "#closeReview",
+        ".review-dialog-close",
+        ".review-close"
+      ].join(
+        ","
+      )
+    )
+    .forEach(
+      (
+        button
+      ) => {
+        button.addEventListener(
+          "click",
+          closeReview
+        );
+      }
+    );
+
+
+  document.addEventListener(
+    "keydown",
+    (
+      event
+    ) => {
+      if (
+        event.key ===
+          "Escape" &&
+        reviewDialog.open
+      ) {
+        event.preventDefault();
+
+
+        closeReview();
+      }
+    }
+  );
+}
+
+
 async function openReview(
-  attempt
+  attempt,
+  trigger = null
 ) {
   if (
     progressState.reviewing
@@ -1344,9 +1968,7 @@ async function openReview(
 
 
   const reviewDialog =
-    byId(
-      "reviewDialog"
-    );
+    getReviewDialog();
 
 
   const reviewContent =
@@ -1359,6 +1981,16 @@ async function openReview(
     !reviewDialog ||
     !reviewContent
   ) {
+    showStatus(
+      "The review window is unavailable.",
+      "error",
+      {
+        autoHide:
+          false
+      }
+    );
+
+
     return;
   }
 
@@ -1367,31 +1999,37 @@ async function openReview(
     true;
 
 
+  progressState.lastReviewTrigger =
+    trigger instanceof
+    HTMLElement
+      ? trigger
+      : null;
+
+
   reviewContent.innerHTML = `
-    <h2>
+    <h2 id="reviewDialogTitle">
       Loading attempt review…
     </h2>
 
     <p class="muted">
-      Preparing your saved answers.
+      Preparing your saved questions and answers.
     </p>
   `;
 
 
-  if (
-    typeof reviewDialog
-      .showModal ===
-      "function" &&
-    !reviewDialog.open
-  ) {
-    reviewDialog.showModal();
-  }
+  showReviewDialog();
 
 
   try {
+    const moduleId =
+      attemptModuleId(
+        attempt
+      );
+
+
     const map =
       await getQuestionMap(
-        attempt.module_id
+        moduleId
       );
 
 
@@ -1402,22 +2040,9 @@ async function openReview(
 
 
     const questionIds =
-      Array.isArray(
-        attempt.question_ids
-      ) &&
-      attempt.question_ids.length
-        ? attempt.question_ids
-        : answers
-            .map(
-              (
-                answer
-              ) =>
-                answer.questionId ??
-                answer.question_id
-            )
-            .filter(
-              Boolean
-            );
+      attemptQuestionIds(
+        attempt
+      );
 
 
     const reviewRows =
@@ -1427,26 +2052,30 @@ async function openReview(
             questionId,
             index
           ) => {
+            const normalizedQuestionId =
+              String(
+                questionId
+              );
+
+
             const question =
               map.get(
-                String(
-                  questionId
-                )
+                normalizedQuestionId
               );
 
 
             const answer =
               findAttemptAnswer(
                 answers,
-                questionId
+                normalizedQuestionId
               );
 
 
             const isCorrect =
-              answer?.correct ===
-                true ||
-              answer?.is_correct ===
-                true;
+              answerIsCorrect(
+                question,
+                answer
+              );
 
 
             const selectedChoice =
@@ -1462,8 +2091,19 @@ async function openReview(
               );
 
 
+            const questionTitle =
+              question?.stem ||
+              question?.question_text ||
+              question?.questionText ||
+              "";
+
+
+            const questionUnavailable =
+              !questionTitle;
+
+
             return `
-              <div
+              <article
                 class="
                   review-item
                   ${
@@ -1478,20 +2118,31 @@ async function openReview(
                   ${index + 1}
                 </div>
 
-
-                <div>
+                <div class="review-question-content">
 
                   <h4>
                     ${escapeHtml(
-                      question?.stem ||
-                      question?.question_text ||
+                      questionTitle ||
                       `Question ${
                         index +
                         1
-                      }`
+                      } details are unavailable`
                     )}
                   </h4>
 
+                  ${
+                    questionUnavailable
+                      ? `
+                        <p class="muted">
+                          The saved question ID is
+                          <code>${escapeHtml(
+                            normalizedQuestionId
+                          )}</code>,
+                          but this question is no longer present in the current question bank.
+                        </p>
+                      `
+                      : ""
+                  }
 
                   <p>
                     <b>Your answer:</b>
@@ -1500,9 +2151,7 @@ async function openReview(
                     )}
                   </p>
 
-
                   ${
-                    !isCorrect &&
                     correctChoice !==
                       "Unavailable"
                       ? `
@@ -1516,21 +2165,27 @@ async function openReview(
                       : ""
                   }
 
-
                   ${
                     question?.explanation
                       ? `
-                        <p class="muted">
-                          ${escapeHtml(
-                            question.explanation
-                          )}
-                        </p>
+                        <div class="review-explanation">
+
+                          <b>
+                            Explanation
+                          </b>
+
+                          <p class="muted">
+                            ${escapeHtml(
+                              question.explanation
+                            )}
+                          </p>
+
+                        </div>
                       `
                       : ""
                   }
 
                 </div>
-
 
                 <span
                   class="review-mark"
@@ -1547,7 +2202,7 @@ async function openReview(
                   }
                 </span>
 
-              </div>
+              </article>
             `;
           }
         )
@@ -1562,6 +2217,12 @@ async function openReview(
       );
 
 
+    const activeDuration =
+      formatAttemptDuration(
+        attempt
+      );
+
+
     reviewContent.innerHTML = `
       <h2 id="reviewDialogTitle">
         ${escapeHtml(
@@ -1570,7 +2231,6 @@ async function openReview(
           )
         )}
       </h2>
-
 
       <p class="muted">
         Confidence-adjusted score:
@@ -1583,13 +2243,11 @@ async function openReview(
         Accuracy:
         ${accuracy}%
         ·
-        ${formatDuration(
-          attempt.duration_seconds,
-          attempt.started_at,
-          attempt.completed_at
+        Active time:
+        ${escapeHtml(
+          activeDuration
         )}
       </p>
-
 
       <div class="review-list">
 
@@ -1597,7 +2255,15 @@ async function openReview(
           reviewRows ||
           `
             <div class="card muted">
-              No saved question-level review is available for this attempt.
+
+              <h3>
+                No question-level review is available
+              </h3>
+
+              <p>
+                This attempt does not contain saved question IDs or answers.
+              </p>
+
             </div>
           `
         }
@@ -1617,7 +2283,6 @@ async function openReview(
       <h2 id="reviewDialogTitle">
         Review unavailable
       </h2>
-
 
       <p class="muted">
         ${escapeHtml(
@@ -1650,7 +2315,9 @@ function renderLoadingState() {
     );
 
 
-  if (openContainer) {
+  if (
+    openContainer
+  ) {
     openContainer.innerHTML = `
       <div class="card muted">
         Loading unfinished attempts…
@@ -1659,7 +2326,9 @@ function renderLoadingState() {
   }
 
 
-  if (completedContainer) {
+  if (
+    completedContainer
+  ) {
     completedContainer.innerHTML = `
       <div class="card muted">
         Loading completed attempts…
@@ -1816,13 +2485,22 @@ byId(
     (
       event
     ) => {
+      const target =
+        event.target instanceof
+        Element
+          ? event.target
+          : null;
+
+
       const button =
-        event.target.closest(
+        target?.closest(
           "button[data-id]"
         );
 
 
-      if (!button) {
+      if (
+        !button
+      ) {
         return;
       }
 
@@ -1841,9 +2519,12 @@ byId(
         );
 
 
-      if (attempt) {
+      if (
+        attempt
+      ) {
         void openReview(
-          attempt
+          attempt,
+          button
         );
       }
     }
@@ -1862,12 +2543,17 @@ async function startProgressPage() {
       );
 
 
-    if (!profile) {
+    if (
+      !profile
+    ) {
       return;
     }
 
 
     renderEditionBadge();
+
+
+    bindReviewDialogEvents();
 
 
     await loadProgress();
