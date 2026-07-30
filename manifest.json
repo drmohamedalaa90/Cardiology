@@ -2,36 +2,95 @@
   "id": "/Cardiology/",
   "name": "Alexandria Cardiology League",
   "short_name": "ACL",
-  "description": "Alexandria Cardiology League learning, quizzes and competitions platform.",
+  "description": "Alexandria Cardiology League learning, quizzes, challenges, competitions, and progress platform.",
   "start_url": "/Cardiology/pathways.html",
   "scope": "/Cardiology/",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "orientation": "portrait-primary",
   "background_color": "#eef7ff",
   "theme_color": "#0b5791",
   "lang": "en",
+  "dir": "ltr",
   "categories": [
     "education",
     "medical"
   ],
   "icons": [
-  {
-    "src": "/Cardiology/assets/images/acl-icon-192.png",
-    "sizes": "192x192",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/Cardiology/assets/images/acl-icon-512.png",
-    "sizes": "512x512",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/Cardiology/assets/images/acl-icon-maskable-512.png",
-    "sizes": "512x512",
-    "type": "image/png",
-    "purpose": "maskable"
-  }
-]
+    {
+      "src": "/Cardiology/assets/images/acl-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/Cardiology/assets/images/acl-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/Cardiology/assets/images/acl-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Modules",
+      "short_name": "Modules",
+      "description": "Open the ACL learning catalogue.",
+      "url": "/Cardiology/modules.html?edition=expert",
+      "icons": [
+        {
+          "src": "/Cardiology/assets/images/acl-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "My Progress",
+      "short_name": "Progress",
+      "description": "Review ACL scores, achievements, and completed modules.",
+      "url": "/Cardiology/progress.html?edition=expert",
+      "icons": [
+        {
+          "src": "/Cardiology/assets/images/acl-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "short_name": "Alerts",
+      "description": "Open ACL announcements and notifications.",
+      "url": "/Cardiology/notifications.html?edition=expert",
+      "icons": [
+        {
+          "src": "/Cardiology/assets/images/acl-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Competitions",
+      "short_name": "Competitions",
+      "description": "Open official Alexandria Cardiology League competitions.",
+      "url": "/Cardiology/competitions.html?edition=expert",
+      "icons": [
+        {
+          "src": "/Cardiology/assets/images/acl-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }
