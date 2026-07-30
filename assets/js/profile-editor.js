@@ -8,19 +8,33 @@ import {
   resolveAclEdition,
   aclUrl,
   renderUserChip
-} from "./session-ui.js?v=4.6.0";
+} from "./session-ui.js?v=4.8.0";
 
 
 console.log(
-  "ACL PROFILE EDITOR v1.3.0 LOADED"
+  "ACL PROFILE EDITOR v1.4.0 LOADED"
 );
+
+
+/* =========================================================
+   PAGE STATE
+========================================================= */
+
+const profileEditorState = {
+  profile: null,
+  savingProfile: false,
+  changingPassword: false,
+  loadingTrophies: false,
+  avatarPreviewUrl: "",
+  selectedEdition: null
+};
 
 
 /* =========================================================
    EDITION
 ========================================================= */
 
-const selectedEdition =
+profileEditorState.selectedEdition =
   resolveAclEdition();
 
 
@@ -28,11 +42,101 @@ const selectedEdition =
    ELEMENT HELPERS
 ========================================================= */
 
-const el =
-  (id) =>
-    document.getElementById(
-      id
+function byId(
+  id
+) {
+  return document.getElementById(
+    id
+  );
+}
+
+
+function setButtonState(
+  button,
+  {
+    disabled,
+    text
+  }
+) {
+  if (!button) {
+    return;
+  }
+
+
+  button.disabled =
+    Boolean(
+      disabled
     );
+
+
+  button.textContent =
+    text;
+}
+
+
+/* =========================================================
+   INPUT NORMALIZATION
+========================================================= */
+
+function normalizeEgyptWhatsapp(
+  value
+) {
+  let raw =
+    String(
+      value ||
+      ""
+    )
+      .trim()
+      .replace(
+        /[\s().-]/g,
+        ""
+      );
+
+
+  if (
+    raw.startsWith(
+      "+20"
+    )
+  ) {
+    raw =
+      `0${raw.slice(3)}`;
+  } else if (
+    raw.startsWith(
+      "0020"
+    )
+  ) {
+    raw =
+      `0${raw.slice(4)}`;
+  } else if (
+    raw.startsWith(
+      "20"
+    ) &&
+    raw.length ===
+      12
+  ) {
+    raw =
+      `0${raw.slice(2)}`;
+  }
+
+
+  raw =
+    raw.replace(
+      /\D/g,
+      ""
+    );
+
+
+  if (
+    !/^01\d{9}$/.test(
+      raw
+    )
+  ) {
+    return null;
+  }
+
+
+  return `+20${raw.slice(1)}`;
+}
 
 
 /* =========================================================
@@ -41,31 +145,32 @@ const el =
 
 function renderProfileEdition() {
   const editionName =
-    el(
+    byId(
       "profileEditionName"
     );
 
 
   const editionBadge =
-    el(
+    byId(
       "profileEditionBadge"
     );
 
 
   const modulesLink =
-    el(
+    byId(
       "profileModulesLink"
     );
 
 
   const switchEditionLink =
-    el(
+    byId(
       "profileSwitchEdition"
     );
 
 
   const isBasic =
-    selectedEdition ===
+    profileEditorState
+      .selectedEdition ===
     "basic";
 
 
@@ -97,7 +202,8 @@ function renderProfileEdition() {
     modulesLink.href =
       aclUrl(
         "modules.html",
-        selectedEdition
+        profileEditorState
+          .selectedEdition
       );
   }
 
@@ -117,13 +223,14 @@ function renderProfileEdition() {
    STATUS MESSAGES
 ========================================================= */
 
-function setProfileStatus(
+function setStatus(
+  elementId,
   message = "",
-  isError = false
+  type = ""
 ) {
   const status =
-    el(
-      "profileStatus"
+    byId(
+      elementId
     );
 
 
@@ -140,57 +247,60 @@ function setProfileStatus(
     !message;
 
 
-  status.classList.toggle(
+  status.classList.remove(
     "error",
-    isError
+    "success"
   );
 
 
-  status.classList.toggle(
-    "success",
-    Boolean(
-      message
-    ) &&
-    !isError
+  if (
+    message &&
+    (
+      type ===
+        "error" ||
+      type ===
+        "success"
+    )
+  ) {
+    status.classList.add(
+      type
+    );
+  }
+}
+
+
+function setProfileStatus(
+  message = "",
+  type = ""
+) {
+  setStatus(
+    "profileStatus",
+    message,
+    type
   );
 }
 
 
 function setPasswordStatus(
   message = "",
-  isError = false
+  type = ""
 ) {
-  const status =
-    el(
-      "passwordStatus"
-    );
-
-
-  if (!status) {
-    return;
-  }
-
-
-  status.textContent =
-    message;
-
-
-  status.hidden =
-    !message;
-
-
-  status.classList.toggle(
-    "error",
-    isError
+  setStatus(
+    "passwordStatus",
+    message,
+    type
   );
+}
 
 
-  status.classList.toggle(
-    "success",
-    Boolean(
-      message
-    ) &&
-    !isError
+function setTrophiesStatus(
+  message = "",
+  type = ""
+) {
+  setStatus(
+    "profileTrophiesStatus",
+    message,
+    type
   );
 }
 
@@ -210,7 +320,9 @@ function profileInitials(
 
 
   return (
-    name
+    String(
+      name
+    )
       .trim()
       .split(
         /\s+/
@@ -220,7 +332,9 @@ function profileInitials(
         2
       )
       .map(
-        (part) =>
+        (
+          part
+        ) =>
           part.charAt(
             0
           )
@@ -234,17 +348,90 @@ function profileInitials(
 }
 
 
-function renderAvatar(
-  profile
+function revokeAvatarPreviewUrl() {
+  if (
+    !profileEditorState
+      .avatarPreviewUrl
+  ) {
+    return;
+  }
+
+
+  URL.revokeObjectURL(
+    profileEditorState
+      .avatarPreviewUrl
+  );
+
+
+  profileEditorState
+    .avatarPreviewUrl =
+      "";
+}
+
+
+function showAvatarImage(
+  source
 ) {
   const image =
-    el(
+    byId(
       "avatarPreview"
     );
 
 
   const placeholder =
-    el(
+    byId(
+      "avatarPlaceholder"
+    );
+
+
+  if (
+    !image ||
+    !placeholder
+  ) {
+    return;
+  }
+
+
+  image.src =
+    source;
+
+
+  image.hidden =
+    false;
+
+
+  placeholder.hidden =
+    true;
+
+
+  image.onerror =
+    () => {
+      image.hidden =
+        true;
+
+
+      image.removeAttribute(
+        "src"
+      );
+
+
+      placeholder.hidden =
+        false;
+    };
+}
+
+
+function renderAvatar(
+  profile
+) {
+  const image =
+    byId(
+      "avatarPreview"
+    );
+
+
+  const placeholder =
+    byId(
       "avatarPlaceholder"
     );
 
@@ -263,43 +450,34 @@ function renderAvatar(
     );
 
 
-  if (
-    profile?.avatar_url
-  ) {
-    image.src =
-      profile.avatar_url;
+  const avatarUrl =
+    String(
+      profile?.avatar_url ||
+      ""
+    ).trim();
 
 
-    image.style.display =
-      "block";
-
-
-    placeholder.style.display =
-      "none";
-
-
-    image.onerror =
-      () => {
-        image.style.display =
-          "none";
-
-
-        placeholder.style.display =
-          "grid";
-      };
-  } else {
-    image.removeAttribute(
-      "src"
+  if (avatarUrl) {
+    showAvatarImage(
+      avatarUrl
     );
 
 
-    image.style.display =
-      "none";
-
-
-    placeholder.style.display =
-      "grid";
+    return;
   }
+
+
+  image.hidden =
+    true;
+
+
+  image.removeAttribute(
+    "src"
+  );
+
+
+  placeholder.hidden =
+    false;
 }
 
 
@@ -325,7 +503,7 @@ function validateAvatarFile(
     )
   ) {
     throw new Error(
-      "Profile photo must be PNG, JPEG or WebP."
+      "Profile photo must be PNG, JPEG, or WebP."
     );
   }
 
@@ -347,11 +525,89 @@ function validateAvatarFile(
 }
 
 
+function previewSelectedAvatar() {
+  const file =
+    byId(
+      "avatarFile"
+    )
+      ?.files?.[0];
+
+
+  if (!file) {
+    revokeAvatarPreviewUrl();
+
+
+    renderAvatar(
+      profileEditorState.profile
+    );
+
+
+    return;
+  }
+
+
+  try {
+    validateAvatarFile(
+      file
+    );
+
+
+    revokeAvatarPreviewUrl();
+
+
+    profileEditorState
+      .avatarPreviewUrl =
+        URL.createObjectURL(
+          file
+        );
+
+
+    showAvatarImage(
+      profileEditorState
+        .avatarPreviewUrl
+    );
+
+
+    setProfileStatus(
+      ""
+    );
+  } catch (
+    error
+  ) {
+    const input =
+      byId(
+        "avatarFile"
+      );
+
+
+    if (input) {
+      input.value =
+        "";
+    }
+
+
+    revokeAvatarPreviewUrl();
+
+
+    renderAvatar(
+      profileEditorState.profile
+    );
+
+
+    setProfileStatus(
+      error.message ||
+      "The selected profile photo is invalid.",
+      "error"
+    );
+  }
+}
+
+
 async function uploadAvatar(
   userId
 ) {
   const file =
-    el(
+    byId(
       "avatarFile"
     )
       ?.files?.[0];
@@ -403,7 +659,7 @@ async function uploadAvatar(
         file,
         {
           upsert:
-            true,
+            false,
 
           contentType:
             file.type,
@@ -432,52 +688,61 @@ async function uploadAvatar(
       );
 
 
-  return (
+  const publicUrl =
     data?.publicUrl ||
-    null
-  );
+    "";
+
+
+  if (!publicUrl) {
+    throw new Error(
+      "The profile photo was uploaded, but its public URL could not be created."
+    );
+  }
+
+
+  return publicUrl;
 }
 
 
 /* =========================================================
-   FILL PROFILE FORM
+   PROFILE FORM
 ========================================================= */
 
 function populateProfileForm(
   profile
 ) {
   const displayName =
-    el(
+    byId(
       "displayName"
     );
 
 
   const email =
-    el(
+    byId(
       "email"
     );
 
 
   const username =
-    el(
+    byId(
       "username"
     );
 
 
   const whatsapp =
-    el(
+    byId(
       "whatsapp"
     );
 
 
   const institution =
-    el(
+    byId(
       "institution"
     );
 
 
   const positionInput =
-    el(
+    byId(
       "academicYear"
     );
 
@@ -564,6 +829,10 @@ async function loadProfilePage() {
     }
 
 
+    profileEditorState.profile =
+      profile;
+
+
     populateProfileForm(
       profile
     );
@@ -575,9 +844,11 @@ async function loadProfilePage() {
 
 
     return profile;
-  } catch (error) {
+  } catch (
+    error
+  ) {
     console.error(
-      "PROFILE LOAD ERROR:",
+      "ACL PROFILE LOAD ERROR:",
       error
     );
 
@@ -585,7 +856,7 @@ async function loadProfilePage() {
     setProfileStatus(
       error.message ||
       "The profile could not be loaded.",
-      true
+      "error"
     );
 
 
@@ -598,457 +869,715 @@ async function loadProfilePage() {
    SAVE PROFILE
 ========================================================= */
 
-el(
-  "profileForm"
-)
-  ?.addEventListener(
-    "submit",
-    async (event) => {
-      event.preventDefault();
+async function saveProfile(
+  event
+) {
+  event.preventDefault();
 
 
-      const submitButton =
-        event.submitter;
+  if (
+    profileEditorState
+      .savingProfile
+  ) {
+    return;
+  }
 
 
-      setProfileStatus(
-        "Saving profile…"
+  const submitButton =
+    event.submitter ||
+    event.currentTarget
+      ?.querySelector(
+        'button[type="submit"]'
       );
 
 
-      if (submitButton) {
-        submitButton.disabled =
-          true;
+  setProfileStatus(
+    ""
+  );
 
 
-        submitButton.textContent =
-          "Saving…";
-      }
+  const displayName =
+    String(
+      byId(
+        "displayName"
+      )?.value ||
+      ""
+    ).trim();
 
 
-      try {
-        const {
-          data: userData,
-          error: userError
-        } =
-          await supabaseClient
-            .auth
-            .getUser();
+  const whatsapp =
+    normalizeEgyptWhatsapp(
+      byId(
+        "whatsapp"
+      )?.value
+    );
 
 
-        if (userError) {
-          throw userError;
-        }
+  const position =
+    String(
+      byId(
+        "academicYear"
+      )?.value ||
+      ""
+    ).trim();
 
 
-        const user =
-          userData?.user;
+  const institution =
+    String(
+      byId(
+        "institution"
+      )?.value ||
+      ""
+    ).trim();
 
 
-        if (!user) {
-          throw new Error(
-            "Your session has expired. Please sign in again."
-          );
-        }
+  if (
+    displayName.length <
+      2 ||
+    displayName.length >
+      60
+  ) {
+    setProfileStatus(
+      "Display name must contain between 2 and 60 characters.",
+      "error"
+    );
 
 
-        const displayName =
-          el(
-            "displayName"
-          )
-            ?.value
-            ?.trim() ||
-          "";
+    byId(
+      "displayName"
+    )
+      ?.focus();
 
 
-        const whatsapp =
-          el(
-            "whatsapp"
-          )
-            ?.value
-            ?.trim() ||
-          "";
+    return;
+  }
 
 
-        const position =
-          el(
-            "academicYear"
-          )
-            ?.value ||
-          "";
+  if (!whatsapp) {
+    setProfileStatus(
+      "Enter a valid Egyptian WhatsApp number, such as +201XXXXXXXXX.",
+      "error"
+    );
 
 
-        const institution =
-          el(
-            "institution"
-          )
-            ?.value
-            ?.trim() ||
-          "";
+    byId(
+      "whatsapp"
+    )
+      ?.focus();
 
 
-        if (
-          displayName.length <
-          2
-        ) {
-          throw new Error(
-            "Display name must contain at least 2 characters."
-          );
-        }
+    return;
+  }
 
 
-        if (!whatsapp) {
-          throw new Error(
-            "Please enter your WhatsApp number."
-          );
-        }
+  if (!position) {
+    setProfileStatus(
+      "Please select your position.",
+      "error"
+    );
 
 
-        if (!position) {
-          throw new Error(
-            "Please select your position."
-          );
-        }
+    byId(
+      "academicYear"
+    )
+      ?.focus();
 
 
-        if (!institution) {
-          throw new Error(
-            "Please enter your institution."
-          );
-        }
+    return;
+  }
 
 
-        const avatarUrl =
-          await uploadAvatar(
-            user.id
-          );
+  if (!institution) {
+    setProfileStatus(
+      "Please enter your institution.",
+      "error"
+    );
 
 
-        const updates = {
-          display_name:
-            displayName,
-
-          whatsapp,
-
-          academic_year:
-            position,
-
-          position,
-
-          institution
-        };
+    byId(
+      "institution"
+    )
+      ?.focus();
 
 
-        if (avatarUrl) {
-          updates.avatar_url =
-            avatarUrl;
-        }
+    return;
+  }
 
 
-        const {
-          data,
-          error
-        } =
-          await supabaseClient
-            .from(
-              "profiles"
-            )
-            .update(
-              updates
-            )
-            .eq(
-              "id",
-              user.id
-            )
-            .select(
-              "*"
-            )
-            .single();
+  if (
+    institution.length >
+    150
+  ) {
+    setProfileStatus(
+      "Institution must be 150 characters or fewer.",
+      "error"
+    );
 
 
-        if (error) {
-          throw error;
-        }
+    byId(
+      "institution"
+    )
+      ?.focus();
 
 
-        const updatedProfile = {
-          ...window.aclCurrentProfile,
-          ...data,
-
-          email:
-            user.email
-        };
+    return;
+  }
 
 
-        window.aclCurrentProfile =
-          updatedProfile;
+  profileEditorState.savingProfile =
+    true;
 
 
-        populateProfileForm(
-          updatedProfile
-        );
+  setButtonState(
+    submitButton,
+    {
+      disabled:
+        true,
 
-
-        renderUserChip(
-          updatedProfile
-        );
-
-
-        setProfileStatus(
-          "Profile saved successfully."
-        );
-
-
-        /*
-         * Preserve the active edition in the URL.
-         */
-
-        const updatedUrl =
-          new URL(
-            window.location.href
-          );
-
-
-        updatedUrl.searchParams.set(
-          "edition",
-          selectedEdition
-        );
-
-
-        window.history.replaceState(
-          {},
-          "",
-          updatedUrl
-        );
-      } catch (error) {
-        console.error(
-          "PROFILE SAVE ERROR:",
-          error
-        );
-
-
-        setProfileStatus(
-          error.message ||
-          "The profile could not be saved.",
-          true
-        );
-      } finally {
-        if (submitButton) {
-          submitButton.disabled =
-            false;
-
-
-          submitButton.textContent =
-            "Save profile";
-        }
-      }
+      text:
+        "Saving profile…"
     }
   );
+
+
+  setProfileStatus(
+    "Saving profile…"
+  );
+
+
+  try {
+    const {
+      data: userData,
+      error: userError
+    } =
+      await supabaseClient
+        .auth
+        .getUser();
+
+
+    if (userError) {
+      throw userError;
+    }
+
+
+    const user =
+      userData?.user;
+
+
+    if (!user) {
+      throw new Error(
+        "Your session has expired. Please sign in again."
+      );
+    }
+
+
+    const avatarUrl =
+      await uploadAvatar(
+        user.id
+      );
+
+
+    const updates = {
+      display_name:
+        displayName,
+
+      whatsapp,
+
+      phone_e164:
+        whatsapp,
+
+      academic_year:
+        position,
+
+      position,
+
+      institution
+    };
+
+
+    if (avatarUrl) {
+      updates.avatar_url =
+        avatarUrl;
+    }
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from(
+          "profiles"
+        )
+        .update(
+          updates
+        )
+        .eq(
+          "id",
+          user.id
+        )
+        .select(
+          "*"
+        )
+        .single();
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    const {
+      error: metadataError
+    } =
+      await supabaseClient
+        .auth
+        .updateUser({
+          data: {
+            display_name:
+              displayName,
+
+            full_name:
+              displayName,
+
+            whatsapp,
+
+            phone_e164:
+              whatsapp,
+
+            position,
+
+            institution,
+
+            ...(avatarUrl
+              ? {
+                  avatar_url:
+                    avatarUrl
+                }
+              : {})
+          }
+        });
+
+
+    if (metadataError) {
+      console.warn(
+        "ACL PROFILE METADATA UPDATE ERROR:",
+        metadataError
+      );
+    }
+
+
+    const updatedProfile = {
+      ...profileEditorState.profile,
+      ...data,
+
+      email:
+        user.email ||
+        profileEditorState
+          .profile
+          ?.email ||
+        ""
+    };
+
+
+    profileEditorState.profile =
+      updatedProfile;
+
+
+    window.aclCurrentProfile =
+      updatedProfile;
+
+
+    revokeAvatarPreviewUrl();
+
+
+    const avatarInput =
+      byId(
+        "avatarFile"
+      );
+
+
+    if (avatarInput) {
+      avatarInput.value =
+        "";
+    }
+
+
+    populateProfileForm(
+      updatedProfile
+    );
+
+
+    renderUserChip(
+      updatedProfile
+    );
+
+
+    setProfileStatus(
+      "Profile saved successfully.",
+      "success"
+    );
+
+
+    const updatedUrl =
+      new URL(
+        window.location.href
+      );
+
+
+    updatedUrl.searchParams.set(
+      "edition",
+      profileEditorState
+        .selectedEdition
+    );
+
+
+    window.history.replaceState(
+      {},
+      "",
+      updatedUrl
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "ACL PROFILE SAVE ERROR:",
+      error
+    );
+
+
+    setProfileStatus(
+      error.message ||
+      "The profile could not be saved.",
+      "error"
+    );
+  } finally {
+    profileEditorState.savingProfile =
+      false;
+
+
+    setButtonState(
+      submitButton,
+      {
+        disabled:
+          false,
+
+        text:
+          "Save profile"
+      }
+    );
+  }
+}
 
 
 /* =========================================================
    CHANGE PASSWORD
 ========================================================= */
 
-el(
-  "passwordForm"
-)
-  ?.addEventListener(
-    "submit",
-    async (event) => {
-      event.preventDefault();
+function friendlyPasswordError(
+  error
+) {
+  const message =
+    String(
+      error?.message ||
+      ""
+    ).trim();
 
 
-      const submitButton =
-        event.submitter;
+  if (
+    /invalid login credentials/i.test(
+      message
+    )
+  ) {
+    return "The current password is incorrect.";
+  }
 
 
-      setPasswordStatus(
-        ""
+  if (
+    /same password|different from the old password/i.test(
+      message
+    )
+  ) {
+    return "The new password must be different from your current password.";
+  }
+
+
+  if (
+    /weak password|password should be at least/i.test(
+      message
+    )
+  ) {
+    return "The new password does not meet the minimum security requirements.";
+  }
+
+
+  if (
+    /failed to fetch|network|load failed/i.test(
+      message
+    )
+  ) {
+    return "The ACL server could not be reached. Check your internet connection and retry.";
+  }
+
+
+  return (
+    message ||
+    "The password could not be changed."
+  );
+}
+
+
+async function changePassword(
+  event
+) {
+  event.preventDefault();
+
+
+  if (
+    profileEditorState
+      .changingPassword
+  ) {
+    return;
+  }
+
+
+  const submitButton =
+    event.submitter ||
+    event.currentTarget
+      ?.querySelector(
+        'button[type="submit"]'
       );
 
 
-      const currentPassword =
-        el(
-          "currentPassword"
-        )
-          ?.value ||
-        "";
+  setPasswordStatus(
+    ""
+  );
 
 
-      const newPassword =
-        el(
-          "profileNewPassword"
-        )
-          ?.value ||
-        "";
+  const currentPassword =
+    String(
+      byId(
+        "currentPassword"
+      )?.value ||
+      ""
+    );
 
 
-      const confirmation =
-        el(
-          "profileConfirmPassword"
-        )
-          ?.value ||
-        "";
+  const newPassword =
+    String(
+      byId(
+        "profileNewPassword"
+      )?.value ||
+      ""
+    );
 
 
-      if (!currentPassword) {
-        setPasswordStatus(
-          "Enter your current password.",
-          true
-        );
+  const confirmation =
+    String(
+      byId(
+        "profileConfirmPassword"
+      )?.value ||
+      ""
+    );
 
 
-        return;
-      }
+  if (!currentPassword) {
+    setPasswordStatus(
+      "Enter your current password.",
+      "error"
+    );
 
 
-      if (
-        newPassword.length <
-        8
-      ) {
-        setPasswordStatus(
-          "New password must contain at least 8 characters.",
-          true
-        );
+    byId(
+      "currentPassword"
+    )
+      ?.focus();
 
 
-        return;
-      }
+    return;
+  }
 
 
-      if (
-        newPassword !==
-        confirmation
-      ) {
-        setPasswordStatus(
-          "The new passwords do not match.",
-          true
-        );
+  if (
+    newPassword.length <
+    8
+  ) {
+    setPasswordStatus(
+      "New password must contain at least 8 characters.",
+      "error"
+    );
 
 
-        return;
-      }
+    byId(
+      "profileNewPassword"
+    )
+      ?.focus();
 
 
-      if (
-        currentPassword ===
-        newPassword
-      ) {
-        setPasswordStatus(
-          "The new password must be different from your current password.",
-          true
-        );
+    return;
+  }
 
 
-        return;
-      }
+  if (
+    newPassword !==
+    confirmation
+  ) {
+    setPasswordStatus(
+      "The new passwords do not match.",
+      "error"
+    );
 
 
-      if (submitButton) {
-        submitButton.disabled =
-          true;
+    byId(
+      "profileConfirmPassword"
+    )
+      ?.focus();
 
 
-        submitButton.textContent =
-          "Changing password…";
-      }
+    return;
+  }
 
 
-      try {
-        const {
-          data: userData,
-          error: userError
-        } =
-          await supabaseClient
-            .auth
-            .getUser();
+  if (
+    currentPassword ===
+    newPassword
+  ) {
+    setPasswordStatus(
+      "The new password must be different from your current password.",
+      "error"
+    );
 
 
-        if (userError) {
-          throw userError;
-        }
+    byId(
+      "profileNewPassword"
+    )
+      ?.focus();
 
 
-        const email =
-          userData
-            ?.user
-            ?.email;
+    return;
+  }
 
 
-        if (!email) {
-          throw new Error(
-            "The signed-in email could not be found."
-          );
-        }
+  profileEditorState
+    .changingPassword =
+      true;
 
 
-        const {
-          error: signInError
-        } =
-          await supabaseClient
-            .auth
-            .signInWithPassword({
-              email,
+  setButtonState(
+    submitButton,
+    {
+      disabled:
+        true,
 
-              password:
-                currentPassword
-            });
-
-
-        if (signInError) {
-          throw new Error(
-            "The current password is incorrect."
-          );
-        }
-
-
-        const {
-          error: updateError
-        } =
-          await supabaseClient
-            .auth
-            .updateUser({
-              password:
-                newPassword
-            });
-
-
-        if (updateError) {
-          throw updateError;
-        }
-
-
-        event.target.reset();
-
-
-        setPasswordStatus(
-          "Password changed successfully."
-        );
-      } catch (error) {
-        console.error(
-          "PASSWORD CHANGE ERROR:",
-          error
-        );
-
-
-        setPasswordStatus(
-          error.message ||
-          "The password could not be changed.",
-          true
-        );
-      } finally {
-        if (submitButton) {
-          submitButton.disabled =
-            false;
-
-
-          submitButton.textContent =
-            "Change password";
-        }
-      }
+      text:
+        "Changing password…"
     }
   );
+
+
+  try {
+    const {
+      data: userData,
+      error: userError
+    } =
+      await supabaseClient
+        .auth
+        .getUser();
+
+
+    if (userError) {
+      throw userError;
+    }
+
+
+    const email =
+      userData
+        ?.user
+        ?.email;
+
+
+    if (!email) {
+      throw new Error(
+        "The signed-in email could not be found."
+      );
+    }
+
+
+    const {
+      error: signInError
+    } =
+      await supabaseClient
+        .auth
+        .signInWithPassword({
+          email,
+
+          password:
+            currentPassword
+        });
+
+
+    if (signInError) {
+      throw signInError;
+    }
+
+
+    const {
+      error: updateError
+    } =
+      await supabaseClient
+        .auth
+        .updateUser({
+          password:
+            newPassword
+        });
+
+
+    if (updateError) {
+      throw updateError;
+    }
+
+
+    event.currentTarget
+      .reset();
+
+
+    setPasswordStatus(
+      "Password changed successfully.",
+      "success"
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "ACL PASSWORD CHANGE ERROR:",
+      error
+    );
+
+
+    setPasswordStatus(
+      friendlyPasswordError(
+        error
+      ),
+      "error"
+    );
+  } finally {
+    profileEditorState
+      .changingPassword =
+        false;
+
+
+    setButtonState(
+      submitButton,
+      {
+        disabled:
+          false,
+
+        text:
+          "Change password"
+      }
+    );
+  }
+}
 
 
 /* =========================================================
@@ -1113,9 +1642,7 @@ function calculateStreaks(
     ].sort();
 
 
-  if (
-    !activityDays.length
-  ) {
+  if (!activityDays.length) {
     return {
       current:
         0,
@@ -1190,12 +1717,6 @@ function calculateStreaks(
     new Date();
 
 
-  const todayKey =
-    dateKey(
-      today
-    );
-
-
   const yesterday =
     new Date(
       today
@@ -1206,6 +1727,12 @@ function calculateStreaks(
     yesterday.getDate() -
     1
   );
+
+
+  const todayKey =
+    dateKey(
+      today
+    );
 
 
   const yesterdayKey =
@@ -1289,55 +1816,36 @@ function calculateStreaks(
 }
 
 
-function setTrophiesStatus(
-  message = "",
-  isError = false
-) {
-  const status =
-    el(
-      "profileTrophiesStatus"
-    );
-
-
-  if (!status) {
-    return;
-  }
-
-
-  status.textContent =
-    message;
-
-
-  status.hidden =
-    !message;
-
-
-  status.classList.toggle(
-    "error",
-    isError
-  );
-}
-
-
 function setTrophyValue(
   id,
   value
 ) {
   const element =
-    el(
+    byId(
       id
     );
 
 
-  if (element) {
-    element.textContent =
-      String(
-        Number(
-          value ||
-          0
-        )
-      );
+  if (!element) {
+    return;
   }
+
+
+  const number =
+    Number(
+      value ||
+      0
+    );
+
+
+  element.textContent =
+    String(
+      Number.isFinite(
+        number
+      )
+        ? number
+        : 0
+    );
 }
 
 
@@ -1346,10 +1854,41 @@ function setTrophyValue(
 ========================================================= */
 
 async function loadProfileTrophies() {
+  if (
+    profileEditorState
+      .loadingTrophies
+  ) {
+    return;
+  }
+
+
   const trophiesGrid =
-    el(
+    byId(
       "profileTrophiesGrid"
     );
+
+
+  const refreshButton =
+    byId(
+      "refreshProfileTrophies"
+    );
+
+
+  profileEditorState
+    .loadingTrophies =
+      true;
+
+
+  setButtonState(
+    refreshButton,
+    {
+      disabled:
+        true,
+
+      text:
+        "Refreshing…"
+    }
+  );
 
 
   setTrophiesStatus(
@@ -1423,15 +1962,20 @@ async function loadProfileTrophies() {
 
 
     const completedAttempts =
-      attempts ||
-      [];
+      Array.isArray(
+        attempts
+      )
+        ? attempts
+        : [];
 
 
     const completedModuleIds =
       new Set(
         completedAttempts
           .map(
-            (attempt) =>
+            (
+              attempt
+            ) =>
               attempt.module_id
           )
           .filter(
@@ -1453,7 +1997,7 @@ async function loadProfileTrophies() {
 
 
     const {
-      data: leaderboardRow,
+      data: leaderboardRows,
       error: leaderboardError
     } =
       await supabaseClient
@@ -1467,19 +2011,25 @@ async function loadProfileTrophies() {
           "user_id",
           user.id
         )
-        .maybeSingle();
+        .limit(
+          1
+        );
 
 
-    if (
-      leaderboardError &&
-      leaderboardError.code !==
-        "PGRST116"
-    ) {
+    if (leaderboardError) {
       console.warn(
-        "CHALLENGE TROPHY ERROR:",
+        "ACL CHALLENGE TROPHY ERROR:",
         leaderboardError
       );
     }
+
+
+    const leaderboardRow =
+      Array.isArray(
+        leaderboardRows
+      )
+        ? leaderboardRows[0]
+        : null;
 
 
     setTrophyValue(
@@ -1493,7 +2043,9 @@ async function loadProfileTrophies() {
     const activityTimestamps =
       completedAttempts
         .map(
-          (attempt) =>
+          (
+            attempt
+          ) =>
             attempt.completed_at ||
             attempt.updated_at
         )
@@ -1522,7 +2074,9 @@ async function loadProfileTrophies() {
 
     const perfectScores =
       completedAttempts.filter(
-        (attempt) => {
+        (
+          attempt
+        ) => {
           const score =
             Number(
               attempt.score ||
@@ -1562,9 +2116,11 @@ async function loadProfileTrophies() {
     setTrophiesStatus(
       ""
     );
-  } catch (error) {
+  } catch (
+    error
+  ) {
     console.error(
-      "PROFILE TROPHIES ERROR:",
+      "ACL PROFILE TROPHIES ERROR:",
       error
     );
 
@@ -1578,25 +2134,74 @@ async function loadProfileTrophies() {
     setTrophiesStatus(
       error.message ||
       "Trophies could not be loaded.",
-      true
+      "error"
+    );
+  } finally {
+    profileEditorState
+      .loadingTrophies =
+        false;
+
+
+    setButtonState(
+      refreshButton,
+      {
+        disabled:
+          false,
+
+        text:
+          "Refresh"
+      }
     );
   }
 }
 
 
 /* =========================================================
-   TROPHY EVENTS
+   EVENTS
 ========================================================= */
 
-el(
+byId(
+  "avatarFile"
+)
+  ?.addEventListener(
+    "change",
+    previewSelectedAvatar
+  );
+
+
+byId(
+  "profileForm"
+)
+  ?.addEventListener(
+    "submit",
+    saveProfile
+  );
+
+
+byId(
+  "passwordForm"
+)
+  ?.addEventListener(
+    "submit",
+    changePassword
+  );
+
+
+byId(
   "refreshProfileTrophies"
 )
   ?.addEventListener(
     "click",
-    async () => {
-      await loadProfileTrophies();
+    () => {
+      void loadProfileTrophies();
     }
   );
+
+
+window.addEventListener(
+  "beforeunload",
+  revokeAvatarPreviewUrl
+);
 
 
 /* =========================================================
@@ -1620,4 +2225,20 @@ async function startProfilePage() {
 }
 
 
-void startProfilePage();
+if (
+  document.readyState ===
+  "loading"
+) {
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+      void startProfilePage();
+    },
+    {
+      once:
+        true
+    }
+  );
+} else {
+  void startProfilePage();
+}
