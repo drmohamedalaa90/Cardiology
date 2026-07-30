@@ -1,7 +1,124 @@
 console.log(
-  "ACL QUIZ ENGINE v5.2.1 LOADED"
+  "ACL QUIZ ENGINE v5.3.0 LOADED"
 );
 
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const TIMER_MODES =
+  new Set([
+    "none",
+    "quiz",
+    "question"
+  ]);
+
+
+const MAX_IDLE_GAP_SECONDS =
+  5;
+
+
+/* =========================================================
+   GENERAL HELPERS
+========================================================= */
+
+function normalizeNonNegativeNumber(
+  value,
+  fallback = 0
+) {
+  const numericValue =
+    Number(
+      value
+    );
+
+
+  if (
+    !Number.isFinite(
+      numericValue
+    ) ||
+    numericValue < 0
+  ) {
+    return fallback;
+  }
+
+
+  return numericValue;
+}
+
+
+function normalizePositiveInteger(
+  value,
+  fallback = 0
+) {
+  const numericValue =
+    Math.floor(
+      Number(
+        value
+      )
+    );
+
+
+  if (
+    !Number.isFinite(
+      numericValue
+    ) ||
+    numericValue <= 0
+  ) {
+    return fallback;
+  }
+
+
+  return numericValue;
+}
+
+
+function normalizeTimestamp(
+  value
+) {
+  const numericValue =
+    Number(
+      value
+    );
+
+
+  if (
+    Number.isFinite(
+      numericValue
+    ) &&
+    numericValue > 0
+  ) {
+    return numericValue;
+  }
+
+
+  if (
+    typeof value ===
+      "string"
+  ) {
+    const parsed =
+      new Date(
+        value
+      ).getTime();
+
+
+    if (
+      Number.isFinite(
+        parsed
+      )
+    ) {
+      return parsed;
+    }
+  }
+
+
+  return null;
+}
+
+
+/* =========================================================
+   QUIZ ENGINE
+========================================================= */
 
 export class QuizEngine {
   constructor({
@@ -10,7 +127,17 @@ export class QuizEngine {
     questionIds = null,
     currentIndex = 0,
     answers = [],
-    confidenceEnabled = false
+    confidenceEnabled = false,
+
+    timerMode = "none",
+    quizDurationSeconds = 0,
+    defaultQuestionTimeSeconds = 0,
+
+    activeTimeSeconds = 0,
+    questionTimeSeconds = 0,
+    questionStartedAt = null,
+    lastActiveTimestamp = null,
+    timingActive = false
   }) {
     const safeQuestions =
       Array.isArray(
@@ -129,6 +256,88 @@ export class QuizEngine {
               Boolean
             )
         : [];
+
+
+    /*
+     * Timing state is deliberately stored inside the engine.
+     * The page will call resumeTiming() and pauseTiming()
+     * according to visibility and module status.
+     */
+
+    this.timerMode =
+      this.normalizeTimerMode(
+        timerMode
+      );
+
+
+    this.quizDurationSeconds =
+      normalizePositiveInteger(
+        quizDurationSeconds,
+        0
+      );
+
+
+    this.defaultQuestionTimeSeconds =
+      normalizePositiveInteger(
+        defaultQuestionTimeSeconds,
+        0
+      );
+
+
+    this.activeTimeSeconds =
+      normalizeNonNegativeNumber(
+        activeTimeSeconds,
+        0
+      );
+
+
+    this.questionTimeSeconds =
+      normalizeNonNegativeNumber(
+        questionTimeSeconds,
+        0
+      );
+
+
+    this.questionStartedAt =
+      normalizeTimestamp(
+        questionStartedAt
+      );
+
+
+    this.lastActiveTimestamp =
+      normalizeTimestamp(
+        lastActiveTimestamp
+      );
+
+
+    this.timingActive =
+      Boolean(
+        timingActive
+      );
+
+
+    /*
+     * A restored attempt must never silently count the entire
+     * period between the previous browser session and now.
+     */
+
+    if (
+      this.timingActive
+    ) {
+      this.lastActiveTimestamp =
+        Date.now();
+    }
+
+
+    if (
+      !this.current()
+    ) {
+      this.timingActive =
+        false;
+
+      this.lastActiveTimestamp =
+        null;
+    }
   }
 
 
@@ -345,715 +554,454 @@ export class QuizEngine {
 
 
   /* =========================================================
-     SCORING
+     TIMER CONFIGURATION
   ========================================================= */
 
-  calculatePoints({
-    correct,
-    confidence = null,
-    timedOut = false,
-    confidenceEnabled =
-      this.confidenceEnabled
-  }) {
-    if (timedOut) {
-      return -1;
-    }
+  normalizeTimerMode(
+    mode
+  ) {
+    const normalized =
+      String(
+        mode ||
+        "none"
+      )
+        .trim()
+        .toLowerCase();
 
 
-    if (
-      !confidenceEnabled
-    ) {
-      return correct
-        ? 1
-        : 0;
-    }
+    const aliases = {
+      none:
+        "none",
+
+      off:
+        "none",
+
+      disabled:
+        "none",
+
+      quiz:
+        "quiz",
+
+      per_quiz:
+        "quiz",
+
+      "per-quiz":
+        "quiz",
+
+      whole_quiz:
+        "quiz",
+
+      question:
+        "question",
+
+      per_question:
+        "question",
+
+      "per-question":
+        "question"
+    };
 
 
-    const normalizedConfidence =
-      this.normalizeConfidence(
-        confidence
-      );
+    const resolved =
+      aliases[
+        normalized
+      ] ||
+      normalized;
 
 
-    if (
-      correct &&
-      normalizedConfidence ===
-        "high"
-    ) {
-      return 2;
-    }
-
-
-    if (
-      correct &&
-      normalizedConfidence ===
-        "low"
-    ) {
-      return 1;
-    }
-
-
-    if (
-      !correct &&
-      normalizedConfidence ===
-        "low"
-    ) {
-      return 0;
-    }
-
-
-    if (
-      !correct &&
-      normalizedConfidence ===
-        "high"
-    ) {
-      return -1;
-    }
-
-
-    return correct
-      ? 1
-      : 0;
+    return TIMER_MODES.has(
+      resolved
+    )
+      ? resolved
+      : "none";
   }
 
 
-  /* =========================================================
-     ANSWER SUBMISSION
-  ========================================================= */
+  setTimerConfiguration({
+    timerMode =
+      this.timerMode,
 
-  submitAnswer({
-    choice,
-    confidence = null,
-    timedOut = false
-  }) {
+    quizDurationSeconds =
+      this.quizDurationSeconds,
+
+    defaultQuestionTimeSeconds =
+      this.defaultQuestionTimeSeconds
+  } = {}) {
+    this.syncTiming();
+
+
+    this.timerMode =
+      this.normalizeTimerMode(
+        timerMode
+      );
+
+
+    this.quizDurationSeconds =
+      normalizePositiveInteger(
+        quizDurationSeconds,
+        0
+      );
+
+
+    this.defaultQuestionTimeSeconds =
+      normalizePositiveInteger(
+        defaultQuestionTimeSeconds,
+        0
+      );
+
+
+    return this.timerConfiguration();
+  }
+
+
+  timerConfiguration() {
+    return {
+      timerMode:
+        this.timerMode,
+
+      quizDurationSeconds:
+        this.quizDurationSeconds,
+
+      defaultQuestionTimeSeconds:
+        this.defaultQuestionTimeSeconds
+    };
+  }
+
+
+  hasTimer() {
+    return (
+      this.timerMode !==
+      "none"
+    );
+  }
+
+
+  hasQuizTimer() {
+    return (
+      this.timerMode ===
+      "quiz" &&
+      this.quizDurationSeconds >
+        0
+    );
+  }
+
+
+  hasQuestionTimer() {
+    return (
+      this.timerMode ===
+      "question" &&
+      this.currentQuestionTimeLimit() >
+        0
+    );
+  }
+
+
+  currentQuestionTimeLimit() {
     const question =
       this.current();
 
 
     if (!question) {
-      return {
-        accepted:
-          false,
-
-        reason:
-          "no-current-question",
-
-        answer:
-          null
-      };
+      return 0;
     }
 
 
-    const existing =
-      this.getAnswerByQuestionId(
-        question.id
+    const questionSpecificLimit =
+      normalizePositiveInteger(
+        question.timeLimitSeconds ??
+        question.time_limit_seconds,
+        0
       );
-
-
-    if (existing) {
-      return {
-        accepted:
-          false,
-
-        reason:
-          "already-answered",
-
-        answer:
-          existing
-      };
-    }
-
-
-    const normalizedConfidence =
-      this.normalizeConfidence(
-        confidence
-      );
-
-
-    if (
-      this.confidenceEnabled &&
-      !timedOut &&
-      !normalizedConfidence
-    ) {
-      return {
-        accepted:
-          false,
-
-        reason:
-          "confidence-required",
-
-        answer:
-          null
-      };
-    }
-
-
-    const numericChoice =
-      timedOut ||
-      choice ===
-        null ||
-      choice ===
-        undefined ||
-      choice ===
-        ""
-        ? null
-        : Number(
-            choice
-          );
-
-
-    const validChoice =
-      numericChoice !==
-        null &&
-      Number.isInteger(
-        numericChoice
-      ) &&
-      Array.isArray(
-        question.options
-      ) &&
-      numericChoice >=
-        0 &&
-      numericChoice <
-        question.options.length;
-
-
-    if (
-      !timedOut &&
-      !validChoice
-    ) {
-      return {
-        accepted:
-          false,
-
-        reason:
-          "invalid-choice",
-
-        answer:
-          null
-      };
-    }
-
-
-    const correct =
-      !timedOut &&
-      validChoice &&
-      numericChoice ===
-        Number(
-          question.answer
-        );
-
-
-    const points =
-      this.calculatePoints({
-        correct,
-
-        confidence:
-          normalizedConfidence,
-
-        timedOut,
-
-        confidenceEnabled:
-          this.confidenceEnabled
-      });
-
-
-    const answerRecord = {
-      questionId:
-        question.id,
-
-      choice:
-        numericChoice,
-
-      correct,
-
-      confidence:
-        this.confidenceEnabled
-          ? normalizedConfidence
-          : null,
-
-      confidenceEnabled:
-        this.confidenceEnabled,
-
-      timedOut:
-        Boolean(
-          timedOut
-        ),
-
-      points,
-
-      answeredAt:
-        new Date()
-          .toISOString()
-    };
-
-
-    this.answers.push(
-      answerRecord
-    );
-
-
-    return {
-      accepted:
-        true,
-
-      reason:
-        null,
-
-      answer:
-        answerRecord
-    };
-  }
-
-
-  answer(
-    choice,
-    confidence = null
-  ) {
-    const result =
-      this.submitAnswer({
-        choice,
-        confidence,
-        timedOut:
-          false
-      });
-
-
-    if (
-      result.reason ===
-      "confidence-required"
-    ) {
-      return null;
-    }
 
 
     return (
-      result.answer?.correct ??
-      false
+      questionSpecificLimit ||
+      this.defaultQuestionTimeSeconds
     );
-  }
-
-
-  markTimedOut() {
-    return this.submitAnswer({
-      choice:
-        null,
-
-      confidence:
-        null,
-
-      timedOut:
-        true
-    });
   }
 
 
   /* =========================================================
-     NAVIGATION
+     ACTIVE TIME TRACKING
   ========================================================= */
 
-  next() {
-    if (
-      this.index <
-      this.questions.length
-    ) {
-      this.index +=
-        1;
-    }
-
-
-    return this.current();
+  now() {
+    return Date.now();
   }
 
 
-  previous() {
-    if (
-      this.index >
-      0
-    ) {
-      this.index -=
-        1;
-    }
-
-
-    return this.current();
-  }
-
-
-  goTo(
-    index
+  resumeTiming(
+    timestamp =
+      this.now()
   ) {
-    const targetIndex =
-      Number(
-        index
-      );
-
-
     if (
-      !Number.isInteger(
-        targetIndex
-      )
+      !this.current() ||
+      this.isFinished()
     ) {
-      return this.current();
+      this.timingActive =
+        false;
+
+      this.lastActiveTimestamp =
+        null;
+
+
+      return false;
     }
 
 
-    this.index =
-      Math.min(
-        Math.max(
-          targetIndex,
-          0
-        ),
-        this.questions.length
-      );
+    const normalizedTimestamp =
+      normalizeTimestamp(
+        timestamp
+      ) ||
+      this.now();
 
 
-    return this.current();
-  }
+    this.timingActive =
+      true;
 
 
-  /* =========================================================
-     RESULTS
-  ========================================================= */
-
-  score() {
-    return this.answers.reduce(
-      (
-        total,
-        answer
-      ) =>
-        total +
-        Number(
-          answer.points ||
-          0
-        ),
-      0
-    );
-  }
+    this.lastActiveTimestamp =
+      normalizedTimestamp;
 
 
-  correctCount() {
-    return this.answers.filter(
-      (
-        answer
-      ) =>
-        answer.correct ===
-        true
-    ).length;
-  }
-
-
-  incorrectCount() {
-    return this.answers.filter(
-      (
-        answer
-      ) =>
-        answer.correct !==
-          true &&
-        !answer.timedOut
-    ).length;
-  }
-
-
-  timedOutCount() {
-    return this.answers.filter(
-      (
-        answer
-      ) =>
-        answer.timedOut ===
-        true
-    ).length;
-  }
-
-
-  answeredCount() {
-    return this.answers.length;
-  }
-
-
-  remainingCount() {
-    return Math.max(
-      this.questions.length -
-      this.answers.length,
-      0
-    );
-  }
-
-
-  maximumPossibleScore() {
-    /*
-     * Use the scoring mode selected for this attempt.
-     * Existing saved answers keep their original points even if
-     * the user changes the setting later.
-     */
-
-    return (
-      this.questions.length *
-      (
-        this.confidenceEnabled
-          ? 2
-          : 1
-      )
-    );
-  }
-
-
-  minimumPossibleScore() {
-    return (
-      this.questions.length *
-      -1
-    );
-  }
-
-
-  accuracyPercentage() {
     if (
-      !this.questions.length
+      !this.questionStartedAt
+    ) {
+      this.questionStartedAt =
+        normalizedTimestamp;
+    }
+
+
+    return true;
+  }
+
+
+  pauseTiming(
+    timestamp =
+      this.now()
+  ) {
+    this.syncTiming(
+      timestamp
+    );
+
+
+    this.timingActive =
+      false;
+
+
+    this.lastActiveTimestamp =
+      null;
+
+
+    return this.activeTimeSeconds;
+  }
+
+
+  syncTiming(
+    timestamp =
+      this.now()
+  ) {
+    if (
+      !this.timingActive ||
+      !this.lastActiveTimestamp
     ) {
       return 0;
     }
 
 
-    return Math.round(
-      (
-        this.correctCount() /
-        this.questions.length
-      ) *
-      100
+    const normalizedTimestamp =
+      normalizeTimestamp(
+        timestamp
+      ) ||
+      this.now();
+
+
+    const elapsedMilliseconds =
+      Math.max(
+        0,
+        normalizedTimestamp -
+        this.lastActiveTimestamp
+      );
+
+
+    let elapsedSeconds =
+      elapsedMilliseconds /
+      1000;
+
+
+    /*
+     * A very large gap usually means the browser suspended the
+     * page, the device slept, or the tab stopped executing.
+     * Count only a small safe interval rather than incorrectly
+     * adding the whole inactive period.
+     */
+
+    if (
+      elapsedSeconds >
+      MAX_IDLE_GAP_SECONDS
+    ) {
+      elapsedSeconds =
+        MAX_IDLE_GAP_SECONDS;
+    }
+
+
+    this.activeTimeSeconds +=
+      elapsedSeconds;
+
+
+    this.questionTimeSeconds +=
+      elapsedSeconds;
+
+
+    this.lastActiveTimestamp =
+      normalizedTimestamp;
+
+
+    return elapsedSeconds;
+  }
+
+
+  isTimingActive() {
+    return Boolean(
+      this.timingActive
     );
   }
 
 
-  /* =========================================================
-     SAVED ANSWER COMPATIBILITY
-  ========================================================= */
-
-  normalizeSavedAnswer(
-    answer
-  ) {
-    if (
-      !answer ||
-      typeof answer !==
-        "object"
-    ) {
-      return null;
-    }
+  getActiveTimeSeconds() {
+    this.syncTiming();
 
 
-    const questionId =
-      this.answerQuestionId(
-        answer
-      );
-
-
-    if (
-      questionId ===
-        null ||
-      questionId ===
-        undefined ||
-      questionId ===
-        ""
-    ) {
-      return null;
-    }
-
-
-    const question =
-      this.questions.find(
-        (
-          item
-        ) =>
-          this.sameQuestionId(
-            item.id,
-            questionId
-          )
-      );
-
-
-    if (!question) {
-      return null;
-    }
-
-
-    const timedOut =
-      Boolean(
-        answer.timedOut ??
-        answer.timed_out
-      );
-
-
-    const confidenceEnabled =
-      answer.confidenceEnabled !==
-        undefined
-        ? Boolean(
-            answer.confidenceEnabled
-          )
-        : answer.confidence_enabled !==
-            undefined
-          ? Boolean(
-              answer.confidence_enabled
-            )
-          : Boolean(
-              answer.confidence
-            );
-
-
-    const confidence =
-      this.normalizeConfidence(
-        answer.confidence
-      );
-
-
-    const rawChoice =
-      answer.choice ??
-      answer.selectedChoice ??
-      answer.selected_choice ??
-      null;
-
-
-    const choice =
-      rawChoice ===
-        null ||
-      rawChoice ===
-        undefined ||
-      rawChoice ===
-        ""
-        ? null
-        : Number(
-            rawChoice
-          );
-
-
-    const validChoice =
-      choice !==
-        null &&
-      Number.isInteger(
-        choice
-      ) &&
-      Array.isArray(
-        question.options
-      ) &&
-      choice >=
-        0 &&
-      choice <
-        question.options.length;
-
-
-    const correct =
-      typeof answer.correct ===
-        "boolean"
-        ? answer.correct
-        : typeof answer.is_correct ===
-            "boolean"
-          ? answer.is_correct
-          : Boolean(
-              !timedOut &&
-              validChoice &&
-              choice ===
-                Number(
-                  question.answer
-                )
-            );
-
-
-    const points =
-      Number.isFinite(
-        Number(
-          answer.points
-        )
+    return Math.max(
+      0,
+      Math.round(
+        this.activeTimeSeconds
       )
-        ? Number(
-            answer.points
-          )
-        : this.calculatePoints({
-            correct,
-
-            confidence,
-
-            timedOut,
-
-            confidenceEnabled
-          });
-
-
-    return {
-      ...answer,
-
-      questionId:
-        question.id,
-
-      choice:
-        validChoice
-          ? choice
-          : null,
-
-      correct,
-
-      confidence:
-        confidenceEnabled
-          ? confidence
-          : null,
-
-      confidenceEnabled,
-
-      timedOut,
-
-      points,
-
-      answeredAt:
-        answer.answeredAt ||
-        answer.answered_at ||
-        new Date()
-          .toISOString()
-    };
+    );
   }
 
 
-  /* =========================================================
-     STATE
-  ========================================================= */
+  getQuestionTimeSeconds() {
+    this.syncTiming();
 
-  state() {
-    return {
-      questionIds:
-        this.questions.map(
-          (
-            question
-          ) =>
-            question.id
-        ),
 
-      currentIndex:
-        this.index,
-
-      answers:
-        this.answers.map(
-          (
-            answer
-          ) => ({
-            ...answer
-          })
-        ),
-
-      score:
-        this.score(),
-
-      correctCount:
-        this.correctCount(),
-
-      incorrectCount:
-        this.incorrectCount(),
-
-      timedOutCount:
-        this.timedOutCount(),
-
-      answeredCount:
-        this.answeredCount(),
-
-      remainingCount:
-        this.remainingCount(),
-
-      confidenceEnabled:
-        this.confidenceEnabled
-    };
+    return Math.max(
+      0,
+      Math.round(
+        this.questionTimeSeconds
+      )
+    );
   }
-}
+
+
+  resetQuestionTimer(
+    timestamp =
+      this.now()
+  ) {
+    this.syncTiming(
+      timestamp
+    );
+
+
+    this.questionTimeSeconds =
+      0;
+
+
+    this.questionStartedAt =
+      normalizeTimestamp(
+        timestamp
+      ) ||
+      this.now();
+
+
+    if (
+      this.timingActive
+    ) {
+      this.lastActiveTimestamp =
+        this.questionStartedAt;
+    }
+
+
+    return this.questionTimeSeconds;
+  }
+
+
+  remainingQuizSeconds() {
+    if (
+      !this.hasQuizTimer()
+    ) {
+      return null;
+    }
+
+
+    this.syncTiming();
+
+
+    return Math.max(
+      0,
+      Math.ceil(
+        this.quizDurationSeconds -
+        this.activeTimeSeconds
+      )
+    );
+  }
+
+
+  remainingQuestionSeconds() {
+    if (
+      !this.hasQuestionTimer()
+    ) {
+      return null;
+    }
+
+
+    this.syncTiming();
+
+
+    return Math.max(
+      0,
+      Math.ceil(
+        this.currentQuestionTimeLimit() -
+        this.questionTimeSeconds
+      )
+    );
+  }
+
+
+  isQuizTimedOut() {
+    const remaining =
+      this.remainingQuizSeconds();
+
+
+    return (
+      remaining !==
+        null &&
+      remaining <=
+        0
+    );
+  }
+
+
+  isQuestionTimedOut() {
+    const remaining =
+      this.remainingQuestionSeconds();
+
+
+    return (
+      remaining !==
+        null &&
+      remaining <=
+        0
+    );
+  }
+
+
+  timerSnapshot() {
+    this.syncTiming();
+
+
+    return {
+      timerMode:
+        this.timerMode,
+
+      quizDurationSeconds
