@@ -3,6 +3,24 @@ import {
 } from "./supabase-client.js";
 
 
+console.log(
+  "ACL CLOUD PROGRESS v2.1.0 LOADED"
+);
+
+
+/* =========================================================
+   INTERNAL STATE
+========================================================= */
+
+const cloudProgressState = {
+  moduleEditionMap:
+    null,
+
+  moduleEditionMapPromise:
+    null
+};
+
+
 /* =========================================================
    CURRENT USER
 ========================================================= */
@@ -14,7 +32,7 @@ async function currentUser() {
   } =
     await supabaseClient
       .auth
-      .getSession();
+      .getUser();
 
 
   if (error) {
@@ -23,19 +41,66 @@ async function currentUser() {
 
 
   const user =
-    data
-      ?.session
-      ?.user;
+    data?.user;
 
 
   if (!user) {
     throw new Error(
-      "You must sign in before starting a quiz."
+      "You must sign in before accessing quiz progress."
     );
   }
 
 
   return user;
+}
+
+
+/* =========================================================
+   VALUE HELPERS
+========================================================= */
+
+function safeArray(
+  value
+) {
+  return Array.isArray(
+    value
+  )
+    ? value
+    : [];
+}
+
+
+function safeObject(
+  value
+) {
+  return (
+    value &&
+    typeof value ===
+      "object" &&
+    !Array.isArray(
+      value
+    )
+  )
+    ? value
+    : {};
+}
+
+
+function safeNumber(
+  value,
+  fallback = 0
+) {
+  const parsed =
+    Number(
+      value
+    );
+
+
+  return Number.isFinite(
+    parsed
+  )
+    ? parsed
+    : fallback;
 }
 
 
@@ -47,107 +112,108 @@ function normalizeAttemptState(
   state = {},
   lifelinesOverride = null
 ) {
+  const source =
+    safeObject(
+      state
+    );
+
+
   const lifelines =
-    lifelinesOverride &&
-    typeof lifelinesOverride ===
-      "object"
-      ? lifelinesOverride
+    lifelinesOverride !==
+      null
+      ? safeObject(
+          lifelinesOverride
+        )
+      : Object.keys(
+          safeObject(
+            source.lifelinesState
+          )
+        ).length
+        ? safeObject(
+            source.lifelinesState
+          )
+        : safeObject(
+            source.lifelines
+          );
 
-      : state.lifelinesState &&
-        typeof state.lifelinesState ===
-          "object"
-        ? state.lifelinesState
 
-        : state.lifelines &&
-          typeof state.lifelines ===
-            "object"
-          ? state.lifelines
+  const questionIds =
+    safeArray(
+      source.questionIds ??
+      source.question_ids
+    );
 
-          : {};
+
+  const answers =
+    safeArray(
+      source.answers
+    );
 
 
   return {
-    questionIds:
-      Array.isArray(
-        state.questionIds
-      )
-        ? state.questionIds
-        : [],
-
+    questionIds,
 
     currentIndex:
-      Number.isFinite(
-        Number(
-          state.currentIndex
-        )
-      )
-        ? Number(
-            state.currentIndex
+      Math.max(
+        0,
+        Math.floor(
+          safeNumber(
+            source.currentIndex ??
+            source.current_question_index,
+            0
           )
-        : 0,
+        )
+      ),
 
-
-    answers:
-      Array.isArray(
-        state.answers
-      )
-        ? state.answers
-        : [],
-
+    answers,
 
     score:
-      Number.isFinite(
-        Number(
-          state.score
-        )
-      )
-        ? Number(
-            state.score
-          )
-        : 0,
-
+      safeNumber(
+        source.score,
+        0
+      ),
 
     correctCount:
-      Number.isFinite(
-        Number(
-          state.correctCount
-        )
-      )
-        ? Number(
-            state.correctCount
+      Math.max(
+        0,
+        Math.floor(
+          safeNumber(
+            source.correctCount ??
+            source.correct_count,
+            0
           )
-        : 0,
-
+        )
+      ),
 
     incorrectCount:
-      Number.isFinite(
-        Number(
-          state.incorrectCount
-        )
-      )
-        ? Number(
-            state.incorrectCount
+      Math.max(
+        0,
+        Math.floor(
+          safeNumber(
+            source.incorrectCount ??
+            source.incorrect_count,
+            0
           )
-        : 0,
-
+        )
+      ),
 
     timedOutCount:
-      Number.isFinite(
-        Number(
-          state.timedOutCount
-        )
-      )
-        ? Number(
-            state.timedOutCount
+      Math.max(
+        0,
+        Math.floor(
+          safeNumber(
+            source.timedOutCount ??
+            source.timed_out_count,
+            0
           )
-        : 0,
-
+        )
+      ),
 
     confidenceEnabled:
       Boolean(
-        state.confidenceEnabled
+        source.confidenceEnabled ??
+        source.confidence_enabled
       ),
-
 
     lifelines
   };
@@ -171,8 +237,10 @@ function normalizeEdition(
 
 
   return (
-    edition === "basic" ||
-    edition === "expert"
+    edition ===
+      "basic" ||
+    edition ===
+      "expert"
   )
     ? edition
     : null;
@@ -180,30 +248,42 @@ function normalizeEdition(
 
 
 function activeEdition() {
-  const parameters =
-    new URLSearchParams(
-      window.location.search
-    );
+  try {
+    const parameters =
+      new URLSearchParams(
+        window.location.search
+      );
 
 
-  const urlEdition =
-    normalizeEdition(
-      parameters.get(
-        "edition"
+    const urlEdition =
+      normalizeEdition(
+        parameters.get(
+          "edition"
+        )
+      );
+
+
+    if (urlEdition) {
+      return urlEdition;
+    }
+
+
+    return normalizeEdition(
+      localStorage.getItem(
+        "aclSelectedEdition"
       )
     );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL ACTIVE EDITION READ ERROR:",
+      error
+    );
 
 
-  if (urlEdition) {
-    return urlEdition;
+    return null;
   }
-
-
-  return normalizeEdition(
-    localStorage.getItem(
-      "aclSelectedEdition"
-    )
-  );
 }
 
 
@@ -211,94 +291,171 @@ function activeEdition() {
    MODULE EDITION MAP
 ========================================================= */
 
-async function loadModuleEditionMap() {
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from(
-        "modules"
+function moduleMapEntry(
+  module
+) {
+  const edition =
+    normalizeEdition(
+      module?.edition
+    );
+
+
+  if (!edition) {
+    return null;
+  }
+
+
+  return {
+    edition,
+
+    title:
+      String(
+        module?.title ||
+        ""
+      ),
+
+    id:
+      module?.id ??
+      null,
+
+    slug:
+      String(
+        module?.slug ||
+        ""
       )
-      .select(`
-        id,
-        slug,
-        title,
-        edition
-      `);
+  };
+}
 
 
-  if (error) {
-    throw error;
-  }
-
-
-  const map =
-    new Map();
-
-
-  for (
-    const module of
-    data ||
-    []
+async function loadModuleEditionMap({
+  forceRefresh = false
+} = {}) {
+  if (
+    !forceRefresh &&
+    cloudProgressState
+      .moduleEditionMap
   ) {
-    const edition =
-      normalizeEdition(
-        module.edition
-      );
-
-
-    if (!edition) {
-      continue;
-    }
-
-
-    if (module.id) {
-      map.set(
-        String(
-          module.id
-        ),
-        {
-          edition,
-          title:
-            module.title ||
-            "",
-          id:
-            module.id,
-          slug:
-            module.slug ||
-            ""
-        }
-      );
-    }
-
-
-    if (module.slug) {
-      map.set(
-        String(
-          module.slug
-        ),
-        {
-          edition,
-          title:
-            module.title ||
-            "",
-          id:
-            module.id,
-          slug:
-            module.slug
-        }
-      );
-    }
+    return cloudProgressState
+      .moduleEditionMap;
   }
 
 
-  return map;
+  if (
+    cloudProgressState
+      .moduleEditionMapPromise
+  ) {
+    return cloudProgressState
+      .moduleEditionMapPromise;
+  }
+
+
+  cloudProgressState
+    .moduleEditionMapPromise =
+      (async () => {
+        const {
+          data,
+          error
+        } =
+          await supabaseClient
+            .from(
+              "modules"
+            )
+            .select(`
+              id,
+              slug,
+              title,
+              edition
+            `);
+
+
+        if (error) {
+          throw error;
+        }
+
+
+        const map =
+          new Map();
+
+
+        safeArray(
+          data
+        ).forEach(
+          (
+            module
+          ) => {
+            const entry =
+              moduleMapEntry(
+                module
+              );
+
+
+            if (!entry) {
+              return;
+            }
+
+
+            if (
+              module.id !==
+                null &&
+              module.id !==
+                undefined
+            ) {
+              map.set(
+                String(
+                  module.id
+                ),
+                entry
+              );
+            }
+
+
+            if (module.slug) {
+              map.set(
+                String(
+                  module.slug
+                ),
+                entry
+              );
+            }
+          }
+        );
+
+
+        cloudProgressState
+          .moduleEditionMap =
+            map;
+
+
+        return map;
+      })()
+        .finally(
+          () => {
+            cloudProgressState
+              .moduleEditionMapPromise =
+                null;
+          }
+        );
+
+
+  return cloudProgressState
+    .moduleEditionMapPromise;
+}
+
+
+export function clearModuleEditionCache() {
+  cloudProgressState
+    .moduleEditionMap =
+      null;
+
+
+  cloudProgressState
+    .moduleEditionMapPromise =
+      null;
 }
 
 
 /* =========================================================
-   ENRICH ATTEMPTS WITH EDITION
+   ENRICH ATTEMPTS
 ========================================================= */
 
 function enrichAttempt(
@@ -313,9 +470,10 @@ function enrichAttempt(
 
 
   const matchedModule =
-    moduleMap.get(
+    moduleMap?.get(
       moduleKey
-    );
+    ) ||
+    null;
 
 
   const existingEdition =
@@ -336,13 +494,45 @@ function enrichAttempt(
 
     module_title:
       attempt?.module_title ||
+      attempt?.modules?.title ||
       matchedModule?.title ||
       "ACL Module",
 
     module_slug:
+      attempt?.module_slug ||
+      attempt?.modules?.slug ||
       matchedModule?.slug ||
       null
   };
+}
+
+
+async function enrichAttemptSafely(
+  attempt
+) {
+  try {
+    const moduleMap =
+      await loadModuleEditionMap();
+
+
+    return enrichAttempt(
+      attempt,
+      moduleMap
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL ATTEMPT MODULE ENRICHMENT ERROR:",
+      error
+    );
+
+
+    return enrichAttempt(
+      attempt,
+      new Map()
+    );
+  }
 }
 
 
@@ -354,6 +544,13 @@ export async function getOpenAttempt(
   moduleId,
   quizId = null
 ) {
+  if (!moduleId) {
+    throw new Error(
+      "A module ID is required to load an open attempt."
+    );
+  }
+
+
   const user =
     await currentUser();
 
@@ -380,7 +577,14 @@ export async function getOpenAttempt(
       );
 
 
-  if (quizId) {
+  if (
+    quizId !==
+      null &&
+    quizId !==
+      undefined &&
+    quizId !==
+      ""
+  ) {
     query =
       query.eq(
         "quiz_id",
@@ -423,24 +627,9 @@ export async function getOpenAttempt(
   }
 
 
-  try {
-    const moduleMap =
-      await loadModuleEditionMap();
-
-
-    return enrichAttempt(
-      data,
-      moduleMap
-    );
-  } catch (error) {
-    console.warn(
-      "Could not attach module edition to open attempt:",
-      error
-    );
-
-
-    return data;
-  }
+  return enrichAttemptSafely(
+    data
+  );
 }
 
 
@@ -454,73 +643,78 @@ export async function createAttempt({
   quizId = null,
   quizTitle = null,
   mode = "learning",
-  questionIds,
+  questionIds = [],
   lifelines = {}
 }) {
+  if (!moduleId) {
+    throw new Error(
+      "A module ID is required to create an attempt."
+    );
+  }
+
+
   const user =
     await currentUser();
 
 
   const safeQuestionIds =
-    Array.isArray(
+    safeArray(
       questionIds
-    )
-      ? questionIds
-      : [];
+    );
+
+
+  const safeModuleTitle =
+    String(
+      moduleTitle ||
+      "ACL Module"
+    ).trim() ||
+    "ACL Module";
 
 
   const row = {
     user_id:
       user.id,
 
-
     module_id:
       moduleId,
 
-
     module_title:
-      moduleTitle,
-
+      safeModuleTitle,
 
     quiz_id:
       quizId,
 
-
     quiz_title:
-      quizTitle ||
-      moduleTitle,
+      String(
+        quizTitle ||
+        safeModuleTitle
+      ),
 
-
-    mode,
-
+    mode:
+      String(
+        mode ||
+        "learning"
+      ),
 
     question_count:
       safeQuestionIds.length,
 
-
     question_ids:
       safeQuestionIds,
-
 
     current_question_index:
       0,
 
-
     answers:
       [],
 
-
     lifelines:
-      lifelines &&
-      typeof lifelines ===
-        "object"
-        ? lifelines
-        : {},
-
+      safeObject(
+        lifelines
+      ),
 
     score:
       0,
-
 
     status:
       "in_progress"
@@ -545,14 +739,26 @@ export async function createAttempt({
 
 
   if (error) {
+    /*
+     * An open-attempt uniqueness constraint may reject
+     * duplicate starts. In that case, recover the existing
+     * unfinished attempt instead of creating another one.
+     */
+
     if (
       error.code ===
       "23505"
     ) {
-      return getOpenAttempt(
-        moduleId,
-        quizId
-      );
+      const existingAttempt =
+        await getOpenAttempt(
+          moduleId,
+          quizId
+        );
+
+
+      if (existingAttempt) {
+        return existingAttempt;
+      }
     }
 
 
@@ -560,24 +766,69 @@ export async function createAttempt({
   }
 
 
-  try {
-    const moduleMap =
-      await loadModuleEditionMap();
+  return enrichAttemptSafely(
+    data
+  );
+}
 
 
-    return enrichAttempt(
-      data,
-      moduleMap
+/* =========================================================
+   UPDATE ATTEMPT
+========================================================= */
+
+async function updateAttempt(
+  attemptId,
+  updates
+) {
+  if (!attemptId) {
+    throw new Error(
+      "An attempt ID is required."
     );
-  } catch (editionError) {
-    console.warn(
-      "Attempt created, but its module edition could not be attached:",
-      editionError
-    );
-
-
-    return data;
   }
+
+
+  const user =
+    await currentUser();
+
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from(
+        "quiz_attempts"
+      )
+      .update(
+        updates
+      )
+      .eq(
+        "id",
+        attemptId
+      )
+      .eq(
+        "user_id",
+        user.id
+      )
+      .select(
+        "*"
+      )
+      .maybeSingle();
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  if (!data) {
+    throw new Error(
+      "The attempt was not found or does not belong to your account."
+    );
+  }
+
+
+  return data;
 }
 
 
@@ -597,54 +848,28 @@ export async function saveAttempt(
     );
 
 
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from(
-        "quiz_attempts"
-      )
-      .update({
-        question_ids:
-          normalized.questionIds,
+  return updateAttempt(
+    attemptId,
+    {
+      question_ids:
+        normalized.questionIds,
 
+      current_question_index:
+        normalized.currentIndex,
 
-        current_question_index:
-          normalized.currentIndex,
+      answers:
+        normalized.answers,
 
+      score:
+        normalized.score,
 
-        answers:
-          normalized.answers,
+      lifelines:
+        normalized.lifelines,
 
-
-        score:
-          normalized.score,
-
-
-        lifelines:
-          normalized.lifelines,
-
-
-        status:
-          "in_progress"
-      })
-      .eq(
-        "id",
-        attemptId
-      )
-      .select(
-        "*"
-      )
-      .single();
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  return data;
+      status:
+        "in_progress"
+    }
+  );
 }
 
 
@@ -664,59 +889,32 @@ export async function completeAttempt(
     );
 
 
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from(
-        "quiz_attempts"
-      )
-      .update({
-        question_ids:
-          normalized.questionIds,
+  return updateAttempt(
+    attemptId,
+    {
+      question_ids:
+        normalized.questionIds,
 
+      current_question_index:
+        normalized.currentIndex,
 
-        current_question_index:
-          normalized.currentIndex,
+      answers:
+        normalized.answers,
 
+      score:
+        normalized.score,
 
-        answers:
-          normalized.answers,
+      lifelines:
+        normalized.lifelines,
 
+      status:
+        "completed",
 
-        score:
-          normalized.score,
-
-
-        lifelines:
-          normalized.lifelines,
-
-
-        status:
-          "completed",
-
-
-        completed_at:
-          new Date()
-            .toISOString()
-      })
-      .eq(
-        "id",
-        attemptId
-      )
-      .select(
-        "*"
-      )
-      .single();
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  return data;
+      completed_at:
+        new Date()
+          .toISOString()
+    }
+  );
 }
 
 
@@ -726,37 +924,61 @@ export async function completeAttempt(
 
 export async function listAttempts({
   edition = activeEdition(),
-  includeUnmatched = false
+  includeUnmatched = false,
+  forceModuleRefresh = false
 } = {}) {
   const user =
     await currentUser();
 
 
+  const attemptPromise =
+    supabaseClient
+      .from(
+        "quiz_attempts"
+      )
+      .select(
+        "*"
+      )
+      .eq(
+        "user_id",
+        user.id
+      )
+      .order(
+        "updated_at",
+        {
+          ascending:
+            false
+        }
+      );
+
+
+  const moduleMapPromise =
+    loadModuleEditionMap({
+      forceRefresh:
+        forceModuleRefresh
+    })
+      .catch(
+        (
+          error
+        ) => {
+          console.warn(
+            "ACL MODULE EDITION MAP LOAD ERROR:",
+            error
+          );
+
+
+          return new Map();
+        }
+      );
+
+
   const [
     attemptResult,
-    moduleMapResult
+    moduleMap
   ] =
     await Promise.all([
-      supabaseClient
-        .from(
-          "quiz_attempts"
-        )
-        .select(
-          "*"
-        )
-        .eq(
-          "user_id",
-          user.id
-        )
-        .order(
-          "updated_at",
-          {
-            ascending:
-              false
-          }
-        ),
-
-      loadModuleEditionMap()
+      attemptPromise,
+      moduleMapPromise
     ]);
 
 
@@ -774,50 +996,67 @@ export async function listAttempts({
 
 
   const enrichedAttempts =
-    (
-      attemptResult.data ||
-      []
+    safeArray(
+      attemptResult.data
     ).map(
-      (attempt) =>
+      (
+        attempt
+      ) =>
         enrichAttempt(
           attempt,
-          moduleMapResult
+          moduleMap
         )
     );
 
-
-  /*
-   * No valid edition supplied:
-   * return every attempt.
-   */
 
   if (!selectedEdition) {
     return enrichedAttempts;
   }
 
 
-  /*
-   * Current pathway:
-   * return only attempts belonging to that edition.
-   */
-
   return enrichedAttempts.filter(
-    (attempt) => {
-      const attemptEdition =
+    (
+      attempt
+    ) => {
+      const editionValue =
         normalizeEdition(
           attempt.module_edition
         );
 
 
-      if (!attemptEdition) {
-        return includeUnmatched;
+      if (!editionValue) {
+        return Boolean(
+          includeUnmatched
+        );
       }
 
 
       return (
-        attemptEdition ===
+        editionValue ===
         selectedEdition
       );
     }
   );
 }
+
+
+/* =========================================================
+   AUTH STATE
+========================================================= */
+
+supabaseClient
+  .auth
+  .onAuthStateChange(
+    (
+      event
+    ) => {
+      if (
+        event ===
+          "SIGNED_OUT" ||
+        event ===
+          "USER_DELETED"
+      ) {
+        clearModuleEditionCache();
+      }
+    }
+  );
