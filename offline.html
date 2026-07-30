@@ -1,7 +1,9 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -14,86 +16,374 @@
     content="#0b5791"
   >
 
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
   <title>
-    Offline | ACL
+    Offline | Alexandria Cardiology League
   </title>
 
 
+  <link
+    rel="manifest"
+    href="manifest.json"
+  >
+
+
+  <link
+    rel="apple-touch-icon"
+    href="assets/images/acl-icon-192.png"
+  >
+
+
   <style>
+    :root {
+      --offline-primary: #0b5791;
+      --offline-primary-dark: #073d6d;
+      --offline-secondary: #1787c9;
+      --offline-gold: #ffc928;
+      --offline-text: #173f67;
+      --offline-muted: #647f96;
+      --offline-border: #cbddec;
+      --offline-soft: #eef7ff;
+      --offline-success: #168067;
+    }
+
+
     * {
       box-sizing: border-box;
     }
 
 
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
     body {
       display: grid;
+      place-items: center;
+
       min-height: 100vh;
       margin: 0;
       padding: 24px;
-      place-items: center;
-      color: #173f67;
+
+      color:
+        var(--offline-text);
+
       background:
+        radial-gradient(
+          circle at 10% 10%,
+          rgba(255, 201, 40, 0.16),
+          transparent 23rem
+        ),
+        radial-gradient(
+          circle at 92% 12%,
+          rgba(23, 135, 201, 0.15),
+          transparent 28rem
+        ),
         linear-gradient(
           145deg,
-          #eef7ff,
+          var(--offline-soft),
           #ffffff
         );
+
       font-family:
         Arial,
         sans-serif;
     }
 
 
+    button,
+    a {
+      font: inherit;
+    }
+
+
     .offline-card {
-      width: min(520px, 100%);
-      padding: 34px;
-      border: 1px solid #cbddec;
-      border-radius: 26px;
+      width:
+        min(
+          560px,
+          100%
+        );
+
+      overflow: hidden;
+
+      border:
+        1px solid
+        var(--offline-border);
+
+      border-radius: 28px;
+
       background: #ffffff;
+
       text-align: center;
+
       box-shadow:
-        0 22px 52px
-        rgba(12, 43, 81, 0.12);
+        0 22px 58px
+        rgba(12, 43, 81, 0.14);
+    }
+
+
+    .offline-header {
+      position: relative;
+      overflow: hidden;
+
+      padding: 30px 28px 27px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(--offline-primary-dark),
+          var(--offline-secondary)
+        );
+
+      border-bottom:
+        4px solid
+        var(--offline-gold);
+    }
+
+
+    .offline-header::after {
+      content: "📡";
+
+      position: absolute;
+      right: -15px;
+      bottom: -35px;
+
+      opacity: 0.13;
+
+      font-size: 130px;
+      transform: rotate(-8deg);
+    }
+
+
+    .offline-brand {
+      position: relative;
+      z-index: 1;
+
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+
+      padding: 7px 11px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      background:
+        rgba(255, 255, 255, 0.1);
+
+      font-size: 0.68rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
 
     .offline-icon {
+      position: relative;
+      z-index: 1;
+
       display: grid;
+      place-items: center;
+
       width: 78px;
       height: 78px;
-      margin: 0 auto 20px;
-      place-items: center;
+
+      margin: 22px auto 18px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.35);
+
       border-radius: 22px;
-      background: #eef7ff;
+
+      background:
+        rgba(255, 255, 255, 0.14);
+
       font-size: 2rem;
     }
 
 
-    h1 {
+    .offline-header h1 {
+      position: relative;
+      z-index: 1;
+
       margin: 0;
-      color: #092e57;
+
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          1.9rem,
+          6vw,
+          2.8rem
+        );
+
+      line-height: 1.08;
     }
 
 
-    p {
-      margin: 16px 0 24px;
-      color: #647f96;
+    .offline-body {
+      padding: 26px;
+    }
+
+
+    .offline-body p {
+      margin: 0;
+
+      color:
+        var(--offline-muted);
+
       line-height: 1.65;
     }
 
 
-    button {
+    .offline-status {
+      margin-top: 18px;
+      padding: 12px 13px;
+
+      border:
+        1px solid
+        var(--offline-border);
+
+      border-radius: 12px;
+
+      color:
+        var(--offline-muted);
+
+      background:
+        var(--offline-soft);
+
+      font-size: 0.8rem;
+      font-weight: 750;
+      line-height: 1.45;
+    }
+
+
+    .offline-status.online {
+      border-color: #bce3d2;
+
+      color:
+        var(--offline-success);
+
+      background: #f1fbf6;
+    }
+
+
+    .offline-actions {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 10px;
+
+      margin-top: 21px;
+    }
+
+
+    .offline-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
       min-height: 48px;
-      padding: 0 22px;
-      border: 0;
+      padding: 10px 16px;
+
       border-radius: 14px;
-      color: #ffffff;
-      background: #0b5791;
-      font: inherit;
-      font-weight: 800;
+
       cursor: pointer;
+
+      font-weight: 850;
+      text-decoration: none;
+    }
+
+
+    .offline-button-primary {
+      border: 0;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--offline-primary),
+          var(--offline-secondary)
+        );
+    }
+
+
+    .offline-button-secondary {
+      border:
+        1px solid
+        var(--offline-border);
+
+      color:
+        var(--offline-primary);
+
+      background: #ffffff;
+    }
+
+
+    .offline-button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+
+    .offline-note {
+      margin-top: 18px;
+
+      color:
+        var(--offline-muted);
+
+      font-size: 0.74rem;
+      line-height: 1.5;
+    }
+
+
+    @media (max-width: 520px) {
+      body {
+        padding: 12px;
+      }
+
+
+      .offline-card {
+        border-radius: 22px;
+      }
+
+
+      .offline-header {
+        padding:
+          24px 19px
+          22px;
+      }
+
+
+      .offline-body {
+        padding: 20px 18px;
+      }
+
+
+      .offline-actions {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
+
 </head>
 
 
@@ -101,31 +391,222 @@
 
   <main class="offline-card">
 
-    <div
-      class="offline-icon"
-      aria-hidden="true"
-    >
-      📡
-    </div>
+    <section class="offline-header">
 
-    <h1>
-      You are currently offline
-    </h1>
+      <div class="offline-brand">
+        Alexandria Cardiology League
+      </div>
 
-    <p>
-      Previously opened ACL pages may remain available.
-      Reconnect to continue quizzes, synchronize progress,
-      or load new modules.
-    </p>
 
-    <button
-      type="button"
-      onclick="window.location.reload()"
-    >
-      Try again
-    </button>
+      <div
+        class="offline-icon"
+        aria-hidden="true"
+      >
+        📡
+      </div>
+
+
+      <h1>
+        You are currently offline
+      </h1>
+
+    </section>
+
+
+    <section class="offline-body">
+
+      <p>
+        Previously opened ACL pages may remain available.
+        Reconnect to continue quizzes, synchronize progress,
+        receive notifications, or load new modules.
+      </p>
+
+
+      <div
+        id="offlineConnectionStatus"
+        class="offline-status"
+        role="status"
+        aria-live="polite"
+      >
+        Waiting for an internet connection…
+      </div>
+
+
+      <div class="offline-actions">
+
+        <button
+          id="retryConnectionButton"
+          class="
+            offline-button
+            offline-button-primary
+          "
+          type="button"
+        >
+          Try again
+        </button>
+
+
+        <a
+          class="
+            offline-button
+            offline-button-secondary
+          "
+          href="pathways.html"
+        >
+          Open cached home
+        </a>
+
+      </div>
+
+
+      <div class="offline-note">
+        Quiz answers and new progress require an active internet
+        connection before they can be saved to your ACL account.
+      </div>
+
+    </section>
 
   </main>
+
+
+  <script>
+    (() => {
+      const status =
+        document.getElementById(
+          "offlineConnectionStatus"
+        );
+
+
+      const retryButton =
+        document.getElementById(
+          "retryConnectionButton"
+        );
+
+
+      let redirectPending =
+        false;
+
+
+      function updateStatus() {
+        if (
+          navigator.onLine
+        ) {
+          if (status) {
+            status.textContent =
+              "Connection restored. Returning to ACL…";
+
+
+            status.classList.add(
+              "online"
+            );
+          }
+
+
+          if (
+            retryButton
+          ) {
+            retryButton.disabled =
+              true;
+
+
+            retryButton.textContent =
+              "Reconnecting…";
+          }
+
+
+          if (
+            !redirectPending
+          ) {
+            redirectPending =
+              true;
+
+
+            window.setTimeout(
+              () => {
+                window.location.replace(
+                  "pathways.html"
+                );
+              },
+              700
+            );
+          }
+
+
+          return;
+        }
+
+
+        if (status) {
+          status.textContent =
+            "Waiting for an internet connection…";
+
+
+          status.classList.remove(
+            "online"
+          );
+        }
+
+
+        if (
+          retryButton
+        ) {
+          retryButton.disabled =
+            false;
+
+
+          retryButton.textContent =
+            "Try again";
+        }
+      }
+
+
+      retryButton
+        ?.addEventListener(
+          "click",
+          () => {
+            if (
+              navigator.onLine
+            ) {
+              updateStatus();
+
+
+              return;
+            }
+
+
+            retryButton.disabled =
+              true;
+
+
+            retryButton.textContent =
+              "Checking…";
+
+
+            window.setTimeout(
+              () => {
+                updateStatus();
+              },
+              700
+            );
+          }
+        );
+
+
+      window.addEventListener(
+        "online",
+        updateStatus
+      );
+
+
+      window.addEventListener(
+        "offline",
+        updateStatus
+      );
+
+
+      updateStatus();
+    })();
+  </script>
 
 </body>
 
