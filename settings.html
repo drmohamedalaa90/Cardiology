@@ -1,18 +1,23 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
+
+  <meta charset="utf-8">
+
+
   <meta
     name="referrer"
     content="strict-origin-when-cross-origin"
   >
 
-  <meta charset="utf-8">
 
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
   >
+
 
   <meta
     id="settingsThemeColor"
@@ -20,9 +25,35 @@
     content="#123f72"
   >
 
+
+  <meta
+    name="description"
+    content="Manage Alexandria Cardiology League quiz, confidence, lifeline, sound, accessibility, and display preferences."
+  >
+
+
   <title>
     Settings | Alexandria Cardiology League
   </title>
+
+
+  <link
+    rel="manifest"
+    href="manifest.json"
+  >
+
+
+  <link
+    rel="icon"
+    href="assets/images/acl-icon-192.png"
+    type="image/png"
+  >
+
+
+  <link
+    rel="apple-touch-icon"
+    href="assets/images/acl-icon-192.png"
+  >
 
 
   <link
@@ -34,48 +65,78 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 
-  <!-- Apply the saved edition immediately to prevent a blue/green flash. -->
+  <!-- Apply the remembered edition before page rendering. -->
 
   <script>
     (() => {
-      const parameters =
-        new URLSearchParams(
-          window.location.search
-        );
+      try {
+        const parameters =
+          new URLSearchParams(
+            window.location.search
+          );
 
-      const urlEdition =
-        String(
-          parameters.get("edition") || ""
-        )
-          .trim()
-          .toLowerCase();
 
-      const savedEdition =
-        String(
-          localStorage.getItem(
-            "aclSelectedEdition"
-          ) || ""
-        )
-          .trim()
-          .toLowerCase();
+        const urlEdition =
+          String(
+            parameters.get(
+              "edition"
+            ) ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
 
-      const edition =
-        (
-          urlEdition === "basic" ||
-          urlEdition === "expert"
-        )
-          ? urlEdition
-          : savedEdition;
 
-      if (edition === "basic") {
-        document.documentElement.classList.add(
-          "acl-settings-basic"
-        );
-      }
+        const savedEdition =
+          String(
+            localStorage.getItem(
+              "aclSelectedEdition"
+            ) ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
 
-      if (edition === "expert") {
-        document.documentElement.classList.add(
-          "acl-settings-expert"
+
+        const edition =
+          (
+            urlEdition ===
+              "basic" ||
+            urlEdition ===
+              "expert"
+          )
+            ? urlEdition
+            : savedEdition;
+
+
+        if (
+          edition ===
+          "basic"
+        ) {
+          document.documentElement
+            .classList
+            .add(
+              "acl-settings-basic"
+            );
+        }
+
+
+        if (
+          edition ===
+          "expert"
+        ) {
+          document.documentElement
+            .classList
+            .add(
+              "acl-settings-expert"
+            );
+        }
+      } catch (
+        error
+      ) {
+        console.warn(
+          "ACL SETTINGS EARLY THEME ERROR:",
+          error
         );
       }
     })();
@@ -83,10 +144,6 @@
 
 
   <style>
-    /* =====================================================
-       EDITION VARIABLES
-    ===================================================== */
-
     :root {
       --settings-primary: #123f72;
       --settings-secondary: #176aa1;
@@ -94,12 +151,11 @@
       --settings-soft-secondary: #f6fbff;
       --settings-accent: #ffc928;
 
-      --settings-card: #ffffff;
       --settings-text: #13233a;
       --settings-heading: #173f67;
       --settings-muted: #63748a;
       --settings-border: #d5e5f5;
-      --settings-success: #16a36a;
+      --settings-success: #168067;
       --settings-danger: #a32635;
 
       --settings-shadow:
@@ -131,14 +187,17 @@
 
 
     * {
-      box-sizing:
-        border-box;
+      box-sizing: border-box;
+    }
+
+
+    [hidden] {
+      display: none !important;
     }
 
 
     html {
-      min-height:
-        100%;
+      min-height: 100%;
 
       background:
         var(--settings-soft);
@@ -146,11 +205,8 @@
 
 
     body {
-      min-height:
-        100vh;
-
-      margin:
-        0;
+      min-height: 100vh;
+      margin: 0;
 
       color:
         var(--settings-text);
@@ -168,11 +224,7 @@
       background:
         radial-gradient(
           circle at 12% 12%,
-          color-mix(
-            in srgb,
-            var(--settings-secondary) 12%,
-            transparent
-          ),
+          rgba(23, 106, 161, 0.12),
           transparent 29rem
         ),
         radial-gradient(
@@ -192,39 +244,23 @@
     button,
     input,
     select {
-      font:
-        inherit;
+      font: inherit;
     }
 
 
-    /* =====================================================
-       PREVENT FALLBACK HEADER FLASH
-    ===================================================== */
-
     .topbar.acl-header-pending {
-      min-height:
-        82px;
+      min-height: 82px;
 
-      opacity:
-        0;
-
-      visibility:
-        hidden;
+      opacity: 0;
+      visibility: hidden;
     }
 
 
     .topbar.acl-unified-header {
-      opacity:
-        1;
-
-      visibility:
-        visible;
+      opacity: 1;
+      visibility: visible;
     }
 
-
-    /* =====================================================
-       PAGE SHELL
-    ===================================================== */
 
     .settings-shell {
       width:
@@ -233,11 +269,8 @@
           calc(100% - 28px)
         );
 
-      margin:
-        0 auto;
-
-      padding:
-        30px 0 55px;
+      margin: 0 auto;
+      padding: 30px 0 55px;
     }
 
 
@@ -246,11 +279,8 @@
     ===================================================== */
 
     .settings-hero {
-      position:
-        relative;
-
-      overflow:
-        hidden;
+      position: relative;
+      overflow: hidden;
 
       padding:
         clamp(
@@ -259,11 +289,9 @@
           52px
         );
 
-      border-radius:
-        28px;
+      border-radius: 28px;
 
-      color:
-        #ffffff;
+      color: #ffffff;
 
       background:
         linear-gradient(
@@ -278,29 +306,18 @@
 
 
     .settings-hero::after {
-      content:
-        "♥";
+      content: "♥";
 
-      position:
-        absolute;
-
-      top:
-        50%;
-
-      right:
-        6%;
+      position: absolute;
+      top: 50%;
+      right: 6%;
 
       transform:
         translateY(-50%)
         rotate(-8deg);
 
       color:
-        rgba(
-          255,
-          255,
-          255,
-          0.11
-        );
+        rgba(255, 255, 255, 0.11);
 
       font-size:
         clamp(
@@ -309,106 +326,62 @@
           230px
         );
 
-      pointer-events:
-        none;
+      pointer-events: none;
     }
 
 
     .settings-hero-content {
-      position:
-        relative;
+      position: relative;
+      z-index: 1;
 
-      z-index:
-        1;
-
-      max-width:
-        690px;
+      max-width: 690px;
     }
 
 
     .settings-hero-top {
-      display:
-        flex;
-
-      align-items:
-        center;
-
-      gap:
-        10px;
-
-      flex-wrap:
-        wrap;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
 
     .settings-eyebrow,
     .settings-edition-badge {
-      display:
-        inline-flex;
+      display: inline-flex;
+      align-items: center;
 
-      align-items:
-        center;
-
-      min-height:
-        31px;
-
-      padding:
-        7px 12px;
+      min-height: 31px;
+      padding: 7px 12px;
 
       border:
         1px solid
-        rgba(
-          255,
-          255,
-          255,
-          0.28
-        );
+        rgba(255, 255, 255, 0.28);
 
-      border-radius:
-        999px;
+      border-radius: 999px;
+
+      color: #ffffff;
 
       background:
-        rgba(
-          255,
-          255,
-          255,
-          0.11
-        );
+        rgba(255, 255, 255, 0.11);
 
-      color:
-        #ffffff;
-
-      font-size:
-        0.74rem;
-
-      font-weight:
-        900;
-
-      letter-spacing:
-        0.09em;
-
-      text-transform:
-        uppercase;
+      font-size: 0.74rem;
+      font-weight: 900;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
     }
 
 
     .settings-edition-badge {
       background:
-        rgba(
-          255,
-          255,
-          255,
-          0.2
-        );
+        rgba(255, 255, 255, 0.2);
     }
 
 
     .settings-hero h1 {
-      margin:
-        15px 0 9px;
+      margin: 15px 0 9px;
 
-      color:
-        #ffffff;
+      color: #ffffff;
 
       font-size:
         clamp(
@@ -417,22 +390,15 @@
           4.2rem
         );
 
-      line-height:
-        1;
+      line-height: 1;
     }
 
 
     .settings-hero p {
-      margin:
-        0;
+      margin: 0;
 
       color:
-        rgba(
-          255,
-          255,
-          255,
-          0.87
-        );
+        rgba(255, 255, 255, 0.87);
 
       font-size:
         clamp(
@@ -441,85 +407,48 @@
           1.12rem
         );
 
-      line-height:
-        1.6;
+      line-height: 1.6;
     }
 
 
     .settings-hero-actions {
-      display:
-        flex;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
 
-      gap:
-        10px;
-
-      margin-top:
-        22px;
-
-      flex-wrap:
-        wrap;
+      margin-top: 22px;
     }
 
 
     .settings-hero-link {
-      display:
-        inline-flex;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
 
-      align-items:
-        center;
-
-      justify-content:
-        center;
-
-      min-height:
-        42px;
-
-      padding:
-        9px 16px;
+      min-height: 42px;
+      padding: 9px 16px;
 
       border:
         1px solid
-        rgba(
-          255,
-          255,
-          255,
-          0.42
-        );
+        rgba(255, 255, 255, 0.42);
 
-      border-radius:
-        12px;
+      border-radius: 12px;
+
+      color: #ffffff;
 
       background:
-        rgba(
-          255,
-          255,
-          255,
-          0.1
-        );
+        rgba(255, 255, 255, 0.1);
 
-      color:
-        #ffffff;
-
-      font-size:
-        0.85rem;
-
-      font-weight:
-        850;
-
-      text-decoration:
-        none;
+      font-size: 0.85rem;
+      font-weight: 850;
+      text-decoration: none;
     }
 
 
     .settings-hero-link:hover,
     .settings-hero-link:focus-visible {
       background:
-        rgba(
-          255,
-          255,
-          255,
-          0.2
-        );
+        rgba(255, 255, 255, 0.2);
     }
 
 
@@ -528,8 +457,7 @@
     ===================================================== */
 
     .settings-grid {
-      display:
-        grid;
+      display: grid;
 
       grid-template-columns:
         repeat(
@@ -537,32 +465,23 @@
           minmax(0, 1fr)
         );
 
-      gap:
-        18px;
+      gap: 18px;
 
-      margin-top:
-        20px;
+      margin-top: 20px;
     }
 
 
     .settings-card {
-      padding:
-        23px;
+      padding: 23px;
 
       border:
         1px solid
         var(--settings-border);
 
-      border-radius:
-        22px;
+      border-radius: 22px;
 
       background:
-        rgba(
-          255,
-          255,
-          255,
-          0.97
-        );
+        rgba(255, 255, 255, 0.97);
 
       box-shadow:
         0 12px 34px
@@ -577,38 +496,25 @@
 
 
     .settings-card-heading {
-      display:
-        flex;
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
 
-      align-items:
-        flex-start;
-
-      gap:
-        13px;
-
-      margin-bottom:
-        17px;
+      margin-bottom: 17px;
     }
 
 
     .settings-card-icon {
-      display:
-        grid;
+      display: grid;
+      place-items: center;
 
-      place-items:
-        center;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
 
-      width:
-        44px;
+      border-radius: 14px;
 
-      min-width:
-        44px;
-
-      height:
-        44px;
-
-      border-radius:
-        14px;
+      color: #ffffff;
 
       background:
         linear-gradient(
@@ -617,104 +523,76 @@
           var(--settings-secondary)
         );
 
-      color:
-        #ffffff;
-
-      font-size:
-        1.05rem;
-
-      font-weight:
-        900;
+      font-size: 1.05rem;
+      font-weight: 900;
     }
 
 
     .settings-card-heading h2 {
-      margin:
-        1px 0 4px;
+      margin: 1px 0 4px;
 
       color:
         var(--settings-heading);
 
-      font-size:
-        1.18rem;
+      font-size: 1.18rem;
     }
 
 
     .settings-card-heading p {
-      margin:
-        0;
+      margin: 0;
 
       color:
         var(--settings-muted);
 
-      font-size:
-        0.84rem;
-
-      line-height:
-        1.5;
+      font-size: 0.84rem;
+      line-height: 1.5;
     }
 
 
     .setting-row {
-      display:
-        flex;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 19px;
 
-      align-items:
-        center;
-
-      justify-content:
-        space-between;
-
-      gap:
-        19px;
-
-      min-height:
-        64px;
-
-      padding:
-        14px 0;
+      min-height: 64px;
+      padding: 14px 0;
 
       border-top:
-        1px solid #e9f0f7;
+        1px solid
+        #e9f0f7;
     }
 
 
     .setting-row:first-of-type {
-      border-top:
-        0;
+      border-top: 0;
     }
 
 
     .setting-label {
-      min-width:
-        0;
+      min-width: 0;
     }
 
 
     .setting-label strong {
-      display:
-        block;
+      display: block;
 
       color:
         var(--settings-heading);
 
-      font-size:
-        0.95rem;
+      font-size: 0.95rem;
     }
 
 
     .setting-label small {
-      display:
-        block;
+      display: block;
 
-      margin-top:
-        4px;
+      margin-top: 4px;
 
       color:
         var(--settings-muted);
 
-      line-height:
-        1.42;
+      line-height: 1.42;
     }
 
 
@@ -723,93 +601,64 @@
     ===================================================== */
 
     .settings-switch {
-      position:
-        relative;
+      position: relative;
 
-      display:
-        inline-flex;
+      display: inline-flex;
 
-      width:
-        52px;
+      width: 52px;
+      height: 29px;
+      min-width: 52px;
 
-      min-width:
-        52px;
-
-      height:
-        29px;
-
-      cursor:
-        pointer;
+      cursor: pointer;
     }
 
 
     .settings-switch input {
-      position:
-        absolute;
+      position: absolute;
 
-      width:
-        1px;
+      width: 1px;
+      height: 1px;
 
-      height:
-        1px;
-
-      opacity:
-        0;
-
-      pointer-events:
-        none;
+      opacity: 0;
+      pointer-events: none;
     }
 
 
     .settings-switch-track {
-      position:
-        absolute;
+      position: absolute;
+      inset: 0;
 
-      inset:
-        0;
+      border-radius: 999px;
 
-      border-radius:
-        999px;
-
-      background:
-        #bdc9d6;
+      background: #bdc9d6;
 
       transition:
-        background 0.18s ease;
+        background
+        0.18s ease;
     }
 
 
     .settings-switch-track::after {
-      content:
-        "";
+      content: "";
 
-      position:
-        absolute;
+      position: absolute;
+      top: 3px;
+      left: 3px;
 
-      top:
-        3px;
+      width: 23px;
+      height: 23px;
 
-      left:
-        3px;
+      border-radius: 50%;
 
-      width:
-        23px;
-
-      height:
-        23px;
-
-      border-radius:
-        50%;
-
-      background:
-        #ffffff;
+      background: #ffffff;
 
       box-shadow:
         0 2px 8px
         rgba(0, 0, 0, 0.2);
 
       transition:
-        transform 0.18s ease;
+        transform
+        0.18s ease;
     }
 
 
@@ -827,13 +676,20 @@
     }
 
 
+    .settings-switch input:focus-visible +
+    .settings-switch-track {
+      outline:
+        3px solid
+        rgba(23, 106, 161, 0.24);
+
+      outline-offset: 3px;
+    }
+
+
     .settings-switch input:disabled +
     .settings-switch-track {
-      cursor:
-        not-allowed;
-
-      opacity:
-        0.45;
+      cursor: not-allowed;
+      opacity: 0.45;
     }
 
 
@@ -842,27 +698,26 @@
     ===================================================== */
 
     .settings-select {
-      min-width:
-        150px;
+      min-width: 150px;
 
       padding:
-        10px 34px 10px 12px;
+        10px
+        34px
+        10px
+        12px;
 
       border:
         1px solid
         var(--settings-border);
 
-      border-radius:
-        11px;
-
-      background:
-        #ffffff;
+      border-radius: 11px;
 
       color:
         var(--settings-text);
 
-      font-weight:
-        750;
+      background: #ffffff;
+
+      font-weight: 750;
     }
 
 
@@ -876,8 +731,7 @@
 
 
     .settings-range input {
-      width:
-        100%;
+      width: 100%;
 
       accent-color:
         var(--settings-secondary);
@@ -885,77 +739,50 @@
 
 
     .settings-range-value {
-      display:
-        block;
+      display: block;
 
-      margin-top:
-        4px;
+      margin-top: 4px;
 
       color:
         var(--settings-heading);
 
-      font-size:
-        0.75rem;
-
-      font-weight:
-        900;
-
-      text-align:
-        right;
+      font-size: 0.75rem;
+      font-weight: 900;
+      text-align: right;
     }
 
 
     .settings-actions {
-      display:
-        flex;
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 11px;
 
-      justify-content:
-        flex-end;
-
-      flex-wrap:
-        wrap;
-
-      gap:
-        11px;
-
-      margin-top:
-        24px;
+      margin-top: 24px;
     }
 
 
     .settings-button {
-      min-height:
-        47px;
+      min-height: 47px;
+      padding: 11px 20px;
 
-      padding:
-        11px 20px;
+      border: 0;
+      border-radius: 13px;
 
-      border:
-        0;
+      cursor: pointer;
 
-      border-radius:
-        13px;
-
-      cursor:
-        pointer;
-
-      font-weight:
-        900;
+      font-weight: 900;
     }
 
 
     .settings-button:disabled {
-      cursor:
-        wait;
-
-      opacity:
-        0.65;
+      cursor: wait;
+      opacity: 0.65;
     }
 
 
     .settings-button-primary {
-      color:
-        #ffffff;
+      color: #ffffff;
 
       background:
         linear-gradient(
@@ -975,32 +802,23 @@
         1px solid
         var(--settings-border);
 
-      background:
-        #ffffff;
-
       color:
         var(--settings-heading);
+
+      background: #ffffff;
     }
 
 
     .settings-save-status {
-      min-height:
-        24px;
-
-      margin-top:
-        15px;
+      min-height: 24px;
+      margin-top: 15px;
 
       color:
         var(--settings-success);
 
-      font-size:
-        0.84rem;
-
-      font-weight:
-        850;
-
-      text-align:
-        right;
+      font-size: 0.84rem;
+      font-weight: 850;
+      text-align: right;
     }
 
 
@@ -1011,17 +829,13 @@
 
 
     .settings-footer {
-      margin-top:
-        24px;
+      margin-top: 24px;
 
       color:
         var(--settings-muted);
 
-      font-size:
-        0.77rem;
-
-      text-align:
-        center;
+      font-size: 0.77rem;
+      text-align: center;
     }
 
 
@@ -1032,7 +846,6 @@
     body.high-contrast {
       --settings-soft: #ffffff;
       --settings-soft-secondary: #ffffff;
-      --settings-card: #ffffff;
       --settings-text: #000000;
       --settings-muted: #292929;
       --settings-border: #555555;
@@ -1056,46 +869,30 @@
     }
 
 
-    /* =====================================================
-       MOBILE
-    ===================================================== */
-
-    @media (
-      max-width:
-      760px
-    ) {
+    @media (max-width: 760px) {
       .settings-grid {
-        grid-template-columns:
-          1fr;
+        grid-template-columns: 1fr;
       }
 
 
       .settings-card.full {
-        grid-column:
-          auto;
+        grid-column: auto;
       }
 
 
       .setting-row {
-        align-items:
-          flex-start;
+        align-items: flex-start;
       }
 
 
       .settings-select {
-        min-width:
-          125px;
-
-        max-width:
-          45vw;
+        min-width: 125px;
+        max-width: 45vw;
       }
     }
 
 
-    @media (
-      max-width:
-      440px
-    ) {
+    @media (max-width: 440px) {
       .settings-shell {
         width:
           min(
@@ -1103,37 +900,41 @@
             1040px
           );
 
-        padding-top:
-          15px;
+        padding-top: 15px;
       }
 
 
       .settings-card {
-        padding:
-          18px;
+        padding: 18px;
       }
 
 
       .setting-row {
-        gap:
-          10px;
+        gap: 10px;
       }
 
 
       .settings-range {
-        width:
-          42vw;
+        width: 42vw;
+      }
+
+
+      .settings-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .settings-button {
+        width: 100%;
       }
     }
   </style>
+
 </head>
 
 
 <body>
-
-  <!-- =====================================================
-       FALLBACK HEADER
-  ====================================================== -->
 
   <header class="topbar acl-header-pending">
 
@@ -1152,6 +953,7 @@
         id="userChip"
         class="user-chip"
         href="profile.html"
+        aria-label="Open my profile"
       ></a>
 
 
@@ -1192,10 +994,6 @@
   </header>
 
 
-  <!-- =====================================================
-       MAIN PAGE
-  ====================================================== -->
-
   <main class="settings-shell">
 
     <section class="settings-hero">
@@ -1225,8 +1023,8 @@
 
 
         <p>
-          Control confidence-based answering, Scientific Lifelines,
-          sound, accessibility and display preferences.
+          Control confidence answering, Scientific Lifelines,
+          sound, accessibility, and display preferences.
         </p>
 
 
@@ -1260,23 +1058,24 @@
       aria-label="ACL settings"
     >
 
-      <!-- =================================================
-           CONFIDENCE ANSWERING
-      ================================================== -->
-
       <article class="settings-card">
 
         <div class="settings-card-heading">
 
-          <div class="settings-card-icon">
+          <div
+            class="settings-card-icon"
+            aria-hidden="true"
+          >
             ✓
           </div>
+
 
           <div>
 
             <h2>
               Confidence Answering
             </h2>
+
 
             <p>
               Control confidence-based scoring during learning modules.
@@ -1295,6 +1094,7 @@
               Enable Confidence Answering
             </strong>
 
+
             <small>
               Choose High or Low confidence before submitting an answer.
             </small>
@@ -1307,7 +1107,9 @@
             <input
               id="confidenceEnabled"
               type="checkbox"
+              aria-label="Enable Confidence Answering"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1324,6 +1126,7 @@
               Confidence scoring
             </strong>
 
+
             <small>
               Correct + High: +2 · Correct + Low: +1 ·
               Wrong + Low: 0 · Wrong + High: −1.
@@ -1336,23 +1139,24 @@
       </article>
 
 
-      <!-- =================================================
-           SCIENTIFIC LIFELINES
-      ================================================== -->
-
       <article class="settings-card">
 
         <div class="settings-card-heading">
 
-          <div class="settings-card-icon">
+          <div
+            class="settings-card-icon"
+            aria-hidden="true"
+          >
             🧠
           </div>
+
 
           <div>
 
             <h2>
               Scientific Lifelines
             </h2>
+
 
             <p>
               Choose which scientific help methods are available.
@@ -1371,6 +1175,7 @@
               Enable Scientific Lifelines
             </strong>
 
+
             <small>
               Show or hide the complete scientific assistance panel.
             </small>
@@ -1383,7 +1188,9 @@
             <input
               id="lifelinesEnabled"
               type="checkbox"
+              aria-label="Enable Scientific Lifelines"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1400,6 +1207,7 @@
               Dr. Corazón
             </strong>
 
+
             <small>
               Provides question-specific expert reasoning.
             </small>
@@ -1412,7 +1220,9 @@
             <input
               id="lifelineExpert"
               type="checkbox"
+              aria-label="Enable Dr. Corazón lifeline"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1429,6 +1239,7 @@
               Evidence Filter
             </strong>
 
+
             <small>
               Removes two incorrect answer options.
             </small>
@@ -1441,7 +1252,9 @@
             <input
               id="lifelineFilter"
               type="checkbox"
+              aria-label="Enable Evidence Filter lifeline"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1458,6 +1271,7 @@
               ESC Guideline
             </strong>
 
+
             <small>
               Shows focused guideline guidance.
             </small>
@@ -1470,7 +1284,9 @@
             <input
               id="lifelineGuideline"
               type="checkbox"
+              aria-label="Enable ESC Guideline lifeline"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1487,6 +1303,7 @@
               Knowledge Vault
             </strong>
 
+
             <small>
               Opens the complete review flashcard.
             </small>
@@ -1499,7 +1316,9 @@
             <input
               id="lifelineVault"
               type="checkbox"
+              aria-label="Enable Knowledge Vault lifeline"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1510,23 +1329,24 @@
       </article>
 
 
-      <!-- =================================================
-           SOUND
-      ================================================== -->
-
       <article class="settings-card">
 
         <div class="settings-card-heading">
 
-          <div class="settings-card-icon">
+          <div
+            class="settings-card-icon"
+            aria-hidden="true"
+          >
             ♪
           </div>
+
 
           <div>
 
             <h2>
               Sound
             </h2>
+
 
             <p>
               Control quiz music and feedback sounds.
@@ -1545,8 +1365,9 @@
               Sound effects
             </strong>
 
+
             <small>
-              Correct-answer, wrong-answer and checkpoint sounds.
+              Correct-answer, wrong-answer, and checkpoint sounds.
             </small>
 
           </div>
@@ -1557,7 +1378,9 @@
             <input
               id="soundEffects"
               type="checkbox"
+              aria-label="Enable sound effects"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1574,6 +1397,7 @@
               Background music
             </strong>
 
+
             <small>
               Play action music where available.
             </small>
@@ -1586,7 +1410,9 @@
             <input
               id="backgroundMusic"
               type="checkbox"
+              aria-label="Enable background music"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1603,6 +1429,7 @@
               Volume
             </strong>
 
+
             <small>
               Applies to music and sound effects.
             </small>
@@ -1618,7 +1445,9 @@
               min="0"
               max="100"
               step="5"
+              aria-label="Sound volume"
             >
+
 
             <span
               id="volumeValue"
@@ -1634,23 +1463,24 @@
       </article>
 
 
-      <!-- =================================================
-           ACCESSIBILITY
-      ================================================== -->
-
       <article class="settings-card">
 
         <div class="settings-card-heading">
 
-          <div class="settings-card-icon">
+          <div
+            class="settings-card-icon"
+            aria-hidden="true"
+          >
             A
           </div>
+
 
           <div>
 
             <h2>
               Accessibility
             </h2>
+
 
             <p>
               Improve readability and interaction comfort.
@@ -1669,6 +1499,7 @@
               Read questions aloud
             </strong>
 
+
             <small>
               Enable speech support for question text.
             </small>
@@ -1681,7 +1512,9 @@
             <input
               id="readAloud"
               type="checkbox"
+              aria-label="Read questions aloud"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1698,6 +1531,7 @@
               High contrast
             </strong>
 
+
             <small>
               Increase contrast between text and backgrounds.
             </small>
@@ -1710,7 +1544,9 @@
             <input
               id="highContrast"
               type="checkbox"
+              aria-label="Enable high contrast"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1727,6 +1563,7 @@
               Reduce motion
             </strong>
 
+
             <small>
               Minimize animations and movement.
             </small>
@@ -1739,7 +1576,9 @@
             <input
               id="reducedMotion"
               type="checkbox"
+              aria-label="Reduce motion"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1750,23 +1589,24 @@
       </article>
 
 
-      <!-- =================================================
-           DISPLAY
-      ================================================== -->
-
       <article class="settings-card full">
 
         <div class="settings-card-heading">
 
-          <div class="settings-card-icon">
+          <div
+            class="settings-card-icon"
+            aria-hidden="true"
+          >
             ⚙
           </div>
+
 
           <div>
 
             <h2>
               Display and quiz behaviour
             </h2>
+
 
             <p>
               General preferences stored locally on this device.
@@ -1785,6 +1625,7 @@
               Text size
             </strong>
 
+
             <small>
               Adjust text size on supported pages.
             </small>
@@ -1795,19 +1636,23 @@
           <select
             id="fontSize"
             class="settings-select"
+            aria-label="Text size"
           >
 
             <option value="small">
               Small
             </option>
 
+
             <option value="normal">
               Normal
             </option>
 
+
             <option value="large">
               Large
             </option>
+
 
             <option value="extra-large">
               Extra large
@@ -1826,6 +1671,7 @@
               Confirm before withdrawing
             </strong>
 
+
             <small>
               Ask for confirmation before leaving an active attempt.
             </small>
@@ -1838,7 +1684,9 @@
             <input
               id="confirmWithdraw"
               type="checkbox"
+              aria-label="Confirm before withdrawing"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1855,6 +1703,7 @@
               Show explanations automatically
             </strong>
 
+
             <small>
               Display the explanation after submitting an answer.
             </small>
@@ -1867,7 +1716,9 @@
             <input
               id="autoExplanation"
               type="checkbox"
+              aria-label="Show explanations automatically"
             >
+
 
             <span class="settings-switch-track"></span>
 
@@ -1924,17 +1775,13 @@
   </main>
 
 
-  <!-- =====================================================
-       SETTINGS APPLICATION
-  ====================================================== -->
-
   <script type="module">
 
     import {
       protectAndRender,
       resolveAclEdition,
       aclUrl
-    } from "./assets/js/session-ui.js?v=4.7.0";
+    } from "./assets/js/session-ui.js?v=4.8.0";
 
 
     import {
@@ -1943,6 +1790,11 @@
       saveAclSettings,
       normalizeAclSettings
     } from "./assets/js/user-settings.js?v=5.0.1";
+
+
+    console.log(
+      "ACL SETTINGS PAGE v1.1.0 LOADED"
+    );
 
 
     const selectedEdition =
@@ -1983,11 +1835,22 @@
     };
 
 
-    const byId =
-      (id) =>
-        document.getElementById(
-          id
-        );
+    const settingsState = {
+      saving:
+        false,
+
+      resetting:
+        false
+    };
+
+
+    function byId(
+      id
+    ) {
+      return document.getElementById(
+        id
+      );
+    }
 
 
     const confidenceEnabled =
@@ -2062,9 +1925,44 @@
       );
 
 
-    /* =====================================================
-       EDITION DISPLAY
-    ===================================================== */
+    function setSaveStatus(
+      message = "",
+      isError = false
+    ) {
+      if (!saveStatus) {
+        return;
+      }
+
+
+      saveStatus.textContent =
+        message;
+
+
+      saveStatus.classList.toggle(
+        "error",
+        isError
+      );
+    }
+
+
+    function setButtonState(
+      button,
+      disabled,
+      text
+    ) {
+      if (!button) {
+        return;
+      }
+
+
+      button.disabled =
+        disabled;
+
+
+      button.textContent =
+        text;
+    }
+
 
     function renderSettingsEdition() {
       const isBasic =
@@ -2126,25 +2024,107 @@
     }
 
 
-    /* =====================================================
-       LOCAL PREFERENCES
-    ===================================================== */
+    function normalizeLocalPreferences(
+      preferences
+    ) {
+      const source =
+        preferences &&
+        typeof preferences ===
+          "object"
+          ? preferences
+          : {};
+
+
+      const fontSizes =
+        new Set([
+          "small",
+          "normal",
+          "large",
+          "extra-large"
+        ]);
+
+
+      const parsedVolume =
+        Number(
+          source.volume
+        );
+
+
+      return {
+        soundEffects:
+          source.soundEffects !==
+            false,
+
+        backgroundMusic:
+          source.backgroundMusic !==
+            false,
+
+        volume:
+          Number.isFinite(
+            parsedVolume
+          )
+            ? Math.min(
+                100,
+                Math.max(
+                  0,
+                  parsedVolume
+                )
+              )
+            : 70,
+
+        readAloud:
+          Boolean(
+            source.readAloud
+          ),
+
+        highContrast:
+          Boolean(
+            source.highContrast
+          ),
+
+        reducedMotion:
+          Boolean(
+            source.reducedMotion
+          ),
+
+        fontSize:
+          fontSizes.has(
+            source.fontSize
+          )
+            ? source.fontSize
+            : "normal",
+
+        confirmWithdraw:
+          source.confirmWithdraw !==
+            false,
+
+        autoExplanation:
+          source.autoExplanation !==
+            false
+      };
+    }
+
 
     function readLocalPreferences() {
       try {
-        return {
-          ...LOCAL_DEFAULTS,
-
-          ...JSON.parse(
+        const stored =
+          JSON.parse(
             localStorage.getItem(
               LOCAL_STORAGE_KEY
             ) ||
             "{}"
-          )
-        };
-      } catch (error) {
+          );
+
+
+        return normalizeLocalPreferences({
+          ...LOCAL_DEFAULTS,
+          ...stored
+        });
+      } catch (
+        error
+      ) {
         console.warn(
-          "Could not read local settings:",
+          "ACL LOCAL SETTINGS READ ERROR:",
           error
         );
 
@@ -2159,8 +2139,16 @@
     function populateLocalPreferences(
       preferences
     ) {
+      const normalized =
+        normalizeLocalPreferences(
+          preferences
+        );
+
+
       localIds.forEach(
-        (id) => {
+        (
+          id
+        ) => {
           const element =
             byId(
               id
@@ -2178,11 +2166,13 @@
           ) {
             element.checked =
               Boolean(
-                preferences[id]
+                normalized[id]
               );
           } else {
             element.value =
-              preferences[id];
+              String(
+                normalized[id]
+              );
           }
         }
       );
@@ -2190,23 +2180,24 @@
 
       if (volumeValue) {
         volumeValue.textContent =
-          `${preferences.volume}%`;
+          `${normalized.volume}%`;
       }
 
 
       applyLocalPreview(
-        preferences
+        normalized
       );
     }
 
 
     function collectLocalPreferences() {
-      const preferences =
-        {};
+      const preferences = {};
 
 
       localIds.forEach(
-        (id) => {
+        (
+          id
+        ) => {
           const element =
             byId(
               id
@@ -2222,19 +2213,19 @@
             element.type ===
               "checkbox"
               ? element.checked
-
               : element.type ===
                   "range"
                 ? Number(
                     element.value
                   )
-
                 : element.value;
         }
       );
 
 
-      return preferences;
+      return normalizeLocalPreferences(
+        preferences
+      );
     }
 
 
@@ -2269,7 +2260,8 @@
 
 
       document.documentElement
-        .style.fontSize =
+        .style
+        .fontSize =
           sizeMap[
             preferences.fontSize
           ] ||
@@ -2282,83 +2274,94 @@
         collectLocalPreferences();
 
 
-      localStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify(
-          preferences
-        )
-      );
+      try {
+        localStorage.setItem(
+          LOCAL_STORAGE_KEY,
+          JSON.stringify(
+            preferences
+          )
+        );
 
 
-      localStorage.setItem(
-        "acl_settings",
-        JSON.stringify(
-          preferences
-        )
-      );
+        localStorage.setItem(
+          "acl_settings",
+          JSON.stringify(
+            preferences
+          )
+        );
 
 
-      localStorage.setItem(
-        "acl_sound_enabled",
-        String(
-          preferences.soundEffects
-        )
-      );
+        localStorage.setItem(
+          "acl_sound_enabled",
+          String(
+            preferences.soundEffects
+          )
+        );
 
 
-      localStorage.setItem(
-        "acl_music_enabled",
-        String(
-          preferences.backgroundMusic
-        )
-      );
+        localStorage.setItem(
+          "acl_music_enabled",
+          String(
+            preferences.backgroundMusic
+          )
+        );
 
 
-      localStorage.setItem(
-        "acl_volume",
-        String(
-          preferences.volume
-        )
-      );
+        localStorage.setItem(
+          "acl_volume",
+          String(
+            preferences.volume
+          )
+        );
 
 
-      localStorage.setItem(
-        "acl_read_aloud",
-        String(
-          preferences.readAloud
-        )
-      );
+        localStorage.setItem(
+          "acl_read_aloud",
+          String(
+            preferences.readAloud
+          )
+        );
+      } catch (
+        error
+      ) {
+        console.warn(
+          "ACL LOCAL SETTINGS SAVE ERROR:",
+          error
+        );
+      }
 
 
       applyLocalPreview(
         preferences
       );
+
+
+      return preferences;
     }
 
 
-    /* =====================================================
-       CLOUD SETTINGS
-    ===================================================== */
-
     function syncLifelineDisabledState() {
       const disabled =
-        !lifelinesEnabled.checked;
+        !lifelinesEnabled
+          ?.checked;
 
 
-      lifelineExpert.disabled =
-        disabled;
-
-
-      lifelineFilter.disabled =
-        disabled;
-
-
-      lifelineGuideline.disabled =
-        disabled;
-
-
-      lifelineVault.disabled =
-        disabled;
+      [
+        lifelineExpert,
+        lifelineFilter,
+        lifelineGuideline,
+        lifelineVault
+      ]
+        .forEach(
+          (
+            control
+          ) => {
+            if (control) {
+              control.disabled =
+                disabled;
+            }
+          }
+        );
     }
 
 
@@ -2371,36 +2374,50 @@
         );
 
 
-      confidenceEnabled.checked =
-        normalized.confidenceEnabled;
+      if (confidenceEnabled) {
+        confidenceEnabled.checked =
+          normalized
+            .confidenceEnabled;
+      }
 
 
-      lifelinesEnabled.checked =
-        normalized.lifelinesEnabled;
+      if (lifelinesEnabled) {
+        lifelinesEnabled.checked =
+          normalized
+            .lifelinesEnabled;
+      }
 
 
-      lifelineExpert.checked =
-        normalized
-          .enabledLifelines
-          .expert;
+      if (lifelineExpert) {
+        lifelineExpert.checked =
+          normalized
+            .enabledLifelines
+            .expert;
+      }
 
 
-      lifelineFilter.checked =
-        normalized
-          .enabledLifelines
-          .filter;
+      if (lifelineFilter) {
+        lifelineFilter.checked =
+          normalized
+            .enabledLifelines
+            .filter;
+      }
 
 
-      lifelineGuideline.checked =
-        normalized
-          .enabledLifelines
-          .guideline;
+      if (lifelineGuideline) {
+        lifelineGuideline.checked =
+          normalized
+            .enabledLifelines
+            .guideline;
+      }
 
 
-      lifelineVault.checked =
-        normalized
-          .enabledLifelines
-          .vault;
+      if (lifelineVault) {
+        lifelineVault.checked =
+          normalized
+            .enabledLifelines
+            .vault;
+      }
 
 
       syncLifelineDisabledState();
@@ -2410,36 +2427,45 @@
     function collectCloudSettings() {
       return normalizeAclSettings({
         confidenceEnabled:
-          confidenceEnabled.checked,
-
+          Boolean(
+            confidenceEnabled
+              ?.checked
+          ),
 
         lifelinesEnabled:
-          lifelinesEnabled.checked,
-
+          Boolean(
+            lifelinesEnabled
+              ?.checked
+          ),
 
         enabledLifelines: {
           expert:
-            lifelineExpert.checked,
-
+            Boolean(
+              lifelineExpert
+                ?.checked
+            ),
 
           filter:
-            lifelineFilter.checked,
-
+            Boolean(
+              lifelineFilter
+                ?.checked
+            ),
 
           guideline:
-            lifelineGuideline.checked,
-
+            Boolean(
+              lifelineGuideline
+                ?.checked
+            ),
 
           vault:
-            lifelineVault.checked
+            Boolean(
+              lifelineVault
+                ?.checked
+            )
         }
       });
     }
 
-
-    /* =====================================================
-       EVENTS
-    ===================================================== */
 
     lifelinesEnabled
       ?.addEventListener(
@@ -2464,9 +2490,12 @@
 
 
     localIds.forEach(
-      (id) => {
+      (
+        id
+      ) => {
         if (
-          id === "volume"
+          id ===
+          "volume"
         ) {
           return;
         }
@@ -2487,16 +2516,26 @@
       ?.addEventListener(
         "click",
         async () => {
-          saveButton.disabled =
+          if (
+            settingsState.saving
+          ) {
+            return;
+          }
+
+
+          settingsState.saving =
             true;
 
 
-          saveStatus.textContent =
-            "Saving settings…";
+          setButtonState(
+            saveButton,
+            true,
+            "Saving…"
+          );
 
 
-          saveStatus.classList.remove(
-            "error"
+          setSaveStatus(
+            "Saving settings…"
           );
 
 
@@ -2515,8 +2554,9 @@
             );
 
 
-            saveStatus.textContent =
-              "✓ Settings saved successfully.";
+            setSaveStatus(
+              "✓ Settings saved successfully."
+            );
 
 
             const updatedUrl =
@@ -2536,23 +2576,30 @@
               "",
               updatedUrl
             );
-          } catch (error) {
+          } catch (
+            error
+          ) {
             console.error(
-              "SETTINGS SAVE ERROR:",
+              "ACL SETTINGS SAVE ERROR:",
               error
             );
 
 
-            saveStatus.textContent =
-              "Settings could not be saved.";
-
-
-            saveStatus.classList.add(
-              "error"
+            setSaveStatus(
+              error.message ||
+              "Settings could not be saved.",
+              true
             );
           } finally {
-            saveButton.disabled =
+            settingsState.saving =
               false;
+
+
+            setButtonState(
+              saveButton,
+              false,
+              "Save settings"
+            );
           }
         }
       );
@@ -2562,6 +2609,13 @@
       ?.addEventListener(
         "click",
         async () => {
+          if (
+            settingsState.resetting
+          ) {
+            return;
+          }
+
+
           const confirmed =
             window.confirm(
               "Restore all ACL settings to their defaults?"
@@ -2573,16 +2627,19 @@
           }
 
 
-          resetButton.disabled =
+          settingsState.resetting =
             true;
 
 
-          saveStatus.textContent =
-            "Restoring defaults…";
+          setButtonState(
+            resetButton,
+            true,
+            "Restoring…"
+          );
 
 
-          saveStatus.classList.remove(
-            "error"
+          setSaveStatus(
+            "Restoring defaults…"
           );
 
 
@@ -2606,33 +2663,37 @@
             );
 
 
-            saveStatus.textContent =
-              "Default settings restored.";
-          } catch (error) {
+            setSaveStatus(
+              "Default settings restored."
+            );
+          } catch (
+            error
+          ) {
             console.error(
-              "SETTINGS RESET ERROR:",
+              "ACL SETTINGS RESET ERROR:",
               error
             );
 
 
-            saveStatus.textContent =
-              "Defaults could not be restored.";
-
-
-            saveStatus.classList.add(
-              "error"
+            setSaveStatus(
+              error.message ||
+              "Defaults could not be restored.",
+              true
             );
           } finally {
-            resetButton.disabled =
+            settingsState.resetting =
               false;
+
+
+            setButtonState(
+              resetButton,
+              false,
+              "Restore defaults"
+            );
           }
         }
       );
 
-
-    /* =====================================================
-       START
-    ===================================================== */
 
     async function startSettingsPage() {
       renderSettingsEdition();
@@ -2664,11 +2725,14 @@
         );
 
 
-        saveStatus.textContent =
-          "";
-      } catch (error) {
+        setSaveStatus(
+          ""
+        );
+      } catch (
+        error
+      ) {
         console.error(
-          "CLOUD SETTINGS LOAD ERROR:",
+          "ACL CLOUD SETTINGS LOAD ERROR:",
           error
         );
 
@@ -2678,25 +2742,38 @@
         );
 
 
-        saveStatus.textContent =
-          "Cloud settings could not be loaded.";
-
-
-        saveStatus.classList.add(
-          "error"
+        setSaveStatus(
+          "Cloud settings could not be loaded. Default settings are shown.",
+          true
         );
       }
     }
 
 
-    void startSettingsPage();
+    if (
+      document.readyState ===
+      "loading"
+    ) {
+      document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          void startSettingsPage();
+        },
+        {
+          once:
+            true
+        }
+      );
+    } else {
+      void startSettingsPage();
+    }
 
   </script>
 
 
   <script
     type="module"
-    src="assets/js/pwa.js?v=1.6.0"
+    src="assets/js/pwa.js?v=1.9.0"
   ></script>
 
 </body>
