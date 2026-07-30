@@ -1,8 +1,10 @@
 export const PPCI_QUESTIONS = [
   {
-    id: "ppci-v2-001",
+    id:
+      "ppci-v2-001",
 
-    topic: "Reperfusion Strategy",
+    topic:
+      "Reperfusion Strategy",
 
     stem:
       "A patient with anterior STEMI presents within 90 minutes of symptom onset. Which system-level priority most directly determines whether primary PCI remains the preferred reperfusion strategy?",
@@ -15,7 +17,8 @@ export const PPCI_QUESTIONS = [
       "The operator's preferred guide catheter"
     ],
 
-    answer: 1,
+    answer:
+      1,
 
     explanation:
       "The key system-level determinant is whether timely primary PCI can be delivered within guideline-recommended delay targets. The decision between primary PCI and fibrinolysis is therefore strongly influenced by the anticipated delay from first medical contact to PCI-mediated reperfusion.",
@@ -27,14 +30,16 @@ export const PPCI_QUESTIONS = [
       "Primary PCI is the preferred reperfusion strategy when it can be delivered within the recommended system delay. When timely PCI cannot be achieved in an eligible early presenter, fibrinolysis followed by transfer to a PCI-capable centre may become the appropriate reperfusion pathway.",
 
     flashcard: {
-      type: "FLASHCARD",
+      type:
+        "FLASHCARD",
 
       title:
         "Primary PCI versus Fibrinolysis in STEMI",
 
       sections: [
         {
-          heading: "Core concept",
+          heading:
+            "Core concept",
 
           bullets: [
             "STEMI reperfusion is a time-critical intervention intended to restore coronary blood flow before irreversible myocardial injury progresses.",
@@ -46,7 +51,8 @@ export const PPCI_QUESTIONS = [
         },
 
         {
-          heading: "Assessment",
+          heading:
+            "Assessment",
 
           bullets: [
             "Confirm that the patient has a clinical and electrocardiographic indication for emergency reperfusion.",
@@ -58,7 +64,8 @@ export const PPCI_QUESTIONS = [
         },
 
         {
-          heading: "Management",
+          heading:
+            "Management",
 
           bullets: [
             "Proceed directly to primary PCI when guideline-recommended treatment delays can be achieved.",
@@ -71,7 +78,8 @@ export const PPCI_QUESTIONS = [
         },
 
         {
-          heading: "Pitfalls and high-yield points",
+          heading:
+            "Pitfalls and high-yield points",
 
           bullets: [
             "Do not allow access-site preference, guide-catheter preference or other secondary procedural details to delay reperfusion.",
@@ -86,9 +94,11 @@ export const PPCI_QUESTIONS = [
   },
 
   {
-    id: "ppci-v2-002",
+    id:
+      "ppci-v2-002",
 
-    topic: "Coronary Thrombus Management",
+    topic:
+      "Coronary Thrombus Management",
 
     stem:
       "During PPCI, angiography shows heavy thrombus but preserved distal flow. Which statement best reflects contemporary evidence regarding routine manual aspiration thrombectomy?",
@@ -101,7 +111,8 @@ export const PPCI_QUESTIONS = [
       "It is mandatory before direct stenting"
     ],
 
-    answer: 2,
+    answer:
+      2,
 
     explanation:
       "Large randomized trials did not demonstrate clinical benefit from routine aspiration thrombectomy in unselected STEMI patients and raised concern about harm, including stroke. Routine use is therefore not recommended, although selective bailout aspiration may still be considered in carefully chosen situations.",
@@ -113,14 +124,16 @@ export const PPCI_QUESTIONS = [
       "Routine manual thrombus aspiration before primary PCI is not recommended. Selective or bailout aspiration may be considered when there is a large residual thrombus burden, impaired flow or a specific procedural need.",
 
     flashcard: {
-      type: "FLASHCARD",
+      type:
+        "FLASHCARD",
 
       title:
         "Manual Aspiration Thrombectomy During Primary PCI",
 
       sections: [
         {
-          heading: "Definition and rationale",
+          heading:
+            "Definition and rationale",
 
           bullets: [
             "Manual aspiration thrombectomy uses a catheter to remove intracoronary thrombus during primary PCI.",
@@ -132,7 +145,8 @@ export const PPCI_QUESTIONS = [
         },
 
         {
-          heading: "Evidence",
+          heading:
+            "Evidence",
 
           bullets: [
             "Large trials failed to show a consistent reduction in mortality or major cardiovascular events with routine aspiration.",
@@ -144,7 +158,8 @@ export const PPCI_QUESTIONS = [
         },
 
         {
-          heading: "Selective use",
+          heading:
+            "Selective use",
 
           bullets: [
             "Bailout aspiration may be considered when a large residual thrombus burden interferes with PCI.",
@@ -156,7 +171,8 @@ export const PPCI_QUESTIONS = [
         },
 
         {
-          heading: "Technical and safety considerations",
+          heading:
+            "Technical and safety considerations",
 
           bullets: [
             "Maintain careful catheter manipulation to reduce the risk of vessel injury and embolisation.",
@@ -168,7 +184,8 @@ export const PPCI_QUESTIONS = [
         },
 
         {
-          heading: "High-yield takeaway",
+          heading:
+            "High-yield takeaway",
 
           bullets: [
             "Routine aspiration thrombectomy is not recommended in unselected primary PCI.",
