@@ -1,22 +1,777 @@
 <!doctype html>
+
 <html lang="en">
+
 <head>
-<meta name="referrer" content="strict-origin-when-cross-origin">
+
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
- <title>
-  Confirm Email | Alexandria Cardiology League
-</title>
-  <link rel="stylesheet" href="assets/css/main.css?v=2.7.11">
+
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+
+  <meta
+    name="theme-color"
+    content="#0b5791"
+  >
+
+
+  <meta
+    name="description"
+    content="Confirm your Alexandria Cardiology League email address."
+  >
+
+
+  <title>
+    Confirm Email | Alexandria Cardiology League
+  </title>
+
+
+  <link
+    rel="manifest"
+    href="manifest.json"
+  >
+
+
+  <link
+    rel="apple-touch-icon"
+    href="assets/images/acl-icon-192.png"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <style>
+    :root {
+      --confirm-primary: #0b5791;
+      --confirm-primary-dark: #061c3d;
+      --confirm-secondary: #1787c9;
+      --confirm-gold: #ffc928;
+      --confirm-success: #168067;
+      --confirm-danger: #b33443;
+      --confirm-warning: #7c5a00;
+      --confirm-text: #17324d;
+      --confirm-muted: #667f94;
+      --confirm-border: #cfe2f1;
+      --confirm-soft: #edf7ff;
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
+    body {
+      display: grid;
+      place-items: center;
+
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+
+      color:
+        var(--confirm-text);
+
+      background:
+        radial-gradient(
+          circle at 10% 8%,
+          rgba(255, 201, 40, 0.17),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 90% 12%,
+          rgba(23, 135, 201, 0.14),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--confirm-soft)
+        );
+
+      font-family:
+        Arial,
+        sans-serif;
+    }
+
+
+    button,
+    a {
+      font: inherit;
+    }
+
+
+    .confirmation-card {
+      width:
+        min(
+          570px,
+          100%
+        );
+
+      overflow: hidden;
+
+      border:
+        1px solid
+        var(--confirm-border);
+
+      border-radius: 28px;
+
+      background: #ffffff;
+
+      box-shadow:
+        0 24px 65px
+        rgba(11, 87, 145, 0.14);
+    }
+
+
+    .confirmation-header {
+      position: relative;
+      overflow: hidden;
+
+      padding: 30px 27px 28px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(--confirm-primary-dark),
+          var(--confirm-primary),
+          var(--confirm-secondary)
+        );
+
+      border-bottom:
+        4px solid
+        var(--confirm-gold);
+
+      text-align: center;
+    }
+
+
+    .confirmation-header::after {
+      content: "✉";
+
+      position: absolute;
+      right: -17px;
+      bottom: -58px;
+
+      opacity: 0.12;
+
+      font-size: 165px;
+      transform: rotate(-8deg);
+    }
+
+
+    .confirmation-brand {
+      position: relative;
+      z-index: 1;
+
+      display: inline-flex;
+
+      padding: 7px 11px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      background:
+        rgba(255, 255, 255, 0.1);
+
+      font-size: 0.67rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+
+    .confirmation-icon {
+      position: relative;
+      z-index: 1;
+
+      display: grid;
+      place-items: center;
+
+      width: 78px;
+      height: 78px;
+
+      margin: 21px auto 17px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.34);
+
+      border-radius: 23px;
+
+      background:
+        rgba(255, 255, 255, 0.13);
+
+      font-size: 2rem;
+    }
+
+
+    .confirmation-header h1 {
+      position: relative;
+      z-index: 1;
+
+      margin: 0;
+
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          1.9rem,
+          7vw,
+          2.8rem
+        );
+
+      line-height: 1.08;
+    }
+
+
+    .confirmation-body {
+      padding: 27px;
+
+      text-align: center;
+    }
+
+
+    .confirmation-body p {
+      margin: 0;
+
+      color:
+        var(--confirm-muted);
+
+      line-height: 1.65;
+    }
+
+
+    .confirmation-status {
+      margin-top: 19px;
+      padding: 13px 14px;
+
+      border:
+        1px solid
+        var(--confirm-border);
+
+      border-radius: 13px;
+
+      color:
+        var(--confirm-muted);
+
+      background:
+        var(--confirm-soft);
+
+      font-size: 0.82rem;
+      font-weight: 750;
+      line-height: 1.5;
+    }
+
+
+    .confirmation-status.success {
+      border-color: #bce3d2;
+
+      color:
+        var(--confirm-success);
+
+      background: #f1fbf6;
+    }
+
+
+    .confirmation-status.error {
+      border-color: #efc4ca;
+
+      color:
+        var(--confirm-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .confirmation-status.warning {
+      border-color: #efd694;
+
+      color:
+        var(--confirm-warning);
+
+      background: #fff9df;
+    }
+
+
+    .confirmation-spinner {
+      display: inline-block;
+
+      width: 19px;
+      height: 19px;
+
+      margin-right: 8px;
+
+      border:
+        3px solid
+        #c8deee;
+
+      border-top-color:
+        var(--confirm-primary);
+
+      border-radius: 50%;
+
+      vertical-align: middle;
+
+      animation:
+        confirmationSpin
+        0.8s
+        linear
+        infinite;
+    }
+
+
+    .confirmation-actions {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap: 10px;
+
+      margin-top: 21px;
+    }
+
+
+    .confirmation-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 47px;
+      padding: 10px 16px;
+
+      border-radius: 13px;
+
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+
+    .confirmation-button-primary {
+      border: 0;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--confirm-primary),
+          var(--confirm-secondary)
+        );
+    }
+
+
+    .confirmation-button-secondary {
+      border:
+        1px solid
+        var(--confirm-border);
+
+      color:
+        var(--confirm-primary);
+
+      background: #ffffff;
+    }
+
+
+    .confirmation-button[hidden] {
+      display: none !important;
+    }
+
+
+    @keyframes confirmationSpin {
+      to {
+        transform:
+          rotate(360deg);
+      }
+    }
+
+
+    @media (
+      prefers-reduced-motion:
+      reduce
+    ) {
+      .confirmation-spinner {
+        animation-duration: 2s;
+      }
+    }
+
+
+    @media (max-width: 520px) {
+      body {
+        padding: 12px;
+      }
+
+
+      .confirmation-card {
+        border-radius: 22px;
+      }
+
+
+      .confirmation-header {
+        padding:
+          25px 19px
+          23px;
+      }
+
+
+      .confirmation-body {
+        padding: 21px 18px;
+      }
+
+
+      .confirmation-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
 </head>
-<body>
-  <main class="container">
-    <section class="card">
-      <h1>Email confirmation</h1>
-      <p>Your email has been confirmed. Continue to the modules page.</p>
-      <a class="primary-btn" href="modules.html" style="display:inline-block;text-decoration:none">Continue</a>
-    </section>
-  </main>
+
+
 <body class="acl-neutral-auth-page">
+
+  <main
+    class="confirmation-card"
+    aria-labelledby="confirmationTitle"
+  >
+
+    <section class="confirmation-header">
+
+      <span class="confirmation-brand">
+        Alexandria Cardiology League
+      </span>
+
+
+      <div
+        id="confirmationIcon"
+        class="confirmation-icon"
+        aria-hidden="true"
+      >
+        ✉️
+      </div>
+
+
+      <h1 id="confirmationTitle">
+        Confirming your email
+      </h1>
+
+    </section>
+
+
+    <section class="confirmation-body">
+
+      <p id="confirmationDescription">
+        Please wait while ACL verifies your confirmation link.
+      </p>
+
+
+      <div
+        id="confirmationStatus"
+        class="confirmation-status"
+        role="status"
+        aria-live="polite"
+      >
+        <span
+          class="confirmation-spinner"
+          aria-hidden="true"
+        ></span>
+
+        Verifying your ACL account…
+      </div>
+
+
+      <div class="confirmation-actions">
+
+        <a
+          id="continueToAclButton"
+          class="
+            confirmation-button
+            confirmation-button-primary
+          "
+          href="pathways.html"
+          hidden
+        >
+          Continue to ACL
+        </a>
+
+
+        <a
+          id="returnToLoginButton"
+          class="
+            confirmation-button
+            confirmation-button-secondary
+          "
+          href="login.html"
+        >
+          Return to Sign In
+        </a>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.9.0"
+  ></script>
+
+
+  <script type="module">
+    import {
+      supabaseClient
+    } from "./assets/js/supabase-client.js";
+
+
+    console.log(
+      "ACL EMAIL CONFIRMATION v1.0.0 LOADED"
+    );
+
+
+    const title =
+      document.getElementById(
+        "confirmationTitle"
+      );
+
+
+    const description =
+      document.getElementById(
+        "confirmationDescription"
+      );
+
+
+    const status =
+      document.getElementById(
+        "confirmationStatus"
+      );
+
+
+    const icon =
+      document.getElementById(
+        "confirmationIcon"
+      );
+
+
+    const continueButton =
+      document.getElementById(
+        "continueToAclButton"
+      );
+
+
+    function showSuccess() {
+      if (title) {
+        title.textContent =
+          "Email confirmed successfully";
+      }
+
+
+      if (description) {
+        description.textContent =
+          "Your ACL account is now verified and ready to use.";
+      }
+
+
+      if (icon) {
+        icon.textContent =
+          "✓";
+      }
+
+
+      if (status) {
+        status.className =
+          "confirmation-status success";
+
+
+        status.textContent =
+          "Confirmation complete. Continue to choose your ACL learning pathway.";
+      }
+
+
+      if (continueButton) {
+        continueButton.hidden =
+          false;
+      }
+    }
+
+
+    function showError(
+      message
+    ) {
+      if (title) {
+        title.textContent =
+          "Confirmation could not be completed";
+      }
+
+
+      if (description) {
+        description.textContent =
+          "The confirmation link may have expired, already been used, or become invalid.";
+      }
+
+
+      if (icon) {
+        icon.textContent =
+          "!";
+      }
+
+
+      if (status) {
+        status.className =
+          "confirmation-status error";
+
+
+        status.textContent =
+          message ||
+          "Return to sign in and request another confirmation email if required.";
+      }
+    }
+
+
+    async function confirmEmail() {
+      try {
+        const currentUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        const code =
+          currentUrl.searchParams.get(
+            "code"
+          );
+
+
+        const errorDescription =
+          currentUrl.searchParams.get(
+            "error_description"
+          );
+
+
+        if (errorDescription) {
+          throw new Error(
+            decodeURIComponent(
+              errorDescription
+            )
+          );
+        }
+
+
+        if (code) {
+          const {
+            error: exchangeError
+          } =
+            await supabaseClient
+              .auth
+              .exchangeCodeForSession(
+                code
+              );
+
+
+          if (exchangeError) {
+            throw exchangeError;
+          }
+        }
+
+
+        const {
+          data,
+          error
+        } =
+          await supabaseClient
+            .auth
+            .getSession();
+
+
+        if (error) {
+          throw error;
+        }
+
+
+        if (
+          !data?.session
+            ?.user
+        ) {
+          throw new Error(
+            "No verified ACL session was found from this confirmation link."
+          );
+        }
+
+
+        showSuccess();
+
+
+        const cleanedUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        cleanedUrl.search =
+          "";
+
+
+        cleanedUrl.hash =
+          "";
+
+
+        window.history.replaceState(
+          {},
+          "",
+          cleanedUrl
+        );
+      } catch (
+        error
+      ) {
+        console.error(
+          "ACL EMAIL CONFIRMATION ERROR:",
+          error
+        );
+
+
+        showError(
+          error.message
+        );
+      }
+    }
+
+
+    void confirmEmail();
+  </script>
+
+</body>
+
 </html>
