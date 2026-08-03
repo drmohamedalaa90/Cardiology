@@ -9,7 +9,7 @@ import {
 
 
 console.log(
-  "ACL AUTH v3.1.0 LOADED"
+  "ACL AUTH v3.1.1 LOADED"
 );
 
 
@@ -940,13 +940,6 @@ async function usernameIsTaken(
 
 
   if (error) {
-    /*
-     * Some RLS configurations intentionally prevent
-     * public profile searches. In that case, continue
-     * to Supabase sign-up and allow the database's
-     * unique username constraint to provide protection.
-     */
-
     if (
       error.code ===
         "42501" ||
@@ -1420,19 +1413,20 @@ byId(
       if (
         event.key ===
         "ArrowRight"
-    ) {
-      event.preventDefault();
+      ) {
+        event.preventDefault();
 
 
-      showPanel(
-        "register"
-      );
+        showPanel(
+          "register"
+        );
 
 
-      byId(
-        "registerTab"
-      )
-        ?.focus();
+        byId(
+          "registerTab"
+        )
+          ?.focus();
+      }
     }
   );
 
@@ -1448,19 +1442,20 @@ byId(
       if (
         event.key ===
         "ArrowLeft"
-    ) {
-      event.preventDefault();
+      ) {
+        event.preventDefault();
 
 
-      showPanel(
-        "signin"
-      );
+        showPanel(
+          "signin"
+        );
 
 
-      byId(
-        "signInTab"
-      )
-        ?.focus();
+        byId(
+          "signInTab"
+        )
+          ?.focus();
+      }
     }
   );
 
