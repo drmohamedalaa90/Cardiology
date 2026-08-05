@@ -4,7 +4,7 @@ import {
 
 
 console.log(
-  "ACL PATHWAYS v2.1.0 LOADED"
+  "ACL PATHWAYS v2.2.0 LOADED"
 );
 
 
