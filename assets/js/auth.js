@@ -9,7 +9,7 @@ import {
 
 
 console.log(
-  "ACL AUTH v3.1.1 LOADED"
+  "ACL AUTH v3.2.0 LOADED"
 );
 
 
@@ -229,42 +229,51 @@ function normalizeEgyptWhatsapp(
 
 
 /* =========================================================
-   STORAGE
+   EDITION STORAGE
 ========================================================= */
 
-function getSavedEdition() {
-  try {
-    const savedEdition =
-      String(
-        localStorage.getItem(
-          EDITION_STORAGE_KEY
-        ) ||
-        ""
-      )
-        .trim()
-        .toLowerCase();
-
-
-    return VALID_EDITIONS.has(
-      savedEdition
+function normalizeEdition(
+  value
+) {
+  const edition =
+    String(
+      value ||
+      ""
     )
-      ? savedEdition
-      : null;
+      .trim()
+      .toLowerCase();
+
+
+  return VALID_EDITIONS.has(
+    edition
+  )
+    ? edition
+    : "";
+}
+
+
+function getRememberedEdition() {
+  try {
+    return normalizeEdition(
+      localStorage.getItem(
+        EDITION_STORAGE_KEY
+      )
+    );
   } catch (
     error
   ) {
     console.warn(
-      "ACL EDITION STORAGE READ ERROR:",
+      "ACL REMEMBERED EDITION READ ERROR:",
       error
     );
 
 
-    return null;
+    return "";
   }
 }
 
 
-function clearSavedEdition() {
+function clearRememberedEdition() {
   try {
     localStorage.removeItem(
       EDITION_STORAGE_KEY
@@ -273,7 +282,23 @@ function clearSavedEdition() {
     error
   ) {
     console.warn(
-      "ACL EDITION STORAGE CLEAR ERROR:",
+      "ACL REMEMBERED EDITION CLEAR ERROR:",
+      error
+    );
+  }
+}
+
+
+function clearSessionEdition() {
+  try {
+    sessionStorage.removeItem(
+      EDITION_STORAGE_KEY
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL SESSION EDITION CLEAR ERROR:",
       error
     );
   }
@@ -292,17 +317,25 @@ function getPostLoginDestination(
   }
 
 
-  const savedEdition =
-    getSavedEdition();
+  const rememberedEdition =
+    getRememberedEdition();
 
 
-  if (savedEdition) {
+  if (rememberedEdition) {
     return (
       `modules.html?edition=${encodeURIComponent(
-        savedEdition
+        rememberedEdition
       )}`
     );
   }
+
+
+  /*
+   * No permanent edition preference exists.
+   * Remove any stale temporary edition and show pathways.
+   */
+
+  clearSessionEdition();
 
 
   return "pathways.html";
@@ -1146,7 +1179,7 @@ async function handleRegistration(
 
   if (
     institution.length >
-    150
+      150
   ) {
     setMessage(
       "registerError",
@@ -1160,7 +1193,7 @@ async function handleRegistration(
 
   if (
     password.length <
-    8
+      8
   ) {
     setMessage(
       "registerError",
@@ -1174,7 +1207,7 @@ async function handleRegistration(
 
   if (
     password !==
-    confirmation
+      confirmation
   ) {
     setMessage(
       "registerError",
@@ -1313,7 +1346,10 @@ async function handleRegistration(
     }
 
 
-    clearSavedEdition();
+    clearRememberedEdition();
+
+
+    clearSessionEdition();
 
 
     setMessage(
@@ -1412,7 +1448,7 @@ byId(
     ) => {
       if (
         event.key ===
-        "ArrowRight"
+          "ArrowRight"
       ) {
         event.preventDefault();
 
@@ -1441,7 +1477,7 @@ byId(
     ) => {
       if (
         event.key ===
-        "ArrowLeft"
+          "ArrowLeft"
       ) {
         event.preventDefault();
 
@@ -1529,7 +1565,7 @@ async function initializeAuthPage() {
 
 if (
   document.readyState ===
-  "loading"
+    "loading"
 ) {
   document.addEventListener(
     "DOMContentLoaded",
