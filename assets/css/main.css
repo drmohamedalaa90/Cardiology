@@ -6705,7 +6705,7 @@ body.module-challenge-open {
     width: 100%;
   }
 }
-//* =========================================================
+/* =========================================================
    ACL EDITION THEMES — DEFINITIVE CLEAN VERSION
 
    Basic Edition:
@@ -7622,4 +7622,553 @@ body.acl-neutral-auth-page
 
   transition:
     opacity 0.16s ease;
+}
+/* =========================================================
+   ACL HEADER FINAL STABILIZATION — VERSION 5.0.2
+
+   Fixes:
+   - Centers every SVG inside its circular header button
+   - Prevents the first and last letters of the full ACL title
+     from being clipped
+   - Keeps the mobile header compact
+   - Preserves Basic and Expert edition colors
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   HEADER ICON ALIGNMENT
+--------------------------------------------------------- */
+
+header.topbar.acl-unified-header
+.acl-header-icon,
+header.topbar.acl-unified-header
+.acl-menu-button {
+  box-sizing:
+    border-box !important;
+
+  display:
+    inline-flex !important;
+
+  align-items:
+    center !important;
+
+  justify-content:
+    center !important;
+
+  line-height:
+    0 !important;
+
+  text-align:
+    center !important;
+
+  vertical-align:
+    middle !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-header-icon svg,
+header.topbar.acl-unified-header
+.acl-menu-button svg {
+  display:
+    block !important;
+
+  flex:
+    0 0 auto !important;
+
+  margin:
+    auto !important;
+
+  padding:
+    0 !important;
+
+  position:
+    static !important;
+
+  inset:
+    auto !important;
+
+  transform:
+    none !important;
+
+  transform-origin:
+    center !important;
+}
+
+
+/*
+ * Some SVG drawings have slightly uneven visual geometry.
+ * These tiny optical corrections keep them visually centered
+ * without moving the circular button itself.
+ */
+
+header.topbar.acl-unified-header
+.acl-header-icon[aria-label="My Profile"] svg {
+  transform:
+    translateY(0.5px) !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-header-icon[aria-label="My Progress"] svg {
+  transform:
+    translateY(-0.25px) !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-header-icon[aria-label="Notifications"] svg {
+  transform:
+    translateY(0.5px) !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-header-icon[aria-label="Contact us"] svg {
+  transform:
+    translateY(0.25px) !important;
+}
+
+
+/* ---------------------------------------------------------
+   ROLLING BRAND — SAFE SHARED GEOMETRY
+--------------------------------------------------------- */
+
+header.topbar.acl-unified-header
+.acl-unified-brand {
+  min-width:
+    0 !important;
+
+  max-width:
+    100% !important;
+
+  display:
+    inline-flex !important;
+
+  align-items:
+    center !important;
+
+  justify-content:
+    center !important;
+
+  gap:
+    7px !important;
+
+  overflow:
+    visible !important;
+
+  white-space:
+    nowrap !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-brand-rolling-window {
+  position:
+    relative !important;
+
+  display:
+    inline-flex !important;
+
+  align-items:
+    center !important;
+
+  flex:
+    0 0 auto !important;
+
+  height:
+    1.25em !important;
+
+  overflow:
+    hidden !important;
+
+  box-sizing:
+    border-box !important;
+
+  animation:
+    acl-brand-window-width-final
+    10s
+    cubic-bezier(
+      0.7,
+      0,
+      0.3,
+      1
+    )
+    infinite !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-brand-rolling-track {
+  position:
+    absolute !important;
+
+  top:
+    0 !important;
+
+  left:
+    0 !important;
+
+  width:
+    100% !important;
+
+  display:
+    grid !important;
+
+  grid-template-rows:
+    1.25em
+    1.25em !important;
+
+  animation:
+    acl-brand-roll-stable
+    10s
+    cubic-bezier(
+      0.7,
+      0,
+      0.3,
+      1
+    )
+    infinite !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-brand-name {
+  box-sizing:
+    border-box !important;
+
+  width:
+    100% !important;
+
+  height:
+    1.25em !important;
+
+  min-width:
+    0 !important;
+
+  display:
+    flex !important;
+
+  align-items:
+    center !important;
+
+  justify-content:
+    center !important;
+
+  margin:
+    0 !important;
+
+  line-height:
+    1.25em !important;
+
+  white-space:
+    nowrap !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-brand-short {
+  padding:
+    0 7px !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-brand-full {
+  position:
+    relative !important;
+
+  top:
+    0.04em !important;
+
+  padding:
+    0 12px !important;
+
+  font-size:
+    0.8em !important;
+
+  line-height:
+    1.1 !important;
+
+  overflow:
+    visible !important;
+}
+
+
+header.topbar.acl-unified-header
+.acl-brand-separator,
+header.topbar.acl-unified-header
+.acl-expert-edition {
+  flex:
+    0 0 auto !important;
+
+  display:
+    inline-flex !important;
+
+  align-items:
+    center !important;
+
+  justify-content:
+    center !important;
+
+  height:
+    1.25em !important;
+
+  margin:
+    0 !important;
+
+  padding:
+    0 !important;
+
+  line-height:
+    1.25em !important;
+
+  white-space:
+    nowrap !important;
+}
+
+
+/* ---------------------------------------------------------
+   BRAND ANIMATION
+--------------------------------------------------------- */
+
+@keyframes acl-brand-roll-stable {
+  0%,
+  42% {
+    transform:
+      translateY(0);
+  }
+
+  50%,
+  92% {
+    transform:
+      translateY(-1.25em);
+  }
+
+  100% {
+    transform:
+      translateY(0);
+  }
+}
+
+
+@keyframes acl-brand-window-width-final {
+  0%,
+  42% {
+    width:
+      62px;
+  }
+
+  50%,
+  92% {
+    width:
+      350px;
+  }
+
+  100% {
+    width:
+      62px;
+  }
+}
+
+
+/* ---------------------------------------------------------
+   TABLET
+--------------------------------------------------------- */
+
+@media (max-width: 960px) {
+  @keyframes acl-brand-window-width-final {
+    0%,
+    42% {
+      width:
+        56px;
+    }
+
+    50%,
+    92% {
+      width:
+        265px;
+    }
+
+    100% {
+      width:
+        56px;
+    }
+  }
+
+
+  header.topbar.acl-unified-header
+  .acl-brand-full {
+    padding:
+      0 10px !important;
+
+    font-size:
+      0.76em !important;
+  }
+}
+
+
+/* ---------------------------------------------------------
+   MOBILE
+--------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  header.topbar.acl-unified-header
+  .acl-header-center {
+    min-width:
+      0 !important;
+
+    overflow:
+      visible !important;
+  }
+
+
+  header.topbar.acl-unified-header
+  .acl-unified-brand {
+    width:
+      100% !important;
+
+    max-width:
+      100% !important;
+
+    gap:
+      4px !important;
+
+    font-size:
+      clamp(
+        11px,
+        3.35vw,
+        14px
+      ) !important;
+  }
+
+
+  header.topbar.acl-unified-header
+  .acl-brand-full {
+    padding:
+      0 7px !important;
+
+    font-size:
+      0.69em !important;
+  }
+
+
+  header.topbar.acl-unified-header
+  .acl-expert-edition {
+    font-size:
+      0.78em !important;
+  }
+
+
+  header.topbar.acl-unified-header
+  .acl-header-icon {
+    padding:
+      0 !important;
+  }
+
+
+  header.topbar.acl-unified-header
+  .acl-header-icon svg {
+    margin:
+      auto !important;
+  }
+
+
+  @keyframes acl-brand-window-width-final {
+    0%,
+    42% {
+      width:
+        43px;
+    }
+
+    50%,
+    92% {
+      width:
+        190px;
+    }
+
+    100% {
+      width:
+        43px;
+    }
+  }
+}
+
+
+/* ---------------------------------------------------------
+   SMALL MOBILE
+--------------------------------------------------------- */
+
+@media (max-width: 390px) {
+  header.topbar.acl-unified-header
+  .acl-unified-brand {
+    gap:
+      3px !important;
+
+    font-size:
+      10px !important;
+  }
+
+
+  header.topbar.acl-unified-header
+  .acl-brand-full {
+    padding:
+      0 5px !important;
+
+    font-size:
+      0.66em !important;
+  }
+
+
+  header.topbar.acl-unified-header
+  .acl-expert-edition {
+    font-size:
+      0.73em !important;
+  }
+
+
+  @keyframes acl-brand-window-width-final {
+    0%,
+    42% {
+      width:
+        39px;
+    }
+
+    50%,
+    92% {
+      width:
+        162px;
+    }
+
+    100% {
+      width:
+        39px;
+    }
+  }
+}
+
+
+/* ---------------------------------------------------------
+   REDUCED MOTION
+--------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  header.topbar.acl-unified-header
+  .acl-brand-rolling-window {
+    width:
+      62px !important;
+
+    animation:
+      none !important;
+  }
+
+
+  header.topbar.acl-unified-header
+  .acl-brand-rolling-track {
+    animation:
+      none !important;
+
+    transform:
+      translateY(0) !important;
+  }
 }
