@@ -1,6 +1,6 @@
 import {
   protectAndRender
-} from "./session-ui.js?v=4.8.0";
+} from "./session-ui.js?v=4.9.0";
 
 
 console.log(
@@ -24,7 +24,20 @@ const EDITION_STORAGE_KEY =
 
 
 /* =========================================================
-   HELPERS
+   ELEMENT HELPERS
+========================================================= */
+
+function byId(
+  id
+) {
+  return document.getElementById(
+    id
+  );
+}
+
+
+/* =========================================================
+   EDITION HELPERS
 ========================================================= */
 
 function normalizeEdition(
@@ -47,7 +60,44 @@ function normalizeEdition(
 }
 
 
-function saveSelectedEdition(
+function readRememberedEdition() {
+  try {
+    return normalizeEdition(
+      localStorage.getItem(
+        EDITION_STORAGE_KEY
+      )
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL REMEMBERED EDITION READ ERROR:",
+      error
+    );
+
+
+    return "";
+  }
+}
+
+
+function clearRememberedEdition() {
+  try {
+    localStorage.removeItem(
+      EDITION_STORAGE_KEY
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL REMEMBERED EDITION CLEAR ERROR:",
+      error
+    );
+  }
+}
+
+
+function saveRememberedEdition(
   edition
 ) {
   try {
@@ -62,7 +112,7 @@ function saveSelectedEdition(
     error
   ) {
     console.warn(
-      "ACL EDITION STORAGE ERROR:",
+      "ACL REMEMBERED EDITION WRITE ERROR:",
       error
     );
 
@@ -71,6 +121,181 @@ function saveSelectedEdition(
   }
 }
 
+
+function readSessionEdition() {
+  try {
+    return normalizeEdition(
+      sessionStorage.getItem(
+        EDITION_STORAGE_KEY
+      )
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL SESSION EDITION READ ERROR:",
+      error
+    );
+
+
+    return "";
+  }
+}
+
+
+function clearSessionEdition() {
+  try {
+    sessionStorage.removeItem(
+      EDITION_STORAGE_KEY
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL SESSION EDITION CLEAR ERROR:",
+      error
+    );
+  }
+}
+
+
+function saveSessionEdition(
+  edition
+) {
+  try {
+    sessionStorage.setItem(
+      EDITION_STORAGE_KEY,
+      edition
+    );
+
+
+    return true;
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL SESSION EDITION WRITE ERROR:",
+      error
+    );
+
+
+    return false;
+  }
+}
+
+
+/* =========================================================
+   PREFERENCE UI
+========================================================= */
+
+function rememberChoiceEnabled() {
+  return Boolean(
+    byId(
+      "rememberEditionChoice"
+    )
+      ?.checked
+  );
+}
+
+
+function setPreferenceStatus(
+  message
+) {
+  const status =
+    byId(
+      "editionPreferenceStatus"
+    );
+
+
+  if (!status) {
+    return;
+  }
+
+
+  status.textContent =
+    message;
+}
+
+
+function initializePreferenceControl() {
+  const checkbox =
+    byId(
+      "rememberEditionChoice"
+    );
+
+
+  if (!checkbox) {
+    return;
+  }
+
+
+  const rememberedEdition =
+    readRememberedEdition();
+
+
+  checkbox.checked =
+    Boolean(
+      rememberedEdition
+    );
+
+
+  if (rememberedEdition) {
+    setPreferenceStatus(
+      `Your ${rememberedEdition} edition choice is remembered on this device.`
+    );
+  } else {
+    setPreferenceStatus(
+      "Your choice has not been saved permanently."
+    );
+  }
+
+
+  checkbox.addEventListener(
+    "change",
+    () => {
+      if (checkbox.checked) {
+        const activeEdition =
+          readSessionEdition();
+
+
+        if (activeEdition) {
+          saveRememberedEdition(
+            activeEdition
+          );
+
+
+          setPreferenceStatus(
+            `Your ${activeEdition} edition choice is now remembered on this device.`
+          );
+
+
+          return;
+        }
+
+
+        setPreferenceStatus(
+          "Choose Basic or Expert Edition to save your preference."
+        );
+
+
+        return;
+      }
+
+
+      clearRememberedEdition();
+
+
+      setPreferenceStatus(
+        "Your choice will only remain active for this browser session."
+      );
+    }
+  );
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
 
 function moduleUrlForEdition(
   edition
@@ -89,6 +314,60 @@ function moduleUrlForEdition(
 
 
   return url.toString();
+}
+
+
+function openEdition(
+  edition
+) {
+  const normalizedEdition =
+    normalizeEdition(
+      edition
+    );
+
+
+  if (!normalizedEdition) {
+    console.warn(
+      "ACL INVALID EDITION:",
+      edition
+    );
+
+
+    return;
+  }
+
+
+  saveSessionEdition(
+    normalizedEdition
+  );
+
+
+  if (
+    rememberChoiceEnabled()
+  ) {
+    saveRememberedEdition(
+      normalizedEdition
+    );
+
+
+    setPreferenceStatus(
+      `Your ${normalizedEdition} edition choice is remembered on this device.`
+    );
+  } else {
+    clearRememberedEdition();
+
+
+    setPreferenceStatus(
+      `Your ${normalizedEdition} edition choice will remain active only for this browser session.`
+    );
+  }
+
+
+  window.location.assign(
+    moduleUrlForEdition(
+      normalizedEdition
+    )
+  );
 }
 
 
@@ -130,39 +409,6 @@ function setPathwayControlsEnabled(
         }
       }
     );
-}
-
-
-function openEdition(
-  edition
-) {
-  const normalizedEdition =
-    normalizeEdition(
-      edition
-    );
-
-
-  if (!normalizedEdition) {
-    console.warn(
-      "ACL INVALID EDITION:",
-      edition
-    );
-
-
-    return;
-  }
-
-
-  saveSelectedEdition(
-    normalizedEdition
-  );
-
-
-  window.location.assign(
-    moduleUrlForEdition(
-      normalizedEdition
-    )
-  );
 }
 
 
@@ -281,6 +527,9 @@ async function initializePathways() {
     }
 
 
+    initializePreferenceControl();
+
+
     bindPathwayControls();
 
 
@@ -314,7 +563,9 @@ if (
 ) {
   document.addEventListener(
     "DOMContentLoaded",
-    initializePathways,
+    () => {
+      void initializePathways();
+    },
     {
       once:
         true
