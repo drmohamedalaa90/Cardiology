@@ -4,7 +4,7 @@ import {
 
 
 console.log(
-  "ACL SESSION UI v4.8.0 LOADED"
+  "ACL SESSION UI v4.9.0 LOADED"
 );
 
 
@@ -79,21 +79,18 @@ function escapeHtml(
    STORAGE HELPERS
 ========================================================= */
 
-function readStoredEdition() {
+function readRememberedEdition() {
   try {
-    return String(
+    return normalizeEdition(
       localStorage.getItem(
         ACL_EDITION_STORAGE_KEY
-      ) ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
+      )
+    );
   } catch (
     error
   ) {
     console.warn(
-      "ACL EDITION STORAGE READ ERROR:",
+      "ACL REMEMBERED EDITION READ ERROR:",
       error
     );
 
@@ -103,19 +100,109 @@ function readStoredEdition() {
 }
 
 
-function saveStoredEdition(
+function saveRememberedEdition(
   edition
 ) {
+  const normalizedEdition =
+    normalizeEdition(
+      edition
+    );
+
+
+  if (!normalizedEdition) {
+    return false;
+  }
+
+
   try {
     localStorage.setItem(
       ACL_EDITION_STORAGE_KEY,
-      edition
+      normalizedEdition
+    );
+
+
+    return true;
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL REMEMBERED EDITION WRITE ERROR:",
+      error
+    );
+
+
+    return false;
+  }
+}
+
+
+function readSessionEdition() {
+  try {
+    return normalizeEdition(
+      sessionStorage.getItem(
+        ACL_EDITION_STORAGE_KEY
+      )
     );
   } catch (
     error
   ) {
     console.warn(
-      "ACL EDITION STORAGE WRITE ERROR:",
+      "ACL SESSION EDITION READ ERROR:",
+      error
+    );
+
+
+    return "";
+  }
+}
+
+
+function saveSessionEdition(
+  edition
+) {
+  const normalizedEdition =
+    normalizeEdition(
+      edition
+    );
+
+
+  if (!normalizedEdition) {
+    return false;
+  }
+
+
+  try {
+    sessionStorage.setItem(
+      ACL_EDITION_STORAGE_KEY,
+      normalizedEdition
+    );
+
+
+    return true;
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL SESSION EDITION WRITE ERROR:",
+      error
+    );
+
+
+    return false;
+  }
+}
+
+
+function clearSessionEdition() {
+  try {
+    sessionStorage.removeItem(
+      ACL_EDITION_STORAGE_KEY
+    );
+  } catch (
+    error
+  ) {
+    console.warn(
+      "ACL SESSION EDITION CLEAR ERROR:",
       error
     );
   }
@@ -217,7 +304,7 @@ function getActiveAclEdition() {
 
 
   if (urlEdition) {
-    saveStoredEdition(
+    saveSessionEdition(
       urlEdition
     );
 
@@ -226,13 +313,20 @@ function getActiveAclEdition() {
   }
 
 
-  const savedEdition =
-    normalizeEdition(
-      readStoredEdition()
-    );
+  const sessionEdition =
+    readSessionEdition();
 
 
-  return savedEdition ||
+  if (sessionEdition) {
+    return sessionEdition;
+  }
+
+
+  const rememberedEdition =
+    readRememberedEdition();
+
+
+  return rememberedEdition ||
     null;
 }
 
@@ -261,9 +355,13 @@ export function resolveAclEdition({
 
   if (!edition) {
     edition =
-      normalizeEdition(
-        readStoredEdition()
-      );
+      readSessionEdition();
+  }
+
+
+  if (!edition) {
+    edition =
+      readRememberedEdition();
   }
 
 
@@ -281,7 +379,7 @@ export function resolveAclEdition({
   }
 
 
-  saveStoredEdition(
+  saveSessionEdition(
     edition
   );
 
@@ -400,6 +498,124 @@ function editionAwarePath(
   return aclUrl(
     path,
     edition
+  );
+}
+
+
+/* =========================================================
+   DIRECT EDITION SWITCH
+========================================================= */
+
+function switchAclEdition() {
+  closeAclDrawer();
+
+
+  const currentEdition =
+    getActiveAclEdition();
+
+
+  if (!currentEdition) {
+    window.location.assign(
+      nestedPath(
+        "pathways.html"
+      )
+    );
+
+
+    return;
+  }
+
+
+  const nextEdition =
+    currentEdition ===
+      "basic"
+      ? "expert"
+      : "basic";
+
+
+  saveSessionEdition(
+    nextEdition
+  );
+
+
+  if (
+    readRememberedEdition()
+  ) {
+    saveRememberedEdition(
+      nextEdition
+    );
+  }
+
+
+  const currentPath =
+    window.location.pathname
+      .toLowerCase();
+
+
+  const isModuleDetailPage =
+    currentPath.includes(
+      "/modules/"
+    );
+
+
+  if (isModuleDetailPage) {
+    window.location.assign(
+      aclUrl(
+        nestedPath(
+          "modules.html"
+        ),
+        nextEdition
+      )
+    );
+
+
+    return;
+  }
+
+
+  const pageName =
+    currentPath
+      .split(
+        "/"
+      )
+      .pop();
+
+
+  if (
+    ACL_EDITION_AWARE_PAGES.has(
+      pageName
+    )
+  ) {
+    const destination =
+      new URL(
+        window.location.href
+      );
+
+
+    destination.searchParams.set(
+      "edition",
+      nextEdition
+    );
+
+
+    window.location.assign(
+      internalRelativeUrl(
+        destination
+      )
+    );
+
+
+    return;
+  }
+
+
+  window.location.assign(
+    aclUrl(
+      nestedPath(
+        "modules.html"
+      ),
+      nextEdition
+    )
   );
 }
 
@@ -906,6 +1122,9 @@ export async function protectAndRender(
 
 export async function signOut() {
   closeAclDrawer();
+
+
+  clearSessionEdition();
 
 
   try {
@@ -1651,7 +1870,22 @@ function buildUnifiedHeader() {
 
   menuButton.addEventListener(
     "click",
-    openAclDrawer
+    () => {
+      if (
+        sessionUiState.drawerOpen ||
+        document.body.classList.contains(
+          "acl-drawer-open"
+        )
+      ) {
+        closeAclDrawer();
+
+
+        return;
+      }
+
+
+      openAclDrawer();
+    }
   );
 
 
@@ -1707,18 +1941,23 @@ function buildUnifiedHeader() {
   }
 
 
+  const activeEditionLabel =
+    getActiveAclEdition() ===
+      "basic"
+      ? "Expert"
+      : "Basic";
+
+
   iconNav.appendChild(
     createHeaderLink({
       type:
         "pathways",
 
       label:
-        "Switch Edition",
+        `Switch to ${activeEditionLabel} Edition`,
 
-      href:
-        nestedPath(
-          "pathways.html"
-        )
+      action:
+        switchAclEdition
     })
   );
 
@@ -2246,18 +2485,23 @@ function buildDrawer(
   );
 
 
+  const drawerEditionLabel =
+    getActiveAclEdition() ===
+      "basic"
+      ? "Expert"
+      : "Basic";
+
+
   menu.appendChild(
     createDrawerItem({
       type:
         "pathways",
 
       label:
-        "Switch Edition",
+        `Switch to ${drawerEditionLabel} Edition`,
 
-      href:
-        nestedPath(
-          "pathways.html"
-        )
+      action:
+        switchAclEdition
     })
   );
 
@@ -2642,7 +2886,7 @@ async function initializeNavigation() {
     ) => {
       if (
         event.key ===
-        "Escape"
+          "Escape"
       ) {
         closeAclDrawer();
       }
@@ -2668,7 +2912,7 @@ document.addEventListener(
 
 if (
   document.readyState !==
-  "loading"
+    "loading"
 ) {
   void initializeNavigation();
 }
