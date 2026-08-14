@@ -331,6 +331,7 @@ function normalizeAccessType(
 
   return [
     "open",
+    "subscription",
     "passcode",
     "minimum_score",
     "admin_assigned"
