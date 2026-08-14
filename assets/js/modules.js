@@ -669,6 +669,26 @@ function accessDecision(
 
   if (
     accessType ===
+      "subscription" &&
+    !assignedIds.has(
+      module.id
+    )
+  ) {
+    return {
+      state:
+        "locked",
+
+      label:
+        "Subscription required",
+
+      reason:
+        "This Basic Edition module requires an active subscription."
+    };
+  }
+
+
+  if (
+    accessType ===
       "admin_assigned" &&
     !assignedIds.has(
       module.id
