@@ -155,6 +155,8 @@ begin
 end;
 $$;
 
+revoke execute on function public.acl_module_access(text) from public;
+revoke execute on function public.acl_module_access(text) from anon;
 grant execute on function public.acl_module_access(text) to authenticated;
 
 -- Secure learning retrieval now enforces module access and includes the
@@ -263,6 +265,8 @@ begin
 end;
 $$;
 
+revoke execute on function public.acl_get_learning_quiz(text, text) from public;
+revoke execute on function public.acl_get_learning_quiz(text, text) from anon;
 grant execute on function public.acl_get_learning_quiz(text, text) to authenticated;
 
 -- Enforce the same access rule when an answer is checked, so a restricted quiz
@@ -352,6 +356,8 @@ begin
 end;
 $$;
 
+revoke execute on function public.acl_check_learning_answer(uuid, uuid, uuid[]) from public;
+revoke execute on function public.acl_check_learning_answer(uuid, uuid, uuid[]) from anon;
 grant execute on function public.acl_check_learning_answer(uuid, uuid, uuid[]) to authenticated;
 
 -- -----------------------------------------------------------------------------
