@@ -1,6 +1,6 @@
 import { supabaseClient } from './supabase-client.js';
 
-const DRAWER_VERSION = '5';
+const DRAWER_VERSION = '6';
 const OLD_BRAND='Alexandria Cardiology League';
 const OLD_BRAND_UPPER='ALEXANDRIA CARDIOLOGY LEAGUE';
 function brandText(value=''){return String(value).replaceAll(OLD_BRAND_UPPER,'CARDIOLOGY LEAGUE').replaceAll(OLD_BRAND,'Cardiology League')}
@@ -14,7 +14,6 @@ function applyBrand(scope=document){
   const elements=rootNode===document?document.querySelectorAll('*'):[rootNode,...rootNode.querySelectorAll('*')];
   elements.forEach(el=>['aria-label','alt','title','placeholder'].forEach(attr=>{if(!el.hasAttribute?.(attr))return;const current=el.getAttribute(attr),next=brandText(current);if(next!==current)el.setAttribute(attr,next)}));
 }
-applyBrand(document);
 
 const edition = (() => {
   const q = new URLSearchParams(location.search).get('edition');
@@ -40,7 +39,6 @@ function renderDrawer(){
   const drawer=document.getElementById('aclCommandDrawer');
   if(!drawer) return false;
   if(drawer.dataset.universalVersion === DRAWER_VERSION) return false;
-
   drawer.dataset.universal='1';
   drawer.dataset.universalVersion=DRAWER_VERSION;
   drawer.classList.add('acl-universal-drawer');
@@ -59,51 +57,32 @@ function renderDrawer(){
 }
 
 function isMobile(){return window.matchMedia('(max-width:820px)').matches}
-function openDrawer(){
-  const backdrop=document.getElementById('aclDrawerBackdrop');
-  document.body.classList.remove('drawer-collapsed');
-  document.body.classList.add('drawer-open');
-  if(backdrop) backdrop.hidden=false;
-  document.getElementById('aclDrawerToggle')?.setAttribute('aria-expanded','true');
-}
-function closeDrawer(){
-  const backdrop=document.getElementById('aclDrawerBackdrop');
-  document.body.classList.remove('drawer-open');
-  if(backdrop) backdrop.hidden=true;
-  document.getElementById('aclDrawerToggle')?.setAttribute('aria-expanded','false');
-}
+function openDrawer(){const backdrop=document.getElementById('aclDrawerBackdrop');document.body.classList.remove('drawer-collapsed');document.body.classList.add('drawer-open');if(backdrop)backdrop.hidden=false;document.getElementById('aclDrawerToggle')?.setAttribute('aria-expanded','true')}
+function closeDrawer(){const backdrop=document.getElementById('aclDrawerBackdrop');document.body.classList.remove('drawer-open');if(backdrop)backdrop.hidden=true;document.getElementById('aclDrawerToggle')?.setAttribute('aria-expanded','false')}
 
 function bindControls(){
   const toggle=document.getElementById('aclDrawerToggle');
-  if(toggle && toggle.dataset.drawerV4!=='1'){
-    toggle.dataset.drawerV4='1';
-    toggle.addEventListener('click',(event)=>{
-      if(!isMobile()) return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if(document.body.classList.contains('drawer-open')) closeDrawer(); else openDrawer();
-    },true);
+  if(toggle && toggle.dataset.drawerV6!=='1'){
+    toggle.dataset.drawerV6='1';
+    toggle.addEventListener('click',(event)=>{if(!isMobile())return;event.preventDefault();event.stopPropagation();document.body.classList.contains('drawer-open')?closeDrawer():openDrawer()});
   }
   const mobileButton=document.getElementById('aclMobileModulesButton');
-  if(mobileButton && mobileButton.dataset.drawerV4!=='1'){
-    mobileButton.dataset.drawerV4='1';
-    mobileButton.addEventListener('click',(event)=>{event.preventDefault();event.stopImmediatePropagation();openDrawer()},true);
+  if(mobileButton && mobileButton.dataset.drawerV6!=='1'){
+    mobileButton.dataset.drawerV6='1';
+    mobileButton.addEventListener('click',(event)=>{event.preventDefault();openDrawer()});
   }
   const backdrop=document.getElementById('aclDrawerBackdrop');
-  if(backdrop && backdrop.dataset.drawerV4!=='1'){
-    backdrop.dataset.drawerV4='1';
-    backdrop.addEventListener('click',(event)=>{event.preventDefault();closeDrawer()},true);
+  if(backdrop && backdrop.dataset.drawerV6!=='1'){
+    backdrop.dataset.drawerV6='1';
+    backdrop.addEventListener('click',(event)=>{event.preventDefault();closeDrawer()});
   }
 }
 
 function fixBottomNav(){
   document.querySelectorAll('.acl-mobile-bottom-nav a').forEach(a=>{
     const label=(a.querySelector('small')?.textContent||'').trim().toLowerCase();
-    if(label==='home'){
-      a.href=url('home.html');
-      a.classList.toggle('is-active',page==='home.html');
-    }
-    if(label==='modules') a.classList.toggle('is-active',page==='modules.html');
+    if(label==='home'){a.href=url('home.html');a.classList.toggle('is-active',page==='home.html')}
+    if(label==='modules')a.classList.toggle('is-active',page==='modules.html');
   });
 }
 
@@ -126,31 +105,20 @@ async function fillStreak(){
 }
 
 async function logout(){try{await supabaseClient.auth.signOut()}catch(error){console.warn(error)}location.replace(root+'login.html')}
-function ensureLogout(){
-  const btn=document.getElementById('aclHeaderLogout');
-  if(btn){
-    btn.setAttribute('aria-label','Log out');btn.title='Log out';
-    if(btn.dataset.universalLogout!=='4'){
-      btn.dataset.universalLogout='4';
-      btn.addEventListener('click',(event)=>{event.preventDefault();event.stopImmediatePropagation();logout()},true);
-    }
-  }
-}
+function ensureLogout(){const btn=document.getElementById('aclHeaderLogout');if(btn&&btn.dataset.universalLogout!=='6'){btn.dataset.universalLogout='6';btn.setAttribute('aria-label','Log out');btn.title='Log out';btn.addEventListener('click',(event)=>{event.preventDefault();logout()})}}
 
-let streakLoaded=false;
-function apply(){
+let initialized=false;
+function initialize(){
+  if(initialized)return;
+  initialized=true;
   applyBrand(document);
-  const created=renderDrawer();
+  renderDrawer();
   bindControls();
   ensureLogout();
   fixBottomNav();
-  if((created||!streakLoaded)&&document.getElementById('aclUniversalStreak')){streakLoaded=true;fillStreak()}
+  if(document.getElementById('aclUniversalStreak'))fillStreak();
 }
 
-apply();
-const observer=new MutationObserver(mutations=>{mutations.forEach(m=>{if(m.type==='characterData')applyBrand(m.target);m.addedNodes.forEach(node=>applyBrand(node))});apply()});
-observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
-document.addEventListener('DOMContentLoaded',apply,{once:true});
-window.addEventListener('load',apply,{once:true});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
 window.addEventListener('resize',()=>{if(!isMobile())closeDrawer()});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeDrawer()});
