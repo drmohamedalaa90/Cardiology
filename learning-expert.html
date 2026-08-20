@@ -1,1 +1,43 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#061c3d"><title>Learning Mode | ACL Expert Edition</title><link rel="stylesheet" href="assets/css/main.css?v=5.0.1"><link rel="stylesheet" href="assets/css/learning-feedback.css?v=5.4.21"><link rel="stylesheet" href="assets/css/learning-expert-shell-v1.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body><main class="container learning-shell acl-clean-learning"><section class="learning-stage"><div class="learning-module-corner"><span>Module</span><strong id="moduleTitle">Loading module…</strong></div><div class="learning-quiz-banner"><span class="learning-mode-label">Expert Learning Mode</span><h1 id="quizTitle">Loading quiz…</h1><div class="quiz-banner-decoration"><span></span><i></i><span></span></div></div><p id="quizDescription" class="muted">Immediate feedback, Confidence Answering, Life Savers and flashcards.</p></section><section class="learning-progress-row"><div class="learning-progress-track"><span id="progressFill"></span></div><div class="learning-progress-copy"><strong id="questionCount">Preparing questions…</strong><span id="saveStatus" class="learning-save-status">Loading…</span></div></section><section id="quizArea" class="learning-quiz-area"><div class="card muted">Loading Expert Learning Mode…</div></section><div id="answerFeedbackHost"></div><div class="learning-actions"><button id="submitAnswer" class="primary-btn" type="button">Submit answer</button><button id="nextQuestion" class="primary-btn" type="button" hidden>Next question</button></div></main><div id="learningFlashcardModal" class="learning-flashcard-modal" hidden><div id="learningFlashcardBackdrop" class="learning-flashcard-backdrop"></div><section class="learning-flashcard-dialog" role="dialog" aria-modal="true"><header class="learning-flashcard-header"><div><span id="learningFlashcardType" class="learning-flashcard-type">FLASHCARD</span><h2 id="learningFlashcardTitle">Topic review</h2></div><button id="closeLearningFlashcard" type="button" aria-label="Close">×</button></header><div id="learningFlashcardContent" class="learning-flashcard-content"></div><footer><button id="closeLearningFlashcardBottom" class="secondary-btn" type="button">Back to question</button></footer></section></div><script type="module" src="assets/js/acl-shared-shell.js?v=4.0.0"></script><script type="module" src="assets/js/learning-mode.js?v=6.0.0"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#061c3d">
+  <title>Learning Mode | ACL Expert Edition</title>
+  <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
+  <link rel="stylesheet" href="assets/css/learning-feedback.css?v=5.4.21">
+  <link rel="stylesheet" href="assets/css/learning-expert-shell-v1.css?v=1.0.1">
+  <link rel="stylesheet" href="assets/css/learning-polish-20260820.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="container learning-shell acl-clean-learning">
+    <section class="learning-stage">
+      <div class="learning-module-corner"><span>Module</span><strong id="moduleTitle">Loading module…</strong></div>
+      <div class="learning-quiz-banner"><span class="learning-mode-label">Expert Learning Mode</span><h1 id="quizTitle">Loading quiz…</h1><div class="quiz-banner-decoration"><span></span><i></i><span></span></div></div>
+      <p id="quizDescription" class="muted">Immediate feedback, Confidence Answering, Life Savers and flashcards.</p>
+    </section>
+    <section class="learning-progress-row" aria-label="Quiz progress">
+      <div class="learning-progress-track"><span id="progressFill"></span></div>
+      <div class="learning-progress-copy"><strong id="questionCount">Preparing questions…</strong><span id="saveStatus" class="learning-save-status" aria-live="polite">Loading…</span></div>
+    </section>
+    <section class="learning-card">
+      <section id="quizArea" class="learning-quiz-area" aria-live="polite"><div class="card muted">Loading Expert Learning Mode…</div></section>
+      <div id="answerFeedbackHost" aria-live="polite"></div>
+      <div class="learning-actions"><button id="submitAnswer" class="primary-btn" type="button">Check answer</button><button id="nextQuestion" class="primary-btn" type="button" hidden>Next question</button></div>
+    </section>
+  </main>
+  <div id="learningFlashcardModal" class="learning-flashcard-modal" hidden>
+    <button id="learningFlashcardBackdrop" class="learning-flashcard-backdrop" type="button" aria-label="Close flashcard"></button>
+    <section class="learning-flashcard-dialog" role="dialog" aria-modal="true" aria-labelledby="learningFlashcardTitle">
+      <header class="learning-flashcard-header"><div><span id="learningFlashcardType" class="learning-flashcard-type">FLASHCARD</span><h2 id="learningFlashcardTitle">Topic review</h2></div><button id="closeLearningFlashcard" type="button" aria-label="Close flashcard">×</button></header>
+      <div id="learningFlashcardContent" class="learning-flashcard-content"></div>
+      <footer><button id="closeLearningFlashcardBottom" class="secondary-btn" type="button">Return to the question</button></footer>
+    </section>
+  </div>
+  <script type="module" src="assets/js/acl-shared-shell.js?v=4.0.0"></script>
+  <script type="module" src="assets/js/learning-mode.js?v=6.0.1"></script>
+</body>
+</html>
