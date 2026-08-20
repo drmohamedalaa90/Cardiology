@@ -1,10 +1,15 @@
 (() => {
   const INTERVENTION_RX = /\b(CTO|TAVI|MITRAL|TRICUSPID|PCI|INTERVENTION|INTERVENTIONS|LEFT MAIN|BIFURCATION|CORONARY INTERVENTION)\b/i;
   const ECG_RX = /\bECG\b/i;
+  const ECHO_RX = /\b(ECHO|ECHOCARDIOGRAPHY|TTE|TEE|DOPPLER)\b/i;
+  const MENTAL_HEALTH_RX = /\b(MENTAL HEALTH|MENTAL WELLBEING|MENTAL WELLNESS|MENTAL HEALTHY)\b/i;
 
   function setLogo(card, src, alt, kind) {
     card.classList.remove('module-imaging','module-ecg','module-intervention');
-    card.classList.add(kind === 'intervention' ? 'module-intervention' : 'module-ecg');
+    if (kind === 'intervention') card.classList.add('module-intervention');
+    if (kind === 'ecg') card.classList.add('module-ecg');
+    if (kind === 'echo') card.classList.add('module-imaging');
+    if (kind === 'esc') card.classList.add('is-esc-guideline');
 
     const body = card.querySelector('.module-card-body');
     if (!body) return;
@@ -25,10 +30,14 @@
       const title = (card.querySelector('h2')?.textContent || '').trim();
       if (!title) return;
 
-      if (INTERVENTION_RX.test(title)) {
-        setLogo(card, 'assets/images/coronary-anatomy-module.svg?v=2', 'Intervention', 'intervention');
+      if (MENTAL_HEALTH_RX.test(title)) {
+        setLogo(card, 'assets/images/esc-guideline-mark.svg?v=3', 'ESC guideline', 'esc');
+      } else if (INTERVENTION_RX.test(title)) {
+        setLogo(card, 'assets/images/coronary-anatomy-module.svg?v=3', 'Intervention', 'intervention');
       } else if (ECG_RX.test(title)) {
-        setLogo(card, 'assets/images/ecg-module-logo.svg?v=2', 'ECG', 'ecg');
+        setLogo(card, 'assets/images/ecg-module-logo.svg?v=3', 'ECG', 'ecg');
+      } else if (ECHO_RX.test(title)) {
+        setLogo(card, 'assets/images/echo-module-logo.svg?v=3', 'Echocardiography', 'echo');
       }
     });
   }
@@ -52,7 +61,17 @@
       border-radius:50%!important;
       background:#fff!important;
       box-shadow:0 2px 7px rgba(70,80,100,.14)!important;
-      z-index:2!important;
+      z-index:4!important;
+    }
+    .acl-command-module-grid .module-card .forced-module-logo[src*="echo-module-logo"]{
+      border-radius:12px!important;
+      padding:0!important;
+      background:transparent!important;
+    }
+    .acl-command-module-grid .module-card .forced-module-logo[src*="esc-guideline-mark"]{
+      border-radius:50%!important;
+      background:#fff4f4!important;
+      padding:2px!important;
     }
     @media(max-width:820px){
       .acl-command-module-grid .module-card .forced-module-logo{
