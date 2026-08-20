@@ -5,12 +5,28 @@
 <title>Home | Alexandria Cardiology League</title>
 <link rel="stylesheet" href="assets/css/acl-command-center.css?v=2.1.0">
 <link rel="stylesheet" href="assets/css/acl-universal-drawer-20260820.css?v=4">
-<link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=5">
+<link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=6">
 <link rel="stylesheet" href="assets/css/home-drawer-offset-20260820.css?v=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="home-standalone acl-command-body">
-<button id="aclDrawerToggle" class="home-drawer-toggle acl-command-menu" type="button" aria-label="Open navigation" aria-controls="aclCommandDrawer" aria-expanded="false"><span></span><span></span><span></span></button>
+<header class="acl-command-header home-app-header">
+  <div class="acl-command-header-left">
+    <button id="aclDrawerToggle" class="acl-command-menu" type="button" aria-label="Open navigation" aria-controls="aclCommandDrawer" aria-expanded="false"><span></span><span></span><span></span></button>
+    <a class="acl-command-brand" id="homeHeaderBrand" href="modules.html?edition=expert" aria-label="Alexandria Cardiology League modules">
+      <img src="assets/images/acl-header-mark.svg" alt="Alexandria Cardiology League" class="acl-command-brand-logo">
+      <span class="acl-command-brand-name">Alexandria Cardiology League</span>
+      <span class="acl-command-brand-separator">•</span>
+      <span id="aclHeaderEdition">THE EXPERT EDITION</span>
+    </a>
+  </div>
+  <div class="acl-command-header-actions">
+    <span id="aclHeaderUserName" class="acl-command-user-name">Member</span>
+    <a id="homeHeaderNotifications" class="acl-command-icon-btn" href="notifications.html?edition=expert" aria-label="Notifications">🔔</a>
+    <a id="homeHeaderSettings" class="acl-command-icon-btn" href="settings.html?edition=expert" aria-label="Settings">⚙</a>
+    <button id="aclHeaderLogout" class="acl-command-icon-btn" type="button" aria-label="Log out">↪</button>
+  </div>
+</header>
 <div id="aclDrawerBackdrop" class="acl-drawer-backdrop" hidden></div>
 <aside id="aclCommandDrawer" class="acl-command-drawer" aria-label="ACL navigation"></aside>
 
@@ -37,5 +53,5 @@
   </section>
 </main>
 <script type="module" src="assets/js/acl-universal-drawer-20260820.js?v=4"></script>
-<script type="module" src="assets/js/home-dashboard-20260820.js?v=4"></script>
+<script type="module" src="assets/js/home-dashboard-20260820.js?v=5"></script>
 </body></html>
