@@ -5,21 +5,21 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#061c3d">
-  <title>ACL Expert Command Center | Alexandria Cardiology League</title>
+  <title>ACL Expert Command Center | Cardiology League</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
   <link rel="stylesheet" href="assets/css/acl-command-center.css?v=2.1.0">
   <link rel="stylesheet" href="assets/css/brand-restoration-20260820.css?v=5">
-  <link rel="stylesheet" href="assets/css/acl-universal-drawer-20260820.css?v=3">
+  <link rel="stylesheet" href="assets/css/acl-universal-drawer-20260820.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="acl-command-body">
   <header class="acl-command-header">
     <div class="acl-command-header-left">
       <button id="aclDrawerToggle" class="acl-command-menu" type="button" aria-label="Open navigation" aria-controls="aclCommandDrawer" aria-expanded="false"><span></span><span></span><span></span></button>
-      <a class="acl-command-brand" href="home.html" aria-label="Alexandria Cardiology League home">
-        <img src="assets/images/acl-header-mark.svg" alt="Alexandria Cardiology League" class="acl-command-brand-logo">
-        <span class="acl-command-brand-name">Alexandria Cardiology League</span>
+      <a class="acl-command-brand" href="home.html" aria-label="Cardiology League home">
+        <img src="assets/images/acl-header-mark.svg" alt="Cardiology League" class="acl-command-brand-logo">
+        <span class="acl-command-brand-name">Cardiology League</span>
         <span class="acl-command-brand-separator">•</span>
         <strong id="aclHeaderEdition">THE EXPERT EDITION</strong>
       </a>
@@ -32,11 +32,7 @@
     </div>
   </header>
   <div id="aclDrawerBackdrop" class="acl-drawer-backdrop" hidden></div>
-  <aside id="aclCommandDrawer" class="acl-command-drawer" aria-label="ACL navigation">
-    <div class="acl-drawer-scroll">
-      <nav class="acl-drawer-nav"></nav>
-    </div>
-  </aside>
+  <aside id="aclCommandDrawer" class="acl-command-drawer" aria-label="ACL navigation"><div class="acl-drawer-scroll"><nav class="acl-drawer-nav"></nav></div></aside>
   <main class="acl-command-main">
     <section class="acl-command-search" aria-label="Find modules"><label><span class="acl-search-icon">⌕</span><input id="moduleSearchInputCompact" type="search" placeholder="Search modules, topics or skills…" autocomplete="off"></label><button id="moduleFilterToggle" type="button" aria-expanded="false" aria-controls="moduleCompactFilters"><span>☷</span> Filters</button><button id="clearModuleFiltersCompact" class="acl-clear-filter" type="button">Clear</button><div id="moduleCompactFilters" class="acl-command-filters" hidden><label><span>Availability</span><select id="moduleAvailabilityCompact"><option value="all">All availability</option><option value="open">Open</option><option value="locked">Locked / unavailable</option></select></label><label><span>Progress</span><select id="moduleProgressCompact"><option value="all">All progress</option><option value="not-started">Not started</option><option value="started">Started / in progress</option><option value="completed">Finished</option></select></label></div><p id="moduleSearchSummary" class="acl-search-summary">Loading modules…</p></section>
     <section class="acl-command-section"><div class="acl-command-section-heading"><div><h2>Continue Learning</h2><p>Pick up where you left off</p></div></div><div id="aclContinueLearning" class="acl-continue-grid"><div class="acl-skeleton-card"></div><div class="acl-skeleton-card"></div></div></section>
@@ -44,7 +40,7 @@
   </main>
   <nav class="acl-mobile-bottom-nav" aria-label="Mobile navigation"><a href="home.html"><span>⌂</span><small>Home</small></a><button id="aclMobileModulesButton" type="button"><span>▦</span><small>Modules</small></button><a href="progress.html?edition=expert"><span>▤</span><small>Progress</small></a><a href="profile.html?edition=expert"><span>♙</span><small>Profile</small></a></nav>
   <script type="module" src="assets/js/modules-live-core-20260820.js?v=5"></script>
-  <script type="module" src="assets/js/acl-universal-drawer-20260820.js?v=3"></script>
+  <script type="module" src="assets/js/acl-universal-drawer-20260820.js?v=5"></script>
   <script defer src="assets/js/module-artwork-enforcer-20260820.js?v=4"></script>
 </body>
 </html>
