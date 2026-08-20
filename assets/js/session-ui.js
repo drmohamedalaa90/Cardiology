@@ -24,10 +24,18 @@ if (!document.querySelector('link[data-acl-page-polish]')) {
   polish.href = root + 'assets/css/page-polish-20260820.css?v=2';
   document.head.appendChild(polish);
 }
+if (!document.querySelector('link[data-acl-universal-drawer]')) {
+  const drawerCss = document.createElement('link');
+  drawerCss.rel = 'stylesheet';
+  drawerCss.dataset.aclUniversalDrawer = 'true';
+  drawerCss.href = root + 'assets/css/acl-universal-drawer-20260820.css?v=1';
+  document.head.appendChild(drawerCss);
+}
 
 if (!nested && !shellExcludedPages.has(pageName) && !document.getElementById("aclSharedShell")) {
   try {
     await import("./acl-shared-shell.js?v=3.0.1");
+    await import("./acl-universal-drawer-20260820.js?v=1");
   } catch (error) {
     console.warn("ACL shared shell load error", error);
   }
