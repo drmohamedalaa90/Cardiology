@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#061c3d">
+<title>Challenge Friends | Alexandria Cardiology League</title>
+<link rel="stylesheet" href="assets/css/main.css?v=5.0.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+.hub-hero{padding:22px;margin-bottom:14px;border:1px solid #e2e8ef;border-radius:15px;background:#fff}.hub-kicker{font-size:10px;font-weight:900;letter-spacing:.11em;color:#60758c}.hub-hero h1{margin:5px 0 5px;font-size:27px}.hub-hero p{margin:0;color:#77879a;font-size:12px}.challenge-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:11px}.challenge-card{padding:18px;border:1px solid #e2e8ef;border-radius:13px;background:#fff}.challenge-card h2{margin:0 0 6px;font-size:16px}.challenge-card p{margin:0 0 14px;color:#77879a;font-size:11px;line-height:1.55}.challenge-actions{display:flex;gap:8px;flex-wrap:wrap}.challenge-actions a,.challenge-actions button{min-height:38px;padding:0 14px;border:1px solid #d8e1ea;border-radius:9px;background:#fff;color:#31597f;font-size:11px;font-weight:850;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.challenge-actions .primary{border:0;background:#176fd1;color:#fff}.join-row{display:grid;grid-template-columns:1fr auto;gap:7px}.join-row input{height:40px;border:1px solid #d8e1ea;border-radius:9px;padding:0 12px;text-transform:uppercase}.join-note{margin-top:9px!important;font-size:10px!important}@media(max-width:820px){.challenge-grid{grid-template-columns:1fr}.hub-hero{padding:16px}.hub-hero h1{font-size:22px}.challenge-card{padding:15px}}
+</style>
+</head>
+<body>
+<main>
+<section class="hub-hero"><span class="hub-kicker">ACL HEAD-TO-HEAD</span><h1>Challenge Friends</h1><p>Create a quiz challenge from any open Expert module, or enter a challenge code sent by a colleague.</p></section>
+<section class="challenge-grid">
+<article class="challenge-card"><h2>Create a new challenge</h2><p>Challenge creation stays attached to the module so everyone receives the same scientific question set and the correct module context.</p><div class="challenge-actions"><a class="primary" href="modules.html?edition=expert">Choose an Expert module</a><a href="progress.html?edition=expert">View my progress</a></div></article>
+<article class="challenge-card"><h2>Join with a code</h2><p>Paste the ACL challenge code you received. We’ll keep the code in the URL so the challenge invitation can be resumed after sign-in.</p><div class="join-row"><input id="challengeCode" autocomplete="off" placeholder="ACL-XXXXXXXX" aria-label="Challenge code"><button id="joinChallenge" type="button">Continue</button></div><p id="challengeStatus" class="join-note"></p></article>
+</section>
+</main>
+<script type="module" src="assets/js/acl-shared-shell.js?v=2.0.0"></script>
+<script>
+(function(){const params=new URLSearchParams(location.search),input=document.getElementById('challengeCode'),status=document.getElementById('challengeStatus');if(params.get('code'))input.value=params.get('code');document.getElementById('joinChallenge').addEventListener('click',()=>{const code=input.value.trim().toUpperCase();if(!code){status.textContent='Enter the challenge code first.';return;}const u=new URL(location.href);u.searchParams.set('code',code);u.searchParams.set('edition','expert');history.replaceState({},'',u);status.textContent='Challenge code saved. Open the linked module invitation to start the official attempt.';});})();
+</script>
+</body></html>
