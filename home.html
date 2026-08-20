@@ -3,20 +3,17 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071a38">
 <title>Home | Alexandria Cardiology League</title>
-<link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=2">
-<link rel="stylesheet" href="assets/css/acl-universal-drawer-20260820.css?v=2">
+<link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
-<div class="home-shell">
-<aside class="home-nav"></aside>
-<main class="home-main">
-<header class="home-top"><div><h1>Welcome back, <span id="welcomeName">Doctor</span> 👋</h1><p>Keep learning. Keep growing. Make every beat count.</p></div><div class="top-actions"><span id="editionPill" class="edition-pill">Expert Edition</span><strong><span id="topXp">—</span> XP</strong><a href="notifications.html" aria-label="Notifications">🔔</a><a href="profile.html" class="avatar" id="avatar">ACL</a></div></header>
+<body class="home-standalone">
+<div class="home-shell home-shell-standalone">
+<main class="home-main home-main-standalone">
 <section class="dashboard-grid">
   <article class="panel progress-panel"><div class="panel-title"><h2>My Progress</h2><a href="progress.html">View full</a></div><div class="progress-body"><div class="progress-ring" id="masteryRing"><strong id="masteryValue">—</strong><span>Overall Mastery</span></div><dl><div><dt>Modules completed</dt><dd id="modulesCompleted">—</dd></div><div><dt>Modules in progress</dt><dd id="modulesActive">—</dd></div><div><dt>Questions answered</dt><dd id="questionsAnswered">—</dd></div><div><dt>Accuracy</dt><dd id="accuracyValue">—</dd></div><div><dt>ACL XP</dt><dd id="progressXp">—</dd></div></dl></div></article>
   <article class="panel continue-panel"><div class="panel-title"><h2>Continue Learning</h2><a href="modules.html">See all</a></div><div id="continueList" class="continue-list"><div class="empty-state">Your active modules will appear here.</div></div></article>
   <article class="panel friends-panel" id="friends"><div class="panel-title"><h2>Friends</h2><a href="challenge.html">Challenge</a></div><div id="friendsList" class="friends-list"><div class="empty-state">Friends and their weekly progression will appear here.</div></div><a class="outline-btn" href="challenge.html">Challenge a Friend</a></article>
-  <article class="panel announcements"><div class="panel-title"><h2>Announcements</h2><a href="notifications.html">View all</a></div><div id="announcementList"><div class="announcement"><span>NEW</span><div><b>Welcome to your new ACL Home</b><p>Important faculty and admin messages will appear here.</p></div></div></div></article>
+  <article class="panel announcements"><div class="panel-title"><h2>Announcements</h2><a href="notifications.html">View all</a></div><div id="announcementList"><div class="announcement"><span>NEW</span><div><b>Welcome to your ACL Home</b><p>Important faculty and admin messages will appear here.</p></div></div></div></article>
   <article class="panel video-panel"><div class="video-cover"><div><small>WELCOME TO</small><h2>Alexandria Cardiology League</h2></div><button id="introPlay" type="button" aria-label="Play introduction">▶</button></div><div class="video-copy"><b>Introduction to ACL Platform</b><p>Your introduction video can be placed here for every new learner.</p></div></article>
   <article class="panel goal-panel"><div class="panel-title"><h2>Weekly Goal</h2><button id="editGoal" type="button">Edit Goal</button></div><div class="goal-body"><div class="goal-ring"><strong id="goalPercent">0%</strong></div><div><strong><span id="goalDone">0</span> / <span id="goalTarget">100</span></strong><span>Questions</span><strong id="weeklyXp">+0 XP</strong><span>This week</span></div></div></article>
   <article class="panel activity-panel"><div class="panel-title"><h2>Friend Activity</h2><a href="#friends">View all</a></div><div id="activityList" class="activity-list"><div class="empty-state">Recent friend milestones and challenges will appear here.</div></div></article>
@@ -24,6 +21,5 @@
   <article class="panel achievements"><div class="panel-title"><h2>Recent Achievements</h2><a href="progress.html">View all</a></div><div class="badge-row"><div>✦<span>First 100</span></div><div>★<span>1,000 XP</span></div><div>🔥<span>Streak</span></div><div>♛<span>Mastery</span></div></div></article>
 </section>
 </main></div>
-<script type="module" src="assets/js/acl-universal-drawer-20260820.js?v=2"></script>
-<script type="module" src="assets/js/home-dashboard-20260820.js?v=2"></script>
+<script type="module" src="assets/js/home-dashboard-20260820.js?v=3"></script>
 </body></html>
