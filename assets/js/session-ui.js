@@ -17,9 +17,17 @@ const shellExcludedPages = new Set([
   "competition-dashboard.html"
 ]);
 
+if (!document.querySelector('link[data-acl-page-polish]')) {
+  const polish = document.createElement('link');
+  polish.rel = 'stylesheet';
+  polish.dataset.aclPagePolish = 'true';
+  polish.href = root + 'assets/css/page-polish-20260820.css?v=2';
+  document.head.appendChild(polish);
+}
+
 if (!nested && !shellExcludedPages.has(pageName) && !document.getElementById("aclSharedShell")) {
   try {
-    await import("./acl-shared-shell.js?v=3.0.0");
+    await import("./acl-shared-shell.js?v=3.0.1");
   } catch (error) {
     console.warn("ACL shared shell load error", error);
   }
