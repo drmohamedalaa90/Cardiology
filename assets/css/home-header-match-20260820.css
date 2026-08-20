@@ -1,0 +1,19 @@
+/* Home header: identical structure/placement to the rest of ACL, but no bold words. */
+body.home-standalone{padding-top:66px!important}
+body.home-standalone .home-app-header{display:flex!important;position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:1400!important}
+body.home-standalone .home-app-header,
+body.home-standalone .home-app-header span,
+body.home-standalone .home-app-header strong,
+body.home-standalone .home-app-header a,
+body.home-standalone .home-app-header button{font-weight:400!important}
+body.home-standalone .home-app-header .acl-command-brand-name,
+body.home-standalone .home-app-header #aclHeaderEdition,
+body.home-standalone .home-app-header .acl-command-user-name{font-weight:400!important}
+body.home-standalone .home-main-standalone{padding-top:28px!important}
+body.home-standalone .home-drawer-toggle{display:none!important}
+
+@media(max-width:820px){
+  body.home-standalone{padding-top:58px!important}
+  body.home-standalone .home-main-standalone{padding-top:14px!important}
+  body.home-standalone .home-app-header{height:58px!important;min-height:58px!important}
+}
