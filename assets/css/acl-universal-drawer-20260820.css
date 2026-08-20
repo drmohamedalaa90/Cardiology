@@ -1,69 +1,22 @@
-/* Universal ACL sidebar — one visual system for every authenticated page */
-:root{--acl-unified-drawer:#071d3d;--acl-unified-active:#223a5b;--acl-unified-mint:#39d1aa}
+/* Universal ACL sidebar architecture — one drawer everywhere */
+.acl-universal-drawer{background:#071d3d!important;color:#fff!important;border-right:1px solid rgba(255,255,255,.05)!important}
+.acl-universal-drawer .acl-universal-scroll{height:100%;display:flex;flex-direction:column;overflow:auto;padding:12px 10px 14px}
+.acl-universal-nav{display:grid;gap:6px}.acl-universal-link{min-height:48px;display:flex;align-items:center;gap:12px;padding:0 14px;border-radius:12px;color:#fff;text-decoration:none;font-size:15px;font-weight:800;line-height:1.05;transition:.16s ease}.acl-universal-link:hover{background:rgba(255,255,255,.065)}.acl-universal-link.is-active{background:#223a5b;color:#fff;box-shadow:none!important}.acl-universal-icon{width:17px;min-width:17px;display:grid;place-items:center;color:#d8ebff;font-size:15px;font-weight:800}.acl-universal-link.is-active .acl-universal-icon{color:#fff!important}.acl-universal-streak{margin-top:auto;border:1px solid rgba(255,255,255,.13);border-radius:15px;padding:18px 18px 17px;background:rgba(3,22,48,.24)}.acl-universal-streak small{display:block;color:#fff;font-size:10px;font-weight:900;letter-spacing:.03em;margin-bottom:14px}.acl-universal-streak>div:nth-child(2){display:flex;align-items:end;gap:7px}.acl-universal-streak strong{font-size:27px;line-height:1;color:#fff;font-weight:900}.acl-universal-streak span{font-size:12px;font-weight:800;color:#fff;padding-bottom:2px}.acl-universal-streak-dots{display:flex!important;gap:10px!important;align-items:center!important;margin-top:18px!important}.acl-universal-streak-dots i{width:10px;height:10px;border-radius:50%;background:#39d1aa;display:block}.acl-universal-streak-dots i.open{background:transparent;border:2px solid #39d1aa}
 
-#aclCommandDrawer.acl-universal-drawer,
-aside.home-nav.acl-universal-drawer{
-  background:var(--acl-unified-drawer)!important;
-  color:#fff!important;
-  border-right:1px solid rgba(255,255,255,.05)!important;
-  padding:0!important;
-}
-
-#aclCommandDrawer.acl-universal-drawer .acl-universal-scroll,
-aside.home-nav.acl-universal-drawer .acl-universal-scroll{
-  height:100%!important;min-height:100%!important;display:flex!important;flex-direction:column!important;
-  overflow:auto!important;padding:12px 10px 14px!important
-}
-
-.acl-universal-nav{display:grid!important;gap:6px!important;width:100%!important}
-.acl-universal-link{
-  width:100%!important;min-height:48px!important;display:flex!important;align-items:center!important;gap:12px!important;
-  padding:0 14px!important;border-radius:12px!important;color:#fff!important;text-decoration:none!important;
-  font-size:15px!important;font-weight:800!important;line-height:1.05!important;transition:.16s ease!important;
-  background:transparent!important;border:0!important;box-shadow:none!important
-}
-.acl-universal-link:hover{background:rgba(255,255,255,.065)!important}
-.acl-universal-link.is-active{background:var(--acl-unified-active)!important;color:#fff!important;box-shadow:none!important}
-.acl-universal-icon{width:17px!important;min-width:17px!important;display:grid!important;place-items:center!important;color:#d8ebff!important;font-size:15px!important;font-weight:800!important}
-.acl-universal-link.is-active .acl-universal-icon{color:#fff!important}
-
-.acl-universal-streak{
-  margin-top:auto!important;border:1px solid rgba(255,255,255,.13)!important;border-radius:15px!important;
-  padding:18px 18px 17px!important;background:rgba(3,22,48,.24)!important;box-shadow:none!important
-}
-.acl-universal-streak small{display:block!important;color:#fff!important;font-size:10px!important;font-weight:900!important;letter-spacing:.03em!important;margin-bottom:14px!important}
-.acl-universal-streak-value{display:flex!important;align-items:flex-end!important;gap:7px!important}
-.acl-universal-streak strong{font-size:27px!important;line-height:1!important;color:#fff!important;font-weight:900!important}
-.acl-universal-streak span{font-size:12px!important;font-weight:800!important;color:#fff!important;padding-bottom:2px!important}
-.acl-universal-streak-dots{display:flex!important;gap:10px!important;align-items:center!important;margin-top:18px!important}
-.acl-universal-streak-dots i{width:10px!important;height:10px!important;border-radius:50%!important;background:var(--acl-unified-mint)!important;display:block!important}
-.acl-universal-streak-dots i.open{background:transparent!important;border:2px solid var(--acl-unified-mint)!important}
-
-/* hard-disable every legacy sidebar fragment so no page can render a second architecture */
-#aclCommandDrawer.acl-universal-drawer>.acl-drawer-scroll,
-#aclCommandDrawer.acl-universal-drawer>.acl-drawer-logout,
-#aclCommandDrawer.acl-universal-drawer .acl-drawer-profile,
-#aclCommandDrawer.acl-universal-drawer .acl-drawer-nav,
-#aclCommandDrawer.acl-universal-drawer .acl-nav-group{display:none!important}
-
-/* Home used to own a separate drawer. Once unified, its old brand/nav/streak rules are neutralized. */
-aside.home-nav.acl-universal-drawer>.home-brand,
-aside.home-nav.acl-universal-drawer>nav,
-aside.home-nav.acl-universal-drawer>.home-streak{display:none!important}
-
-@media(min-width:821px){
-  #aclCommandDrawer.acl-universal-drawer{width:250px!important}
-  body.acl-shared-page>main.acl-shared-main{margin-left:250px!important}
-  .acl-command-main{margin-left:250px!important}
-  body.drawer-collapsed #aclCommandDrawer.acl-universal-drawer{transform:translateX(-250px)!important}
-  body.drawer-collapsed>main.acl-shared-main,.acl-command-body.drawer-collapsed .acl-command-main{margin-left:0!important}
-  aside.home-nav.acl-universal-drawer{width:250px!important}
-  .home-shell{grid-template-columns:250px minmax(0,1fr)!important}
-}
+/* Kill any remaining legacy drawer contents */
+.acl-universal-drawer .acl-drawer-profile,.acl-universal-drawer .acl-drawer-nav,.acl-universal-drawer .acl-drawer-logout,.acl-universal-drawer .acl-drawer-scroll{display:none!important}
 
 @media(max-width:820px){
-  #aclCommandDrawer.acl-universal-drawer .acl-universal-scroll,
-  aside.home-nav.acl-universal-drawer .acl-universal-scroll{padding:10px 10px 12px!important}
-  .acl-universal-link{min-height:46px!important;font-size:14px!important;padding:0 13px!important}
-  .acl-universal-streak{margin-top:26px!important;padding:15px!important}
+  .acl-universal-drawer{top:58px!important;width:min(84vw,300px)!important;transform:translateX(-105%)!important;visibility:visible!important;pointer-events:auto!important;transition:transform .2s ease!important;z-index:1500!important}
+  body.drawer-open .acl-universal-drawer{transform:translateX(0)!important}
+  body.drawer-collapsed .acl-universal-drawer{transform:translateX(-105%)!important}
+  #aclDrawerBackdrop{inset:58px 0 0!important;z-index:1450!important;background:rgba(3,17,38,.5)!important}
+  #aclDrawerBackdrop:not([hidden]){display:block!important}
+  #aclDrawerToggle{pointer-events:auto!important;position:relative!important;z-index:1550!important}
+  .acl-universal-drawer .acl-universal-scroll{padding:10px 10px 12px}.acl-universal-link{min-height:46px;font-size:14px;padding:0 13px}.acl-universal-streak{margin-top:26px;padding:15px}
+
+  /* keep logout visible in the mobile top bar */
+  #aclHeaderLogout{display:grid!important;width:34px!important;height:34px!important;font-size:16px!important;color:#fff!important;background:transparent!important}
+  #aclHeaderLogout:hover{background:rgba(255,255,255,.08)!important}
+  .acl-command-header-actions .acl-command-icon-btn:nth-of-type(2){display:none!important}
 }
