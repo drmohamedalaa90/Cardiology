@@ -3,23 +3,31 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071a38">
 <title>Home | Alexandria Cardiology League</title>
-<link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=3">
+<link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=4">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="home-standalone">
-<div class="home-shell home-shell-standalone">
 <main class="home-main home-main-standalone">
-<section class="dashboard-grid">
-  <article class="panel progress-panel"><div class="panel-title"><h2>My Progress</h2><a href="progress.html">View full</a></div><div class="progress-body"><div class="progress-ring" id="masteryRing"><strong id="masteryValue">—</strong><span>Overall Mastery</span></div><dl><div><dt>Modules completed</dt><dd id="modulesCompleted">—</dd></div><div><dt>Modules in progress</dt><dd id="modulesActive">—</dd></div><div><dt>Questions answered</dt><dd id="questionsAnswered">—</dd></div><div><dt>Accuracy</dt><dd id="accuracyValue">—</dd></div><div><dt>ACL XP</dt><dd id="progressXp">—</dd></div></dl></div></article>
-  <article class="panel continue-panel"><div class="panel-title"><h2>Continue Learning</h2><a href="modules.html">See all</a></div><div id="continueList" class="continue-list"><div class="empty-state">Your active modules will appear here.</div></div></article>
-  <article class="panel friends-panel" id="friends"><div class="panel-title"><h2>Friends</h2><a href="challenge.html">Challenge</a></div><div id="friendsList" class="friends-list"><div class="empty-state">Friends and their weekly progression will appear here.</div></div><a class="outline-btn" href="challenge.html">Challenge a Friend</a></article>
-  <article class="panel announcements"><div class="panel-title"><h2>Announcements</h2><a href="notifications.html">View all</a></div><div id="announcementList"><div class="announcement"><span>NEW</span><div><b>Welcome to your ACL Home</b><p>Important faculty and admin messages will appear here.</p></div></div></div></article>
-  <article class="panel video-panel"><div class="video-cover"><div><small>WELCOME TO</small><h2>Alexandria Cardiology League</h2></div><button id="introPlay" type="button" aria-label="Play introduction">▶</button></div><div class="video-copy"><b>Introduction to ACL Platform</b><p>Your introduction video can be placed here for every new learner.</p></div></article>
-  <article class="panel goal-panel"><div class="panel-title"><h2>Weekly Goal</h2><button id="editGoal" type="button">Edit Goal</button></div><div class="goal-body"><div class="goal-ring"><strong id="goalPercent">0%</strong></div><div><strong><span id="goalDone">0</span> / <span id="goalTarget">100</span></strong><span>Questions</span><strong id="weeklyXp">+0 XP</strong><span>This week</span></div></div></article>
-  <article class="panel activity-panel"><div class="panel-title"><h2>Friend Activity</h2><a href="#friends">View all</a></div><div id="activityList" class="activity-list"><div class="empty-state">Recent friend milestones and challenges will appear here.</div></div></article>
-  <article class="panel recommended"><div class="panel-title"><h2>Recommended For You</h2><a href="modules.html">See all</a></div><div id="recommendedList"><a href="modules.html"><b>Continue your active module</b><span>Pick up exactly where you stopped →</span></a><a href="progress.html"><b>Review your weakest topic</b><span>Use mastery data to choose what to revise →</span></a><a href="challenge.html"><b>Challenge a friend</b><span>Turn revision into a head-to-head challenge →</span></a></div></article>
-  <article class="panel achievements"><div class="panel-title"><h2>Recent Achievements</h2><a href="progress.html">View all</a></div><div class="badge-row"><div>✦<span>First 100</span></div><div>★<span>1,000 XP</span></div><div>🔥<span>Streak</span></div><div>♛<span>Mastery</span></div></div></article>
-</section>
-</main></div>
-<script type="module" src="assets/js/home-dashboard-20260820.js?v=3"></script>
+  <section class="home-hero">
+    <div class="home-hero-copy"><span class="home-kicker">ALEXANDRIA CARDIOLOGY LEAGUE</span><h1>Welcome back, <span id="welcomeName">Doctor</span></h1><p>Continue your learning, monitor your progress and stay connected with the ACL community.</p><div class="home-actions"><a class="primary-home-action" href="modules.html">Continue learning</a><a href="progress.html">My progress</a><a href="challenge.html">Challenge a friend</a><a href="notifications.html">Messages</a></div></div>
+    <div class="home-hero-stats"><article><span>ACL XP</span><strong id="heroXp">—</strong></article><article><span>Questions</span><strong id="heroQuestions">—</strong></article><article><span>Accuracy</span><strong id="heroAccuracy">—</strong></article><article><span>Edition</span><strong id="heroEdition">Expert</strong></article></div>
+  </section>
+
+  <section class="home-row home-row-primary">
+    <article class="home-card continue-card"><div class="home-card-heading"><div><span>LEARNING</span><h2>Continue Learning</h2></div><a href="modules.html">All modules →</a></div><div id="continueList" class="continue-list"><div class="empty-state">Your active modules will appear here.</div></div></article>
+    <article class="home-card goal-card"><div class="home-card-heading"><div><span>THIS WEEK</span><h2>Weekly Goal</h2></div><button id="editGoal" type="button">Edit</button></div><div class="goal-layout"><div class="goal-ring"><strong id="goalPercent">0%</strong><span>complete</span></div><div class="goal-copy"><strong><span id="goalDone">0</span> / <span id="goalTarget">100</span></strong><span>questions answered</span><b id="weeklyXp">+0 XP</b><small>earned this week</small></div></div></article>
+  </section>
+
+  <section class="home-row home-row-three">
+    <article class="home-card progress-card"><div class="home-card-heading"><div><span>YOUR PERFORMANCE</span><h2>My Progress</h2></div><a href="progress.html">View full →</a></div><div class="progress-summary"><div class="progress-ring" id="masteryRing"><strong id="masteryValue">—</strong><span>accuracy</span></div><div class="progress-list"><div><span>Modules completed</span><strong id="modulesCompleted">—</strong></div><div><span>Modules in progress</span><strong id="modulesActive">—</strong></div><div><span>Questions answered</span><strong id="questionsAnswered">—</strong></div><div><span>ACL XP</span><strong id="progressXp">—</strong></div></div></div></article>
+    <article class="home-card friends-card" id="friends"><div class="home-card-heading"><div><span>COMMUNITY</span><h2>Friends</h2></div><a href="challenge.html">Manage →</a></div><div id="friendsList" class="friends-list"><div class="empty-state rich-empty"><strong>No connected friends yet</strong><span>Connect with colleagues to compare weekly progress and send challenges.</span></div></div><a class="secondary-action" href="challenge.html">Find or challenge a friend</a></article>
+    <article class="home-card announcements-card"><div class="home-card-heading"><div><span>ACL UPDATES</span><h2>Announcements</h2></div><a href="notifications.html">View all →</a></div><div id="announcementList" class="announcement-list"><div class="announcement"><i>ACL</i><div><strong>Welcome to your ACL Home</strong><span>Faculty announcements, competitions and important updates will appear here.</span></div></div></div></article>
+  </section>
+
+  <section class="home-row home-row-bottom">
+    <article class="home-card video-card"><div class="video-visual"><div><span>WELCOME TO</span><h2>Alexandria Cardiology League</h2><p>A short introduction to the platform, learning modes and competitions.</p></div><button id="introPlay" type="button" aria-label="Play introduction">▶</button></div><div class="video-footer"><strong>Introduction to ACL Platform</strong><span>For new learners and members</span></div></article>
+    <article class="home-card recommended-card"><div class="home-card-heading"><div><span>NEXT BEST ACTION</span><h2>Recommended For You</h2></div></div><div id="recommendedList" class="recommended-list"><a href="modules.html"><span>01</span><div><strong>Continue your active module</strong><small>Resume exactly where you stopped.</small></div><b>→</b></a><a href="progress.html"><span>02</span><div><strong>Review your performance</strong><small>Identify the topics that need more work.</small></div><b>→</b></a><a href="challenge.html"><span>03</span><div><strong>Challenge a colleague</strong><small>Turn revision into a head-to-head session.</small></div><b>→</b></a></div></article>
+  </section>
+</main>
+<script type="module" src="assets/js/home-dashboard-20260820.js?v=4"></script>
 </body></html>
