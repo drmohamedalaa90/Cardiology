@@ -3,10 +3,16 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071a38">
 <title>Home | Alexandria Cardiology League</title>
-<link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=4">
+<link rel="stylesheet" href="assets/css/acl-command-center.css?v=2.1.0">
+<link rel="stylesheet" href="assets/css/acl-universal-drawer-20260820.css?v=4">
+<link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=5">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="home-standalone">
+<body class="home-standalone acl-command-body">
+<button id="aclDrawerToggle" class="home-drawer-toggle acl-command-menu" type="button" aria-label="Open navigation" aria-controls="aclCommandDrawer" aria-expanded="false"><span></span><span></span><span></span></button>
+<div id="aclDrawerBackdrop" class="acl-drawer-backdrop" hidden></div>
+<aside id="aclCommandDrawer" class="acl-command-drawer" aria-label="ACL navigation"></aside>
+
 <main class="home-main home-main-standalone">
   <section class="home-hero">
     <div class="home-hero-copy"><span class="home-kicker">ALEXANDRIA CARDIOLOGY LEAGUE</span><h1>Welcome back, <span id="welcomeName">Doctor</span></h1><p>Continue your learning, monitor your progress and stay connected with the ACL community.</p><div class="home-actions"><a class="primary-home-action" href="modules.html">Continue learning</a><a href="progress.html">My progress</a><a href="challenge.html">Challenge a friend</a><a href="notifications.html">Messages</a></div></div>
@@ -29,5 +35,6 @@
     <article class="home-card recommended-card"><div class="home-card-heading"><div><span>NEXT BEST ACTION</span><h2>Recommended For You</h2></div></div><div id="recommendedList" class="recommended-list"><a href="modules.html"><span>01</span><div><strong>Continue your active module</strong><small>Resume exactly where you stopped.</small></div><b>→</b></a><a href="progress.html"><span>02</span><div><strong>Review your performance</strong><small>Identify the topics that need more work.</small></div><b>→</b></a><a href="challenge.html"><span>03</span><div><strong>Challenge a colleague</strong><small>Turn revision into a head-to-head session.</small></div><b>→</b></a></div></article>
   </section>
 </main>
+<script type="module" src="assets/js/acl-universal-drawer-20260820.js?v=4"></script>
 <script type="module" src="assets/js/home-dashboard-20260820.js?v=4"></script>
 </body></html>
