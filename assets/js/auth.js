@@ -34,19 +34,12 @@ byId("signInForm")?.addEventListener("submit", async (event) => {
   const password = byId("loginPassword").value;
   const submit = event.submitter; if (submit) submit.disabled = true;
   try {
-    const { data, error } = await supabaseClient.functions.invoke("username-login", {
-      body: { identifier, password }
-    });
+    const { data, error } = await supabaseClient.functions.invoke("username-login", { body: { identifier, password } });
     if (error) throw error;
-    if (!data?.session?.access_token || !data?.session?.refresh_token) {
-      throw new Error(data?.error || "Invalid username/email or password.");
-    }
-    const { error: sessionError } = await supabaseClient.auth.setSession({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token
-    });
+    if (!data?.session?.access_token || !data?.session?.refresh_token) throw new Error(data?.error || "Invalid username/email or password.");
+    const { error: sessionError } = await supabaseClient.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
     if (sessionError) throw sessionError;
-    window.location.href = "modules.html";
+    window.location.href = "home.html";
   } catch (error) {
     setMessage("signInError", error.message || "Could not sign in.");
   } finally { if (submit) submit.disabled = false; }
@@ -73,17 +66,14 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
     if (taken) throw new Error("This username is already taken.");
     const { data, error } = await supabaseClient.auth.signUp({
       email, password,
-      options: {
-        emailRedirectTo: `${window.location.origin}${ACL_CONFIG.siteBase}confirm.html`,
-        data: { full_name: fullName, username, whatsapp, academic_year: academicYear, institution }
-      }
+      options: { emailRedirectTo: `${window.location.origin}${ACL_CONFIG.siteBase}confirm.html`, data: { full_name: fullName, username, whatsapp, academic_year: academicYear, institution } }
     });
     if (error) throw error;
     if (!data.session) {
       setMessage("registerSuccess", "Account created. Open the confirmation email, confirm your address, then return to sign in.");
       event.target.reset();
     } else {
-      window.location.href = "modules.html";
+      window.location.href = "home.html";
     }
   } catch (error) {
     setMessage("registerError", error.message || "Could not create account.");
