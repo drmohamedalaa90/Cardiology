@@ -1,0 +1,105 @@
+import { supabaseClient } from './supabase-client.js';
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const edition = (params.get('edition') || localStorage.getItem('aclSelectedEdition') || 'expert').toLowerCase() === 'basic' ? 'basic' : 'expert';
+
+const filterToggle = $('moduleFilterToggle');
+const filters = $('moduleCompactFilters');
+filterToggle?.addEventListener('click', () => {
+  const open = filters?.hidden !== false;
+  if (filters) filters.hidden = !open;
+  filterToggle.setAttribute('aria-expanded', String(open));
+});
+
+function metricPill(label, value, cls='') {
+  return `<span class="acl-intel-pill ${cls}"><small>${label}</small><strong>${value}</strong></span>`;
+}
+
+function levelFor(xp) {
+  const level = Math.max(1, Math.floor(Math.sqrt(Math.max(0, Number(xp)||0) / 250)) + 1);
+  const names = ['Fellow','Clinician','Advanced Clinician','Cardiology Scholar','Expert','Master','ACL Elite'];
+  return { level, name: names[Math.min(names.length-1, level-1)] };
+}
+
+async function loadDashboard() {
+  const { data, error } = await supabaseClient.rpc('acl_get_my_learning_dashboard', { p_edition: edition });
+  if (error) throw error;
+  return data || {};
+}
+
+function annotateCards(dashboard) {
+  const moduleStats = new Map((dashboard.modules || []).map(m => [String(m.module_id), m]));
+  document.querySelectorAll('.module-card[data-module-id]').forEach(card => {
+    const id = String(card.dataset.moduleId || '');
+    const stats = moduleStats.get(id);
+    card.querySelector('.acl-module-intelligence')?.remove();
+    if (!stats || Number(stats.attempts||0) < 1) return;
+    const mastery = Number(stats.mastery_percent || 0);
+    const success = Number(stats.success_percent || 0);
+    const xp = Number(stats.xp || 0);
+    const status = mastery >= 80 ? 'MASTERED' : mastery >= 60 ? 'DEVELOPING' : 'REVIEW';
+    const block = document.createElement('div');
+    block.className = 'acl-module-intelligence';
+    block.innerHTML = `
+      <div class="acl-module-intel-head"><span class="acl-mastery-status is-${status.toLowerCase()}">${status}</span><strong>${mastery}% mastery</strong></div>
+      <div class="acl-mastery-track"><span style="width:${Math.max(0,Math.min(100,mastery))}%"></span></div>
+      <div class="acl-intel-pills">
+        ${metricPill('Success', `${success}%`, 'success')}
+        ${metricPill('ACL XP', xp.toLocaleString(), 'xp')}
+        ${metricPill('Attempts', Number(stats.attempts||0), 'attempts')}
+        ${Number(stats.high_confidence_errors||0) ? metricPill('Misconceptions', Number(stats.high_confidence_errors), 'danger') : ''}
+      </div>`;
+    const body = card.querySelector('.module-card-body') || card;
+    const actions = body.querySelector('.module-card-actions');
+    if (actions) body.insertBefore(block, actions); else body.appendChild(block);
+  });
+}
+
+function updateHero(dashboard) {
+  const xp = Number(dashboard.xp || 0);
+  const level = levelFor(xp);
+  if ($('aclStatInProgress')) $('aclStatInProgress').textContent = Number(dashboard.open_attempts || dashboard.modules_in_progress || 0);
+  if ($('aclStatCompleted')) $('aclStatCompleted').textContent = Number(dashboard.completed_attempts || 0);
+  if ($('aclStatOverall')) $('aclStatOverall').textContent = `${Number(dashboard.mastery_percent || 0)}%`;
+  const hero = document.querySelector('.acl-dashboard-hero');
+  if (hero && !hero.querySelector('.acl-learning-identity')) {
+    const identity = document.createElement('div');
+    identity.className = 'acl-learning-identity';
+    identity.innerHTML = `<span><b>${Number(dashboard.success_percent||0)}%</b> success</span><span><b>${Number(dashboard.mastery_percent||0)}%</b> mastery</span><span><b>${xp.toLocaleString()}</b> XP</span><span><b>Level ${level.level}</b> ${level.name}</span>`;
+    hero.appendChild(identity);
+  }
+}
+
+function addQuickRecommendation(dashboard) {
+  const studied = (dashboard.modules || []).filter(m => Number(m.attempts||0) > 0);
+  if (!studied.length) return;
+  studied.sort((a,b) => Number(a.mastery_percent||0)-Number(b.mastery_percent||0));
+  const weak = studied[0];
+  const host = $('aclContinueLearning');
+  if (!host || host.querySelector('.acl-recommendation-card')) return;
+  const card = document.createElement('article');
+  card.className = 'acl-recommendation-card';
+  const launch = weak.launch_path ? `${weak.launch_path}${weak.launch_path.includes('?')?'&':'?'}edition=${edition}` : `modules.html?edition=${edition}`;
+  card.innerHTML = `<span class="acl-recommendation-kicker">RECOMMENDED NEXT</span><h3>${weak.title}</h3><p>${weak.mastery_percent}% mastery · ${weak.success_percent}% success. This is your highest-value revision target.</p><a class="primary-btn" href="${launch}">Improve mastery</a>`;
+  host.prepend(card);
+}
+
+function attachWhenRendered(dashboard) {
+  const grid = $('modules');
+  if (!grid) return;
+  const apply = () => annotateCards(dashboard);
+  apply();
+  const observer = new MutationObserver(() => apply());
+  observer.observe(grid, { childList:true, subtree:true });
+  setTimeout(() => observer.disconnect(), 12000);
+}
+
+try {
+  const dashboard = await loadDashboard();
+  updateHero(dashboard);
+  addQuickRecommendation(dashboard);
+  attachWhenRendered(dashboard);
+} catch (error) {
+  console.warn('ACL module intelligence unavailable:', error);
+}
