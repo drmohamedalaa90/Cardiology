@@ -4,55 +4,27 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071a38">
 <title>Home | Alexandria Cardiology League</title>
 <link rel="stylesheet" href="assets/css/acl-command-center.css?v=2.1.0">
-<link rel="stylesheet" href="assets/css/acl-universal-drawer-20260820.css?v=4">
+<link rel="stylesheet" href="assets/css/acl-universal-drawer-20260820.css?v=5">
 <link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=6">
 <link rel="stylesheet" href="assets/css/home-drawer-offset-20260820.css?v=1">
 <link rel="stylesheet" href="assets/css/home-header-match-20260820.css?v=1">
+<link rel="stylesheet" href="assets/css/home-community-20260820.css?v=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="home-standalone acl-command-body">
 <header class="acl-command-header home-app-header">
-  <div class="acl-command-header-left">
-    <button id="aclDrawerToggle" class="acl-command-menu" type="button" aria-label="Open navigation" aria-controls="aclCommandDrawer" aria-expanded="false"><span></span><span></span><span></span></button>
-    <a class="acl-command-brand" id="homeHeaderBrand" href="modules.html?edition=expert" aria-label="Alexandria Cardiology League modules">
-      <img src="assets/images/acl-header-mark.svg" alt="Alexandria Cardiology League" class="acl-command-brand-logo">
-      <span class="acl-command-brand-name">Alexandria Cardiology League</span>
-      <span class="acl-command-brand-separator">•</span>
-      <span id="aclHeaderEdition">THE EXPERT EDITION</span>
-    </a>
-  </div>
-  <div class="acl-command-header-actions">
-    <span id="aclHeaderUserName" class="acl-command-user-name">Member</span>
-    <a id="homeHeaderNotifications" class="acl-command-icon-btn" href="notifications.html?edition=expert" aria-label="Notifications">🔔</a>
-    <a id="homeHeaderSettings" class="acl-command-icon-btn" href="settings.html?edition=expert" aria-label="Settings">⚙</a>
-    <button id="aclHeaderLogout" class="acl-command-icon-btn" type="button" aria-label="Log out">↪</button>
-  </div>
+  <div class="acl-command-header-left"><button id="aclDrawerToggle" class="acl-command-menu" type="button" aria-label="Open navigation" aria-controls="aclCommandDrawer" aria-expanded="false"><span></span><span></span><span></span></button><a class="acl-command-brand" id="homeHeaderBrand" href="modules.html?edition=expert"><img src="assets/images/acl-header-mark.svg" alt="Alexandria Cardiology League" class="acl-command-brand-logo"><span class="acl-command-brand-name">Alexandria Cardiology League</span><span class="acl-command-brand-separator">•</span><span id="aclHeaderEdition">THE EXPERT EDITION</span></a></div>
+  <div class="acl-command-header-actions"><span id="aclHeaderUserName" class="acl-command-user-name">Member</span><a id="homeHeaderNotifications" class="acl-command-icon-btn" href="notifications.html?edition=expert" aria-label="Notifications">🔔</a><a id="homeHeaderSettings" class="acl-command-icon-btn" href="settings.html?edition=expert" aria-label="Settings">⚙</a><button id="aclHeaderLogout" class="acl-command-icon-btn" type="button" aria-label="Log out">↪</button></div>
 </header>
-<div id="aclDrawerBackdrop" class="acl-drawer-backdrop" hidden></div>
-<aside id="aclCommandDrawer" class="acl-command-drawer" aria-label="ACL navigation"></aside>
-
+<div id="aclDrawerBackdrop" class="acl-drawer-backdrop" hidden></div><aside id="aclCommandDrawer" class="acl-command-drawer" aria-label="ACL navigation"></aside>
 <main class="home-main home-main-standalone">
-  <section class="home-hero">
-    <div class="home-hero-copy"><span class="home-kicker">ALEXANDRIA CARDIOLOGY LEAGUE</span><h1>Welcome back, <span id="welcomeName">Doctor</span></h1><p>Continue your learning, monitor your progress and stay connected with the ACL community.</p><div class="home-actions"><a class="primary-home-action" href="modules.html">Continue learning</a><a href="progress.html">My progress</a><a href="challenge.html">Challenge a friend</a><a href="notifications.html">Messages</a></div></div>
-    <div class="home-hero-stats"><article><span>ACL XP</span><strong id="heroXp">—</strong></article><article><span>Questions</span><strong id="heroQuestions">—</strong></article><article><span>Accuracy</span><strong id="heroAccuracy">—</strong></article><article><span>Edition</span><strong id="heroEdition">Expert</strong></article></div>
-  </section>
-
-  <section class="home-row home-row-primary">
-    <article class="home-card continue-card"><div class="home-card-heading"><div><span>LEARNING</span><h2>Continue Learning</h2></div><a href="modules.html">All modules →</a></div><div id="continueList" class="continue-list"><div class="empty-state">Your active modules will appear here.</div></div></article>
-    <article class="home-card goal-card"><div class="home-card-heading"><div><span>THIS WEEK</span><h2>Weekly Goal</h2></div><button id="editGoal" type="button">Edit</button></div><div class="goal-layout"><div class="goal-ring"><strong id="goalPercent">0%</strong><span>complete</span></div><div class="goal-copy"><strong><span id="goalDone">0</span> / <span id="goalTarget">100</span></strong><span>questions answered</span><b id="weeklyXp">+0 XP</b><small>earned this week</small></div></div></article>
-  </section>
-
-  <section class="home-row home-row-three">
-    <article class="home-card progress-card"><div class="home-card-heading"><div><span>YOUR PERFORMANCE</span><h2>My Progress</h2></div><a href="progress.html">View full →</a></div><div class="progress-summary"><div class="progress-ring" id="masteryRing"><strong id="masteryValue">—</strong><span>accuracy</span></div><div class="progress-list"><div><span>Modules completed</span><strong id="modulesCompleted">—</strong></div><div><span>Modules in progress</span><strong id="modulesActive">—</strong></div><div><span>Questions answered</span><strong id="questionsAnswered">—</strong></div><div><span>ACL XP</span><strong id="progressXp">—</strong></div></div></div></article>
-    <article class="home-card friends-card" id="friends"><div class="home-card-heading"><div><span>COMMUNITY</span><h2>Friends</h2></div><a href="challenge.html">Manage →</a></div><div id="friendsList" class="friends-list"><div class="empty-state rich-empty"><strong>No connected friends yet</strong><span>Connect with colleagues to compare weekly progress and send challenges.</span></div></div><a class="secondary-action" href="challenge.html">Find or challenge a friend</a></article>
-    <article class="home-card announcements-card"><div class="home-card-heading"><div><span>ACL UPDATES</span><h2>Announcements</h2></div><a href="notifications.html">View all →</a></div><div id="announcementList" class="announcement-list"><div class="announcement"><i>ACL</i><div><strong>Welcome to your ACL Home</strong><span>Faculty announcements, competitions and important updates will appear here.</span></div></div></div></article>
-  </section>
-
-  <section class="home-row home-row-bottom">
-    <article class="home-card video-card"><div class="video-visual"><div><span>WELCOME TO</span><h2>Alexandria Cardiology League</h2><p>A short introduction to the platform, learning modes and competitions.</p></div><button id="introPlay" type="button" aria-label="Play introduction">▶</button></div><div class="video-footer"><strong>Introduction to ACL Platform</strong><span>For new learners and members</span></div></article>
-    <article class="home-card recommended-card"><div class="home-card-heading"><div><span>NEXT BEST ACTION</span><h2>Recommended For You</h2></div></div><div id="recommendedList" class="recommended-list"><a href="modules.html"><span>01</span><div><strong>Continue your active module</strong><small>Resume exactly where you stopped.</small></div><b>→</b></a><a href="progress.html"><span>02</span><div><strong>Review your performance</strong><small>Identify the topics that need more work.</small></div><b>→</b></a><a href="challenge.html"><span>03</span><div><strong>Challenge a colleague</strong><small>Turn revision into a head-to-head session.</small></div><b>→</b></a></div></article>
-  </section>
+<section class="home-hero"><div class="home-hero-copy"><span class="home-kicker">ALEXANDRIA CARDIOLOGY LEAGUE</span><h1>Welcome back, <span id="welcomeName">Doctor</span></h1><p>Continue your learning, monitor your progress and stay connected with the ACL community.</p><div class="home-actions"><a class="primary-home-action" href="modules.html">Continue learning</a><a href="progress.html">My progress</a><a href="challenge.html">Challenge a friend</a><a href="notifications.html">Messages</a></div></div><div class="home-hero-stats"><article><span>ACL XP</span><strong id="heroXp">—</strong></article><article><span>Questions</span><strong id="heroQuestions">—</strong></article><article><span>Accuracy</span><strong id="heroAccuracy">—</strong></article><article><span>Edition</span><strong id="heroEdition">Expert</strong></article></div></section>
+<section class="home-row home-row-primary"><article class="home-card continue-card"><div class="home-card-heading"><div><span>LEARNING</span><h2>Continue Learning</h2></div><a href="modules.html">All modules →</a></div><div id="continueList" class="continue-list"><div class="empty-state">Your active modules will appear here.</div></div></article><article class="home-card goal-card"><div class="home-card-heading"><div><span>THIS WEEK</span><h2>Weekly Goal</h2></div><button id="editGoal" type="button">Edit</button></div><div class="goal-layout"><div class="goal-ring"><strong id="goalPercent">0%</strong><span>complete</span></div><div class="goal-copy"><strong><span id="goalDone">0</span> / <span id="goalTarget">100</span></strong><span>questions answered</span><b id="weeklyXp">+0 XP</b><small>earned this week</small></div></div></article></section>
+<section class="home-row home-row-three"><article class="home-card progress-card"><div class="home-card-heading"><div><span>YOUR PERFORMANCE</span><h2>My Progress</h2></div><a href="progress.html">View full →</a></div><div class="progress-summary"><div class="progress-ring" id="masteryRing"><strong id="masteryValue">—</strong><span>accuracy</span></div><div class="progress-list"><div><span>Modules completed</span><strong id="modulesCompleted">—</strong></div><div><span>Modules in progress</span><strong id="modulesActive">—</strong></div><div><span>Questions answered</span><strong id="questionsAnswered">—</strong></div><div><span>ACL XP</span><strong id="progressXp">—</strong></div></div></div></article>
+<article class="home-card friends-card" id="friends"><div class="home-card-heading"><div><span>COMMUNITY</span><h2>Friends</h2></div><button id="findFriendsBtn" type="button">Find friends</button></div><div id="friendsList" class="friends-list"><div class="empty-state rich-empty"><strong>No connected friends yet</strong><span>Connect with colleagues to compare weekly progress and send challenges.</span></div></div><button id="findFriendsBtnBottom" class="secondary-action" type="button" onclick="document.getElementById('findFriendsBtn').click()">Find or add a friend</button></article>
+<article class="home-card announcements-card"><div class="home-card-heading"><div><span>ACL UPDATES</span><h2>Announcements</h2></div><div><button id="adminAnnouncementBtn" class="admin-post-btn" type="button" hidden>Post update</button><a href="notifications.html">View all →</a></div></div><div id="announcementList" class="announcement-list"><div class="empty-state">Loading announcements…</div></div></article></section>
+<section class="home-row home-row-bottom"><article class="home-card video-card" id="introVideoCard"><div class="video-visual" id="introVideoVisual"><div><span>WELCOME TO</span><h2>Alexandria Cardiology League</h2><p id="introVideoDescription">A short introduction to the platform, learning modes and competitions.</p></div><button id="introPlay" type="button" aria-label="Play introduction">▶</button></div><div class="video-footer"><strong id="introVideoTitle">Introduction to ACL Platform</strong><span>For new learners and members</span></div></article><article class="home-card recommended-card"><div class="home-card-heading"><div><span>NEXT BEST ACTION</span><h2>Recommended For You</h2></div></div><div id="recommendedList" class="recommended-list"><div class="empty-state">Building recommendations from your progress…</div></div></article></section>
 </main>
-<script type="module" src="assets/js/acl-universal-drawer-20260820.js?v=4"></script>
-<script type="module" src="assets/js/home-dashboard-20260820.js?v=5"></script>
+<div id="friendFinder" class="home-friend-modal" hidden><div class="home-friend-dialog" role="dialog" aria-modal="true" aria-labelledby="friendFinderTitle"><div class="home-friend-dialog-head"><h3 id="friendFinderTitle">Find ACL friends</h3><button id="friendFinderClose" type="button" aria-label="Close">×</button></div><input id="friendSearchInput" class="friend-search-input" type="search" placeholder="Search by name or username…" autocomplete="off"><div id="friendSearchResults"></div></div></div>
+<script type="module" src="assets/js/acl-universal-drawer-20260820.js?v=5"></script><script type="module" src="assets/js/home-dashboard-20260820.js?v=5"></script><script type="module" src="assets/js/home-community-20260820.js?v=1"></script>
 </body></html>
