@@ -6,6 +6,7 @@ const nested = location.pathname.includes("/modules/");
 const root = nested ? "../../" : "";
 const pageName = location.pathname.split("/").pop()?.toLowerCase() || "";
 const shellExcludedPages = new Set([
+  "home.html",
   "modules.html",
   "login.html",
   "forgot-password.html",
@@ -17,18 +18,18 @@ const shellExcludedPages = new Set([
   "competition-dashboard.html"
 ]);
 
-if (!document.querySelector('link[data-acl-page-polish]')) {
+if (pageName !== "home.html" && !document.querySelector('link[data-acl-page-polish]')) {
   const polish = document.createElement('link');
   polish.rel = 'stylesheet';
   polish.dataset.aclPagePolish = 'true';
   polish.href = root + 'assets/css/page-polish-20260820.css?v=2';
   document.head.appendChild(polish);
 }
-if (!document.querySelector('link[data-acl-universal-drawer]')) {
+if (pageName !== "home.html" && !document.querySelector('link[data-acl-universal-drawer]')) {
   const drawerCss = document.createElement('link');
   drawerCss.rel = 'stylesheet';
   drawerCss.dataset.aclUniversalDrawer = 'true';
-  drawerCss.href = root + 'assets/css/acl-universal-drawer-20260820.css?v=4';
+  drawerCss.href = root + 'assets/css/acl-universal-drawer-20260820.css?v=5';
   document.head.appendChild(drawerCss);
 }
 
