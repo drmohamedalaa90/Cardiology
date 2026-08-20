@@ -1,6 +1,6 @@
 import { supabaseClient } from './supabase-client.js';
 
-const DRAWER_VERSION = '6';
+const DRAWER_VERSION = '7';
 const OLD_BRAND='Alexandria Cardiology League';
 const OLD_BRAND_UPPER='ALEXANDRIA CARDIOLOGY LEAGUE';
 function brandText(value=''){return String(value).replaceAll(OLD_BRAND_UPPER,'CARDIOLOGY LEAGUE').replaceAll(OLD_BRAND,'Cardiology League')}
@@ -25,6 +25,31 @@ const page = location.pathname.split('/').pop()?.toLowerCase() || 'home.html';
 const nested = location.pathname.includes('/modules/');
 const root = nested ? '../../' : '';
 const url = (name) => `${root}${name}?edition=${edition}`;
+
+function ensureChrome(){
+  if(page==='challenge.html'){
+    document.querySelectorAll('body > header.topbar').forEach(el=>el.remove());
+    let header=document.querySelector('body > .acl-command-header');
+    if(!header){
+      header=document.createElement('header');
+      header.className='acl-command-header';
+      header.innerHTML=`<div class="acl-command-header-left"><button id="aclDrawerToggle" class="acl-command-menu" type="button" aria-label="Open navigation" aria-controls="aclCommandDrawer" aria-expanded="false"><span></span><span></span><span></span></button><a class="acl-command-brand" href="${url('home.html')}"><img src="${root}assets/images/acl-header-mark.svg" alt="Cardiology League" class="acl-command-brand-logo"><span class="acl-command-brand-name">Cardiology League</span><span class="acl-command-brand-separator">•</span><strong id="aclHeaderEdition">${edition==='basic'?'THE BASIC EDITION':'THE EXPERT EDITION'}</strong></a></div><div class="acl-command-header-actions"><span id="aclHeaderUserName" class="acl-command-user-name">Member</span><a class="acl-command-icon-btn" href="${url('notifications.html')}" aria-label="Notifications">🔔</a><a class="acl-command-icon-btn" href="${url('settings.html')}" aria-label="Settings">⚙</a><button id="aclHeaderLogout" class="acl-command-icon-btn" type="button" aria-label="Log out">↪</button></div>`;
+      document.body.insertBefore(header,document.body.firstChild);
+    }
+    if(!document.getElementById('aclDrawerBackdrop')){const b=document.createElement('div');b.id='aclDrawerBackdrop';b.className='acl-drawer-backdrop';b.hidden=true;header.after(b)}
+    if(!document.getElementById('aclCommandDrawer')){const d=document.createElement('aside');d.id='aclCommandDrawer';d.className='acl-command-drawer';d.setAttribute('aria-label','ACL navigation');document.getElementById('aclDrawerBackdrop').after(d)}
+    if(!document.querySelector('.acl-mobile-bottom-nav')){const nav=document.createElement('nav');nav.className='acl-mobile-bottom-nav';nav.setAttribute('aria-label','Mobile navigation');nav.innerHTML=`<a href="${url('home.html')}"><span>⌂</span><small>Home</small></a><button id="aclMobileModulesButton" type="button"><span>▦</span><small>Menu</small></button><a href="${url('progress.html')}"><span>▤</span><small>Progress</small></a><a href="${url('profile.html')}"><span>♙</span><small>Profile</small></a>`;document.body.appendChild(nav)}
+    document.body.classList.add('acl-command-body','acl-shared-page');
+    const main=document.querySelector('body > main.challenge-shell');if(main)main.classList.add('acl-command-main','acl-shared-main');
+    document.body.style.paddingTop='0';
+    const back=document.querySelector('.challenge-back-link');if(back)back.style.display='none';
+  }
+  if(page==='home.html'){
+    const header=document.querySelector('body > .acl-command-header');
+    if(header){header.classList.remove('home-app-header');const editionEl=header.querySelector('#aclHeaderEdition');if(editionEl)editionEl.textContent=edition==='basic'?'THE BASIC EDITION':'THE EXPERT EDITION';const brand=header.querySelector('.acl-command-brand');if(brand)brand.href=url('home.html')}
+    document.body.classList.add('acl-command-body');
+  }
+}
 
 function icon(name) {
   const icons = {home:'⌂',modules:'▦',progress:'◔',study:'◇',challenge:'♙',competitions:'♛',friends:'♧',notifications:'✉',settings:'⚙'};
@@ -62,18 +87,18 @@ function closeDrawer(){const backdrop=document.getElementById('aclDrawerBackdrop
 
 function bindControls(){
   const toggle=document.getElementById('aclDrawerToggle');
-  if(toggle && toggle.dataset.drawerV6!=='1'){
-    toggle.dataset.drawerV6='1';
+  if(toggle && toggle.dataset.drawerV7!=='1'){
+    toggle.dataset.drawerV7='1';
     toggle.addEventListener('click',(event)=>{if(!isMobile())return;event.preventDefault();event.stopPropagation();document.body.classList.contains('drawer-open')?closeDrawer():openDrawer()});
   }
   const mobileButton=document.getElementById('aclMobileModulesButton');
-  if(mobileButton && mobileButton.dataset.drawerV6!=='1'){
-    mobileButton.dataset.drawerV6='1';
+  if(mobileButton && mobileButton.dataset.drawerV7!=='1'){
+    mobileButton.dataset.drawerV7='1';
     mobileButton.addEventListener('click',(event)=>{event.preventDefault();openDrawer()});
   }
   const backdrop=document.getElementById('aclDrawerBackdrop');
-  if(backdrop && backdrop.dataset.drawerV6!=='1'){
-    backdrop.dataset.drawerV6='1';
+  if(backdrop && backdrop.dataset.drawerV7!=='1'){
+    backdrop.dataset.drawerV7='1';
     backdrop.addEventListener('click',(event)=>{event.preventDefault();closeDrawer()});
   }
 }
@@ -92,7 +117,7 @@ async function streakFromCloud(){
     if(!session?.user)return null;
     const {data,error}=await supabaseClient.from('quiz_attempts').select('completed_at,updated_at,status').eq('user_id',session.user.id).eq('status','completed').order('completed_at',{ascending:false}).limit(90);
     if(error||!Array.isArray(data)||!data.length)return null;
-    const days=[...new Set(data.map(r=>{const d=new Date(r.completed_at||r.updated_at||0);return Number.isNaN(d.getTime())?null:d.toISOString().slice(0,10)}).filter(Boolean))].sort().reverse();
+    const days=[...new Set(data.map(r=>{const d=new Date(r.completed_at||r.updated_at||0);return Number.isNaN(d.getTime())?null:d.toISOString().slice(0,10)}.filter(Boolean))].sort().reverse();
     if(!days.length)return 0;
     let count=1;for(let i=1;i<days.length;i++){if(Math.round((new Date(days[i-1])-new Date(days[i]))/86400000)===1)count++;else break}return count;
   }catch{return null}
@@ -105,17 +130,23 @@ async function fillStreak(){
 }
 
 async function logout(){try{await supabaseClient.auth.signOut()}catch(error){console.warn(error)}location.replace(root+'login.html')}
-function ensureLogout(){const btn=document.getElementById('aclHeaderLogout');if(btn&&btn.dataset.universalLogout!=='6'){btn.dataset.universalLogout='6';btn.setAttribute('aria-label','Log out');btn.title='Log out';btn.addEventListener('click',(event)=>{event.preventDefault();logout()})}}
+function ensureLogout(){const btn=document.getElementById('aclHeaderLogout');if(btn&&btn.dataset.universalLogout!=='7'){btn.dataset.universalLogout='7';btn.setAttribute('aria-label','Log out');btn.title='Log out';btn.addEventListener('click',(event)=>{event.preventDefault();logout()})}}
+
+async function fillHeaderUser(){
+  try{const {data:{session}}=await supabaseClient.auth.getSession();if(!session?.user)return;const {data}=await supabaseClient.from('profiles').select('display_name,full_name,name,username').eq('id',session.user.id).maybeSingle();const name=data?.display_name||data?.full_name||data?.name||data?.username||session.user.user_metadata?.display_name||session.user.user_metadata?.full_name||session.user.email?.split('@')[0]||'Member';const el=document.getElementById('aclHeaderUserName');if(el)el.textContent=name}catch{}
+}
 
 let initialized=false;
 function initialize(){
   if(initialized)return;
   initialized=true;
+  ensureChrome();
   applyBrand(document);
   renderDrawer();
   bindControls();
   ensureLogout();
   fixBottomNav();
+  fillHeaderUser();
   if(document.getElementById('aclUniversalStreak'))fillStreak();
 }
 
