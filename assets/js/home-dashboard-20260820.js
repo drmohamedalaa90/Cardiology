@@ -18,13 +18,20 @@ function renderContinue(rows){const host=$('#continueList');if(!host)return;let 
 function renderFriends(){let stored=[];try{stored=JSON.parse(localStorage.getItem('acl_friends')||'[]')}catch{}if(!Array.isArray(stored)||!stored.length)return;const f=$('#friendsList');if(f)f.innerHTML=stored.slice(0,4).map((x,i)=>`<div class="friend"><i>${i+1}</i><b>${esc(x.name||'Friend')}</b><small>${num(x.xp).toLocaleString()} XP</small></div>`).join('')}
 function displayName(profile,user){return profile?.display_name||profile?.full_name||profile?.name||user?.user_metadata?.display_name||user?.user_metadata?.full_name||user?.user_metadata?.name||user?.email?.split('@')[0]||'Doctor'}
 function set(sel,value){const el=$(sel);if(el)el.textContent=value}
+function wireHeader(name){
+  set('#aclHeaderUserName',name);
+  set('#aclHeaderEdition',edition==='basic'?'THE BASIC EDITION':'THE EXPERT EDITION');
+  const brand=$('#homeHeaderBrand');if(brand)brand.href=`modules.html?edition=${edition}`;
+  const notifications=$('#homeHeaderNotifications');if(notifications)notifications.href=`notifications.html?edition=${edition}`;
+  const settings=$('#homeHeaderSettings');if(settings)settings.href=`settings.html?edition=${edition}`;
+}
 
 async function init(){
   const {data:{session}}=await supabaseClient.auth.getSession();
   if(!session?.user){location.replace('login.html');return}
   let profile=null;try{const r=await supabaseClient.from('profiles').select('*').eq('id',session.user.id).maybeSingle();profile=r.data}catch{}
   const name=displayName(profile,session.user);
-  set('#welcomeName',name);set('#heroEdition',edition==='basic'?'Basic':'Expert');
+  set('#welcomeName',name);set('#heroEdition',edition==='basic'?'Basic':'Expert');wireHeader(name);
 
   const attempts=await listAttempts({edition,includeUnmatched:true});
   const completed=attempts.filter(a=>a?.status==='completed');
