@@ -1,0 +1,16 @@
+name: ACL Preflight
+on:
+  push:
+    branches: [v2-development]
+  pull_request:
+    branches: [v2-development]
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run ACL preflight
+        run: node scripts/acl-preflight.mjs
