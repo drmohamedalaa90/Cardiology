@@ -18,6 +18,53 @@ const shellExcludedPages = new Set([
   "competition-dashboard.html"
 ]);
 
+/* Permanent product rename: Alexandria Cardiology League -> Cardiology League */
+const OLD_BRAND = "Alexandria Cardiology League";
+const OLD_BRAND_UPPER = "ALEXANDRIA CARDIOLOGY LEAGUE";
+const NEW_BRAND = "Cardiology League";
+const NEW_BRAND_UPPER = "CARDIOLOGY LEAGUE";
+function renameBrandText(value) {
+  return String(value || "")
+    .replaceAll(OLD_BRAND_UPPER, NEW_BRAND_UPPER)
+    .replaceAll(OLD_BRAND, NEW_BRAND);
+}
+function applyBrandRename(scope = document) {
+  if (document.title) document.title = renameBrandText(document.title);
+  const rootNode = scope?.nodeType ? scope : document;
+  if (rootNode.nodeType === Node.TEXT_NODE) {
+    const next = renameBrandText(rootNode.nodeValue);
+    if (next !== rootNode.nodeValue) rootNode.nodeValue = next;
+    return;
+  }
+  if (rootNode.nodeType !== Node.ELEMENT_NODE && rootNode !== document) return;
+  const walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode())) {
+    const next = renameBrandText(node.nodeValue);
+    if (next !== node.nodeValue) node.nodeValue = next;
+  }
+  const elements = rootNode === document ? document.querySelectorAll("*") : [rootNode, ...rootNode.querySelectorAll("*")];
+  for (const el of elements) {
+    for (const attr of ["aria-label", "alt", "title", "placeholder"]) {
+      if (!el.hasAttribute?.(attr)) continue;
+      const current = el.getAttribute(attr);
+      const next = renameBrandText(current);
+      if (next !== current) el.setAttribute(attr, next);
+    }
+  }
+}
+applyBrandRename(document);
+const brandObserver = new MutationObserver((mutations) => {
+  for (const mutation of mutations) {
+    if (mutation.type === "characterData") applyBrandRename(mutation.target);
+    for (const node of mutation.addedNodes || []) applyBrandRename(node);
+  }
+  if (document.title) document.title = renameBrandText(document.title);
+});
+brandObserver.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+document.addEventListener("DOMContentLoaded", () => applyBrandRename(document), { once: true });
+window.addEventListener("load", () => applyBrandRename(document), { once: true });
+
 if (pageName !== "home.html" && !document.querySelector('link[data-acl-page-polish]')) {
   const polish = document.createElement('link');
   polish.rel = 'stylesheet';
@@ -170,6 +217,7 @@ export async function protectAndRender(relativeLogin = "login.html") {
   window.aclCurrentProfile = profile;
   renderUserChip(profile);
   renderAdminLink(profile);
+  applyBrandRename(document);
   return profile;
 }
 
