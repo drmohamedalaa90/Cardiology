@@ -9,55 +9,63 @@ const edition = (() => {
 const page = location.pathname.split('/').pop()?.toLowerCase() || 'home.html';
 const nested = location.pathname.includes('/modules/');
 const root = nested ? '../../' : '';
-const url = (name) => `${root}${name}?edition=${edition}`;
+const url = (name, hash='') => `${root}${name}?edition=${edition}${hash}`;
+
+const NAV = [
+  ['home','Home',url('home.html'),['home.html']],
+  ['modules','Modules',url('modules.html'),['modules.html']],
+  ['progress','My Progress',url('progress.html'),['progress.html']],
+  ['study','Mind Maps & Flashcards',url('study.html'),['study.html']],
+  ['challenge','Challenges',url('challenge.html'),['challenge.html']],
+  ['competitions','Competitions',url('competitions.html'),['competitions.html','competition-dashboard.html']],
+  ['friends','Friends',url('challenge.html','#friends'),['friends.html']],
+  ['notifications','Messages & Notifications',url('notifications.html'),['notifications.html']],
+  ['settings','Settings',url('settings.html'),['settings.html']]
+];
 
 function icon(name) {
-  const icons = {
-    home:'⌂', modules:'▦', progress:'◔', study:'◇', challenge:'♙', competitions:'♛', friends:'♧', notifications:'✉', settings:'⚙'
-  };
-  return icons[name] || '•';
+  return ({home:'⌂',modules:'▦',progress:'◔',study:'◇',challenge:'♙',competitions:'♛',friends:'♧',notifications:'✉',settings:'⚙'})[name] || '•';
 }
 
-function item(key, label, href, matches = []) {
-  const active = matches.includes(page) ? ' is-active' : '';
-  return `<a class="acl-universal-link${active}" href="${href}"><span class="acl-universal-icon">${icon(key)}</span><span>${label}</span></a>`;
+function navMarkup(){
+  return NAV.map(([key,label,href,matches])=>{
+    const active = matches.includes(page) ? ' is-active' : '';
+    return `<a class="acl-universal-link${active}" href="${href}"><span class="acl-universal-icon">${icon(key)}</span><span>${label}</span></a>`;
+  }).join('');
+}
+
+function drawerMarkup(){
+  return `<div class="acl-universal-scroll">
+    <nav class="acl-universal-nav" aria-label="Main navigation">${navMarkup()}</nav>
+    <section class="acl-universal-streak" aria-label="Daily streak">
+      <small>DAILY STREAK</small>
+      <div class="acl-universal-streak-value"><strong data-acl-streak-value>—</strong><span>days</span></div>
+      <div class="acl-universal-streak-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i class="open"></i></div>
+    </section>
+  </div>`;
+}
+
+function allDrawerHosts(){
+  return [...document.querySelectorAll('#aclCommandDrawer, aside.home-nav')];
 }
 
 function renderDrawer() {
-  const drawer = document.getElementById('aclCommandDrawer');
-  if (!drawer || drawer.dataset.universal === '1') return false;
-  drawer.dataset.universal = '1';
-  drawer.classList.add('acl-universal-drawer');
-
-  drawer.innerHTML = `
-    <div class="acl-universal-scroll">
-      <nav class="acl-universal-nav" aria-label="Main navigation">
-        ${item('home','Home',url('home.html'),['home.html'])}
-        ${item('modules','Modules',url('modules.html'),['modules.html'])}
-        ${item('progress','My Progress',url('progress.html'),['progress.html'])}
-        ${item('study','Mind Maps & Flashcards',url('study.html'),['study.html'])}
-        ${item('challenge','Challenges',url('challenge.html'),['challenge.html'])}
-        ${item('competitions','Competitions',url('competitions.html'),['competitions.html','competition-dashboard.html'])}
-        ${item('friends','Friends',url('challenge.html#friends'),['friends.html'])}
-        ${item('notifications','Messages & Notifications',url('notifications.html'),['notifications.html'])}
-        ${item('settings','Settings',url('settings.html'),['settings.html'])}
-      </nav>
-      <section class="acl-universal-streak" aria-label="Daily streak">
-        <small>DAILY STREAK</small>
-        <div><strong id="aclUniversalStreak">—</strong><span>days</span></div>
-        <div class="acl-universal-streak-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i class="open"></i></div>
-      </section>
-    </div>`;
-
-  return true;
+  let changed = false;
+  allDrawerHosts().forEach(drawer => {
+    if (drawer.dataset.universalVersion === '2') return;
+    drawer.dataset.universalVersion = '2';
+    drawer.classList.add('acl-universal-drawer');
+    drawer.innerHTML = drawerMarkup();
+    changed = true;
+  });
+  return changed;
 }
 
 async function streakFromCloud() {
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session?.user) return null;
-    const { data, error } = await supabaseClient
-      .from('quiz_attempts')
+    const { data, error } = await supabaseClient.from('quiz_attempts')
       .select('completed_at,updated_at,status')
       .eq('user_id', session.user.id)
       .eq('status','completed')
@@ -86,12 +94,18 @@ async function fillStreak() {
   } catch {}
   const cloud = await streakFromCloud();
   if (cloud !== null) value = cloud;
-  const el = document.getElementById('aclUniversalStreak');
-  if (el) el.textContent = value === null ? '—' : String(value);
+  document.querySelectorAll('[data-acl-streak-value]').forEach(el => {
+    el.textContent = value === null ? '—' : String(value);
+  });
 }
 
+let streakLoaded = false;
 function apply() {
-  if (renderDrawer()) fillStreak();
+  const changed = renderDrawer();
+  if ((changed || !streakLoaded) && allDrawerHosts().length) {
+    streakLoaded = true;
+    fillStreak();
+  }
 }
 
 apply();
