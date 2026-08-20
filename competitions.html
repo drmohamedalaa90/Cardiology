@@ -1,21 +1,1079 @@
 <!doctype html>
+
 <html lang="en">
+
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#061c3d">
-<title>Formal Competitions | Alexandria Cardiology League</title>
-<link rel="stylesheet" href="assets/css/main.css?v=5.0.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-.comp-hero{padding:22px;margin-bottom:14px;border-radius:15px;background:linear-gradient(125deg,#061c3d,#0d4f91);color:#fff}.comp-kicker{font-size:10px;font-weight:900;letter-spacing:.12em;color:#f5c451}.comp-hero h1{margin:5px 0;font-size:27px;color:#fff}.comp-hero p{margin:0;color:rgba(255,255,255,.78);font-size:12px}.comp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.comp-card{padding:18px;border:1px solid #e2e8ef;border-radius:13px;background:#fff}.comp-card span{display:inline-block;margin-bottom:9px;padding:4px 7px;border-radius:999px;background:#eef4fb;color:#486784;font-size:9px;font-weight:900}.comp-card h2{margin:0 0 5px;font-size:16px}.comp-card p{margin:0;color:#77879a;font-size:11px;line-height:1.5}.comp-card a{display:inline-flex;margin-top:13px;color:#176fd1;font-size:11px;font-weight:850;text-decoration:none}@media(max-width:820px){.comp-grid{grid-template-columns:1fr}.comp-hero{padding:16px}.comp-hero h1{font-size:22px}.comp-card{padding:15px}}
-</style>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    id="competitionsThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <title>
+    ACL Competitions
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/auth.css?v=2.2"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const requestedEdition =
+        String(
+          parameters.get("edition") || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const edition =
+        requestedEdition === "basic" ||
+        requestedEdition === "expert"
+          ? requestedEdition
+          : storedEdition === "basic" ||
+            storedEdition === "expert"
+            ? storedEdition
+            : "expert";
+
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+
+      document.documentElement.classList.add(
+        edition === "basic"
+          ? "acl-competitions-basic"
+          : "acl-competitions-expert"
+      );
+
+
+      if (!parameters.get("edition")) {
+        const currentUrl =
+          new URL(
+            window.location.href
+          );
+
+
+        currentUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+
+        window.history.replaceState(
+          {},
+          "",
+          currentUrl
+        );
+      }
+    })();
+  </script>
+
+
+  <style>
+    :root {
+      --competitions-primary: #123f72;
+      --competitions-secondary: #176aa1;
+      --competitions-soft: #eaf5ff;
+      --competitions-soft-2: #f7fbff;
+      --competitions-accent: #ffc928;
+      --competitions-success: #168067;
+      --competitions-danger: #b33443;
+      --competitions-warning: #b97a00;
+      --competitions-text: #17324d;
+      --competitions-muted: #687d90;
+      --competitions-border: #d9e6f2;
+      --competitions-shadow:
+        0 18px 45px
+        rgba(18, 63, 114, 0.12);
+    }
+
+
+    html.acl-competitions-basic {
+      --competitions-primary: #105541;
+      --competitions-secondary: #168067;
+      --competitions-soft: #eaf8f2;
+      --competitions-soft-2: #f8fcfa;
+      --competitions-text: #173e34;
+      --competitions-shadow:
+        0 18px 45px
+        rgba(16, 85, 65, 0.12);
+    }
+
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
+    body {
+      margin: 0;
+      padding-top: 92px;
+
+      color:
+        var(--competitions-text);
+
+      background:
+        radial-gradient(
+          circle at 10% 6%,
+          rgba(255, 201, 40, 0.14),
+          transparent 24rem
+        ),
+        radial-gradient(
+          circle at 92% 8%,
+          color-mix(
+            in srgb,
+            var(--competitions-secondary) 12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--competitions-soft)
+        );
+    }
+
+
+    button,
+    select {
+      font: inherit;
+    }
+
+
+    .topbar.acl-header-pending {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+
+    .topbar.acl-unified-header {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+
+    .competitions-shell {
+      width:
+        min(
+          1240px,
+          calc(100% - 28px)
+        );
+
+      margin: 0 auto;
+      padding: 30px 0 60px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .competitions-hero {
+      position: relative;
+      overflow: hidden;
+
+      padding:
+        clamp(
+          28px,
+          5vw,
+          48px
+        );
+
+      border-radius: 28px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          125deg,
+          var(--competitions-primary),
+          var(--competitions-secondary)
+        );
+
+      box-shadow:
+        var(--competitions-shadow);
+    }
+
+
+    .competitions-hero::after {
+      content: "🏆";
+
+      position: absolute;
+      top: 50%;
+      right: 4%;
+
+      transform:
+        translateY(-50%)
+        rotate(-8deg);
+
+      opacity: 0.1;
+
+      font-size:
+        clamp(
+          120px,
+          20vw,
+          230px
+        );
+
+      pointer-events: none;
+    }
+
+
+    .competitions-hero-content {
+      position: relative;
+      z-index: 1;
+
+      max-width: 800px;
+    }
+
+
+    .competitions-hero-top {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+
+    .competitions-kicker,
+    .competitions-edition-badge {
+      display: inline-flex;
+      align-items: center;
+
+      min-height: 31px;
+      padding: 7px 12px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.3);
+
+      border-radius: 999px;
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.12);
+
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+
+    .competitions-edition-badge {
+      background:
+        rgba(255, 255, 255, 0.21);
+    }
+
+
+    .competitions-hero h1 {
+      margin: 15px 0 10px;
+
+      color: #ffffff;
+
+      font-size:
+        clamp(
+          2.3rem,
+          6vw,
+          4.2rem
+        );
+
+      line-height: 1;
+    }
+
+
+    .competitions-hero p {
+      margin: 0;
+
+      color:
+        rgba(255, 255, 255, 0.88);
+
+      font-size:
+        clamp(
+          0.98rem,
+          2vw,
+          1.08rem
+        );
+
+      line-height: 1.65;
+    }
+
+
+    .competitions-hero-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
+
+      margin-top: 20px;
+    }
+
+
+    .competitions-hero-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 42px;
+      padding: 9px 14px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.34);
+
+      border-radius: 11px;
+
+      color: #ffffff;
+
+      background:
+        rgba(255, 255, 255, 0.13);
+
+      font-size: 0.82rem;
+      font-weight: 850;
+      text-decoration: none;
+    }
+
+
+    /* =====================================================
+       TOOLBAR
+    ===================================================== */
+
+    .competitions-toolbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+
+      margin-top: 18px;
+      padding: 17px;
+
+      border:
+        1px solid
+        var(--competitions-border);
+
+      border-radius: 19px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 30px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .competitions-filter-group {
+      display: flex;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 11px;
+    }
+
+
+    .competitions-field {
+      display: grid;
+      gap: 6px;
+    }
+
+
+    .competitions-field label {
+      color:
+        var(--competitions-muted);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+
+    .competitions-field select {
+      min-width: 180px;
+      min-height: 43px;
+      padding: 10px 12px;
+
+      border:
+        1px solid
+        var(--competitions-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--competitions-text);
+
+      background: #ffffff;
+      outline: none;
+    }
+
+
+    .competitions-refresh-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 43px;
+      padding: 9px 15px;
+
+      border:
+        1px solid
+        var(--competitions-border);
+
+      border-radius: 11px;
+
+      color:
+        var(--competitions-primary);
+
+      background: #ffffff;
+
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+
+    .competitions-refresh-button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    .status-box {
+      margin-top: 15px;
+      padding: 14px 16px;
+
+      border:
+        1px solid
+        var(--competitions-border);
+
+      border-radius: 13px;
+
+      color:
+        var(--competitions-muted);
+
+      background: #ffffff;
+
+      font-weight: 750;
+    }
+
+
+    .status-box.error {
+      border-color: #f0c6cc;
+
+      color:
+        var(--competitions-danger);
+
+      background: #fff5f6;
+    }
+
+
+    .status-box.success {
+      border-color: #bfe7d6;
+
+      color:
+        var(--competitions-success);
+
+      background: #f2fbf7;
+    }
+
+
+    /* =====================================================
+       COMPETITION CARDS
+    ===================================================== */
+
+    .competition-list {
+      display: grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+
+    .competition-card {
+      position: relative;
+      overflow: hidden;
+
+      display: flex;
+      flex-direction: column;
+
+      min-height: 330px;
+      padding: 21px;
+
+      border:
+        1px solid
+        var(--competitions-border);
+
+      border-radius: 21px;
+
+      background:
+        rgba(255, 255, 255, 0.98);
+
+      box-shadow:
+        0 12px 32px
+        rgba(18, 63, 114, 0.07);
+    }
+
+
+    .competition-card::after {
+      content: "";
+
+      position: absolute;
+      right: -45px;
+      bottom: -55px;
+
+      width: 160px;
+      height: 160px;
+
+      border-radius: 50%;
+
+      background:
+        color-mix(
+          in srgb,
+          var(--competitions-secondary) 8%,
+          transparent
+        );
+    }
+
+
+    .competition-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+
+    .competition-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+
+      min-height: 28px;
+      padding: 5px 10px;
+
+      border-radius: 999px;
+
+      font-size: 0.68rem;
+      font-weight: 950;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+
+    .status-pill.live {
+      color: #ffffff;
+      background:
+        var(--competitions-success);
+    }
+
+
+    .status-pill.upcoming {
+      color:
+        #8a5a00;
+
+      background:
+        #fff1c6;
+    }
+
+
+    .status-pill.closed {
+      color:
+        var(--competitions-primary);
+
+      background:
+        var(--competitions-soft);
+    }
+
+
+    .competition-module-badge {
+      color:
+        var(--competitions-muted);
+
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+
+    .competition-card h2 {
+      margin: 17px 0 8px;
+
+      color:
+        var(--competitions-primary);
+
+      font-size: 1.28rem;
+      line-height: 1.25;
+    }
+
+
+    .competition-card-description {
+      margin: 0;
+
+      color:
+        var(--competitions-muted);
+
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+
+
+    .competition-meta {
+      display: grid;
+      gap: 8px;
+
+      margin-top: 18px;
+      padding: 13px;
+
+      border:
+        1px solid
+        var(--competitions-border);
+
+      border-radius: 13px;
+
+      background:
+        var(--competitions-soft-2);
+    }
+
+
+    .competition-meta span {
+      color:
+        var(--competitions-muted);
+
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+
+
+    .competition-meta strong {
+      color:
+        var(--competitions-text);
+    }
+
+
+    .competition-countdown {
+      margin-top: 14px;
+
+      color:
+        var(--competitions-secondary);
+
+      font-size: 0.8rem;
+      font-weight: 900;
+    }
+
+
+    .competition-card-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      margin-top: auto;
+      padding-top: 18px;
+    }
+
+
+    .competition-primary-link,
+    .competition-secondary-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 42px;
+      padding: 9px 13px;
+
+      border-radius: 11px;
+
+      font-size: 0.8rem;
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+
+    .competition-primary-link {
+      flex: 1;
+
+      border: 0;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--competitions-primary),
+          var(--competitions-secondary)
+        );
+    }
+
+
+    .competition-secondary-link {
+      border:
+        1px solid
+        var(--competitions-border);
+
+      color:
+        var(--competitions-primary);
+
+      background: #ffffff;
+    }
+
+
+    .competition-empty {
+      grid-column: 1 / -1;
+
+      padding: 52px 20px;
+
+      border:
+        1px dashed
+        var(--competitions-border);
+
+      border-radius: 20px;
+
+      color:
+        var(--competitions-muted);
+
+      background:
+        rgba(255, 255, 255, 0.9);
+
+      text-align: center;
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
+
+    @media (max-width: 1000px) {
+      .competition-list {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+    }
+
+
+    @media (max-width: 760px) {
+      body {
+        padding-top: 82px;
+      }
+
+
+      .competitions-shell {
+        width:
+          min(
+            calc(100% - 18px),
+            1240px
+          );
+
+        padding-top: 18px;
+      }
+
+
+      .competitions-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+
+      .competitions-filter-group {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .competitions-field select,
+      .competitions-refresh-button {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+
+
+    @media (max-width: 560px) {
+      .competition-list {
+        grid-template-columns: 1fr;
+      }
+
+
+      .competitions-hero-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+
+      .competitions-hero-link {
+        width: 100%;
+      }
+    }
+  </style>
+
 </head>
+
+
 <body>
-<main>
-<section class="comp-hero"><span class="comp-kicker">OFFICIAL ACL COMPETITION</span><h1>Formal ACL Competitions</h1><p>The formal competition area is separated from routine learning and friend challenges so official events remain clear and easy to find.</p></section>
-<section class="comp-grid">
-<article class="comp-card"><span>OFFICIAL EVENTS</span><h2>Competition lobby</h2><p>When an ACL competition is opened, its entry point and status will appear here.</p><a href="modules.html?edition=expert">Prepare with Expert modules →</a></article>
-<article class="comp-card"><span>PRACTICE</span><h2>Build readiness</h2><p>Use Learning Mode and module quizzes before entering a formal timed competition.</p><a href="progress.html?edition=expert">Review performance →</a></article>
-<article class="comp-card"><span>HEAD-TO-HEAD</span><h2>Challenge colleagues</h2><p>For informal competition, use the friend challenge system instead of the formal event lobby.</p><a href="challenge.html?edition=expert">Open challenges →</a></article>
-</section>
-</main>
-<script type="module" src="assets/js/acl-shared-shell.js?v=2.0.0"></script>
-</body></html>
+
+  <header class="topbar acl-header-pending">
+
+    <a
+      class="brand brand-link"
+      href="pathways.html"
+      aria-label="Alexandria Cardiology League"
+    >
+      Alexandria Cardiology League
+    </a>
+
+
+    <nav aria-label="Main navigation">
+
+      <a
+        id="userChip"
+        class="user-chip"
+        href="profile.html"
+        aria-label="Open profile"
+      ></a>
+
+    </nav>
+
+  </header>
+
+
+  <main class="competitions-shell">
+
+    <section class="competitions-hero">
+
+      <div class="competitions-hero-content">
+
+        <div class="competitions-hero-top">
+
+          <span class="competitions-kicker">
+            OFFICIAL ACL ROUNDS
+          </span>
+
+
+          <span
+            id="competitionsEditionBadge"
+            class="competitions-edition-badge"
+          >
+            EDITION
+          </span>
+
+        </div>
+
+
+        <h1>
+          Competitions
+        </h1>
+
+
+        <p>
+          Explore upcoming, live, and completed official ACL rounds.
+          Join active competitions and review final leaderboards.
+        </p>
+
+
+        <div class="competitions-hero-actions">
+
+          <a
+            id="competitionsModulesLink"
+            class="competitions-hero-link"
+            href="modules.html"
+          >
+            View modules
+          </a>
+
+
+          <a
+            id="competitionsProgressLink"
+            class="competitions-hero-link"
+            href="progress.html"
+          >
+            My progress
+          </a>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section
+      class="competitions-toolbar"
+      aria-label="Competition filters"
+    >
+
+      <div class="competitions-filter-group">
+
+        <div class="competitions-field">
+
+          <label for="competitionStateFilter">
+            Competition state
+          </label>
+
+          <select id="competitionStateFilter">
+
+            <option value="all">
+              All competitions
+            </option>
+
+            <option value="live">
+              Live
+            </option>
+
+            <option value="upcoming">
+              Upcoming
+            </option>
+
+            <option value="closed">
+              Completed
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="competitions-field">
+
+          <label for="competitionModuleFilter">
+            Module
+          </label>
+
+          <select id="competitionModuleFilter">
+
+            <option value="all">
+              All modules
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <button
+        id="refreshCompetitions"
+        class="competitions-refresh-button"
+        type="button"
+      >
+        Refresh
+      </button>
+
+    </section>
+
+
+    <div
+      id="status"
+      class="status-box"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+
+    <section
+      id="competitionList"
+      class="competition-list"
+      aria-label="ACL competitions"
+    >
+
+      <div class="competition-empty">
+        Loading competitions…
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="assets/js/competitions.js?v=3.0.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/session-ui.js?v=4.7.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.7.0"
+  ></script>
+
+</body>
+
+</html>

@@ -1,0 +1,1456 @@
+/* =========================================================
+   ACL PATHWAY SELECTION
+========================================================= */
+
+:root {
+  --acl-pathway-blue:
+    #0b5791;
+
+  --acl-pathway-deep-blue:
+    #092e57;
+
+  --acl-pathway-yellow:
+    #f2b500;
+
+  --acl-pathway-green:
+    #1da66d;
+
+  --acl-pathway-text:
+    #173f67;
+
+  --acl-pathway-muted:
+    #667f96;
+}
+
+
+* {
+  box-sizing:
+    border-box;
+}
+
+
+body.acl-pathways-page {
+  min-height:
+    100vh;
+
+  margin:
+    0;
+
+  color:
+    var(--acl-pathway-text);
+
+  background:
+    radial-gradient(
+      circle at 8% 8%,
+      rgba(
+        242,
+        181,
+        0,
+        0.15
+      ),
+      transparent 300px
+    ),
+    radial-gradient(
+      circle at 92% 4%,
+      rgba(
+        29,
+        166,
+        109,
+        0.12
+      ),
+      transparent 340px
+    ),
+    linear-gradient(
+      150deg,
+      #edf7ff 0%,
+      #f9fcff 50%,
+      #eef6ff 100%
+    );
+
+  font-family:
+    Inter,
+    Arial,
+    sans-serif;
+}
+
+
+.pathways-shell {
+  width:
+    min(
+      1120px,
+      calc(
+        100% - 30px
+      )
+    );
+
+  margin:
+    0 auto;
+
+  padding:
+    64px 0 72px;
+}
+
+
+.pathways-heading {
+  max-width:
+    780px;
+
+  margin:
+    0 auto 38px;
+
+  text-align:
+    center;
+}
+
+
+.pathways-kicker {
+  display:
+    inline-block;
+
+  margin-bottom:
+    13px;
+
+  color:
+    var(--acl-pathway-blue);
+
+  font-size:
+    0.78rem;
+
+  font-weight:
+    1000;
+
+  letter-spacing:
+    0.14em;
+}
+
+
+.pathways-heading h1 {
+  margin:
+    0;
+
+  color:
+    var(--acl-pathway-deep-blue);
+
+  font-size:
+    clamp(
+      2.1rem,
+      6vw,
+      4rem
+    );
+
+  line-height:
+    1.05;
+}
+
+
+.pathways-heading p {
+  max-width:
+    680px;
+
+  margin:
+    18px auto 0;
+
+  color:
+    var(--acl-pathway-muted);
+
+  font-size:
+    1.04rem;
+
+  line-height:
+    1.7;
+}
+
+
+.pathways-grid {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap:
+    24px;
+}
+
+
+.pathway-card {
+  position:
+    relative;
+
+  display:
+    flex;
+
+  min-height:
+    540px;
+
+  overflow:
+    hidden;
+
+  flex-direction:
+    column;
+
+  padding:
+    34px;
+
+  border:
+    1px solid
+    rgba(
+      11,
+      87,
+      145,
+      0.14
+    );
+
+  border-radius:
+    28px;
+
+  color:
+    inherit;
+
+  text-decoration:
+    none;
+
+  box-shadow:
+    0 24px 55px
+    rgba(
+      12,
+      43,
+      81,
+      0.12
+    );
+
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+
+.pathway-card:hover {
+  transform:
+    translateY(
+      -5px
+    );
+
+  box-shadow:
+    0 30px 65px
+    rgba(
+      12,
+      43,
+      81,
+      0.18
+    );
+}
+
+
+.pathway-basic {
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(
+        242,
+        181,
+        0,
+        0.22
+      ),
+      transparent 310px
+    ),
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #effff8
+    );
+}
+
+
+.pathway-expert {
+  color:
+    #ffffff;
+
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(
+        242,
+        181,
+        0,
+        0.25
+      ),
+      transparent 330px
+    ),
+    linear-gradient(
+      145deg,
+      #0b5791,
+      #092e57
+    );
+}
+
+
+.pathway-card-decoration {
+  position:
+    absolute;
+
+  top:
+    25px;
+
+  right:
+    25px;
+
+  display:
+    flex;
+
+  gap:
+    7px;
+
+  opacity:
+    0.5;
+}
+
+
+.pathway-card-decoration span {
+  width:
+    8px;
+
+  height:
+    8px;
+
+  border-radius:
+    50%;
+
+  background:
+    var(--acl-pathway-yellow);
+}
+
+
+.pathway-icon {
+  display:
+    grid;
+
+  width:
+    72px;
+
+  height:
+    72px;
+
+  margin-bottom:
+    27px;
+
+  place-items:
+    center;
+
+  border-radius:
+    22px;
+
+  font-size:
+    2rem;
+}
+
+
+.pathway-basic .pathway-icon {
+  background:
+    rgba(
+      29,
+      166,
+      109,
+      0.12
+    );
+}
+
+
+.pathway-expert .pathway-icon {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.12
+    );
+}
+
+
+.pathway-label {
+  margin-bottom:
+    7px;
+
+  color:
+    var(--acl-pathway-yellow);
+
+  font-size:
+    0.78rem;
+
+  font-weight:
+    1000;
+
+  letter-spacing:
+    0.13em;
+}
+
+
+.pathway-card h2 {
+  margin:
+    0;
+
+  font-size:
+    clamp(
+      1.65rem,
+      4vw,
+      2.5rem
+    );
+
+  line-height:
+    1.1;
+}
+
+
+.pathway-tagline {
+  min-height:
+    90px;
+
+  margin:
+    18px 0 24px;
+
+  line-height:
+    1.65;
+}
+
+
+.pathway-basic .pathway-tagline {
+  color:
+    var(--acl-pathway-muted);
+}
+
+
+.pathway-expert .pathway-tagline {
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.8
+    );
+}
+
+
+.pathway-audience {
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    9px;
+
+  margin-bottom:
+    28px;
+}
+
+
+.pathway-audience span {
+  padding:
+    8px 11px;
+
+  border-radius:
+    999px;
+
+  font-size:
+    0.77rem;
+
+  font-weight:
+    800;
+}
+
+
+.pathway-basic .pathway-audience span {
+  color:
+    #14754e;
+
+  background:
+    rgba(
+      29,
+      166,
+      109,
+      0.09
+    );
+}
+
+
+.pathway-expert .pathway-audience span {
+  color:
+    #ffffff;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.1
+    );
+}
+
+
+.pathway-action {
+  display:
+    flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    center;
+
+  min-height:
+    58px;
+
+  margin-top:
+    auto;
+
+  padding:
+    0 18px;
+
+  border-radius:
+    17px;
+
+  font-weight:
+    1000;
+}
+
+
+.pathway-action span {
+  font-size:
+    1.4rem;
+}
+
+
+.pathway-basic .pathway-action {
+  color:
+    #ffffff;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--acl-pathway-green),
+      #14754e
+    );
+}
+
+
+.pathway-expert .pathway-action {
+  color:
+    var(--acl-pathway-deep-blue);
+
+  background:
+    var(--acl-pathway-yellow);
+}
+
+
+.pathways-note {
+  margin:
+    26px 0 0;
+
+  color:
+    var(--acl-pathway-muted);
+
+  text-align:
+    center;
+
+  font-size:
+    0.9rem;
+}
+
+
+@media (
+  max-width:
+    760px
+) {
+  .pathways-shell {
+    padding:
+      36px 0 50px;
+  }
+
+
+  .pathways-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .pathway-card {
+    min-height:
+      auto;
+
+    padding:
+      26px 21px;
+  }
+
+
+  .pathway-tagline {
+    min-height:
+      auto;
+  }
+}
+/* =========================================================
+   PWA INSTALL SECTION
+========================================================= */
+
+.pwa-install-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid rgba(11, 87, 145, 0.15);
+  border-radius: 22px;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #eef7ff
+    );
+  box-shadow:
+    0 18px 42px rgba(12, 43, 81, 0.1);
+}
+
+
+.pwa-install-section[hidden] {
+  display: none;
+}
+
+
+.pwa-install-copy {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+
+.pwa-install-copy h2 {
+  margin: 4px 0 7px;
+  color: #092e57;
+}
+
+
+.pwa-install-copy p {
+  margin: 0;
+  color: #647f96;
+  line-height: 1.55;
+}
+
+
+.pwa-install-icon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  place-items: center;
+  border-radius: 18px;
+  background: rgba(11, 87, 145, 0.1);
+  font-size: 1.8rem;
+}
+
+
+.pwa-install-button {
+  min-height: 52px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 16px;
+  color: #092e57;
+  background: #f2b500;
+  font: inherit;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+
+.pwa-install-button:hover {
+  transform: translateY(-1px);
+}
+
+
+.pwa-install-status {
+  margin: 13px 0 0;
+  color: #55738f;
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+
+@media (max-width: 700px) {
+  .pwa-install-section {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+
+  .pwa-install-button {
+    width: 100%;
+  }
+}
+/* =========================================================
+   COMPACT PATHWAYS LAYOUT
+========================================================= */
+
+.acl-pathways-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 15% 12%,
+      rgba(74, 205, 142, 0.12),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 85% 18%,
+      rgba(37, 132, 255, 0.14),
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      #eef7fb 0%,
+      #f8fbfd 55%,
+      #eef5f9 100%
+    );
+}
+
+
+.pathways-shell {
+  width: min(
+    1180px,
+    calc(100% - 32px)
+  );
+
+  margin:
+    0 auto;
+
+  padding:
+    26px 0 34px;
+}
+
+
+/* =========================================================
+   COMPACT HEADING
+========================================================= */
+
+.pathways-heading {
+  margin-bottom:
+    20px;
+
+  text-align:
+    center;
+}
+
+
+.pathways-heading .pathways-kicker {
+  display:
+    inline-block;
+
+  margin-bottom:
+    6px;
+
+  color:
+    #0b5791;
+
+  font-size:
+    0.76rem;
+
+  font-weight:
+    1000;
+
+  letter-spacing:
+    0.16em;
+}
+
+
+.pathways-heading h1 {
+  margin:
+    0;
+
+  color:
+    #092e57;
+
+  font-size:
+    clamp(
+      2rem,
+      4vw,
+      3.25rem
+    );
+
+  font-weight:
+    1000;
+
+  line-height:
+    1.08;
+
+  white-space:
+    nowrap;
+}
+
+
+.pathways-heading p {
+  max-width:
+    660px;
+
+  margin:
+    10px auto 0;
+
+  color:
+    #607b92;
+
+  font-size:
+    0.98rem;
+
+  line-height:
+    1.5;
+}
+
+
+/* =========================================================
+   COMPACT GRID
+========================================================= */
+
+.pathways-grid {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap:
+    18px;
+
+  align-items:
+    stretch;
+}
+
+
+/* =========================================================
+   SHARED MAGIC CARD
+========================================================= */
+
+.pathway-card {
+  position:
+    relative;
+
+  display:
+    flex;
+
+  min-height:
+    360px;
+
+  flex-direction:
+    column;
+
+  overflow:
+    hidden;
+
+  padding:
+    28px;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.25
+    );
+
+  border-radius:
+    26px;
+
+  color:
+    #ffffff;
+
+  text-decoration:
+    none;
+
+  box-shadow:
+    0 24px 56px
+    rgba(
+      5,
+      39,
+      77,
+      0.18
+    );
+
+  transition:
+    transform 0.24s ease,
+    box-shadow 0.24s ease,
+    border-color 0.24s ease;
+}
+
+
+.pathway-card::before {
+  position:
+    absolute;
+
+  inset:
+    0;
+
+  content:
+    "";
+
+  background:
+    linear-gradient(
+      125deg,
+      rgba(
+        255,
+        255,
+        255,
+        0.16
+      ),
+      transparent 32%,
+      transparent 68%,
+      rgba(
+        255,
+        255,
+        255,
+        0.08
+      )
+    );
+
+  pointer-events:
+    none;
+}
+
+
+.pathway-card::after {
+  position:
+    absolute;
+
+  width:
+    240px;
+
+  height:
+    240px;
+
+  right:
+    -80px;
+
+  top:
+    -90px;
+
+  border-radius:
+    50%;
+
+  content:
+    "";
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.11
+    );
+
+  filter:
+    blur(
+      2px
+    );
+
+  pointer-events:
+    none;
+}
+
+
+.pathway-card:hover {
+  transform:
+    translateY(
+      -6px
+    )
+    scale(
+      1.01
+    );
+
+  box-shadow:
+    0 32px 74px
+    rgba(
+      5,
+      39,
+      77,
+      0.27
+    );
+
+  border-color:
+    rgba(
+      255,
+      255,
+      255,
+      0.52
+    );
+}
+
+
+/* =========================================================
+   BASIC EDITION — DEEP GREEN
+========================================================= */
+
+.pathway-basic {
+  background:
+    radial-gradient(
+      circle at 88% 15%,
+      rgba(
+        190,
+        255,
+        123,
+        0.2
+      ),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      #033d31 0%,
+      #075b49 52%,
+      #08715b 100%
+    );
+}
+
+
+.pathway-basic .pathway-icon {
+  background:
+    rgba(
+      184,
+      232,
+      93,
+      0.16
+    );
+
+  box-shadow:
+    0 0 28px
+    rgba(
+      184,
+      232,
+      93,
+      0.23
+    );
+}
+
+
+.pathway-basic .pathway-action {
+  color:
+    #063f34;
+
+  background:
+    linear-gradient(
+      135deg,
+      #c6f56f,
+      #9fda49
+    );
+}
+
+
+/* =========================================================
+   EXPERT EDITION — DEEP BLUE
+========================================================= */
+
+.pathway-expert {
+  background:
+    radial-gradient(
+      circle at 88% 15%,
+      rgba(
+        97,
+        190,
+        255,
+        0.22
+      ),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      #06294f 0%,
+      #0b5791 52%,
+      #0b6ca8 100%
+    );
+}
+.pathway-basic .pathway-tagline,
+.pathway-basic .pathway-label,
+.pathway-basic .pathway-card h2 {
+  color: #ffffff !important;
+}
+
+.pathway-expert .pathway-icon {
+  background:
+    rgba(
+      242,
+      181,
+      0,
+      0.16
+    );
+
+  box-shadow:
+    0 0 28px
+    rgba(
+      242,
+      181,
+      0,
+      0.24
+    );
+}
+
+
+.pathway-expert .pathway-action {
+  color:
+    #092e57;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffd044,
+      #f2b500
+    );
+}
+
+
+/* =========================================================
+   CARD CONTENT
+========================================================= */
+
+.pathway-icon {
+  display:
+    grid;
+
+  width:
+    62px;
+
+  height:
+    62px;
+
+  margin-bottom:
+    18px;
+
+  place-items:
+    center;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.22
+    );
+
+  border-radius:
+    18px;
+
+  font-size:
+    1.9rem;
+}
+
+.pathway-label {
+  margin-bottom:
+    5px;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.72
+    );
+
+  font-size:
+    0.75rem;
+
+  font-weight:
+    1000;
+
+  letter-spacing:
+    0.18em;
+}
+
+
+.pathway-card h2 {
+  margin:
+    0;
+
+  color:
+    #ffffff;
+
+  font-size:
+    clamp(
+      1.65rem,
+      3vw,
+      2.35rem
+    );
+
+  font-weight:
+    1000;
+
+  line-height:
+    1.08;
+}
+
+
+.pathway-tagline {
+  margin:
+    14px 0 18px;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.9
+    );
+
+  font-size:
+    0.94rem;
+
+  line-height:
+    1.5;
+}
+
+
+.pathway-audience {
+  display:
+    flex;
+
+  flex-wrap:
+    wrap;
+
+  gap:
+    8px;
+
+  margin-bottom:
+    22px;
+}
+
+
+.pathway-audience span {
+  padding:
+    7px 10px;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.34
+    );
+
+  border-radius:
+    999px;
+
+  color:
+    #ffffff;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.10
+    );
+
+  font-size:
+    0.74rem;
+
+  font-weight:
+    400;
+}
+
+.pathway-action {
+  display:
+    flex;
+
+  min-height:
+    50px;
+
+  margin-top:
+    auto;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  padding:
+    0 17px;
+
+  border-radius:
+    15px;
+
+  font-size:
+    0.9rem;
+
+  font-weight:
+    1000;
+
+  box-shadow:
+    0 12px 26px
+    rgba(
+      0,
+      0,
+      0,
+      0.16
+    );
+}
+
+
+.pathway-action span {
+  font-size:
+    1.25rem;
+
+  transition:
+    transform 0.2s ease;
+}
+
+
+.pathway-card:hover
+.pathway-action span {
+  transform:
+    translateX(
+      5px
+    );
+}
+
+
+/* Hide old decoration because new glow replaces it */
+
+.pathway-card-decoration {
+  display:
+    none;
+}
+
+
+/* =========================================================
+   COMPACT NOTE AND INSTALL AREA
+========================================================= */
+
+.pathways-note {
+  margin:
+    16px 0 0;
+
+  color:
+    #668197;
+
+  text-align:
+    center;
+
+  font-size:
+    0.82rem;
+}
+
+
+.pwa-install-section {
+  margin-top:
+    18px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (
+  max-width:
+  760px
+) {
+  .pathways-shell {
+    width:
+      min(
+        100% - 22px,
+        620px
+      );
+
+    padding-top:
+      18px;
+  }
+
+
+  .pathways-heading h1 {
+    font-size:
+      clamp(
+        1.55rem,
+        7vw,
+        2.25rem
+      );
+
+    white-space:
+      normal;
+  }
+
+
+  .pathways-heading p {
+    font-size:
+      0.88rem;
+  }
+
+
+  .pathways-grid {
+    grid-template-columns:
+      1fr;
+
+    gap:
+      14px;
+  }
+
+
+  .pathway-card {
+    min-height:
+      auto;
+
+    padding:
+      23px;
+  }
+
+
+  .pathway-audience {
+    margin-bottom:
+      18px;
+  }
+}
+/* =========================================================
+   PATHWAY AUDIENCE CHIPS — FINAL WHITE FIX
+========================================================= */
+
+.pathway-card
+.pathway-audience
+span,
+.pathway-basic
+.pathway-audience
+span,
+.pathway-expert
+.pathway-audience
+span {
+  color:
+    #ffffff !important;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.72
+    ) !important;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.12
+    ) !important;
+
+  font-weight:
+    400 !important;
+
+  text-shadow:
+    none !important;
+
+  opacity:
+    1 !important;
+}

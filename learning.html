@@ -1,21 +1,379 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#061c3d">
-<title>Learning Hub | Alexandria Cardiology League</title>
-<link rel="stylesheet" href="assets/css/main.css?v=5.0.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-.hub-hero{padding:22px;margin-bottom:14px;border:1px solid #e2e8ef;border-radius:15px;background:#fff}.hub-kicker{font-size:10px;font-weight:900;letter-spacing:.11em;color:#60758c}.hub-hero h1{margin:5px 0 5px;font-size:27px}.hub-hero p{margin:0;color:#77879a;font-size:12px}.hub-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.hub-card{padding:18px;border:1px solid #e2e8ef;border-radius:13px;background:#fff;text-decoration:none;color:#172b45}.hub-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;margin-bottom:12px;background:#eaf3ff;color:#176fd1;font-size:20px}.hub-card h2{margin:0 0 5px;font-size:16px}.hub-card p{margin:0;color:#77879a;font-size:11px;line-height:1.5}.hub-card strong{display:block;margin-top:13px;color:#176fd1;font-size:11px}@media(max-width:820px){.hub-grid{grid-template-columns:1fr}.hub-hero{padding:16px}.hub-hero h1{font-size:22px}.hub-card{padding:15px}}
-</style>
+  <meta charset="utf-8">
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    Learning Mode | ACL Expert Edition
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=2.8.8"
+  >
+
+  <link
+    rel="stylesheet"
+    href="assets/css/learning-feedback.css?v=5.4.21"
+  >
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
+
 <body>
-<main>
-<section class="hub-hero"><span class="hub-kicker">ACL LEARNING LIBRARY</span><h1>Mindmaps &amp; Flashcards</h1><p>Use the learning library to review high-yield concepts, then return directly to your Expert Edition modules.</p></section>
-<section class="hub-grid">
-<a class="hub-card" href="modules.html?edition=expert"><div class="hub-icon">◆</div><h2>Module flashcards</h2><p>Open an Expert module and use its review flashcards after answering questions.</p><strong>Browse Expert modules →</strong></a>
-<a class="hub-card" href="progress.html?edition=expert"><div class="hub-icon">▤</div><h2>Review completed work</h2><p>Revisit completed attempts, identify weak areas and continue unfinished learning sessions.</p><strong>Open My Progress →</strong></a>
-<a class="hub-card" href="modules.html?edition=expert"><div class="hub-icon">◎</div><h2>Guideline-based review</h2><p>Choose a guideline-based module to combine questions, explanations and topic review in one workflow.</p><strong>Choose a module →</strong></a>
-</section>
-</main>
-<script type="module" src="assets/js/acl-shared-shell.js?v=2.0.0"></script>
-</body></html>
+
+  <!-- =====================================================
+       TOP HEADER
+  ====================================================== -->
+
+  <header class="topbar learning-topbar">
+
+    <button
+      id="sidebarToggle"
+      class="learning-menu-button"
+      type="button"
+      aria-label="Open navigation menu"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+
+    <div class="learning-header-center">
+
+      <a
+        class="learning-brand"
+        href="modules.html"
+        aria-label="Alexandria Cardiology League home"
+      >
+
+        <span class="brand-rolling-window">
+
+          <span class="brand-rolling-track">
+
+            <span class="brand-name brand-name-short">
+              ACL
+            </span>
+
+            <span class="brand-name brand-name-full">
+              Alexandria Cardiology League
+            </span>
+
+          </span>
+
+        </span>
+
+        <strong>
+          THE EXPERT EDITION
+        </strong>
+
+      </a>
+
+
+      <nav
+        class="learning-icon-nav"
+        aria-label="Quick navigation"
+      >
+
+        <a
+          class="learning-header-icon"
+          href="modules.html"
+          title="Modules"
+          aria-label="Open modules"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v7H6.5A2.5 2.5 0 0 0 4 12.5v-7Zm16 0A2.5 2.5 0 0 0 17.5 3H13v7h4.5A2.5 2.5 0 0 1 20 12.5v-7ZM4 14.5A2.5 2.5 0 0 1 6.5 12H11v9H6.5A2.5 2.5 0 0 1 4 18.5v-4Zm16 0A2.5 2.5 0 0 0 17.5 12H13v9h4.5a2.5 2.5 0 0 0 2.5-2.5v-4Z"
+            />
+          </svg>
+        </a>
+
+
+        <a
+          class="learning-header-icon"
+          href="progress.html"
+          title="My Progress"
+          aria-label="Open my progress"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 19h16v2H2V3h2v16Zm3-3 4-4 3 3 5-7 1.6 1.2-6.4 9-3.2-3.2-2.6 2.6L7 16Z"
+            />
+          </svg>
+        </a>
+
+
+        <a
+          id="userChip"
+          class="learning-header-icon"
+          href="profile.html"
+          title="My Profile"
+          aria-label="Open my profile"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5.3 0-9 2.7-9 6v2h18v-2c0-3.3-3.7-6-9-6Z"
+            />
+          </svg>
+        </a>
+
+
+        <button
+          class="learning-header-icon"
+          type="button"
+          title="Sign Out"
+          aria-label="Sign out"
+          onclick="aclSignOut()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M10 3H4v18h6v-2H6V5h4V3Zm5.6 4.6L14.2 9l2 2H9v2h7.2l-2 2 1.4 1.4L20 12l-4.4-4.4Z"
+            />
+          </svg>
+        </button>
+
+      </nav>
+
+    </div>
+
+
+    <div
+      class="learning-header-spacer"
+      aria-hidden="true"
+    ></div>
+
+  </header>
+
+
+  <!-- =====================================================
+       LEARNING MODE
+  ====================================================== -->
+
+  <main class="container learning-shell">
+
+    <section class="learning-stage">
+
+      <div class="learning-module-corner">
+
+        <span>
+          Module
+        </span>
+
+        <strong id="moduleTitle">
+          Loading module…
+        </strong>
+
+      </div>
+
+
+      <div class="learning-quiz-banner">
+
+        <span class="learning-mode-label">
+          Learning Mode
+        </span>
+
+        <h1 id="quizTitle">
+          Loading quiz…
+        </h1>
+
+        <div class="quiz-banner-decoration">
+
+          <span></span>
+          <i></i>
+          <span></span>
+
+        </div>
+
+      </div>
+
+
+      <p
+        id="quizDescription"
+        hidden
+      ></p>
+
+    </section>
+
+
+    <section class="card learning-card">
+
+      <div class="quiz-status">
+
+        <span
+          id="questionCount"
+          class="question-count"
+        ></span>
+
+        <span
+          id="saveStatus"
+          class="save-pill"
+          aria-live="polite"
+        >
+          Preparing…
+        </span>
+
+      </div>
+
+
+      <div
+        class="learning-progress"
+        aria-label="Quiz progress"
+      >
+        <span id="progressFill"></span>
+      </div>
+
+
+      <div
+        id="quizArea"
+        aria-live="polite"
+      >
+        <p>
+          Loading your quiz…
+        </p>
+      </div>
+
+
+      <div
+        id="answerFeedbackHost"
+        aria-live="polite"
+      ></div>
+
+
+      <div class="learning-actions">
+
+        <button
+          id="submitAnswer"
+          class="primary-btn"
+          type="button"
+        >
+          Check answer
+        </button>
+
+        <button
+          id="nextQuestion"
+          class="primary-btn"
+          type="button"
+          hidden
+        >
+          Next question
+        </button>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       FLASHCARD MODAL
+  ====================================================== -->
+
+  <div
+    id="learningFlashcardModal"
+    class="learning-flashcard-modal"
+    hidden
+  >
+
+    <button
+      id="learningFlashcardBackdrop"
+      class="learning-flashcard-backdrop"
+      type="button"
+      aria-label="Close flashcard"
+    ></button>
+
+
+    <section
+      class="learning-flashcard-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="learningFlashcardTitle"
+    >
+
+      <div class="learning-flashcard-head">
+
+        <div>
+
+          <span
+            id="learningFlashcardType"
+            class="learning-flashcard-type"
+          >
+            FLASHCARD
+          </span>
+
+          <h2 id="learningFlashcardTitle">
+            Topic review
+          </h2>
+
+        </div>
+
+
+        <button
+          id="closeLearningFlashcard"
+          class="learning-flashcard-close"
+          type="button"
+          aria-label="Close flashcard"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div
+        id="learningFlashcardContent"
+        class="learning-flashcard-content"
+      ></div>
+
+
+      <button
+        id="closeLearningFlashcardBottom"
+        class="primary-btn learning-flashcard-return"
+        type="button"
+      >
+        Return to the question
+      </button>
+
+    </section>
+
+  </div>
+
+
+  <script
+    type="module"
+    src="assets/js/learning-mode.js?v=5.4.26"
+  ></script>
+
+  <script
+    type="module"
+    src="assets/js/learning-theme.js?v=1.0.0"
+  ></script>
+
+</body>
+
+</html>

@@ -1,23 +1,1105 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#061c3d">
-<title>Challenge Friends | Alexandria Cardiology League</title>
-<link rel="stylesheet" href="assets/css/main.css?v=5.0.1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-.hub-hero{padding:22px;margin-bottom:14px;border:1px solid #e2e8ef;border-radius:15px;background:#fff}.hub-kicker{font-size:10px;font-weight:900;letter-spacing:.11em;color:#60758c}.hub-hero h1{margin:5px 0 5px;font-size:27px}.hub-hero p{margin:0;color:#77879a;font-size:12px}.challenge-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:11px}.challenge-card{padding:18px;border:1px solid #e2e8ef;border-radius:13px;background:#fff}.challenge-card h2{margin:0 0 6px;font-size:16px}.challenge-card p{margin:0 0 14px;color:#77879a;font-size:11px;line-height:1.55}.challenge-actions{display:flex;gap:8px;flex-wrap:wrap}.challenge-actions a,.challenge-actions button{min-height:38px;padding:0 14px;border:1px solid #d8e1ea;border-radius:9px;background:#fff;color:#31597f;font-size:11px;font-weight:850;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.challenge-actions .primary{border:0;background:#176fd1;color:#fff}.join-row{display:grid;grid-template-columns:1fr auto;gap:7px}.join-row input{height:40px;border:1px solid #d8e1ea;border-radius:9px;padding:0 12px;text-transform:uppercase}.join-note{margin-top:9px!important;font-size:10px!important}@media(max-width:820px){.challenge-grid{grid-template-columns:1fr}.hub-hero{padding:16px}.hub-hero h1{font-size:22px}.challenge-card{padding:15px}}
-</style>
+  <meta charset="utf-8">
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    id="challengeThemeColor"
+    name="theme-color"
+    content="#123f72"
+  >
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <title>
+    Challenge a Colleague | ACL
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+  <link
+    rel="stylesheet"
+    href="assets/css/challenge.css?v=2.0.0"
+  >
+
+
+  <!-- Apply the selected pathway before the page appears. -->
+
+  <script>
+    (() => {
+      const parameters =
+        new URLSearchParams(
+          window.location.search
+        );
+
+      const urlEdition =
+        String(
+          parameters.get("edition") || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      const storedEdition =
+        String(
+          localStorage.getItem(
+            "aclSelectedEdition"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      const edition =
+        (
+          urlEdition === "basic" ||
+          urlEdition === "expert"
+        )
+          ? urlEdition
+          : (
+              storedEdition === "basic" ||
+              storedEdition === "expert"
+            )
+            ? storedEdition
+            : "basic";
+
+      localStorage.setItem(
+        "aclSelectedEdition",
+        edition
+      );
+
+      document.documentElement.classList.add(
+        edition === "basic"
+          ? "acl-challenge-basic"
+          : "acl-challenge-expert"
+      );
+
+      if (!parameters.get("edition")) {
+        const updatedUrl =
+          new URL(
+            window.location.href
+          );
+
+        updatedUrl.searchParams.set(
+          "edition",
+          edition
+        );
+
+        window.history.replaceState(
+          {},
+          "",
+          updatedUrl
+        );
+      }
+    })();
+  </script>
+  <style>
+    /* =====================================================
+       PATHWAY THEME
+    ===================================================== */
+
+    :root {
+      --challenge-primary: #123f72;
+      --challenge-secondary: #176aa1;
+      --challenge-soft: #eaf5ff;
+      --challenge-heading: #0c315c;
+      --challenge-accent: #ffc928;
+    }
+
+
+    html.acl-challenge-basic {
+      --challenge-primary: #105541;
+      --challenge-secondary: #168067;
+      --challenge-soft: #eaf8f2;
+      --challenge-heading: #123f35;
+      --challenge-accent: #f5c542;
+    }
+
+
+    html.acl-challenge-expert {
+      --challenge-primary: #123f72;
+      --challenge-secondary: #176aa1;
+      --challenge-soft: #eaf5ff;
+      --challenge-heading: #0c315c;
+      --challenge-accent: #ffc928;
+    }
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+
+    body.challenge-page {
+      margin: 0;
+
+      background:
+        radial-gradient(
+          circle at 8% 8%,
+          rgba(255, 201, 40, 0.12),
+          transparent 25rem
+        ),
+        radial-gradient(
+          circle at 92% 10%,
+          color-mix(
+            in srgb,
+            var(--challenge-secondary) 12%,
+            transparent
+          ),
+          transparent 28rem
+        ),
+        linear-gradient(
+          145deg,
+          #ffffff,
+          var(--challenge-soft)
+        );
+    }
+
+
+    .challenge-hero {
+      background:
+        linear-gradient(
+          125deg,
+          var(--challenge-primary),
+          var(--challenge-secondary)
+        ) !important;
+    }
+
+
+    .challenge-eyebrow,
+    .challenge-step-label {
+      color:
+        var(--challenge-accent) !important;
+    }
+
+
+    .challenge-panel h2,
+    .challenge-created-card h2 {
+      color:
+        var(--challenge-heading);
+    }
+
+
+    .challenge-primary-button {
+      background:
+        linear-gradient(
+          135deg,
+          var(--challenge-primary),
+          var(--challenge-secondary)
+        ) !important;
+    }
+
+
+    .challenge-status-pill {
+      color:
+        var(--challenge-primary) !important;
+
+      background:
+        color-mix(
+          in srgb,
+          var(--challenge-secondary) 11%,
+          white
+        ) !important;
+    }
+
+
+    .challenge-back-link {
+      color:
+        var(--challenge-primary);
+    }
+
+
+    .challenge-edition-badge {
+      display: inline-flex;
+
+      align-items: center;
+
+      min-height: 31px;
+
+      margin-bottom: 12px;
+
+      padding: 7px 12px;
+
+      border:
+        1px solid
+        rgba(255, 255, 255, 0.32);
+
+      border-radius: 999px;
+
+      background:
+        rgba(255, 255, 255, 0.13);
+
+      color: #ffffff;
+
+      font-size: 0.75rem;
+
+      font-weight: 900;
+
+      letter-spacing: 0.08em;
+
+      text-transform: uppercase;
+    }
+
+
+    .challenge-loading-option {
+      color: #718096;
+    }
+    /* =====================================================
+   CENTER THE 1 VS 1 BADGE
+===================================================== */
+
+.challenge-hero-badge {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 14px !important;
+
+  min-width: 230px;
+  min-height: 115px;
+
+  padding: 20px 24px;
+}
+
+
+.challenge-hero-badge span {
+  display: grid;
+  place-items: center;
+
+  flex: 0 0 auto;
+
+  width: 68px;
+  height: 68px;
+
+  margin: 0 !important;
+}
+
+
+.challenge-hero-badge small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  min-width: 32px;
+
+  margin: 0 !important;
+
+  line-height: 1;
+  text-align: center;
+}
+
+    /* =====================================================
+       UNIFIED HEADER LOADING
+    ===================================================== */
+
+    body.challenge-page {
+      padding-top: 92px;
+    }
+
+    .topbar.acl-header-pending {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .topbar.acl-unified-header {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    @media (max-width: 760px) {
+      body.challenge-page {
+        padding-top: 82px;
+      }
+    }
+
+  </style>
 </head>
-<body>
-<main>
-<section class="hub-hero"><span class="hub-kicker">ACL HEAD-TO-HEAD</span><h1>Challenge Friends</h1><p>Create a quiz challenge from any open Expert module, or enter a challenge code sent by a colleague.</p></section>
-<section class="challenge-grid">
-<article class="challenge-card"><h2>Create a new challenge</h2><p>Challenge creation stays attached to the module so everyone receives the same scientific question set and the correct module context.</p><div class="challenge-actions"><a class="primary" href="modules.html?edition=expert">Choose an Expert module</a><a href="progress.html?edition=expert">View my progress</a></div></article>
-<article class="challenge-card"><h2>Join with a code</h2><p>Paste the ACL challenge code you received. We’ll keep the code in the URL so the challenge invitation can be resumed after sign-in.</p><div class="join-row"><input id="challengeCode" autocomplete="off" placeholder="ACL-XXXXXXXX" aria-label="Challenge code"><button id="joinChallenge" type="button">Continue</button></div><p id="challengeStatus" class="join-note"></p></article>
-</section>
-</main>
-<script type="module" src="assets/js/acl-shared-shell.js?v=2.0.0"></script>
-<script>
-(function(){const params=new URLSearchParams(location.search),input=document.getElementById('challengeCode'),status=document.getElementById('challengeStatus');if(params.get('code'))input.value=params.get('code');document.getElementById('joinChallenge').addEventListener('click',()=>{const code=input.value.trim().toUpperCase();if(!code){status.textContent='Enter the challenge code first.';return;}const u=new URL(location.href);u.searchParams.set('code',code);u.searchParams.set('edition','expert');history.replaceState({},'',u);status.textContent='Challenge code saved. Open the linked module invitation to start the official attempt.';});})();
-</script>
-</body></html>
+
+
+<body class="challenge-page">
+<header class="topbar acl-header-pending">
+
+  <a
+    class="brand brand-link"
+    href="pathways.html"
+    aria-label="Alexandria Cardiology League"
+  >
+    Alexandria Cardiology League
+  </a>
+
+  <nav aria-label="Main navigation">
+    <a
+      id="userChip"
+      class="user-chip"
+      href="profile.html"
+      aria-label="Open profile"
+    ></a>
+  </nav>
+
+</header>
+  <main class="challenge-shell">
+
+    <a
+      id="challengeBackLink"
+      class="challenge-back-link"
+      href="modules.html"
+      aria-label="Return to modules"
+    >
+      ← Back to modules
+    </a>
+
+
+    <!-- ===================================================
+         HERO
+    ==================================================== -->
+
+    <section class="challenge-hero">
+
+      <div class="challenge-hero-copy">
+
+        <span
+          id="challengeEditionBadge"
+          class="challenge-edition-badge"
+        >
+          ACL EDITION
+        </span>
+
+        <p
+          id="challengeEditionEyebrow"
+          class="challenge-eyebrow"
+        >
+          ALEXANDRIA CARDIOLOGY LEAGUE
+        </p>
+
+        <h1>
+          Challenge a colleague
+        </h1>
+
+        <p>
+          Select a module, create a private head-to-head challenge,
+          and share the generated invitation link.
+        </p>
+
+      </div>
+
+
+      <div
+        class="challenge-hero-badge"
+        aria-hidden="true"
+      >
+        <span>
+          1
+        </span>
+
+        <small>
+          VS
+        </small>
+
+        <span>
+          1
+        </span>
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         CHALLENGE CREATOR
+    ==================================================== -->
+
+    <section
+      class="challenge-panel"
+      id="challengeCreatorPanel"
+    >
+
+      <div class="challenge-panel-heading">
+
+        <div>
+
+          <p class="challenge-step-label">
+            STEP 1
+          </p>
+
+          <h2>
+            Create the challenge
+          </h2>
+
+        </div>
+
+        <span class="challenge-status-pill">
+          Private link
+        </span>
+
+      </div>
+
+
+      <form
+        id="challengeForm"
+        class="challenge-form"
+        novalidate
+      >
+
+        <!-- Modules are now loaded dynamically from Supabase. -->
+
+        <div class="challenge-field">
+
+          <label for="challengeModule">
+            Module
+          </label>
+
+          <select
+            id="challengeModule"
+            name="module"
+            required
+            disabled
+          >
+            <option value="">
+              Loading modules…
+            </option>
+          </select>
+
+          <small id="moduleLoadingText">
+            Loading modules from the selected ACL edition.
+          </small>
+
+        </div>
+
+
+        <div class="challenge-field">
+
+          <label for="challengeQuiz">
+            Quiz
+          </label>
+
+          <select
+            id="challengeQuiz"
+            name="quiz"
+            required
+            disabled
+          >
+            <option value="">
+              Choose a module first
+            </option>
+          </select>
+
+          <small id="quizLoadingText">
+            Available published quizzes will appear automatically.
+          </small>
+
+        </div>
+
+
+        <div class="challenge-grid-two">
+
+          <div class="challenge-field">
+
+            <label for="challengeQuestions">
+              Questions
+            </label>
+
+            <select
+              id="challengeQuestions"
+              name="question_count"
+              required
+            >
+              <option value="5">
+                5 questions
+              </option>
+
+              <option
+                value="10"
+                selected
+              >
+                10 questions
+              </option>
+
+              <option value="20">
+                20 questions
+              </option>
+            </select>
+
+          </div>
+
+
+          <div class="challenge-field">
+
+            <label for="challengeExpiry">
+              Invitation validity
+            </label>
+
+            <select
+              id="challengeExpiry"
+              name="expiry_hours"
+              required
+            >
+              <option value="6">
+                6 hours
+              </option>
+
+              <option value="12">
+                12 hours
+              </option>
+
+              <option
+                value="24"
+                selected
+              >
+                24 hours
+              </option>
+
+              <option value="48">
+                48 hours
+              </option>
+
+              <option value="72">
+                72 hours
+              </option>
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div class="challenge-field">
+
+          <label for="challengeMessage">
+            Message
+            <span>
+              (optional)
+            </span>
+          </label>
+
+          <textarea
+            id="challengeMessage"
+            name="message"
+            rows="3"
+            maxlength="180"
+            placeholder="Ready to test your cardiovascular knowledge?"
+          ></textarea>
+
+          <div class="challenge-character-count">
+            <span id="challengeMessageCount">
+              0
+            </span>/180
+          </div>
+
+        </div>
+
+
+        <label class="challenge-check-row">
+
+          <input
+            id="challengeSameQuestions"
+            type="checkbox"
+            checked
+          >
+
+          <span>
+
+            <strong>
+              Use identical questions for both competitors
+            </strong>
+
+            <small>
+              Recommended for a fair head-to-head result.
+            </small>
+
+          </span>
+
+        </label>
+
+
+        <div
+          id="challengeFormError"
+          class="challenge-alert challenge-alert-error"
+          role="alert"
+          hidden
+        ></div>
+
+
+        <button
+          id="createChallengeButton"
+          class="challenge-primary-button"
+          type="submit"
+          disabled
+        >
+          <span>
+            Create challenge
+          </span>
+
+          <span aria-hidden="true">
+            ⚡
+          </span>
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <!-- ===================================================
+         CREATED CHALLENGE
+    ==================================================== -->
+
+    <section
+      id="challengeCreatedCard"
+      class="challenge-created-card"
+      hidden
+    >
+
+      <div class="challenge-created-header">
+
+        <div class="challenge-created-icon">
+          ✓
+        </div>
+
+        <div>
+
+          <p class="challenge-step-label">
+            CHALLENGE CREATED
+          </p>
+
+          <h2>
+            Your invitation is ready
+          </h2>
+
+          <p>
+            Complete your attempt, then send the invitation
+            to one colleague.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="challenge-created-details">
+
+        <div>
+          <span>
+            Module
+          </span>
+
+          <strong id="createdModuleName">
+            —
+          </strong>
+        </div>
+
+
+        <div>
+          <span>
+            Questions
+          </span>
+
+          <strong id="createdQuestionCount">
+            —
+          </strong>
+        </div>
+
+
+        <div>
+          <span>
+            Valid until
+          </span>
+
+          <strong id="createdExpiry">
+            —
+          </strong>
+        </div>
+
+      </div>
+
+
+      <div class="challenge-link-box">
+
+        <label for="challengeInviteLink">
+          Invitation link
+        </label>
+
+        <div>
+
+          <input
+            id="challengeInviteLink"
+            type="text"
+            readonly
+          >
+
+          <button
+            id="copyChallengeLinkButton"
+            type="button"
+          >
+            Copy
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="challenge-created-actions">
+
+        <button
+          id="startMyChallengeButton"
+          class="challenge-primary-button"
+          type="button"
+        >
+          Start my attempt
+        </button>
+
+
+        <button
+          id="shareChallengeButton"
+          class="challenge-secondary-button"
+          type="button"
+        >
+          Share invitation
+        </button>
+
+      </div>
+
+
+      <p
+        id="copyChallengeFeedback"
+        class="challenge-copy-feedback"
+        aria-live="polite"
+      ></p>
+
+    </section>
+
+
+    <!-- ===================================================
+         INCOMING INVITATION
+    ==================================================== -->
+
+    <section
+      id="incomingChallengePanel"
+      class="challenge-panel"
+      hidden
+    >
+
+      <div class="challenge-panel-heading">
+
+        <div>
+
+          <p class="challenge-step-label">
+            INVITATION
+          </p>
+
+          <h2 id="incomingChallengeTitle">
+            You have been challenged
+          </h2>
+
+        </div>
+
+
+        <span
+          id="incomingChallengeState"
+          class="challenge-status-pill"
+        >
+          Waiting
+        </span>
+
+      </div>
+
+
+      <div class="incoming-challenge-summary">
+
+        <div class="incoming-versus">
+
+          <div>
+
+            <span
+              class="incoming-avatar"
+              id="challengerInitial"
+            >
+              C
+            </span>
+
+            <strong id="challengerName">
+              Challenger
+            </strong>
+
+          </div>
+
+
+          <span class="incoming-vs">
+            VS
+          </span>
+
+
+          <div>
+
+            <span class="incoming-avatar incoming-avatar-you">
+              YOU
+            </span>
+
+            <strong>
+              Your attempt
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <blockquote
+          id="incomingChallengeMessage"
+          hidden
+        ></blockquote>
+
+
+        <div class="challenge-created-details">
+
+          <div>
+            <span>
+              Module
+            </span>
+
+            <strong id="incomingModuleName">
+              —
+            </strong>
+          </div>
+
+
+          <div>
+            <span>
+              Questions
+            </span>
+
+            <strong id="incomingQuestionCount">
+              —
+            </strong>
+          </div>
+
+
+          <div>
+            <span>
+              Expires
+            </span>
+
+            <strong id="incomingExpiry">
+              —
+            </strong>
+          </div>
+
+        </div>
+
+
+        <div
+          id="incomingChallengeError"
+          class="challenge-alert challenge-alert-error"
+          role="alert"
+          hidden
+        ></div>
+
+
+        <button
+          id="acceptChallengeButton"
+          class="challenge-primary-button"
+          type="button"
+        >
+          Accept and start
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         RESULTS
+    ==================================================== -->
+
+    <section
+      id="challengeResultPanel"
+      class="challenge-panel"
+      hidden
+    >
+
+      <div class="challenge-panel-heading">
+
+        <div>
+
+          <p class="challenge-step-label">
+            HEAD-TO-HEAD RESULT
+          </p>
+
+          <h2>
+            Challenge scoreboard
+          </h2>
+
+        </div>
+
+
+        <span
+          id="resultStatusPill"
+          class="challenge-status-pill"
+        >
+          In progress
+        </span>
+
+      </div>
+
+
+      <div class="challenge-scoreboard">
+
+        <article class="challenge-player-card">
+
+          <span class="challenge-player-label">
+            CHALLENGER
+          </span>
+
+          <h3 id="resultChallengerName">
+            —
+          </h3>
+
+          <strong id="resultChallengerScore">
+            —
+          </strong>
+
+          <small id="resultChallengerTime">
+            Waiting
+          </small>
+
+        </article>
+
+
+        <div class="challenge-result-vs">
+          VS
+        </div>
+
+
+        <article class="challenge-player-card">
+
+          <span class="challenge-player-label">
+            OPPONENT
+          </span>
+
+          <h3 id="resultOpponentName">
+            —
+          </h3>
+
+          <strong id="resultOpponentScore">
+            —
+          </strong>
+
+          <small id="resultOpponentTime">
+            Waiting
+          </small>
+
+        </article>
+
+      </div>
+
+
+      <div
+        id="challengeWinnerBanner"
+        class="challenge-winner-banner"
+        hidden
+      ></div>
+
+
+      <a
+        id="openChallengeQuizLink"
+        class="challenge-secondary-button challenge-link-button"
+        href="#"
+      >
+        Open my challenge attempt
+      </a>
+
+    </section>
+
+
+    <!-- ===================================================
+         LEADERBOARD
+    ==================================================== -->
+
+    <section
+      id="challengeLeaderboardSection"
+      class="challenge-panel challenge-leaderboard-section"
+    >
+
+      <div class="challenge-panel-heading">
+
+        <div>
+
+          <p class="challenge-step-label">
+            ACL HEAD-TO-HEAD
+          </p>
+
+          <h2>
+            Challenge leaderboard
+          </h2>
+
+          <p class="challenge-leaderboard-description">
+            Ranked by challenge wins, total score,
+            then average completion time.
+          </p>
+
+        </div>
+
+
+        <button
+          id="refreshChallengeLeaderboard"
+          class="challenge-secondary-button challenge-refresh-button"
+          type="button"
+        >
+          Refresh
+        </button>
+
+      </div>
+
+
+      <div
+        id="challengeLeaderboardStatus"
+        class="challenge-leaderboard-status"
+        aria-live="polite"
+      >
+        Loading leaderboard…
+      </div>
+
+
+      <div
+        id="challengeLeaderboardTable"
+        class="challenge-leaderboard-table"
+        hidden
+      ></div>
+
+    </section>
+
+  </main>
+
+
+  <!-- Modern module-based application. No config.js. -->
+
+  <script
+    type="module"
+    src="assets/js/challenge.js?v=2.1.4"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.6.0"
+  ></script>
+
+</body>
+
+</html>

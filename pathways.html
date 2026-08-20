@@ -1,0 +1,778 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+
+  <meta
+    name="referrer"
+    content="strict-origin-when-cross-origin"
+  >
+
+
+  <meta
+    name="theme-color"
+    content="#0b5791"
+  >
+
+
+  <meta
+    name="description"
+    content="Choose the Basic or Expert Alexandria Cardiology League learning pathway."
+  >
+
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="default"
+  >
+
+
+  <meta
+    name="apple-mobile-web-app-title"
+    content="ACL"
+  >
+
+
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  >
+
+
+  <title>
+    Choose Your ACL Pathway
+  </title>
+
+
+  <link
+    rel="manifest"
+    href="manifest.json"
+  >
+
+
+  <link
+    rel="icon"
+    href="assets/images/acl-icon-192.png"
+    type="image/png"
+  >
+
+
+  <link
+    rel="apple-touch-icon"
+    href="assets/images/acl-icon-192.png"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/main.css?v=5.0.1"
+  >
+
+
+  <link
+    rel="stylesheet"
+    href="assets/css/pathways.css?v=3.2.0"
+  >
+
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <style>
+    [hidden] {
+      display: none !important;
+    }
+
+
+    .pathway-preference {
+      display: flex;
+      justify-content: center;
+
+      margin:
+        22px
+        auto
+        0;
+    }
+
+
+    .pathway-remember-choice {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+
+      width:
+        min(
+          580px,
+          100%
+        );
+
+      padding:
+        16px
+        18px;
+
+      border:
+        1px solid
+        rgba(
+          11,
+          87,
+          145,
+          0.18
+        );
+
+      border-radius:
+        17px;
+
+      color:
+        #173f67;
+
+      background:
+        linear-gradient(
+          145deg,
+          #ffffff,
+          #f2f9ff
+        );
+
+      box-shadow:
+        0 11px 28px
+        rgba(
+          11,
+          87,
+          145,
+          0.07
+        );
+
+      cursor:
+        pointer;
+    }
+
+
+    .pathway-remember-choice input {
+      width:
+        20px;
+
+      height:
+        20px;
+
+      min-width:
+        20px;
+
+      margin:
+        1px
+        0
+        0;
+
+      accent-color:
+        #0b5791;
+    }
+
+
+    .pathway-remember-copy {
+      display:
+        grid;
+
+      gap:
+        4px;
+    }
+
+
+    .pathway-remember-copy strong {
+      color:
+        #0b477c;
+
+      font-size:
+        0.9rem;
+
+      line-height:
+        1.25;
+    }
+
+
+    .pathway-remember-copy small {
+      color:
+        #667f94;
+
+      font-size:
+        0.75rem;
+
+      line-height:
+        1.45;
+    }
+
+
+    .pathway-storage-status {
+      min-height:
+        20px;
+
+      margin:
+        10px
+        0
+        0;
+
+      color:
+        #667f94;
+
+      font-size:
+        0.74rem;
+
+      font-weight:
+        750;
+
+      line-height:
+        1.4;
+
+      text-align:
+        center;
+    }
+
+
+    .pathways-access-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      margin-top: 18px;
+    }
+
+
+    .pathways-access-links a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      min-height: 42px;
+      padding: 9px 15px;
+
+      border:
+        1px solid
+        rgba(
+          11,
+          87,
+          145,
+          0.2
+        );
+
+      border-radius: 12px;
+
+      color: #0b5791;
+      background: #ffffff;
+
+      font-size: 0.8rem;
+      font-weight: 850;
+      text-decoration: none;
+    }
+
+
+    .pathways-access-links a:first-child {
+      border-color: transparent;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          #0b5791,
+          #1787c9
+        );
+    }
+
+
+    .pwa-install-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+
+      margin-top: 24px;
+      padding: 20px;
+
+      border:
+        1px solid
+        #cfe2f1;
+
+      border-radius: 20px;
+
+      background:
+        linear-gradient(
+          145deg,
+          #ffffff,
+          #f1f9ff
+        );
+
+      box-shadow:
+        0 12px 30px
+        rgba(
+          11,
+          87,
+          145,
+          0.08
+        );
+    }
+
+
+    .pwa-install-copy {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+
+    .pwa-install-icon {
+      display: grid;
+      place-items: center;
+
+      width: 52px;
+      height: 52px;
+      flex: 0 0 52px;
+
+      border-radius: 16px;
+
+      background: #eaf6ff;
+
+      font-size: 1.45rem;
+    }
+
+
+    .pwa-install-copy h2 {
+      margin: 5px 0;
+
+      color: #073d6d;
+
+      font-size: 1.08rem;
+    }
+
+
+    .pwa-install-copy p {
+      margin: 0;
+
+      color: #667f94;
+
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+
+    .pwa-install-button {
+      min-height: 44px;
+      padding: 10px 17px;
+      flex: 0 0 auto;
+
+      border: 0;
+      border-radius: 12px;
+
+      color: #ffffff;
+
+      background:
+        linear-gradient(
+          135deg,
+          #0b5791,
+          #1787c9
+        );
+
+      cursor: pointer;
+
+      font-weight: 900;
+    }
+
+
+    .pwa-install-button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+
+    .pwa-install-status {
+      min-height: 20px;
+      margin: 11px 0 0;
+
+      color: #667f94;
+
+      font-size: 0.75rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+
+    @media (max-width: 650px) {
+      .pathway-remember-choice {
+        padding:
+          14px;
+      }
+
+
+      .pwa-install-section {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+
+      .pwa-install-button {
+        width: 100%;
+      }
+    }
+  </style>
+
+</head>
+
+
+<body class="acl-pathways-page">
+
+  <main class="pathways-shell">
+
+    <section class="pathways-heading">
+
+      <span class="pathways-kicker">
+        ALEXANDRIA CARDIOLOGY LEAGUE
+      </span>
+
+
+      <h1>
+        Choose your learning pathway
+      </h1>
+
+
+      <p>
+        One account. Two pathways. Your progress stays connected.
+      </p>
+
+    </section>
+
+
+    <section
+      class="pathways-grid"
+      aria-label="ACL learning pathways"
+    >
+
+      <!-- ===============================================
+           BASIC EDITION
+      ================================================ -->
+
+      <a
+        class="pathway-card pathway-basic"
+        data-edition="basic"
+        href="modules.html?edition=basic"
+        aria-label="Enter ACL Basic Edition"
+      >
+
+        <div
+          class="pathway-card-decoration"
+          aria-hidden="true"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+
+        <div
+          class="pathway-icon"
+          aria-hidden="true"
+        >
+          🎓
+        </div>
+
+
+        <span class="pathway-label">
+          ACL
+        </span>
+
+
+        <h2>
+          THE BASIC EDITION
+        </h2>
+
+
+        <p class="pathway-tagline">
+          Build strong cardiovascular foundations with clear,
+          structured, and clinically relevant learning.
+        </p>
+
+
+        <div class="pathway-audience">
+
+          <span>
+            Medical students
+          </span>
+
+
+          <span>
+            Interns
+          </span>
+
+
+          <span>
+            General practitioners
+          </span>
+
+
+          <span>
+            Junior residents
+          </span>
+
+        </div>
+
+
+        <div class="pathway-action">
+
+          <strong>
+            Enter Basic Edition
+          </strong>
+
+
+          <span aria-hidden="true">
+            →
+          </span>
+
+        </div>
+
+      </a>
+
+
+      <!-- ===============================================
+           EXPERT EDITION
+      ================================================ -->
+
+      <a
+        class="pathway-card pathway-expert"
+        data-edition="expert"
+        href="modules.html?edition=expert"
+        aria-label="Enter ACL Expert Edition"
+      >
+
+        <div
+          class="pathway-card-decoration"
+          aria-hidden="true"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+
+        <div
+          class="pathway-icon"
+          aria-hidden="true"
+        >
+          🩺
+        </div>
+
+
+        <span class="pathway-label">
+          ACL
+        </span>
+
+
+        <h2>
+          THE EXPERT EDITION
+        </h2>
+
+
+        <p class="pathway-tagline">
+          Advanced evidence-based cardiology, intervention,
+          trials, guidelines, and expert clinical decisions.
+        </p>
+
+
+        <div class="pathway-audience">
+
+          <span>
+            Cardiology residents
+          </span>
+
+
+          <span>
+            Specialists
+          </span>
+
+
+          <span>
+            Academic cardiologists
+          </span>
+
+
+          <span>
+            Interventional cardiologists
+          </span>
+
+        </div>
+
+
+        <div class="pathway-action">
+
+          <strong>
+            Enter Expert Edition
+          </strong>
+
+
+          <span aria-hidden="true">
+            →
+          </span>
+
+        </div>
+
+      </a>
+
+    </section>
+
+
+    <!-- ===============================================
+         EDITION MEMORY PREFERENCE
+    ================================================ -->
+
+    <section
+      class="pathway-preference"
+      aria-label="Edition preference"
+    >
+
+      <label class="pathway-remember-choice">
+
+        <input
+          id="rememberEditionChoice"
+          type="checkbox"
+        >
+
+
+        <span class="pathway-remember-copy">
+
+          <strong>
+            Remember my choice on this device
+          </strong>
+
+
+          <small>
+            When enabled, ACL will open this edition automatically
+            after future sign-ins. When disabled, ACL will ask you
+            to choose a pathway again after signing in.
+          </small>
+
+        </span>
+
+      </label>
+
+    </section>
+
+
+    <p
+      id="editionPreferenceStatus"
+      class="pathway-storage-status"
+      role="status"
+      aria-live="polite"
+    >
+      Your choice has not been saved permanently.
+    </p>
+
+
+    <p class="pathways-note">
+      You may switch editions at any time without creating another account.
+    </p>
+
+
+    <div
+      class="pathways-access-links"
+      aria-label="ACL account navigation"
+    >
+
+      <a href="login.html">
+        Sign In or Create Account
+      </a>
+
+
+      <a href="index.html">
+        Return to ACL Home
+      </a>
+
+    </div>
+
+
+    <section
+      id="pwaInstallSection"
+      class="pwa-install-section"
+      aria-labelledby="pwaInstallTitle"
+    >
+
+      <div class="pwa-install-copy">
+
+        <div
+          class="pwa-install-icon"
+          aria-hidden="true"
+        >
+          📱
+        </div>
+
+
+        <div>
+
+          <span class="pathways-kicker">
+            ACL MOBILE APP
+          </span>
+
+
+          <h2 id="pwaInstallTitle">
+            Install ACL on your device
+          </h2>
+
+
+          <p>
+            Open the platform like a normal app from your Home Screen
+            or desktop and receive important ACL notifications.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <button
+        id="installAclAppButton"
+        class="pwa-install-button"
+        type="button"
+      >
+        Install ACL App
+      </button>
+
+    </section>
+
+
+    <p
+      id="pwaInstallStatus"
+      class="pwa-install-status"
+      role="status"
+      aria-live="polite"
+    >
+      Installation is optional. You can continue using ACL in your browser.
+    </p>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="assets/js/pathways.js?v=2.2.0"
+  ></script>
+
+
+  <script
+    type="module"
+    src="assets/js/pwa.js?v=1.9.0"
+  ></script>
+
+</body>
+
+</html>
