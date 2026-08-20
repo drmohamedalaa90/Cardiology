@@ -6,270 +6,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#061c3d">
   <title>ACL Expert Command Center | Alexandria Cardiology League</title>
-
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="assets/images/acl-icon-192.png">
   <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
   <link rel="stylesheet" href="assets/css/acl-command-center.css?v=1.0.0">
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body class="acl-command-body">
   <header class="acl-command-header">
     <div class="acl-command-header-left">
-      <button id="aclDrawerToggle" class="acl-command-menu" type="button" aria-label="Open navigation" aria-controls="aclCommandDrawer" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
-
-      <a class="acl-command-brand" href="modules.html" aria-label="Alexandria Cardiology League modules">
+      <button id="aclDrawerToggle" class="acl-command-menu" type="button" aria-label="Open navigation" aria-controls="aclCommandDrawer" aria-expanded="false"><span></span><span></span><span></span></button>
+      <a class="acl-command-brand" href="modules.html?edition=expert" aria-label="Alexandria Cardiology League modules">
         <img src="assets/images/acl-icon-192.png" alt="" class="acl-command-brand-logo">
         <span class="acl-command-brand-name">Alexandria Cardiology League</span>
         <span class="acl-command-brand-separator">•</span>
         <strong id="aclHeaderEdition">THE EXPERT EDITION</strong>
       </a>
     </div>
-
     <div class="acl-command-header-actions">
       <span id="aclHeaderUserName" class="acl-command-user-name">Member</span>
-      <a class="acl-command-icon-btn" href="notifications.html" aria-label="Notifications" title="Notifications">
-        <span aria-hidden="true">🔔</span>
-      </a>
-      <a class="acl-command-icon-btn" href="settings.html" aria-label="Settings" title="Settings">
-        <span aria-hidden="true">⚙</span>
-      </a>
-      <button id="aclHeaderLogout" class="acl-command-icon-btn" type="button" aria-label="Log out" title="Log out">
-        <span aria-hidden="true">↪</span>
-      </button>
+      <a class="acl-command-icon-btn" href="notifications.html?edition=expert" aria-label="Notifications">🔔</a>
+      <a class="acl-command-icon-btn" href="settings.html?edition=expert" aria-label="Settings">⚙</a>
+      <button id="aclHeaderLogout" class="acl-command-icon-btn" type="button" aria-label="Log out">↪</button>
     </div>
   </header>
-
   <div id="aclDrawerBackdrop" class="acl-drawer-backdrop" hidden></div>
-
   <aside id="aclCommandDrawer" class="acl-command-drawer" aria-label="ACL navigation">
     <div class="acl-drawer-scroll">
-      <section class="acl-drawer-profile">
-        <div id="aclDrawerAvatar" class="acl-drawer-avatar" aria-hidden="true">
-          <span>ACL</span>
-        </div>
-        <div class="acl-drawer-profile-copy">
-          <strong id="aclDrawerName">Member</strong>
-          <a href="profile.html" class="acl-drawer-edit">Edit profile</a>
-        </div>
-      </section>
-
-      <nav class="acl-drawer-nav" aria-label="Primary navigation">
-        <a class="acl-drawer-link" href="progress.html">
-          <span class="acl-nav-icon">▤</span><span>My Progress</span>
-        </a>
-
-        <section class="acl-nav-group">
-          <button class="acl-nav-group-toggle" type="button" data-collapse-target="aclEditionMenu" aria-expanded="true">
-            <span><span class="acl-nav-icon">⇄</span>Editions</span><span class="acl-chevron">⌄</span>
-          </button>
-          <div id="aclEditionMenu" class="acl-nav-group-content">
-            <a id="aclBasicEditionLink" href="modules.html?edition=basic" data-edition-link="basic">Basic Edition</a>
-            <a id="aclExpertEditionLink" href="modules.html?edition=expert" data-edition-link="expert">Expert Edition</a>
-          </div>
-        </section>
-
-        <section class="acl-nav-group">
-          <button class="acl-nav-group-toggle" type="button" data-collapse-target="aclModulesMenu" aria-expanded="true">
-            <span><span class="acl-nav-icon">▦</span>Modules</span><span class="acl-chevron">⌄</span>
-          </button>
-
-          <div id="aclModulesMenu" class="acl-nav-group-content acl-module-tree">
-            <section class="acl-module-family">
-              <button class="acl-module-family-toggle" type="button" data-collapse-target="aclBasicModules" aria-expanded="true">
-                <span>BASIC</span><span class="acl-chevron">⌄</span>
-              </button>
-              <div id="aclBasicModules" class="acl-module-family-items" data-module-family="basic">
-                <span class="acl-tree-loading">Loading modules…</span>
-              </div>
-            </section>
-
-            <section class="acl-module-family">
-              <button class="acl-module-family-toggle" type="button" data-collapse-target="aclEcgModules" aria-expanded="false">
-                <span>ECG</span><span class="acl-chevron">›</span>
-              </button>
-              <div id="aclEcgModules" class="acl-module-family-items" data-module-family="ecg" hidden></div>
-            </section>
-
-            <section class="acl-module-family">
-              <button class="acl-module-family-toggle" type="button" data-collapse-target="aclEchoModules" aria-expanded="false">
-                <span>ECHO</span><span class="acl-chevron">›</span>
-              </button>
-              <div id="aclEchoModules" class="acl-module-family-items" data-module-family="echo" hidden></div>
-            </section>
-
-            <section class="acl-module-family">
-              <button class="acl-module-family-toggle" type="button" data-collapse-target="aclInterventionModules" aria-expanded="false">
-                <span>INTERVENTIONS</span><span class="acl-chevron">›</span>
-              </button>
-              <div id="aclInterventionModules" class="acl-module-family-items" data-module-family="interventions" hidden></div>
-            </section>
-          </div>
-        </section>
-
-        <a class="acl-drawer-link" href="learning.html">
-          <span class="acl-nav-icon">◆</span><span>Mindmaps &amp; Flashcards</span>
-        </a>
-
-        <a class="acl-drawer-link" href="challenge.html">
-          <span class="acl-nav-icon">⚔</span><span>Challenge Friends</span>
-        </a>
-
-        <a class="acl-drawer-link" href="competitions.html">
-          <span class="acl-nav-icon">🏆</span><span>Formal ACL Competitions</span>
-        </a>
-
-        <a class="acl-drawer-link" href="notifications.html">
-          <span class="acl-nav-icon">🔔</span><span>Notifications</span>
-        </a>
-
-        <a class="acl-drawer-link" href="settings.html">
-          <span class="acl-nav-icon">⚙</span><span>Settings</span>
-        </a>
+      <section class="acl-drawer-profile"><div id="aclDrawerAvatar" class="acl-drawer-avatar"><span>ACL</span></div><div class="acl-drawer-profile-copy"><strong id="aclDrawerName">Member</strong><a href="profile.html?edition=expert" class="acl-drawer-edit">Edit profile</a></div></section>
+      <nav class="acl-drawer-nav">
+        <a class="acl-drawer-link" href="progress.html?edition=expert"><span class="acl-nav-icon">▤</span><span>My Progress</span></a>
+        <section class="acl-nav-group"><button class="acl-nav-group-toggle" type="button" data-collapse-target="aclEditionMenu" aria-expanded="true"><span><span class="acl-nav-icon">⇄</span>Editions</span><span class="acl-chevron">⌄</span></button><div id="aclEditionMenu" class="acl-nav-group-content"><a href="modules.html?edition=basic" data-edition-link="basic">Basic Edition</a><a href="modules.html?edition=expert" data-edition-link="expert">Expert Edition</a></div></section>
+        <section class="acl-nav-group"><button class="acl-nav-group-toggle" type="button" data-collapse-target="aclModulesMenu" aria-expanded="true"><span><span class="acl-nav-icon">▦</span>Modules</span><span class="acl-chevron">⌄</span></button><div id="aclModulesMenu" class="acl-nav-group-content acl-module-tree"><section class="acl-module-family"><button class="acl-module-family-toggle" type="button" data-collapse-target="aclBasicModules" aria-expanded="true"><span>BASIC</span><span class="acl-chevron">⌄</span></button><div id="aclBasicModules" class="acl-module-family-items" data-module-family="basic"><span class="acl-tree-loading">Loading modules…</span></div></section><section class="acl-module-family"><button class="acl-module-family-toggle" type="button" data-collapse-target="aclEcgModules" aria-expanded="false"><span>ECG</span><span class="acl-chevron">›</span></button><div id="aclEcgModules" class="acl-module-family-items" data-module-family="ecg" hidden></div></section><section class="acl-module-family"><button class="acl-module-family-toggle" type="button" data-collapse-target="aclEchoModules" aria-expanded="false"><span>ECHO</span><span class="acl-chevron">›</span></button><div id="aclEchoModules" class="acl-module-family-items" data-module-family="echo" hidden></div></section><section class="acl-module-family"><button class="acl-module-family-toggle" type="button" data-collapse-target="aclInterventionModules" aria-expanded="false"><span>INTERVENTIONS</span><span class="acl-chevron">›</span></button><div id="aclInterventionModules" class="acl-module-family-items" data-module-family="interventions" hidden></div></section></div></section>
+        <a class="acl-drawer-link" href="study.html?edition=expert"><span class="acl-nav-icon">◆</span><span>Mindmaps &amp; Flashcards</span></a>
+        <a class="acl-drawer-link" href="challenge.html?edition=expert"><span class="acl-nav-icon">⚔</span><span>Challenge Friends</span></a>
+        <a class="acl-drawer-link" href="competitions.html?edition=expert"><span class="acl-nav-icon">🏆</span><span>Formal ACL Competitions</span></a>
+        <a class="acl-drawer-link" href="notifications.html?edition=expert"><span class="acl-nav-icon">🔔</span><span>Notifications</span></a>
+        <a class="acl-drawer-link" href="settings.html?edition=expert"><span class="acl-nav-icon">⚙</span><span>Settings</span></a>
       </nav>
     </div>
-
-    <button id="aclDrawerLogout" class="acl-drawer-logout" type="button">
-      <span>↪</span><span>Log out</span>
-    </button>
+    <button id="aclDrawerLogout" class="acl-drawer-logout" type="button"><span>↪</span><span>Log out</span></button>
   </aside>
-
   <main class="acl-command-main">
-    <section class="acl-dashboard-hero">
-      <div>
-        <span id="aclWelcomeEyebrow" class="acl-dashboard-eyebrow">ACL LEARNING</span>
-        <h1>Welcome back, <span id="aclWelcomeName">Member</span> 👋</h1>
-        <p>Keep learning. Keep advancing your expertise.</p>
-      </div>
-
-      <div class="acl-hero-stats">
-        <article>
-          <span class="acl-stat-icon">◉</span>
-          <div><strong id="aclStatInProgress">—</strong><small>In progress</small></div>
-        </article>
-        <article>
-          <span class="acl-stat-icon">✓</span>
-          <div><strong id="aclStatCompleted">—</strong><small>Completed</small></div>
-        </article>
-        <article>
-          <span class="acl-stat-icon">◎</span>
-          <div><strong id="aclStatOverall">—</strong><small>Overall progress</small></div>
-        </article>
-      </div>
-    </section>
-
-    <section class="acl-command-search" aria-label="Find modules">
-      <label>
-        <span class="acl-search-icon">⌕</span>
-        <input id="moduleSearchInputCompact" type="search" placeholder="Search modules, topics or skills…" autocomplete="off" aria-label="Search modules">
-      </label>
-      <button id="moduleFilterToggle" type="button" aria-expanded="false" aria-controls="moduleCompactFilters">
-        <span>☷</span> Filters
-      </button>
-      <button id="clearModuleFiltersCompact" class="acl-clear-filter" type="button">Clear</button>
-
-      <div id="moduleCompactFilters" class="acl-command-filters" hidden>
-        <label>
-          <span>Availability</span>
-          <select id="moduleAvailabilityCompact">
-            <option value="all">All availability</option>
-            <option value="open">Open</option>
-            <option value="locked">Locked / unavailable</option>
-            <option value="subscription">Needs subscription</option>
-          </select>
-        </label>
-        <label>
-          <span>Progress</span>
-          <select id="moduleProgressCompact">
-            <option value="all">All progress</option>
-            <option value="not-started">Not started</option>
-            <option value="started">Started / in progress</option>
-            <option value="completed">Finished</option>
-          </select>
-        </label>
-      </div>
-      <p id="moduleSearchSummary" class="acl-search-summary">Loading modules…</p>
-    </section>
-
-    <section class="acl-command-section">
-      <div class="acl-command-section-heading">
-        <div>
-          <h2>Continue Learning</h2>
-          <p>Pick up where you left off</p>
-        </div>
-      </div>
-      <div id="aclContinueLearning" class="acl-continue-grid">
-        <div class="acl-skeleton-card"></div>
-        <div class="acl-skeleton-card"></div>
-      </div>
-    </section>
-
-    <section class="acl-command-section">
-      <div class="acl-command-section-heading">
-        <div>
-          <h2>All Modules</h2>
-          <p id="catalogueSummary">Loading catalogue…</p>
-        </div>
-      </div>
-
-      <div id="modulesStatus" class="status-box" role="status" aria-live="polite" hidden></div>
-
-      <section id="modules" class="module-catalogue-grid acl-command-module-grid" aria-label="Available ACL modules" aria-live="polite">
-        <div class="modules-loading-state">
-          <div class="modules-loading-content">
-            <span class="modules-loading-spinner" aria-hidden="true"></span>
-            <strong>Loading your ACL modules…</strong>
-          </div>
-        </div>
-      </section>
-    </section>
+    <section class="acl-dashboard-hero"><div><span id="aclWelcomeEyebrow" class="acl-dashboard-eyebrow">ACL EXPERT EDITION</span><h1>Welcome back, <span id="aclWelcomeName">Member</span> 👋</h1><p>Keep learning. Keep advancing your expertise.</p></div><div class="acl-hero-stats"><article><span class="acl-stat-icon">◉</span><div><strong id="aclStatInProgress">—</strong><small>In progress</small></div></article><article><span class="acl-stat-icon">✓</span><div><strong id="aclStatCompleted">—</strong><small>Completed</small></div></article><article><span class="acl-stat-icon">◎</span><div><strong id="aclStatOverall">—</strong><small>Mastery</small></div></article></div></section>
+    <section class="acl-command-search" aria-label="Find modules"><label><span class="acl-search-icon">⌕</span><input id="moduleSearchInputCompact" type="search" placeholder="Search modules, topics or skills…" autocomplete="off"></label><button id="moduleFilterToggle" type="button" aria-expanded="false" aria-controls="moduleCompactFilters"><span>☷</span> Filters</button><button id="clearModuleFiltersCompact" class="acl-clear-filter" type="button">Clear</button><div id="moduleCompactFilters" class="acl-command-filters" hidden><label><span>Availability</span><select id="moduleAvailabilityCompact"><option value="all">All availability</option><option value="open">Open</option><option value="locked">Locked / unavailable</option></select></label><label><span>Progress</span><select id="moduleProgressCompact"><option value="all">All progress</option><option value="not-started">Not started</option><option value="started">Started / in progress</option><option value="completed">Finished</option></select></label></div><p id="moduleSearchSummary" class="acl-search-summary">Loading modules…</p></section>
+    <section class="acl-command-section"><div class="acl-command-section-heading"><div><h2>Continue Learning</h2><p>Pick up where you left off</p></div></div><div id="aclContinueLearning" class="acl-continue-grid"><div class="acl-skeleton-card"></div><div class="acl-skeleton-card"></div></div></section>
+    <section class="acl-command-section"><div class="acl-command-section-heading"><div><h2>All Modules</h2><p id="catalogueSummary">Loading catalogue…</p></div></div><div id="modulesStatus" class="status-box" role="status" aria-live="polite" hidden></div><section id="modules" class="module-catalogue-grid acl-command-module-grid" aria-label="Available ACL modules" aria-live="polite"><div class="modules-loading-state"><div class="modules-loading-content"><span class="modules-loading-spinner"></span><strong>Loading your ACL modules…</strong></div></div></section></section>
   </main>
-
-  <nav class="acl-mobile-bottom-nav" aria-label="Mobile navigation">
-    <a href="modules.html" class="is-active"><span>⌂</span><small>Home</small></a>
-    <button id="aclMobileModulesButton" type="button"><span>▦</span><small>Modules</small></button>
-    <a href="progress.html"><span>▤</span><small>Progress</small></a>
-    <a href="profile.html"><span>♙</span><small>Profile</small></a>
-  </nav>
-
-  <div id="moduleChallengeModal" class="module-challenge-modal" hidden>
-    <div id="moduleChallengeBackdrop" class="module-challenge-backdrop"></div>
-    <section class="module-challenge-dialog" role="dialog" aria-modal="true" aria-labelledby="moduleChallengeTitle">
-      <header class="module-challenge-header">
-        <div class="module-challenge-heading-copy">
-          <span class="module-challenge-kicker">ACL HEAD-TO-HEAD</span>
-          <h2 id="moduleChallengeTitle">Challenge your colleagues</h2>
-          <p id="moduleChallengeModuleName">Selected module</p>
-        </div>
-        <button id="closeModuleChallenge" type="button" class="module-challenge-close" aria-label="Close">×</button>
-      </header>
-      <div class="module-challenge-body">
-        <fieldset class="module-challenge-fieldset">
-          <legend>Who would you like to challenge?</legend>
-          <label class="module-challenge-choice"><input type="radio" name="challengeAudience" value="single" checked><span>One friend</span></label>
-          <label class="module-challenge-choice"><input type="radio" name="challengeAudience" value="multiple"><span>Multiple friends</span></label>
-          <label class="module-challenge-choice"><input type="radio" name="challengeAudience" value="open"><span>Open challenge link</span></label>
-        </fieldset>
-        <div class="module-challenge-settings-grid">
-          <label class="module-challenge-field"><span>Challenge duration</span><select id="moduleChallengeDuration"><option value="24">24 hours</option><option value="72">3 days</option><option value="168">7 days</option></select></label>
-          <label class="module-challenge-field"><span>Maximum participants</span><input id="moduleChallengeMaximumParticipants" type="number" min="2" max="100" value="2"></label>
-        </div>
-        <div id="moduleChallengeResult" class="module-challenge-result" hidden></div>
-      </div>
-      <footer class="module-challenge-actions">
-        <button id="cancelModuleChallenge" type="button" class="secondary-btn">Cancel</button>
-        <button id="createModuleChallenge" type="button" class="primary-btn module-challenge-create">Create challenge</button>
-      </footer>
-    </section>
-  </div>
-
-  <script type="module" src="assets/js/pwa.js?v=1.9.0"></script>
-  <script type="module" src="assets/js/modules.js?v=3.7.2"></script>
-  <script type="module" src="assets/js/modules-catalogue-ui.js?v=1.0.0"></script>
-  <script type="module" src="assets/js/acl-command-center.js?v=1.0.0"></script>
+  <nav class="acl-mobile-bottom-nav" aria-label="Mobile navigation"><a href="modules.html?edition=expert" class="is-active"><span>⌂</span><small>Home</small></a><button id="aclMobileModulesButton" type="button"><span>▦</span><small>Modules</small></button><a href="progress.html?edition=expert"><span>▤</span><small>Progress</small></a><a href="profile.html?edition=expert"><span>♙</span><small>Profile</small></a></nav>
+  <script type="module" src="assets/js/modules-live-core-20260820.js"></script>
 </body>
 </html>
