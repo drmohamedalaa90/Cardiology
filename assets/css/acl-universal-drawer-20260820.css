@@ -1,7 +1,18 @@
 /* Universal ACL sidebar architecture — one drawer everywhere */
 .acl-universal-drawer{background:#071d3d!important;color:#fff!important;border-right:1px solid rgba(255,255,255,.05)!important}
 .acl-universal-drawer .acl-universal-scroll{height:100%;display:flex;flex-direction:column;overflow:auto;padding:12px 10px 14px}
-.acl-universal-nav{display:grid;gap:6px}.acl-universal-link{min-height:48px;display:flex;align-items:center;gap:12px;padding:0 14px;border-radius:12px;color:#fff;text-decoration:none;font-size:15px;font-weight:800;line-height:1.05;transition:.16s ease}.acl-universal-link:hover{background:rgba(255,255,255,.065)}.acl-universal-link.is-active{background:#223a5b;color:#fff;box-shadow:none!important}.acl-universal-icon{width:17px;min-width:17px;display:grid;place-items:center;color:#d8ebff;font-size:15px;font-weight:800}.acl-universal-link.is-active .acl-universal-icon{color:#fff!important}.acl-universal-streak{margin-top:auto;border:1px solid rgba(255,255,255,.13);border-radius:15px;padding:18px 18px 17px;background:rgba(3,22,48,.24)}.acl-universal-streak small{display:block;color:#fff;font-size:10px;font-weight:900;letter-spacing:.03em;margin-bottom:14px}.acl-universal-streak>div:nth-child(2){display:flex;align-items:end;gap:7px}.acl-universal-streak strong{font-size:27px;line-height:1;color:#fff;font-weight:900}.acl-universal-streak span{font-size:12px;font-weight:800;color:#fff;padding-bottom:2px}.acl-universal-streak-dots{display:flex!important;gap:10px!important;align-items:center!important;margin-top:18px!important}.acl-universal-streak-dots i{width:10px;height:10px;border-radius:50%;background:#39d1aa;display:block}.acl-universal-streak-dots i.open{background:transparent;border:2px solid #39d1aa}
+.acl-universal-nav{display:grid;gap:6px}
+.acl-universal-link{min-height:48px;display:flex;align-items:center;gap:12px;padding:0 14px;border-radius:12px;color:#fff;text-decoration:none;font-size:15px;font-weight:500!important;line-height:1.15;transition:.16s ease}
+.acl-universal-link:hover{background:rgba(255,255,255,.065)}
+.acl-universal-link.is-active{background:#223a5b;color:#fff;box-shadow:none!important;font-weight:500!important}
+.acl-universal-icon{width:17px;min-width:17px;display:grid;place-items:center;color:#d8ebff;font-size:15px;font-weight:400!important}
+.acl-universal-link.is-active .acl-universal-icon{color:#fff!important}
+.acl-universal-streak{margin-top:auto;border:1px solid rgba(255,255,255,.13);border-radius:15px;padding:18px 18px 17px;background:rgba(3,22,48,.24)}
+.acl-universal-streak small{display:block;color:#fff;font-size:10px;font-weight:600;letter-spacing:.03em;margin-bottom:14px}
+.acl-universal-streak>div:nth-child(2){display:flex;align-items:end;gap:7px}
+.acl-universal-streak strong{font-size:27px;line-height:1;color:#fff;font-weight:600}
+.acl-universal-streak span{font-size:12px;font-weight:500;color:#fff;padding-bottom:2px}
+.acl-universal-streak-dots{display:flex!important;gap:10px!important;align-items:center!important;margin-top:18px!important}.acl-universal-streak-dots i{width:10px;height:10px;border-radius:50%;background:#39d1aa;display:block}.acl-universal-streak-dots i.open{background:transparent;border:2px solid #39d1aa}
 
 .acl-universal-drawer .acl-drawer-profile,.acl-universal-drawer .acl-drawer-nav,.acl-universal-drawer .acl-drawer-logout,.acl-universal-drawer .acl-drawer-scroll{display:none!important}
 
@@ -12,7 +23,7 @@
   #aclDrawerBackdrop{inset:58px 0 0!important;z-index:1450!important;background:rgba(3,17,38,.5)!important}
   #aclDrawerBackdrop:not([hidden]){display:block!important}
   #aclDrawerToggle{pointer-events:auto!important;position:relative!important;z-index:1550!important;touch-action:manipulation!important}
-  .acl-universal-drawer .acl-universal-scroll{padding:10px 10px 12px}.acl-universal-link{min-height:46px;font-size:14px;padding:0 13px}.acl-universal-streak{margin-top:26px;padding:15px}
+  .acl-universal-drawer .acl-universal-scroll{padding:10px 10px 12px}.acl-universal-link{min-height:46px;font-size:14px;padding:0 13px;font-weight:500!important}.acl-universal-streak{margin-top:26px;padding:15px}
   #aclHeaderLogout{display:grid!important;width:34px!important;height:34px!important;font-size:16px!important;color:#fff!important;background:transparent!important}
   #aclHeaderLogout:hover{background:rgba(255,255,255,.08)!important}
   .acl-command-header-actions .acl-command-icon-btn:nth-of-type(2){display:none!important}
