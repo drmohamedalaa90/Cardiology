@@ -125,3 +125,8 @@ document.getElementById("aclDrawerLogout")?.addEventListener("click",signOut);
 })();
 
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("drawer-open"))closeDrawer();});
+
+if (page === "settings.html" && edition === "expert") {
+  import(root + "assets/js/expert-settings-controls.js?v=1.0.0")
+    .catch(error => console.error("ACL Expert settings controls", error));
+}
