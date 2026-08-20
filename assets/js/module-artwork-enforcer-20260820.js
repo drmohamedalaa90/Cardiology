@@ -8,10 +8,10 @@
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.dataset.aclUniversalDrawer = 'true';
-    link.href = 'assets/css/acl-universal-drawer-20260820.css?v=1';
+    link.href = 'assets/css/acl-universal-drawer-20260820.css?v=2';
     document.head.appendChild(link);
   }
-  import('./acl-universal-drawer-20260820.js?v=1').catch(error=>console.warn('ACL universal drawer',error));
+  import('./acl-universal-drawer-20260820.js?v=2').catch(error=>console.warn('ACL universal drawer',error));
 
   function setLogo(card, src, alt, kind) {
     card.classList.remove('module-imaging','module-ecg','module-intervention');
