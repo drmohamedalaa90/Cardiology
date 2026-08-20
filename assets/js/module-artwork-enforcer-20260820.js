@@ -4,6 +4,15 @@
   const ECHO_RX = /\b(ECHO|ECHOCARDIOGRAPHY|TTE|TEE|DOPPLER)\b/i;
   const MENTAL_HEALTH_RX = /\b(MENTAL HEALTH|MENTAL WELLBEING|MENTAL WELLNESS|MENTAL HEALTHY)\b/i;
 
+  if (!document.querySelector('link[data-acl-universal-drawer]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.dataset.aclUniversalDrawer = 'true';
+    link.href = 'assets/css/acl-universal-drawer-20260820.css?v=1';
+    document.head.appendChild(link);
+  }
+  import('./acl-universal-drawer-20260820.js?v=1').catch(error=>console.warn('ACL universal drawer',error));
+
   function setLogo(card, src, alt, kind) {
     card.classList.remove('module-imaging','module-ecg','module-intervention');
     if (kind === 'intervention') card.classList.add('module-intervention');
@@ -29,24 +38,6 @@
     });
   }
 
-  function exposeHome(){
-    const nav = document.querySelector('.acl-drawer-nav');
-    if (nav && !nav.querySelector('[data-acl-home-link]')) {
-      const a = document.createElement('a');
-      a.className = 'acl-drawer-link';
-      a.dataset.aclHomeLink = '1';
-      a.href = 'home.html';
-      a.innerHTML = '<span class="acl-nav-icon">⌂</span><span>Home</span>';
-      nav.prepend(a);
-    }
-    document.querySelectorAll('.acl-mobile-bottom-nav a').forEach(a=>{
-      const label=(a.querySelector('small')?.textContent||'').trim().toLowerCase();
-      if(label==='home') a.href='home.html';
-    });
-    const brand=document.querySelector('.acl-command-brand');
-    if(brand) brand.href='home.html';
-  }
-
   const style = document.createElement('style');
   style.textContent = `
     .acl-command-module-grid .module-card .module-card-body.forced-module-logo-body::before{display:none!important;content:none!important}
@@ -57,9 +48,9 @@
   `;
   document.head.appendChild(style);
 
-  applyArtwork(); exposeHome();
+  applyArtwork();
   const host = document.getElementById('modules');
-  if (host) new MutationObserver(()=>{applyArtwork();exposeHome()}).observe(host, { childList:true, subtree:true });
-  document.addEventListener('DOMContentLoaded', ()=>{applyArtwork();exposeHome()});
-  window.addEventListener('load', ()=>{applyArtwork();exposeHome()});
+  if (host) new MutationObserver(applyArtwork).observe(host, { childList:true, subtree:true });
+  document.addEventListener('DOMContentLoaded', applyArtwork);
+  window.addEventListener('load', applyArtwork);
 })();
