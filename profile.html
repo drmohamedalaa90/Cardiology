@@ -7,16 +7,37 @@
   <title>My Profile | Alexandria Cardiology League</title>
   <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
   <link rel="stylesheet" href="assets/css/auth.css">
+  <link rel="stylesheet" href="assets/css/profile-expert-v1.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <main class="container">
-  <section class="card"><h1>My Profile</h1><div class="profile-layout"><aside class="profile-avatar-card"><img id="avatarPreview" class="profile-avatar-large" alt="" style="display:none"><div id="avatarPlaceholder" class="avatar-placeholder" style="width:150px;height:150px;margin:auto;font-size:2rem">ACL</div><p><input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></p></aside>
-  <form id="profileForm"><div class="form-grid"><div class="field full"><label>Name</label><input id="name" class="readonly-field" readonly></div><div class="field full"><label>Email</label><input id="email" class="readonly-field" readonly></div><div class="field full"><label>Username</label><input id="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9._]+" required><small>Letters, numbers, dots and underscores only.</small></div><div class="field full"><label>WhatsApp</label><input id="whatsapp" required></div><div class="field"><label>Academic year</label><input id="academicYear" required></div><div class="field"><label>Institution</label><input id="institution" required></div></div><button class="primary-btn" type="submit" style="margin-top:18px">Save profile</button><div id="profileStatus" class="status-box"></div></form></div></section>
+  <section class="card">
+    <span class="admin-kicker">ACL LEARNING IDENTITY</span>
+    <h1>My Profile</h1>
+    <p class="muted">Your account, professional identity and Expert Edition learning record.</p>
+    <div class="profile-learning-identity" aria-label="Learning identity statistics">
+      <article class="profile-learning-stat"><span>Mastery</span><strong id="profileMastery">—</strong><small>Weighted knowledge strength</small></article>
+      <article class="profile-learning-stat success"><span>Success</span><strong id="profileSuccess">—</strong><small>Overall correct-answer rate</small></article>
+      <article class="profile-learning-stat xp"><span>ACL XP</span><strong id="profileXp">—</strong><small id="profileLevel">Level —</small></article>
+      <article class="profile-learning-stat streak"><span>Modules mastered</span><strong id="profileMastered">—</strong><small>80%+ mastery threshold</small></article>
+    </div>
+    <div class="profile-learning-summary">
+      <article class="card profile-learning-panel"><h2>Achievements</h2><div id="profileBadgeGrid" class="profile-badge-grid"><span class="muted">Loading achievements…</span></div><a class="secondary-btn profile-progress-link" href="progress.html?edition=expert">Open full progress</a></article>
+      <article class="card profile-learning-panel"><h2>Confidence intelligence</h2><div id="profileConfidence" class="profile-confidence-grid"><span class="muted">Waiting for confidence data…</span></div></article>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:20px">
+    <div class="profile-layout">
+      <aside class="profile-avatar-card"><img id="avatarPreview" class="profile-avatar-large" alt="" style="display:none"><div id="avatarPlaceholder" class="avatar-placeholder" style="width:150px;height:150px;margin:auto;font-size:2rem">ACL</div><p><input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></p></aside>
+      <form id="profileForm"><div class="form-grid"><div class="field full"><label>Name</label><input id="name" class="readonly-field" readonly></div><div class="field full"><label>Email</label><input id="email" class="readonly-field" readonly></div><div class="field full"><label>Username</label><input id="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9._]+" required><small>Letters, numbers, dots and underscores only.</small></div><div class="field full"><label>WhatsApp</label><input id="whatsapp" required></div><div class="field"><label>Academic year</label><input id="academicYear" required></div><div class="field"><label>Institution</label><input id="institution" required></div></div><button class="primary-btn" type="submit" style="margin-top:18px">Save profile</button><div id="profileStatus" class="status-box"></div></form>
+    </div>
+  </section>
+
   <section class="card" style="margin-top:20px"><h2>Change password</h2><form id="passwordForm"><div class="form-grid"><div class="field full"><label for="currentPassword">Current password</label><input id="currentPassword" type="password" autocomplete="current-password" required></div><div class="field"><label for="profileNewPassword">New password</label><input id="profileNewPassword" type="password" autocomplete="new-password" minlength="8" required></div><div class="field"><label for="profileConfirmPassword">Confirm new password</label><input id="profileConfirmPassword" type="password" autocomplete="new-password" minlength="8" required></div></div><button class="primary-btn" type="submit" style="margin-top:18px">Change password</button><div id="passwordStatus" class="status-box"></div></form></section>
 </main>
 <script type="module" src="assets/js/acl-shared-shell.js?v=1.0.0"></script>
-<script type="module" src="assets/js/profile-page.js"></script>
-<script type="module" src="assets/js/session-ui.js"></script>
+<script type="module" src="assets/js/profile-page.js?v=2.0.0"></script>
 </body>
 </html>
