@@ -17,11 +17,9 @@ function addCss(href) {
   document.head.appendChild(link);
 }
 addCss("assets/css/acl-command-center.css?v=2.1.0");
-addCss("assets/css/acl-shared-shell.css?v=1.0.0");
+addCss("assets/css/acl-shared-shell.css?v=2.0.0");
 
-// Remove legacy page-specific navigation so only one shell can exist.
 document.querySelectorAll("body > header.topbar, .settings-shell > header.topbar").forEach(el => el.remove());
-
 document.body.classList.add("acl-command-body", "acl-shared-page");
 document.body.classList.toggle("acl-theme-basic", edition === "basic");
 document.body.classList.toggle("acl-theme-expert", edition === "expert");
@@ -30,7 +28,7 @@ const main = document.querySelector("body > main");
 if (main) main.classList.add("acl-command-main", "acl-shared-main");
 
 const active = (name) => page === name ? " is-active" : "";
-const withEdition = (name) => `${root}${name}?edition=${edition}`;
+const withEdition = (name, forcedEdition = edition) => `${root}${name}?edition=${forcedEdition}`;
 
 const shell = document.createElement("div");
 shell.id = "aclSharedShell";
@@ -47,9 +45,9 @@ shell.innerHTML = `
   </div>
   <div class="acl-command-header-actions">
     <span id="aclHeaderUserName" class="acl-command-user-name">Member</span>
-    <a class="acl-command-icon-btn" href="${root}notifications.html?edition=${edition}" aria-label="Notifications">🔔</a>
-    <a class="acl-command-icon-btn" href="${root}settings.html?edition=${edition}" aria-label="Settings">⚙</a>
-    <button id="aclHeaderLogout" class="acl-command-icon-btn" type="button" aria-label="Log out">↪</button>
+    <a class="acl-command-icon-btn" href="${root}notifications.html?edition=${edition}" aria-label="Notifications" title="Notifications">🔔</a>
+    <a class="acl-command-icon-btn" href="${root}settings.html?edition=${edition}" aria-label="Settings" title="Settings">⚙</a>
+    <button id="aclHeaderLogout" class="acl-command-icon-btn" type="button" aria-label="Log out" title="Log out">↪</button>
   </div>
 </header>
 <div id="aclDrawerBackdrop" class="acl-drawer-backdrop" hidden></div>
@@ -65,13 +63,14 @@ shell.innerHTML = `
       <section class="acl-nav-group">
         <button class="acl-nav-group-toggle" type="button" data-collapse-target="aclEditionMenu" aria-expanded="true"><span><span class="acl-nav-icon">⇄</span>Editions</span><span class="acl-chevron">⌄</span></button>
         <div id="aclEditionMenu" class="acl-nav-group-content">
-          <a href="${root}modules.html?edition=basic" class="${edition === "basic" ? "is-selected" : ""}">Basic Edition</a>
-          <a href="${root}modules.html?edition=expert" class="${edition === "expert" ? "is-selected" : ""}">Expert Edition</a>
+          <a href="${withEdition("modules.html","basic")}" class="${edition === "basic" ? "is-selected" : ""}">Basic Edition</a>
+          <a href="${withEdition("modules.html","expert")}" class="${edition === "expert" ? "is-selected" : ""}">Expert Edition</a>
         </div>
       </section>
-      <a class="acl-drawer-link" href="${root}learning.html?edition=${edition}"><span class="acl-nav-icon">◆</span><span>Mindmaps & Flashcards</span></a>
-      <a class="acl-drawer-link" href="${root}challenge.html?edition=${edition}"><span class="acl-nav-icon">⚔</span><span>Challenge Friends</span></a>
-      <a class="acl-drawer-link" href="${root}competitions.html?edition=${edition}"><span class="acl-nav-icon">🏆</span><span>Formal ACL Competitions</span></a>
+      <a class="acl-drawer-link${active("learning.html")}" href="${root}learning.html?edition=${edition}"><span class="acl-nav-icon">◆</span><span>Mindmaps &amp; Flashcards</span></a>
+      <a class="acl-drawer-link${active("challenge.html")}" href="${root}challenge.html?edition=${edition}"><span class="acl-nav-icon">⚔</span><span>Challenge Friends</span></a>
+      <a class="acl-drawer-link${active("competitions.html")}" href="${root}competitions.html?edition=${edition}"><span class="acl-nav-icon">🏆</span><span>Formal ACL Competitions</span></a>
+      <a class="acl-drawer-link${active("notifications.html")}" href="${root}notifications.html?edition=${edition}"><span class="acl-nav-icon">🔔</span><span>Notifications</span></a>
       <a class="acl-drawer-link${active("profile.html")}" href="${root}profile.html?edition=${edition}"><span class="acl-nav-icon">♙</span><span>Profile</span></a>
       <a class="acl-drawer-link${active("settings.html")}" href="${root}settings.html?edition=${edition}"><span class="acl-nav-icon">⚙</span><span>Settings</span></a>
     </nav>
@@ -89,8 +88,16 @@ document.body.insertBefore(shell, document.body.firstChild);
 const backdrop = document.getElementById("aclDrawerBackdrop");
 const toggle = document.getElementById("aclDrawerToggle");
 const mobile = () => matchMedia("(max-width:820px)").matches;
-function openDrawer(){ if(mobile()){document.body.classList.add("drawer-open");backdrop.hidden=false;} else document.body.classList.remove("drawer-collapsed"); toggle?.setAttribute("aria-expanded","true"); }
-function closeDrawer(){ if(mobile()){document.body.classList.remove("drawer-open");backdrop.hidden=true;} else document.body.classList.add("drawer-collapsed"); toggle?.setAttribute("aria-expanded","false"); }
+function openDrawer(){
+  if(mobile()){document.body.classList.add("drawer-open");backdrop.hidden=false;}
+  else document.body.classList.remove("drawer-collapsed");
+  toggle?.setAttribute("aria-expanded","true");
+}
+function closeDrawer(){
+  if(mobile()){document.body.classList.remove("drawer-open");backdrop.hidden=true;}
+  else document.body.classList.add("drawer-collapsed");
+  toggle?.setAttribute("aria-expanded","false");
+}
 toggle?.addEventListener("click",()=> mobile() ? (document.body.classList.contains("drawer-open") ? closeDrawer() : openDrawer()) : (document.body.classList.contains("drawer-collapsed") ? openDrawer() : closeDrawer()));
 backdrop?.addEventListener("click",closeDrawer);
 document.getElementById("aclMobileModulesButton")?.addEventListener("click",openDrawer);
@@ -103,16 +110,18 @@ document.getElementById("aclDrawerLogout")?.addEventListener("click",signOut);
 
 (async()=>{
   try{
-    const {data:{session}}=await supabaseClient.auth.getSession();
-    if(!session?.user) return;
+    const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
+    if(sessionError || !session?.user){ location.replace(root+"login.html"); return; }
     const user=session.user;
-    const {data:p}=await supabaseClient.from("profiles").select("*").eq("id",user.id).maybeSingle();
+    const {data:p,error:profileError}=await supabaseClient.from("profiles").select("*").eq("id",user.id).maybeSingle();
+    if(profileError) console.warn("ACL profile load",profileError);
+    if(p?.account_status === "suspended"){ await supabaseClient.auth.signOut(); location.replace(root+"login.html"); return; }
     const name=p?.display_name||p?.full_name||p?.name||user.user_metadata?.display_name||user.user_metadata?.full_name||user.email?.split("@")[0]||"Member";
     const photo=p?.avatar_url||p?.photo_url||p?.profile_photo_url||user.user_metadata?.avatar_url||user.user_metadata?.picture||"";
     ["aclHeaderUserName","aclDrawerName"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=name;});
     const av=document.getElementById("aclDrawerAvatar");
     if(av){ if(photo) av.innerHTML=`<img src="${photo}" alt="">`; else av.textContent=name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase()||"ACL"; }
-  }catch(e){console.warn("ACL shared shell profile",e);}
+  }catch(e){ console.warn("ACL shared shell",e); }
 })();
 
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("drawer-open"))closeDrawer();});
