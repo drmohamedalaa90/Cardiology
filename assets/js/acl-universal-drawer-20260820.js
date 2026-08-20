@@ -1,6 +1,21 @@
 import { supabaseClient } from './supabase-client.js';
 
-const DRAWER_VERSION = '4';
+const DRAWER_VERSION = '5';
+const OLD_BRAND='Alexandria Cardiology League';
+const OLD_BRAND_UPPER='ALEXANDRIA CARDIOLOGY LEAGUE';
+function brandText(value=''){return String(value).replaceAll(OLD_BRAND_UPPER,'CARDIOLOGY LEAGUE').replaceAll(OLD_BRAND,'Cardiology League')}
+function applyBrand(scope=document){
+  document.title=brandText(document.title);
+  const rootNode=scope?.nodeType?scope:document;
+  if(rootNode.nodeType===Node.TEXT_NODE){const next=brandText(rootNode.nodeValue);if(next!==rootNode.nodeValue)rootNode.nodeValue=next;return}
+  if(rootNode.nodeType!==Node.ELEMENT_NODE&&rootNode!==document)return;
+  const walker=document.createTreeWalker(rootNode,NodeFilter.SHOW_TEXT);let node;
+  while((node=walker.nextNode())){const next=brandText(node.nodeValue);if(next!==node.nodeValue)node.nodeValue=next}
+  const elements=rootNode===document?document.querySelectorAll('*'):[rootNode,...rootNode.querySelectorAll('*')];
+  elements.forEach(el=>['aria-label','alt','title','placeholder'].forEach(attr=>{if(!el.hasAttribute?.(attr))return;const current=el.getAttribute(attr),next=brandText(current);if(next!==current)el.setAttribute(attr,next)}));
+}
+applyBrand(document);
+
 const edition = (() => {
   const q = new URLSearchParams(location.search).get('edition');
   let saved = '';
@@ -124,6 +139,7 @@ function ensureLogout(){
 
 let streakLoaded=false;
 function apply(){
+  applyBrand(document);
   const created=renderDrawer();
   bindControls();
   ensureLogout();
@@ -132,8 +148,8 @@ function apply(){
 }
 
 apply();
-const observer=new MutationObserver(()=>apply());
-observer.observe(document.documentElement,{childList:true,subtree:true});
+const observer=new MutationObserver(mutations=>{mutations.forEach(m=>{if(m.type==='characterData')applyBrand(m.target);m.addedNodes.forEach(node=>applyBrand(node))});apply()});
+observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
 document.addEventListener('DOMContentLoaded',apply,{once:true});
 window.addEventListener('load',apply,{once:true});
 window.addEventListener('resize',()=>{if(!isMobile())closeDrawer()});
