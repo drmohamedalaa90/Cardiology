@@ -1,1 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><image width="128" height="128" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAABZc0lEQVR42u39d7jd11nnDX/WWr+2+z69qVdLcrdjpzmS03tIwrEJgUCSIaENDGWGYQYeWfDwMgMTYGhDMg9DaEOQCAFi0hNbOHGLm2JLlmSVI52j08/Z/dfXWu8fWw6hvO/MPGDjOL516dqXjraO9vmt77rL927wgvwdOQjSHjzo2IMHHbt/v2Onp9VBkC88meeBWJAWxP/Lfyuej89EPM8PXDA9Ldm7V4hDh/Jv/LoA+/ffK8Cuvfa1G4OJkW9rCVzTbDYdycWxTVPHxa99ZOGFK/RNJIenp9U/AMRP/cgm++53T/yjYLn8/kt7dn3Uft/3WPtLv2CjN73aPrnvCvvEFbuaZ6666nu+8X0WhN2/37lr/37HfhObiOerBhCA/TC4t7/rtleKoYG3JJcu3dyYubCn14463uDAdVd+9auLT9/6p1/vffGLC5saq8fH3vSGjaJUyJc/+dfysRNnjLEymJqc+rHrLpz5tbvY79zK0fwf8x3uAPv3NctzXZ53zo09eFBaoP2u2975Xe9/z2O1m2/+TLVc+iExd+nGM0+c8teXVsdNN3ojwN3796tvvAjDrdUrvGJhi9m4c...TRUNCATED_FOR_BREVITY...5AV5QV6QF+QFeUH+f8r/F2nYb4DPA1NzAAAAAElFTkSuQmCC"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Coronary anatomy module">
+  <defs>
+    <linearGradient id="myo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f06a61"/>
+      <stop offset="0.52" stop-color="#d94145"/>
+      <stop offset="1" stop-color="#9e2132"/>
+    </linearGradient>
+    <linearGradient id="aorta" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff6d61"/>
+      <stop offset="1" stop-color="#c92834"/>
+    </linearGradient>
+    <filter id="s" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#6b1320" flood-opacity=".22"/>
+    </filter>
+  </defs>
+  <circle cx="64" cy="64" r="60" fill="#fff"/>
+  <path d="M55 29c-4-11-1-20 7-25 4 8 6 15 6 22 5-8 12-13 20-14 4 8 2 16-4 23 14 3 24 15 24 30 0 30-23 52-46 59-24-10-43-31-43-58 0-20 13-34 31-37 2 0 4 0 5 0z" fill="url(#myo)" filter="url(#s)"/>
+  <path d="M62 28c2-8 1-16-2-24" fill="none" stroke="url(#aorta)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M67 29c6-9 13-14 22-16" fill="none" stroke="url(#aorta)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M48 31c-3-8-8-13-15-16" fill="none" stroke="#176fd1" stroke-width="9" stroke-linecap="round"/>
+  <path d="M53 41c10 2 18 8 23 17 5 10 7 24 5 43" fill="none" stroke="#ffd54a" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M55 43c-8 7-13 18-14 31-1 10 1 20 7 31" fill="none" stroke="#ffd54a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M74 58c9 1 17 6 23 14" fill="none" stroke="#ffd54a" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M45 63c-8 1-14 5-20 11" fill="none" stroke="#ffd54a" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M77 74c8 4 14 10 18 18" fill="none" stroke="#ffd54a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M44 77c-6 5-10 11-12 18" fill="none" stroke="#ffd54a" stroke-width="3" stroke-linecap="round"/>
+  <path d="M57 42c-5 8-7 19-7 30" fill="none" stroke="#d12232" stroke-width="2" stroke-linecap="round" opacity=".9"/>
+  <path d="M76 58c-3 10-3 20-1 31" fill="none" stroke="#d12232" stroke-width="2" stroke-linecap="round" opacity=".9"/>
+</svg>
