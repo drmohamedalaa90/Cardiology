@@ -2,6 +2,11 @@
 
 /* Dedicated module artwork */
 .acl-command-module-grid .module-card.module-ecg:not(.is-esc-guideline) .module-card-body::before{content:""!important;display:grid!important;background:#fff url("../images/ecg-module-logo.svg") center/contain no-repeat!important;color:transparent!important;border-radius:12px!important;box-shadow:0 2px 7px rgba(12,86,103,.16)!important}
-.acl-command-module-grid .module-card.module-intervention:not(.is-esc-guideline) .module-card-body::before{content:""!important;display:grid!important;background:#fff url("../images/coronary-anatomy-module.svg") center/contain no-repeat!important;color:transparent!important;border-radius:50%!important;box-shadow:0 2px 7px rgba(138,35,49,.14)!important}
+.acl-command-module-grid .module-card.module-intervention .module-card-body::before{content:""!important;display:grid!important;background:#fff url("../images/coronary-anatomy-module.svg") center/contain no-repeat!important;color:transparent!important;border-radius:50%!important;box-shadow:0 2px 7px rgba(138,35,49,.14)!important}
+
+/* Intervention artwork has priority over ESC badge for structural/interventional modules
+   including TAVI, mitral and tricuspid modules. */
+.acl-command-module-grid .module-card.module-intervention.is-esc-guideline .esc-guideline-logo{display:none!important}
+.acl-command-module-grid .module-card.module-intervention.is-esc-guideline .module-card-body::before{content:""!important;display:grid!important;background:#fff url("../images/coronary-anatomy-module.svg") center/contain no-repeat!important;color:transparent!important;border-radius:50%!important;box-shadow:0 2px 7px rgba(138,35,49,.14)!important}
 
 @media(max-width:820px){.acl-command-brand-logo{width:31px!important;height:31px!important;flex-basis:31px}.acl-command-module-grid .esc-guideline-logo{width:42px;height:42px}.acl-continue-icon.esc-guideline-icon{padding:4px!important}}
