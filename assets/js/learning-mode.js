@@ -286,10 +286,20 @@ let aclSettings =
 
 const LIFELINES = {
   expert: "expert",
+  flashcard: "flashcard",
+  time: "time",
   filter: "filter",
-  guideline: "guideline",
+  guideline: "guideline", // legacy saved-attempt compatibility only
   vault: "vault"
 };
+
+const ACTIVE_LIFELINES = [
+  LIFELINES.expert,
+  LIFELINES.flashcard,
+  LIFELINES.time,
+  LIFELINES.filter,
+  LIFELINES.vault
+];
 
 
 /* =========================================================
@@ -1524,257 +1534,237 @@ function enabledLifeline(
    QUIZ-WIDE LIFELINE STATE
 ========================================================= */
 
+function lifelineAllowanceForQuestionCount(
+  questionCount
+) {
+  const total =
+    Math.max(
+      1,
+      Number(
+        questionCount ||
+        0
+      )
+    );
+
+  if (total <= 10) {
+    return 2;
+  }
+
+  if (total <= 20) {
+    return 3;
+  }
+
+  if (total <= 30) {
+    return 4;
+  }
+
+  return 5;
+}
+
+
+function lifelineAllowance() {
+  if (!lifelinesEnabled()) {
+    return 0;
+  }
+
+  const totalQuestions =
+    questions.length ||
+    requestedStandaloneQuestionCount ||
+    challengeQuestionCount ||
+    Number(
+      quiz?.question_count ||
+      20
+    );
+
+  return lifelineAllowanceForQuestionCount(
+    totalQuestions
+  );
+}
+
+
 function defaultQuizLifelines() {
-    return {
-    expert:
-      false,
+  return {
+    // Compatibility flags retained so older cloud attempts remain readable.
+    expert: false,
+    flashcard: false,
+    time: false,
+    filter: false,
+    guideline: false,
+    vault: false,
 
-    filter:
-      false,
+    usage: [],
+    bonusSeconds: 0,
 
-    guideline:
-      false,
+    usedOnQuestion: {
+      expert: null,
+      flashcard: null,
+      time: null,
+      filter: null,
+      guideline: null,
+      vault: null
+    },
 
-    vault:
-      false,
-
-    usedOnQuestion:
-      {
-        expert:
-          null,
-
-        filter:
-          null,
-
-        guideline:
-          null,
-
-        vault:
-          null
-      },
-eliminatedOptionIdsByQuestion:
-      {}
+    eliminatedOptionIdsByQuestion: {}
   };
 }
+
+
+function normalizedUsageEntry(
+  entry
+) {
+  if (
+    !entry ||
+    typeof entry !== "object" ||
+    Array.isArray(entry)
+  ) {
+    return null;
+  }
+
+  const type =
+    String(
+      entry.type ||
+      entry.lifeline ||
+      ""
+    );
+
+  if (
+    !ACTIVE_LIFELINES.includes(type)
+  ) {
+    return null;
+  }
+
+  const questionNumber =
+    Number(
+      entry.questionNumber ||
+      entry.question_number ||
+      0
+    );
+
+  const questionId =
+    entry.questionId ??
+    entry.question_id ??
+    "";
+
+  return {
+    type,
+    questionId:
+      String(questionId || ""),
+    questionNumber:
+      Number.isFinite(questionNumber) &&
+      questionNumber > 0
+        ? questionNumber
+        : null
+  };
+}
+
+
+function syncCompatibilityLifelineFlags(
+  state
+) {
+  const usage =
+    Array.isArray(state.usage)
+      ? state.usage
+      : [];
+
+  [
+    ...ACTIVE_LIFELINES,
+    LIFELINES.guideline
+  ].forEach(
+    (lifeline) => {
+      state[lifeline] =
+        usage.some(
+          (entry) =>
+            entry.type === lifeline
+        );
+
+      const latest =
+        [...usage]
+          .reverse()
+          .find(
+            (entry) =>
+              entry.type === lifeline
+          );
+
+      state.usedOnQuestion[lifeline] =
+        latest?.questionNumber ||
+        null;
+    }
+  );
+}
+
 
 function ensureLifelinesState() {
   if (
     !lifelinesState ||
-    typeof lifelinesState !==
-      "object" ||
-    Array.isArray(
-      lifelinesState
-    )
+    typeof lifelinesState !== "object" ||
+    Array.isArray(lifelinesState)
   ) {
     lifelinesState =
       defaultQuizLifelines();
   }
 
-  [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].forEach(
-    (lifeline) => {
-      lifelinesState[
-        lifeline
-      ] =
-        Boolean(
-          lifelinesState[
-            lifeline
-          ]
-        );
-    }
-  );
   if (
-    !lifelinesState
-      .usedOnQuestion ||
-    typeof lifelinesState
-      .usedOnQuestion !==
-      "object" ||
-    Array.isArray(
-      lifelinesState
-        .usedOnQuestion
+    !Array.isArray(
+      lifelinesState.usage
     )
   ) {
-    lifelinesState
-      .usedOnQuestion =
-        {
-          expert:
-            null,
-
-          filter:
-            null,
-
-          guideline:
-            null,
-
-          vault:
-            null
-        };
+    lifelinesState.usage = [];
   }
 
-  [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].forEach(
-    (lifeline) => {
-      const questionNumber =
-        Number(
-          lifelinesState
-            .usedOnQuestion[
-              lifeline
-            ]
-        );
+  lifelinesState.usage =
+    lifelinesState.usage
+      .map(normalizedUsageEntry)
+      .filter(Boolean);
 
-      lifelinesState
-        .usedOnQuestion[
-          lifeline
-        ] =
-          Number.isFinite(
-            questionNumber
-          ) &&
-          questionNumber >
-            0
-            ? questionNumber
-            : null;
-    }
-  );
+  const bonusSeconds =
+    Number(
+      lifelinesState.bonusSeconds ||
+      0
+    );
+
+  lifelinesState.bonusSeconds =
+    Number.isFinite(bonusSeconds) &&
+    bonusSeconds > 0
+      ? Math.round(bonusSeconds)
+      : 0;
+
   if (
-    !lifelinesState
-      .eliminatedOptionIdsByQuestion ||
-    typeof lifelinesState
-      .eliminatedOptionIdsByQuestion !==
-      "object" ||
+    !lifelinesState.usedOnQuestion ||
+    typeof lifelinesState.usedOnQuestion !== "object" ||
     Array.isArray(
-      lifelinesState
-        .eliminatedOptionIdsByQuestion
+      lifelinesState.usedOnQuestion
     )
   ) {
-    lifelinesState
-      .eliminatedOptionIdsByQuestion =
-        {};
+    lifelinesState.usedOnQuestion = {};
   }
+
+  if (
+    !lifelinesState.eliminatedOptionIdsByQuestion ||
+    typeof lifelinesState.eliminatedOptionIdsByQuestion !== "object" ||
+    Array.isArray(
+      lifelinesState.eliminatedOptionIdsByQuestion
+    )
+  ) {
+    lifelinesState.eliminatedOptionIdsByQuestion = {};
+  }
+
+  syncCompatibilityLifelineFlags(
+    lifelinesState
+  );
 
   return lifelinesState;
 }
 
 
-function lifelinesForQuestion(
-  question
+function usageForLifeline(
+  lifeline
 ) {
-  const state =
-    ensureLifelinesState();
-
-  const questionId =
-    question
-      ? String(
-          question.id
-        )
-      : "";
-
-  const eliminatedOptionIds =
-    questionId &&
-    Array.isArray(
-      state
-        .eliminatedOptionIdsByQuestion[
-          questionId
-        ]
-    )
-      ? state
-          .eliminatedOptionIdsByQuestion[
-            questionId
-          ]
-      : [];
-
-  return {
-    expert:
-      state.expert,
-
-    filter:
-      state.filter,
-
-    guideline:
-      state.guideline,
-
-    vault:
-      state.vault,
-
-    eliminatedOptionIds:
-      eliminatedOptionIds.map(
-        String
-      )
-  };
-}
-
-
-function updateQuestionLifelines(
-  question,
-  changes = {}
-) {
-  const state =
-    ensureLifelinesState();
-
-  [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].forEach(
-    (lifeline) => {
-      if (
-        Object.prototype
-          .hasOwnProperty.call(
-            changes,
-            lifeline
-          )
-      ) {
-        state[
-          lifeline
-        ] =
-          Boolean(
-            changes[
-              lifeline
-            ]
-          );
-      }
-    }
-  );
-
-  if (
-    question &&
-    Object.prototype
-      .hasOwnProperty.call(
-        changes,
-        "eliminatedOptionIds"
-      )
-  ) {
-    const questionId =
-      String(
-        question.id
-      );
-
-    state
-      .eliminatedOptionIdsByQuestion[
-        questionId
-      ] =
-        Array.isArray(
-          changes
-            .eliminatedOptionIds
-        )
-          ? changes
-              .eliminatedOptionIds
-              .map(
-                String
-              )
-          : [];
-  }
-
-  lifelinesState =
-    state;
+  return ensureLifelinesState()
+    .usage
+    .filter(
+      (entry) =>
+        entry.type === lifeline
+    );
 }
 
 
@@ -1782,12 +1772,34 @@ function lifelineIsUsed(
   question,
   lifeline
 ) {
-  void question;
+  if (!question) {
+    return false;
+  }
 
-  return Boolean(
-    ensureLifelinesState()[
-      lifeline
-    ]
+  const questionId =
+    String(question.id);
+
+  return usageForLifeline(
+    lifeline
+  ).some(
+    (entry) =>
+      entry.questionId ===
+      questionId
+  );
+}
+
+
+function lifelineUsedCount() {
+  return ensureLifelinesState()
+    .usage
+    .length;
+}
+
+
+function lifelineCapacityReached() {
+  return (
+    lifelineUsedCount() >=
+    lifelineAllowance()
   );
 }
 
@@ -1796,68 +1808,49 @@ function markLifelineUsed(
   question,
   lifeline
 ) {
+  if (
+    !question ||
+    !ACTIVE_LIFELINES.includes(
+      lifeline
+    ) ||
+    lifelineIsUsed(
+      question,
+      lifeline
+    ) ||
+    lifelineCapacityReached()
+  ) {
+    return;
+  }
+
   const state =
     ensureLifelinesState();
 
-  state[
-    lifeline
-  ] =
-    true;
+  state.usage.push({
+    type: lifeline,
+    questionId:
+      String(question.id),
+    questionNumber:
+      index + 1
+  });
 
-  state
-    .usedOnQuestion[
-      lifeline
-    ] =
-      index + 1;
+  syncCompatibilityLifelineFlags(
+    state
+  );
 
   lifelinesState =
     state;
 }
 
-function lifelineUsedCount(
-  question
-) {
-  void question;
 
-  const state =
-    ensureLifelinesState();
-
-  return [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ]
+function enabledLifelineCount() {
+  return ACTIVE_LIFELINES
     .filter(
       (lifeline) =>
         enabledLifeline(
           lifeline
         )
     )
-    .filter(
-      (lifeline) =>
-        Boolean(
-          state[
-            lifeline
-          ]
-        )
-    )
     .length;
-}
-
-
-function enabledLifelineCount() {
-  return [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].filter(
-    (lifeline) =>
-      enabledLifeline(
-        lifeline
-      )
-  ).length;
 }
 
 
@@ -1933,225 +1926,191 @@ function restoreLifelinesState(
 
   if (
     !storedState ||
-    typeof storedState !==
-      "object" ||
-    Array.isArray(
-      storedState
-    )
+    typeof storedState !== "object" ||
+    Array.isArray(storedState)
   ) {
     lifelinesState =
       restored;
-
     return;
   }
 
-  /*
-   * Restore the new quiz-wide format.
-   */
+  const storedBonusSeconds =
+    Number(
+      storedState.bonusSeconds ||
+      0
+    );
 
-  const newFormatDetected =
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "expert"
-      ) ||
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "filter"
-      ) ||
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "guideline"
-      ) ||
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "vault"
-      ) ||
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "eliminatedOptionIdsByQuestion"
-      );
+  restored.bonusSeconds =
+    Number.isFinite(
+      storedBonusSeconds
+    ) &&
+    storedBonusSeconds > 0
+      ? Math.round(
+          storedBonusSeconds
+        )
+      : 0;
+
+  const eliminatedMap =
+    storedState
+      .eliminatedOptionIdsByQuestion;
 
   if (
-    newFormatDetected
+    eliminatedMap &&
+    typeof eliminatedMap === "object" &&
+    !Array.isArray(eliminatedMap)
   ) {
-    restored.expert =
-      Boolean(
-        storedState.expert
-      );
+    Object.entries(
+      eliminatedMap
+    ).forEach(
+      ([questionId, optionIds]) => {
+        restored
+          .eliminatedOptionIdsByQuestion[
+            String(questionId)
+          ] =
+            Array.isArray(optionIds)
+              ? optionIds.map(String)
+              : [];
+      }
+    );
+  }
 
-    restored.filter =
-      Boolean(
-        storedState.filter
-      );
+  // Current quota-aware format.
+  if (
+    Array.isArray(
+      storedState.usage
+    )
+  ) {
+    restored.usage =
+      storedState.usage
+        .map(normalizedUsageEntry)
+        .filter(Boolean);
 
-    restored.guideline =
-      Boolean(
-        storedState.guideline
-      );
-
-    restored.vault =
-      Boolean(
-        storedState.vault
-      );
-        const storedUsage =
-      storedState
-        .usedOnQuestion;
-
-    if (
-      storedUsage &&
-      typeof storedUsage ===
-        "object" &&
-      !Array.isArray(
-        storedUsage
-      )
-    ) {
-      [
-        LIFELINES.expert,
-        LIFELINES.filter,
-        LIFELINES.guideline,
-        LIFELINES.vault
-      ].forEach(
-        (lifeline) => {
-          const questionNumber =
-            Number(
-              storedUsage[
-                lifeline
-              ]
-            );
-
-          restored
-            .usedOnQuestion[
-              lifeline
-            ] =
-              Number.isFinite(
-                questionNumber
-              ) &&
-              questionNumber >
-                0
-                ? questionNumber
-                : null;
-        }
-      );
-    }
-
-    const eliminatedMap =
-      storedState
-        .eliminatedOptionIdsByQuestion;
-
-    if (
-      eliminatedMap &&
-      typeof eliminatedMap ===
-        "object" &&
-      !Array.isArray(
-        eliminatedMap
-      )
-    ) {
-      Object.entries(
-        eliminatedMap
-      ).forEach(
-        (
-          [
-            questionId,
-            optionIds
-          ]
-        ) => {
-          restored
-            .eliminatedOptionIdsByQuestion[
-              String(
-                questionId
-              )
-            ] =
-              Array.isArray(
-                optionIds
-              )
-                ? optionIds.map(
-                    String
-                  )
-                : [];
-        }
-      );
-    }
+    syncCompatibilityLifelineFlags(
+      restored
+    );
 
     lifelinesState =
       restored;
-
     return;
   }
 
-  /*
-   * Migrate old per-question saved attempts.
-   * A lifeline is considered used for the whole quiz when it
-   * had already been used on any question.
-   */
+  // Migrate the previous quiz-wide one-use-per-type format.
+  const previousTypes = [
+    LIFELINES.expert,
+    LIFELINES.filter,
+    LIFELINES.vault,
+    LIFELINES.guideline
+  ];
 
+  const storedUsage =
+    storedState.usedOnQuestion &&
+    typeof storedState.usedOnQuestion === "object" &&
+    !Array.isArray(
+      storedState.usedOnQuestion
+    )
+      ? storedState.usedOnQuestion
+      : {};
+
+  let migratedPreviousFormat =
+    false;
+
+  previousTypes.forEach(
+    (lifeline) => {
+      if (!storedState[lifeline]) {
+        return;
+      }
+
+      migratedPreviousFormat =
+        true;
+
+      // Old guideline hint is mapped to the new topic flashcard slot.
+      const mappedType =
+        lifeline === LIFELINES.guideline
+          ? LIFELINES.flashcard
+          : lifeline;
+
+      const questionNumber =
+        Number(
+          storedUsage[lifeline] ||
+          0
+        );
+
+      restored.usage.push({
+        type: mappedType,
+        questionId: "",
+        questionNumber:
+          Number.isFinite(questionNumber) &&
+          questionNumber > 0
+            ? questionNumber
+            : null
+      });
+    }
+  );
+
+  if (migratedPreviousFormat) {
+    syncCompatibilityLifelineFlags(
+      restored
+    );
+    lifelinesState = restored;
+    return;
+  }
+
+  // Migrate the oldest per-question format.
   Object.entries(
     storedState
   ).forEach(
-    (
-      [
-        questionId,
-        questionState
-      ]
-    ) => {
+    ([questionId, questionState]) => {
       if (
         !questionState ||
-        typeof questionState !==
-          "object" ||
-        Array.isArray(
-          questionState
-        )
+        typeof questionState !== "object" ||
+        Array.isArray(questionState)
       ) {
         return;
       }
 
-      restored.expert =
-        restored.expert ||
-        Boolean(
-          questionState.expert
-        );
+      const questionNumber =
+        Number(questionState.questionNumber || 0);
 
-      restored.filter =
-        restored.filter ||
-        Boolean(
-          questionState.filter
-        );
-
-      restored.guideline =
-        restored.guideline ||
-        Boolean(
-          questionState.guideline
-        );
-
-      restored.vault =
-        restored.vault ||
-        Boolean(
-          questionState.vault
-        );
+      [
+        [LIFELINES.expert, LIFELINES.expert],
+        [LIFELINES.filter, LIFELINES.filter],
+        [LIFELINES.guideline, LIFELINES.flashcard],
+        [LIFELINES.vault, LIFELINES.vault]
+      ].forEach(
+        ([legacyType, mappedType]) => {
+          if (questionState[legacyType]) {
+            restored.usage.push({
+              type: mappedType,
+              questionId:
+                String(questionId),
+              questionNumber:
+                Number.isFinite(questionNumber) &&
+                questionNumber > 0
+                  ? questionNumber
+                  : null
+            });
+          }
+        }
+      );
 
       if (
         Array.isArray(
-          questionState
-            .eliminatedOptionIds
+          questionState.eliminatedOptionIds
         )
       ) {
         restored
           .eliminatedOptionIdsByQuestion[
-            String(
-              questionId
-            )
+            String(questionId)
           ] =
             questionState
               .eliminatedOptionIds
-              .map(
-                String
-              );
+              .map(String);
       }
     }
+  );
+
+  syncCompatibilityLifelineFlags(
+    restored
   );
 
   lifelinesState =
@@ -2279,6 +2238,25 @@ function guidelineHintFor(
 }
 
 
+function knowledgeVaultFor(
+  question
+) {
+  return (
+    question.knowledge_vault ||
+    question.knowledgeVault ||
+    question.supporting_concept ||
+    question.supportingConcept ||
+    question.key_learning_point ||
+    question.keyLearningPoint ||
+    question.learning_point ||
+    question.learningPoint ||
+    question.high_yield_point ||
+    question.highYieldPoint ||
+    "Recall the high-yield concept behind this decision: identify the decisive mechanism, threshold or contraindication before comparing the answer choices."
+  );
+}
+
+
 /* =========================================================
    LIFELINE TOOLBAR
 ========================================================= */
@@ -2286,71 +2264,39 @@ function guidelineHintFor(
 function lifelineDefinitions() {
   const definitions = [
     {
-      id:
-        LIFELINES.expert,
-
-      icon:
-        "",
-
-      image:
-        HAPPY_MASCOT,
-
-      title:
-        "Ask Dr. Corazón",
-
-      shortTitle:
-        "Dr. Corazón"
+      id: LIFELINES.expert,
+      icon: "",
+      image: HAPPY_MASCOT,
+      title: "Dr. Corazón Help",
+      shortTitle: "Dr. Corazón"
     },
-
     {
-      id:
-        LIFELINES.filter,
-
-      icon:
-        "✂️",
-
-      image:
-        "",
-
-      title:
-        "Evidence Filter",
-
-      shortTitle:
-        "Evidence Filter"
+      id: LIFELINES.flashcard,
+      icon: "📘",
+      image: "",
+      title: "View Topic Flashcard",
+      shortTitle: "Flashcard"
     },
-
     {
-      id:
-        LIFELINES.guideline,
-
-      icon:
-        "📘",
-
-      image:
-        "",
-
-      title:
-        "ESC Pocket Guideline",
-
-      shortTitle:
-        "ESC Guideline"
+      id: LIFELINES.time,
+      icon: "⏱️",
+      image: "",
+      title: "+1 Minute",
+      shortTitle: "+1 min"
     },
-
     {
-      id:
-        LIFELINES.vault,
-
-      icon:
-        "🧠",
-
-      image:
-        "",
-
-      title:
-        "Knowledge Vault",
-
-      shortTitle:
-        "Knowledge Vault"
+      id: LIFELINES.filter,
+      icon: "✂️",
+      image: "",
+      title: "Remove 2 Answers",
+      shortTitle: "Remove 2"
+    },
+    {
+      id: LIFELINES.vault,
+      icon: "🧠",
+      image: "",
+      title: "Knowledge Vault",
+      shortTitle: "Knowledge Vault"
     }
   ];
 
@@ -2367,50 +2313,45 @@ function compactLifelineButtonHtml(
   question,
   definition
 ) {
-  const used =
+  const usedOnThisQuestion =
     lifelineIsUsed(
       question,
       definition.id
     );
-    const lifelineState =
-    ensureLifelinesState();
 
-  const usedOnQuestion =
-    lifelineState
-      .usedOnQuestion[
-        definition.id
-      ];
+  const noUsesRemaining =
+    lifelineCapacityReached();
+
+  const disabled =
+    usedOnThisQuestion ||
+    noUsesRemaining;
 
   const usageLabel =
-    used
-      ? (
-          usedOnQuestion
-            ? `Used on Question ${usedOnQuestion}`
-            : "Already used in this attempt"
-        )
-      : definition.title;
+    usedOnThisQuestion
+      ? `${definition.title} — already used on this question`
+      : noUsesRemaining
+        ? `${definition.title} — no Life Savers remaining`
+        : definition.title;
 
   return `
     <button
       type="button"
       class="
         compact-lifeline-button
-        ${used ? "is-used" : ""}
+        ${usedOnThisQuestion ? "is-used" : ""}
       "
       data-lifeline="${esc(
         definition.id
       )}"
-           aria-label="${esc(
+      aria-label="${esc(
         usageLabel
       )}"
       title="${esc(
         usageLabel
       )}"
-      ${used ? "disabled" : ""}
+      ${disabled ? "disabled" : ""}
     >
-
       <span class="compact-lifeline-icon">
-
         ${
           definition.image
             ? `
@@ -2431,7 +2372,6 @@ function compactLifelineButtonHtml(
               </span>
             `
         }
-
       </span>
 
       <span class="compact-lifeline-name">
@@ -2440,25 +2380,16 @@ function compactLifelineButtonHtml(
         )}
       </span>
 
-            ${
-        used
+      ${
+        usedOnThisQuestion
           ? `
-            <span
-              class="compact-lifeline-used-copy"
-            >
-              ${
-                usedOnQuestion
-                  ? `Used on Q${usedOnQuestion}`
-                  : "Used"
-              }
+            <span class="compact-lifeline-used-copy">
+              Used on this Q
             </span>
-
             <span
               class="compact-lifeline-used-mark"
               aria-hidden="true"
-            >
-              ✓
-            </span>
+            >✓</span>
           `
           : ""
       }
@@ -2483,12 +2414,10 @@ function scientificLifelinesToolbarHtml(
   const definitions =
     lifelineDefinitions();
     const usedCount =
-    lifelineUsedCount(
-      question
-    );
+    lifelineUsedCount();
 
   const totalCount =
-    enabledLifelineCount();
+    lifelineAllowance();
 
   const remainingCount =
     Math.max(
@@ -2508,11 +2437,11 @@ function scientificLifelinesToolbarHtml(
 
       <div
         class="compact-lifelines-toolbar"
-        aria-label="Scientific Lifelines — The Expert Panel"
+        aria-label="Life Savers"
       >
 
         <span class="compact-lifelines-label">
-          Expert Panel
+          Life Savers
         </span>
 
         <div class="compact-lifelines-buttons">
@@ -2751,7 +2680,8 @@ async function activateLifeline(
     lifelineIsUsed(
       question,
       lifeline
-    )
+    ) ||
+    lifelineCapacityReached()
   ) {
     return;
   }
@@ -2786,62 +2716,31 @@ async function activateLifeline(
       );
 
       responseConfig = {
-        icon:
-          "✂️",
-
-        title:
-          "Evidence Filter",
-
+        icon: "✂️",
+        title: "Remove 2 Answers",
         message:
-          "Two incorrect options have been removed. Reassess the remaining choices carefully."
+          "Two incorrect options have been removed. Reassess the two remaining choices carefully."
       };
     }
-
 
     if (
       lifeline ===
       LIFELINES.expert
     ) {
-            responseConfig = {
-        icon:
-          "🩺",
-
-        title:
-          "Dr. Corazón says",
-
+      responseConfig = {
+        icon: "🩺",
+        title: "Dr. Corazón says",
         message:
           expertHintFor(
             question
           ),
-
-        expert:
-          true
+        expert: true
       };
     }
 
-
     if (
       lifeline ===
-      LIFELINES.guideline
-    ) {
-      responseConfig = {
-        icon:
-          "📘",
-
-        title:
-          "ESC Pocket Guideline",
-
-        message:
-          guidelineHintFor(
-            question
-          )
-      };
-    }
-
-
-    if (
-      lifeline ===
-      LIFELINES.vault
+      LIFELINES.flashcard
     ) {
       flashcardToOpen =
         await loadFlashcard(
@@ -2851,11 +2750,47 @@ async function activateLifeline(
 
       if (!flashcardToOpen) {
         throw new Error(
-          "A review flashcard has not yet been added for this question."
+          "A topic flashcard has not yet been added for this question."
         );
       }
     }
 
+    if (
+      lifeline ===
+      LIFELINES.time
+    ) {
+      const state =
+        ensureLifelinesState();
+
+      state.bonusSeconds =
+        Number(
+          state.bonusSeconds ||
+          0
+        ) + 60;
+
+      lifelinesState = state;
+
+      responseConfig = {
+        icon: "⏱️",
+        title: "+1 Minute",
+        message:
+          "One extra minute has been added to your attempt time allowance."
+      };
+    }
+
+    if (
+      lifeline ===
+      LIFELINES.vault
+    ) {
+      responseConfig = {
+        icon: "🧠",
+        title: "Knowledge Vault",
+        message:
+          knowledgeVaultFor(
+            question
+          )
+      };
+    }
 
     markLifelineUsed(
       question,
@@ -4692,23 +4627,8 @@ function learningAnalytics() {
           "low"
     ).length;
 
-  const lifelineState =
-  ensureLifelinesState();
-
-const lifelinesUsed =
-  [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].filter(
-    (lifeline) =>
-      Boolean(
-        lifelineState[
-          lifeline
-        ]
-      )
-  ).length;
+  const lifelinesUsed =
+    lifelineUsedCount();
   
   return {
     totalQuestions,
@@ -4729,100 +4649,87 @@ function resultLifelineHistoryHtml() {
     lifelineDefinitions();
 
   const usedCount =
-    definitions.filter(
-      (definition) =>
-        Boolean(
-          state[
-            definition.id
-          ]
-        )
-    ).length;
+    state.usage.length;
 
   const totalCount =
-    definitions.length;
+    lifelineAllowance();
 
   const remainingCount =
     Math.max(
-      totalCount -
-      usedCount,
+      totalCount - usedCount,
       0
     );
 
   return `
     <section class="result-expert-panel">
-
       <div class="result-expert-panel-summary">
-
         <div
           class="result-expert-panel-symbol"
           aria-hidden="true"
-        >
-          🛟
-        </div>
+        >🛟</div>
 
         <div class="result-expert-panel-heading">
-
-          <span>
-            Expert Panel
-          </span>
-
+          <span>Life Savers</span>
           <strong>
-            ${usedCount}
-            /
-            ${totalCount}
-            used
+            ${usedCount} / ${totalCount} used
           </strong>
-
           <small>
             ${
               remainingCount === 0
-                ? "No lifelines remaining"
+                ? "No Life Savers remaining"
                 : `${remainingCount} ${
                     remainingCount === 1
-                      ? "lifeline"
-                      : "lifelines"
+                      ? "Life Saver"
+                      : "Life Savers"
                   } remaining`
             }
           </small>
-
         </div>
-
       </div>
 
-
       <div class="result-lifeline-history">
-
         ${definitions
           .map(
             (definition) => {
-              const used =
-                Boolean(
-                  state[
+              const uses =
+                state.usage.filter(
+                  (entry) =>
+                    entry.type ===
                     definition.id
-                  ]
                 );
 
-              const questionNumber =
-                state
-                  .usedOnQuestion?.[
-                    definition.id
-                  ] ||
-                null;
+              const questionNumbers =
+                uses
+                  .map(
+                    (entry) =>
+                      entry.questionNumber
+                  )
+                  .filter(Boolean);
+
+              const used =
+                uses.length > 0;
+
+              const useCopy =
+                used
+                  ? `${uses.length} ${
+                      uses.length === 1
+                        ? "use"
+                        : "uses"
+                    }${
+                      questionNumbers.length
+                        ? ` · Q${questionNumbers.join(", Q")}`
+                        : ""
+                    }`
+                  : "Not used";
 
               return `
                 <div
                   class="
                     result-lifeline-history-item
-                    ${
-                      used
-                        ? "is-used"
-                        : "is-unused"
-                    }
+                    ${used ? "is-used" : "is-unused"}
                   "
                 >
-
                   <div class="result-lifeline-history-icon">
-
                     ${
                       definition.image
                         ? `
@@ -4842,63 +4749,32 @@ function resultLifelineHistoryHtml() {
                           </span>
                         `
                     }
-
                   </div>
 
-
                   <div class="result-lifeline-history-copy">
-
                     <strong>
                       ${esc(
                         definition.title
                       )}
                     </strong>
-
-                    <span>
-                      ${
-                        used
-                          ? (
-                              questionNumber
-                                ? `Used on Question ${questionNumber}`
-                                : "Used during this attempt"
-                            )
-                          : "Not used"
-                      }
-                    </span>
-
+                    <span>${esc(useCopy)}</span>
                   </div>
-
 
                   <span
                     class="
                       result-lifeline-history-status
-                      ${
-                        used
-                          ? "is-used"
-                          : "is-unused"
-                      }
+                      ${used ? "is-used" : "is-unused"}
                     "
-                    aria-label="${
-                      used
-                        ? "Used"
-                        : "Not used"
-                    }"
+                    aria-label="${used ? `${uses.length} uses` : "Not used"}"
                   >
-                    ${
-                      used
-                        ? "✓"
-                        : "—"
-                    }
+                    ${used ? `${uses.length}×` : "—"}
                   </span>
-
                 </div>
               `;
             }
           )
           .join("")}
-
       </div>
-
     </section>
   `;
 }
@@ -5812,7 +5688,7 @@ async function saveChallengeResult() {
         ).getTime()
       : Date.now();
 
-  const durationSeconds =
+  const rawDurationSeconds =
     Math.max(
       0,
       Math.round(
@@ -5821,6 +5697,17 @@ async function saveChallengeResult() {
           startedAt
         ) /
         1000
+      )
+    );
+
+  const durationSeconds =
+    Math.max(
+      0,
+      rawDurationSeconds -
+      Number(
+        ensureLifelinesState()
+          .bonusSeconds ||
+        0
       )
     );
 

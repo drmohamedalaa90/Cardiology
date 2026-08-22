@@ -8,18 +8,18 @@
   <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
   <link rel="stylesheet" href="assets/css/acl-command-center.css?v=20260822b">
   <link rel="stylesheet" href="assets/css/acl-shared-shell.css?v=2.0.0">
-  <link rel="stylesheet" href="assets/css/quiz-setup-v1.css?v=1">
+  <link rel="stylesheet" href="assets/css/quiz-setup-v1.css?v=20260822-lifesavers2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <main class="container quiz-setup-page">
     <section class="quiz-setup-hero card">
-      <div>
+      <div class="quiz-setup-hero-copy">
         <span class="quiz-setup-kicker">ACL EXPERT EDITION</span>
         <h1 id="quizSetupModuleTitle">Prepare your quiz</h1>
         <p class="muted">Customize the session before the attempt is created.</p>
       </div>
-      <a id="quizSetupBack" class="secondary-btn" href="modules.html?edition=expert">← Module</a>
+      <a id="quizSetupBack" class="secondary-btn" href="modules.html?edition=expert">← Back to Module</a>
     </section>
 
     <section class="quiz-setup-layout">
@@ -65,7 +65,7 @@
             <div class="quiz-setup-step">3</div>
             <div>
               <h2>Life Savers</h2>
-              <p>Select the assistance tools available during this quiz.</p>
+              <p>Use your allowance on any Life Saver you want during the quiz.</p>
             </div>
           </div>
 
@@ -80,31 +80,44 @@
             </span>
           </label>
 
-          <div id="lifelineChoices" class="lifeline-choice-grid">
-            <label class="lifeline-choice">
-              <input id="lifelineExpert" type="checkbox" checked>
-              <span class="lifeline-choice-icon">🩺</span>
-              <span><strong>Ask the Expert</strong><small>Dr. Corazón gives a focused clue.</small></span>
-            </label>
-
-            <label class="lifeline-choice">
-              <input id="lifelineFilter" type="checkbox" checked>
-              <span class="lifeline-choice-icon">50</span>
-              <span><strong>50:50</strong><small>Remove two distractors.</small></span>
-            </label>
-
-            <label class="lifeline-choice">
-              <input id="lifelineGuideline" type="checkbox" checked>
-              <span class="lifeline-choice-icon">G</span>
-              <span><strong>Guideline Hint</strong><small>Reveal a guideline-oriented clue.</small></span>
-            </label>
-
-            <label class="lifeline-choice">
-              <input id="lifelineVault" type="checkbox" checked>
-              <span class="lifeline-choice-icon">V</span>
-              <span><strong>Knowledge Vault</strong><small>Open a concise supporting concept.</small></span>
-            </label>
+          <div id="lifelineAllowanceRule" class="lifeline-allowance-rule">
+            <span class="lifeline-allowance-badge" aria-hidden="true">🛟</span>
+            <div>
+              <strong><span id="lifelineAllowance">3</span> Life Savers for this quiz</strong>
+              <small>Choose any combination below. The same Life Saver can be used again on a different question while uses remain.</small>
+            </div>
           </div>
+
+          <div id="lifelineChoices" class="lifeline-choice-grid" aria-label="Available Life Savers">
+            <div class="lifeline-choice lifeline-choice-info">
+              <span class="lifeline-choice-icon lifeline-choice-icon-image">
+                <img src="assets/images/dr-corazon-happy.webp" alt="Dr. Corazón">
+              </span>
+              <span><strong>Dr. Corazón Help</strong><small>Get a focused clinical clue without revealing the answer.</small></span>
+            </div>
+
+            <div class="lifeline-choice lifeline-choice-info">
+              <span class="lifeline-choice-icon" aria-hidden="true">📘</span>
+              <span><strong>View Topic Flashcard</strong><small>Open the flashcard for the topic before answering.</small></span>
+            </div>
+
+            <div class="lifeline-choice lifeline-choice-info">
+              <span class="lifeline-choice-icon" aria-hidden="true">⏱️</span>
+              <span><strong>+1 Minute</strong><small>Add one extra minute to the attempt time allowance.</small></span>
+            </div>
+
+            <div class="lifeline-choice lifeline-choice-info">
+              <span class="lifeline-choice-icon" aria-hidden="true">✂️</span>
+              <span><strong>Remove 2 Answers</strong><small>Remove two incorrect answer choices.</small></span>
+            </div>
+
+            <div class="lifeline-choice lifeline-choice-info">
+              <span class="lifeline-choice-icon" aria-hidden="true">🧠</span>
+              <span><strong>Knowledge Vault</strong><small>Reveal a concise high-yield supporting concept.</small></span>
+            </div>
+          </div>
+
+          <p class="lifeline-scale-note">Allowance: 10 questions = 2 · 20 = 3 · 30 = 4 · 50 = 5</p>
         </section>
       </div>
 
@@ -115,7 +128,7 @@
         <div class="quiz-summary-list">
           <div><span>Questions</span><strong id="summaryCount">20</strong></div>
           <div><span>Confidence</span><strong id="summaryConfidence">On</strong></div>
-          <div><span>Life Savers</span><strong id="summaryLifelines">4 enabled</strong></div>
+          <div><span>Life Savers</span><strong id="summaryLifelines">3 uses</strong></div>
         </div>
 
         <p class="quiz-setup-note">
@@ -132,6 +145,6 @@
   </main>
 
   <script type="module" src="assets/js/acl-shared-shell.js?v=20260822-bootstrapfix"></script>
-  <script type="module" src="assets/js/quiz-setup-v1.js?v=1"></script>
+  <script type="module" src="assets/js/quiz-setup-v1.js?v=20260822-lifesavers2"></script>
 </body>
 </html>

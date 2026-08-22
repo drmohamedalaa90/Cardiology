@@ -1,0 +1,59 @@
+/* ACL Expert Edition — quota-based Life Savers */
+body.acl-expert-learning-mode .compact-lifelines-toolbar{
+  max-width:100%!important;
+}
+body.acl-expert-learning-mode .compact-lifelines-buttons{
+  flex-wrap:wrap!important;
+}
+body.acl-expert-learning-mode .compact-lifeline-button:disabled{
+  cursor:not-allowed!important;
+}
+@media(max-width:700px){
+  body.acl-expert-learning-mode .question-topic-tools{
+    width:100%!important;
+    margin-left:0!important;
+  }
+  body.acl-expert-learning-mode .compact-lifelines-toolbar{
+    width:100%!important;
+    display:grid!important;
+    grid-template-columns:auto minmax(0,1fr) auto!important;
+    gap:6px!important;
+    padding:6px!important;
+    border-radius:14px!important;
+  }
+  body.acl-expert-learning-mode .compact-lifelines-label{
+    padding:0 3px!important;
+    font-size:.6rem!important;
+  }
+  body.acl-expert-learning-mode .compact-lifelines-buttons{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    gap:4px!important;
+    min-width:0!important;
+  }
+  body.acl-expert-learning-mode .compact-lifeline-button{
+    width:36px!important;
+    min-width:36px!important;
+    height:36px!important;
+  }
+  body.acl-expert-learning-mode .compact-lifeline-icon,
+  body.acl-expert-learning-mode .dr-corazon-lifeline-avatar{
+    width:28px!important;
+    min-width:28px!important;
+    height:28px!important;
+  }
+  body.acl-expert-learning-mode .compact-lifelines-counter{
+    min-width:36px!important;
+    height:28px!important;
+    padding:0 6px!important;
+    font-size:.63rem!important;
+  }
+}
+@media(max-width:410px){
+  body.acl-expert-learning-mode .compact-lifelines-toolbar{
+    grid-template-columns:1fr auto!important;
+  }
+  body.acl-expert-learning-mode .compact-lifelines-label{
+    grid-column:1/-1!important;
+  }
+}

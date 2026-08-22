@@ -35,51 +35,51 @@ function show(message = "", kind = "") {
   el.className = `status-box ${kind}`.trim();
 }
 
+function lifelineAllowanceForCount(questionCount) {
+  const total = Math.max(1, Number(questionCount || 0));
+  if (total <= 10) return 2;
+  if (total <= 20) return 3;
+  if (total <= 30) return 4;
+  return 5;
+}
+
 function currentSettings() {
   return normalizeAclSettings({
     confidenceEnabled: $("confidenceEnabled").checked,
     lifelinesEnabled: $("lifelinesEnabled").checked,
+    // Keep legacy preference keys enabled. The quiz engine now applies
+    // the total allowance and lets the user choose any Life Saver at runtime.
     enabledLifelines: {
-      expert: $("lifelineExpert").checked,
-      filter: $("lifelineFilter").checked,
-      guideline: $("lifelineGuideline").checked,
-      vault: $("lifelineVault").checked
+      expert: true,
+      filter: true,
+      guideline: true,
+      vault: true
     }
   });
-}
-
-function enabledLifelineCount() {
-  if (!$("lifelinesEnabled").checked) return 0;
-  return [
-    "lifelineExpert",
-    "lifelineFilter",
-    "lifelineGuideline",
-    "lifelineVault"
-  ].filter(id => $(id).checked).length;
 }
 
 function syncLifelineDisabledState() {
   const enabled = $("lifelinesEnabled").checked;
   $("lifelineChoices")?.classList.toggle("is-disabled", !enabled);
-
-  [
-    "lifelineExpert",
-    "lifelineFilter",
-    "lifelineGuideline",
-    "lifelineVault"
-  ].forEach(id => {
-    $(id).disabled = !enabled;
-  });
+  $("lifelineAllowanceRule")?.classList.toggle("is-disabled", !enabled);
 }
 
 function renderSummary() {
+  const allowance = lifelineAllowanceForCount(count);
+
   $("summaryCount").textContent = String(count);
   $("quizSetupSummaryTitle").textContent = `${count}-question quiz`;
   $("summaryConfidence").textContent =
     $("confidenceEnabled").checked ? "On" : "Off";
 
-  const n = enabledLifelineCount();
-  $("summaryLifelines").textContent = n ? `${n} enabled` : "Off";
+  if ($("lifelineAllowance")) {
+    $("lifelineAllowance").textContent = String(allowance);
+  }
+
+  $("summaryLifelines").textContent =
+    $("lifelinesEnabled").checked
+      ? `${allowance} uses`
+      : "Off";
 
   document.querySelectorAll("[data-count]").forEach(button => {
     button.classList.toggle(
@@ -106,14 +106,8 @@ function launchPath() {
 
   u.searchParams.set("edition", edition);
   u.searchParams.set("module", moduleRow.id);
-
-  // current focused-quiz support
   u.searchParams.set("count", String(count));
-
-  // compatibility with older Learning Mode builds
   u.searchParams.set("question_count", String(count));
-
-  // do not restore an old unfinished attempt when user chose New Quiz
   u.searchParams.set("new", "1");
 
   return u.origin === location.origin
@@ -180,10 +174,6 @@ async function load() {
 
     $("confidenceEnabled").checked = normalized.confidenceEnabled;
     $("lifelinesEnabled").checked = normalized.lifelinesEnabled;
-    $("lifelineExpert").checked = normalized.enabledLifelines.expert;
-    $("lifelineFilter").checked = normalized.enabledLifelines.filter;
-    $("lifelineGuideline").checked = normalized.enabledLifelines.guideline;
-    $("lifelineVault").checked = normalized.enabledLifelines.vault;
   } catch (error) {
     console.warn("QUIZ SETUP SETTINGS FALLBACK", error);
   }
@@ -200,14 +190,7 @@ document.querySelectorAll("[data-count]").forEach(button => {
   });
 });
 
-[
-  "confidenceEnabled",
-  "lifelinesEnabled",
-  "lifelineExpert",
-  "lifelineFilter",
-  "lifelineGuideline",
-  "lifelineVault"
-].forEach(id => {
+["confidenceEnabled", "lifelinesEnabled"].forEach(id => {
   $(id)?.addEventListener("change", () => {
     if (id === "lifelinesEnabled") {
       syncLifelineDisabledState();
