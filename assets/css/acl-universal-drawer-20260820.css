@@ -1,34 +1,221 @@
-/* Universal ACL sidebar architecture — one drawer everywhere */
-.acl-universal-drawer{background:#071d3d!important;color:#fff!important;border-right:1px solid rgba(255,255,255,.05)!important}
-.acl-universal-drawer .acl-universal-scroll{height:100%;display:flex;flex-direction:column;overflow:auto;padding:12px 10px 14px}
-.acl-universal-nav{display:grid;gap:6px}
-.acl-universal-link{min-height:48px;display:flex;align-items:center;gap:12px;padding:0 14px;border-radius:12px;color:#fff;text-decoration:none;font-size:15px;font-weight:500!important;line-height:1.15;transition:.16s ease}
-.acl-universal-link:hover{background:rgba(255,255,255,.065)}
-.acl-universal-link.is-active{background:#223a5b;color:#fff;box-shadow:none!important;font-weight:500!important}
-.acl-universal-icon{width:17px;min-width:17px;display:grid;place-items:center;color:#d8ebff;font-size:15px;font-weight:400!important}
-.acl-universal-link.is-active .acl-universal-icon{color:#fff!important}
-.acl-universal-streak{margin-top:auto;border:1px solid rgba(255,255,255,.13);border-radius:15px;padding:18px 18px 17px;background:rgba(3,22,48,.24)}
-.acl-universal-streak small{display:block;color:#fff;font-size:10px;font-weight:600;letter-spacing:.03em;margin-bottom:14px}
-.acl-universal-streak>div:nth-child(2){display:flex;align-items:end;gap:7px}
-.acl-universal-streak strong{font-size:27px;line-height:1;color:#fff;font-weight:600}
-.acl-universal-streak span{font-size:12px;font-weight:500;color:#fff;padding-bottom:2px}
-.acl-universal-streak-dots{display:flex!important;gap:10px!important;align-items:center!important;margin-top:18px!important}.acl-universal-streak-dots i{width:10px;height:10px;border-radius:50%;background:#39d1aa;display:block}.acl-universal-streak-dots i.open{background:transparent;border:2px solid #39d1aa}
+/* =========================================================
+   ACL UNIVERSAL DRAWER — SAFE REPLACEMENT CSS
+   Version: 2026-08-22
+========================================================= */
 
-.acl-universal-drawer .acl-drawer-profile,.acl-universal-drawer .acl-drawer-nav,.acl-universal-drawer .acl-drawer-logout,.acl-universal-drawer .acl-drawer-scroll{display:none!important}
+:root{
+  --acl-drawer-width:300px;
+  --acl-header-height:88px;
+  --acl-drawer-bg:#082d57;
+  --acl-drawer-bg-deep:#06264b;
+  --acl-drawer-line:rgba(255,255,255,.12);
+  --acl-drawer-text:#f5f9ff;
+  --acl-drawer-muted:#a9c2db;
+  --acl-drawer-active:#153f6d;
+  --acl-accent:#f1b83a;
+}
 
-/* The side drawer is the single mobile navigation. Remove the old fixed bottom row everywhere. */
-.acl-mobile-bottom-nav{display:none!important;visibility:hidden!important;pointer-events:none!important}
+.acl-safe-drawer{
+  position:fixed;
+  top:var(--acl-header-height);
+  left:0;
+  bottom:0;
+  width:var(--acl-drawer-width);
+  z-index:900;
+  background:linear-gradient(180deg,var(--acl-drawer-bg),var(--acl-drawer-bg-deep));
+  color:var(--acl-drawer-text);
+  overflow:hidden;
+  border-right:1px solid rgba(5,25,48,.2);
+}
 
-@media(max-width:820px){
-  .acl-universal-drawer{top:58px!important;width:min(84vw,300px)!important;transform:translateX(-105%)!important;visibility:visible!important;pointer-events:auto!important;transition:transform .2s ease!important;z-index:1500!important}
-  body.drawer-collapsed .acl-universal-drawer{transform:translateX(-105%)!important}
-  body.drawer-open .acl-universal-drawer,body.drawer-open.drawer-collapsed .acl-universal-drawer{transform:translateX(0)!important}
-  #aclDrawerBackdrop{inset:58px 0 0!important;z-index:1450!important;background:rgba(3,17,38,.5)!important}
-  #aclDrawerBackdrop:not([hidden]){display:block!important}
-  #aclDrawerToggle{pointer-events:auto!important;position:relative!important;z-index:1550!important;touch-action:manipulation!important}
-  .acl-universal-drawer .acl-universal-scroll{padding:10px 10px 12px}.acl-universal-link{min-height:46px;font-size:14px;padding:0 13px;font-weight:500!important}.acl-universal-streak{margin-top:26px;padding:15px}
-  #aclHeaderLogout{display:grid!important;width:34px!important;height:34px!important;font-size:16px!important;color:#fff!important;background:transparent!important}
-  #aclHeaderLogout:hover{background:rgba(255,255,255,.08)!important}
-  .acl-command-header-actions .acl-command-icon-btn:nth-of-type(2){display:none!important}
-  .acl-command-main{padding-bottom:24px!important}
+.acl-safe-drawer-inner{
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+
+.acl-safe-profile{
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:22px 18px 18px;
+  border-bottom:1px solid var(--acl-drawer-line);
+}
+
+.acl-safe-avatar{
+  width:58px;
+  height:58px;
+  flex:0 0 58px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  font-weight:900;
+  font-size:16px;
+  background:#1669b7;
+  border:2px solid rgba(255,255,255,.45);
+  color:#fff;
+}
+
+.acl-safe-profile-copy{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.acl-safe-profile-copy strong{
+  color:#fff;
+  font-size:16px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.acl-safe-profile-copy a{
+  color:#9bc8f3;
+  font-size:13px;
+  font-weight:700;
+  text-decoration:none;
+}
+
+.acl-safe-drawer-nav{
+  padding:12px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  overflow:auto;
+  min-height:0;
+  scrollbar-width:thin;
+}
+
+.acl-safe-drawer-link{
+  min-height:46px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 12px;
+  color:var(--acl-drawer-text);
+  text-decoration:none;
+  border-radius:11px;
+  font-size:15px;
+  font-weight:750;
+  transition:background .15s ease;
+}
+
+.acl-safe-drawer-link:hover{
+  background:rgba(255,255,255,.08);
+}
+
+.acl-safe-drawer-link.is-active{
+  background:var(--acl-drawer-active);
+  box-shadow:inset 3px 0 0 var(--acl-accent);
+}
+
+.acl-safe-drawer-icon{
+  width:24px;
+  text-align:center;
+  flex:0 0 24px;
+  font-size:17px;
+}
+
+.acl-safe-streak{
+  margin:auto 14px 12px;
+  padding:13px 14px;
+  border:1px solid var(--acl-drawer-line);
+  border-radius:14px;
+  background:rgba(255,255,255,.04);
+}
+
+.acl-safe-streak small{
+  display:block;
+  color:var(--acl-drawer-muted);
+  font-size:10px;
+  letter-spacing:.12em;
+  font-weight:900;
+}
+
+.acl-safe-streak div{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  margin-top:3px;
+}
+
+.acl-safe-streak strong{
+  color:#fff;
+  font-size:23px;
+}
+
+.acl-safe-streak span{
+  color:var(--acl-drawer-muted);
+  font-size:12px;
+}
+
+.acl-safe-logout{
+  margin:0 14px 14px;
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  gap:11px;
+  padding:0 14px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:12px;
+  background:rgba(255,255,255,.045);
+  color:#fff;
+  font:inherit;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.acl-safe-drawer-enabled .acl-command-main,
+.acl-safe-drawer-enabled main.acl-command-main,
+.acl-safe-drawer-enabled .home-main-standalone{
+  margin-left:var(--acl-drawer-width) !important;
+  width:calc(100% - var(--acl-drawer-width)) !important;
+}
+
+.acl-drawer-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:890;
+  background:rgba(2,16,34,.48);
+  backdrop-filter:blur(2px);
+}
+
+#aclCommandDrawer.acl-safe-drawer{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+
+@media (max-width:820px){
+  :root{
+    --acl-drawer-width:min(86vw,320px);
+  }
+
+  .acl-safe-drawer{
+    transform:translateX(-104%);
+    transition:transform .2s ease;
+    box-shadow:14px 0 34px rgba(0,0,0,.25);
+  }
+
+  body.acl-drawer-open .acl-safe-drawer{
+    transform:translateX(0);
+  }
+
+  .acl-safe-drawer-enabled .acl-command-main,
+  .acl-safe-drawer-enabled main.acl-command-main,
+  .acl-safe-drawer-enabled .home-main-standalone{
+    margin-left:0 !important;
+    width:100% !important;
+  }
+
+  .acl-drawer-backdrop[hidden]{
+    display:none !important;
+  }
+
+  body.acl-drawer-open{
+    overflow:hidden;
+  }
 }
