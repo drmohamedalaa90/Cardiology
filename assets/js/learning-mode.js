@@ -140,6 +140,18 @@ const quizSlug =
 
 const requestedModuleId =
   params.get("module");
+
+const requestedStandaloneQuestionCount =
+  Math.max(
+    0,
+    Math.min(
+      50,
+      Number(params.get("count") || 0)
+    )
+  );
+
+const forceNewAttempt =
+  params.get("new") === "1";
 /* =========================================================
    CHALLENGE MODE URL PARAMETERS
 ========================================================= */
@@ -6641,10 +6653,15 @@ const requestedQuestionCount =
   isChallengeAttempt() &&
   challengeQuestionCount > 0
     ? challengeQuestionCount
-    : Number(
-        quiz.question_count ||
-        pool.length
-      );
+    : requestedStandaloneQuestionCount > 0
+      ? requestedStandaloneQuestionCount
+      : Math.min(
+          50,
+          Number(
+            quiz.question_count ||
+            pool.length
+          )
+        );
 
 
 questions =
@@ -6673,10 +6690,12 @@ if (challengeId) {
     }
 
     attempt =
-      await getOpenAttempt(
-        quiz.module_id,
-        quiz.id
-      );
+      forceNewAttempt
+        ? null
+        : await getOpenAttempt(
+            quiz.module_id,
+            quiz.id
+          );
 
     if (attempt) {
       const questionMap =

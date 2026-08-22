@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#061c3d">
+  <title>My Mistakes | ACL</title>
+  <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
+  <link rel="stylesheet" href="assets/css/acl-command-center.css?v=20260822b">
+  <link rel="stylesheet" href="assets/css/acl-shared-shell.css?v=2.0.0">
+  <link rel="stylesheet" href="assets/css/module-mistakes-v1.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="container module-mistakes-page">
+    <section class="card module-mistakes-hero">
+      <div>
+        <span class="module-mistakes-kicker">TARGETED REVIEW</span>
+        <h1 id="mistakesTitle">My Mistakes</h1>
+        <p id="mistakesSubtitle" class="muted">Review wrong answers from this module.</p>
+      </div>
+      <a id="mistakesBackLink" class="secondary-btn" href="modules.html?edition=expert">← Module</a>
+    </section>
+
+    <section class="module-mistakes-toolbar card">
+      <div>
+        <strong id="mistakesCount">Loading…</strong>
+        <span class="muted" id="mistakesPriority"></span>
+      </div>
+      <label>
+        <span>Filter</span>
+        <select id="mistakesFilter">
+          <option value="all">All mistakes</option>
+          <option value="high-confidence">Wrong + high confidence</option>
+          <option value="repeated">Repeated mistakes</option>
+        </select>
+      </label>
+    </section>
+
+    <section id="mistakesGrid" class="module-mistakes-grid">
+      <div class="card muted">Loading mistakes…</div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/acl-shared-shell.js?v=20260822-bootstrapfix"></script>
+  <script type="module" src="assets/js/module-mistakes-v1.js?v=1"></script>
+</body>
+</html>

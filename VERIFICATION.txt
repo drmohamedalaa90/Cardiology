@@ -1,17 +1,27 @@
-ACL LEARNING DEADLOCK FIX — VERIFICATION
+ACL MODULE HUB REPLACEMENT — VERIFICATION
 
 OVERALL: PASS
 
+PASS  syntax assets/js/module-hub-v1.js
+PASS  syntax assets/js/module-mistakes-v1.js
+PASS  syntax assets/js/modules-live-core-20260820.js
+PASS  syntax assets/js/study-hub-v1.js
 PASS  syntax assets/js/learning-mode.js
-PASS  syntax assets/js/learning-bootstrap-20260822.js
-PASS  blocking session-ui import removed
-PASS  protectAndRender call removed
-PASS  direct Supabase auth gate present
-PASS  direct auth startup status present
-PASS  bootstrap loads new engine URL
+PASS  module cards route to hub
+PASS  module hub does not create quiz attempt
+PASS  module hub new quiz count choices
+PASS  learning count capped at 50
+PASS  learning new attempt flag
+PASS  study module filter supported
+PASS  mistakes uses existing answers only
 
-Root cause removed:
-- learning-mode.js no longer imports session-ui.js.
-- Learning Mode authenticates directly with Supabase Auth.
-- The shared ACL shell remains independent and still renders the header/drawer.
-- Therefore the Learning engine no longer waits on session-ui's top-level shared-shell import.
+New navigation:
+Modules → Module Hub
+Module Hub → Review & Study
+Module Hub → New Quiz (10/20/50)
+Module Hub → My Mistakes
+
+Important:
+- Opening a module no longer creates a quiz_attempts row.
+- New quiz attempts are limited to max 50 questions to avoid the old 350-question constraint error.
+- Continue unfinished quiz remains available separately.

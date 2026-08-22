@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#061c3d">
+  <title>Module | ACL Expert Edition</title>
+
+  <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
+  <link rel="stylesheet" href="assets/css/acl-command-center.css?v=20260822b">
+  <link rel="stylesheet" href="assets/css/acl-shared-shell.css?v=2.0.0">
+  <link rel="stylesheet" href="assets/css/module-hub-v1.css?v=1">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="container module-hub-page">
+
+    <section class="module-hub-hero card">
+      <div class="module-hub-heading">
+        <div class="module-hub-logo" id="moduleHubLogo">ACL</div>
+        <div>
+          <span class="module-hub-kicker" id="moduleHubEdition">ACL EXPERT EDITION</span>
+          <h1 id="moduleHubTitle">Loading module…</h1>
+          <p id="moduleHubDescription" class="muted">Preparing your module workspace.</p>
+        </div>
+      </div>
+      <a class="secondary-btn" href="modules.html?edition=expert">← All modules</a>
+    </section>
+
+    <section class="module-hub-progress card">
+      <div class="module-hub-progress-head">
+        <div>
+          <span class="module-hub-kicker">YOUR PROGRESS</span>
+          <strong id="moduleHubProgressLabel">Not started</strong>
+        </div>
+        <strong id="moduleHubProgressPercent">0%</strong>
+      </div>
+      <div class="module-hub-track"><span id="moduleHubProgressFill"></span></div>
+
+      <div class="module-hub-metrics">
+        <article><span>Questions covered</span><strong id="moduleHubCovered">0 / 0</strong></article>
+        <article><span>Success</span><strong id="moduleHubSuccess">—</strong></article>
+        <article><span>Mastery</span><strong id="moduleHubMastery">—</strong></article>
+        <article><span>ACL XP</span><strong id="moduleHubXp">0</strong></article>
+        <article><span>Mistakes</span><strong id="moduleHubMistakes">0</strong></article>
+      </div>
+    </section>
+
+    <section class="module-hub-actions">
+      <article class="module-hub-action-card study">
+        <div class="module-hub-action-icon">◆</div>
+        <div>
+          <span class="module-hub-kicker">REVIEW & STUDY</span>
+          <h2>Flashcards & Mind Maps</h2>
+          <p>Review this module without starting a quiz.</p>
+        </div>
+        <a id="moduleHubStudyLink" class="primary-btn" href="#">Review study material</a>
+      </article>
+
+      <article class="module-hub-action-card quiz">
+        <div class="module-hub-action-icon">▶</div>
+        <div>
+          <span class="module-hub-kicker">NEW QUIZ</span>
+          <h2>Start a focused quiz</h2>
+          <p>Choose a safe question set. A quiz attempt is created only after you start.</p>
+        </div>
+
+        <div class="module-hub-quiz-options" role="group" aria-label="Number of questions">
+          <button type="button" data-quiz-count="10">10</button>
+          <button type="button" data-quiz-count="20" class="is-selected">20</button>
+          <button type="button" data-quiz-count="50">50</button>
+        </div>
+
+        <a id="moduleHubQuizLink" class="primary-btn" href="#">Start 20-question quiz</a>
+
+        <a id="moduleHubContinueLink" class="secondary-btn module-hub-continue" href="#" hidden>
+          Continue unfinished quiz
+        </a>
+      </article>
+
+      <article class="module-hub-action-card mistakes">
+        <div class="module-hub-action-icon">↻</div>
+        <div>
+          <span class="module-hub-kicker">REVIEW PERFORMANCE</span>
+          <h2>My Mistakes</h2>
+          <p>Review wrong answers, explanations and high-confidence misconceptions from this module.</p>
+        </div>
+        <a id="moduleHubMistakesLink" class="primary-btn" href="#">Review my mistakes</a>
+      </article>
+    </section>
+
+    <section class="module-hub-recent card">
+      <div>
+        <span class="module-hub-kicker">RECENT ACTIVITY</span>
+        <h2>Learning history</h2>
+      </div>
+      <div id="moduleHubRecentList" class="module-hub-recent-list">
+        <div class="muted">Loading your recent attempts…</div>
+      </div>
+    </section>
+
+    <div id="moduleHubStatus" class="status-box" hidden></div>
+  </main>
+
+  <script type="module" src="assets/js/acl-shared-shell.js?v=20260822-bootstrapfix"></script>
+  <script type="module" src="assets/js/module-hub-v1.js?v=1"></script>
+</body>
+</html>
