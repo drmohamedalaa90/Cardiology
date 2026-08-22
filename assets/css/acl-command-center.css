@@ -250,3 +250,44 @@ body.acl-command-body{
   color:#fff;
   box-shadow:inset 3px 0 0 #f5b700;
 }
+
+
+/* =====================================================
+   AUTH IDENTITY STARTUP — NO MEMBER/ACL FLASH
+===================================================== */
+body.acl-command-body.acl-profile-pending .acl-drawer-profile,
+body.acl-command-body.acl-profile-pending .acl-command-user-name{
+  visibility:hidden !important;
+}
+
+body.acl-command-body.acl-profile-pending .acl-drawer-profile{
+  position:relative;
+}
+
+body.acl-command-body.acl-profile-pending .acl-drawer-profile::after{
+  content:"";
+  visibility:visible;
+  position:absolute;
+  left:8px;
+  top:9px;
+  width:190px;
+  height:56px;
+  border-radius:12px;
+  background:
+    linear-gradient(90deg,
+      rgba(255,255,255,.06) 0%,
+      rgba(255,255,255,.13) 45%,
+      rgba(255,255,255,.06) 90%);
+  background-size:220% 100%;
+  animation:aclProfileSkeleton 1.15s ease-in-out infinite;
+}
+
+@keyframes aclProfileSkeleton{
+  0%{background-position:100% 0}
+  100%{background-position:-100% 0}
+}
+
+body.acl-command-body.acl-profile-ready .acl-drawer-profile,
+body.acl-command-body.acl-profile-ready .acl-command-user-name{
+  visibility:visible;
+}

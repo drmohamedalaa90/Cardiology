@@ -1,6 +1,8 @@
 import { supabaseClient } from "./supabase-client.js";
 
 const body = document.body;
+body.classList.add("acl-profile-pending");
+body.classList.remove("acl-profile-ready");
 const backdrop = document.getElementById("aclDrawerBackdrop");
 const toggle = document.getElementById("aclDrawerToggle");
 const isMobile = () => matchMedia("(max-width:820px)").matches;
@@ -110,15 +112,30 @@ const choosePhoto = (p, u) =>
 
 (async () => {
   try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session?.user) return;
+    const { data: { session }, error: sessionError } =
+      await supabaseClient.auth.getSession();
+
+    if (sessionError) throw sessionError;
+
+    if (!session?.user) {
+      location.replace("login.html");
+      return;
+    }
 
     const u = session.user;
-    const { data: p } = await supabaseClient
-      .from("profiles")
-      .select("*")
-      .eq("id", u.id)
-      .maybeSingle();
+
+    let p = null;
+    try {
+      const profileResult = await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("id", u.id)
+        .maybeSingle();
+
+      if (!profileResult.error) p = profileResult.data;
+    } catch (profileError) {
+      console.warn("ACL profile lookup skipped", profileError);
+    }
 
     const name = chooseName(p, u);
     const photo = choosePhoto(p, u);
@@ -142,8 +159,12 @@ const choosePhoto = (p, u) =>
             .toUpperCase() || "ACL";
       }
     }
+
+    body.classList.remove("acl-profile-pending");
+    body.classList.add("acl-profile-ready");
   } catch (e) {
     console.warn("ACL shell profile", e);
+    location.replace("login.html");
   }
 })();
 
