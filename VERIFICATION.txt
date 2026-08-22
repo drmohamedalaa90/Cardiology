@@ -1,33 +1,27 @@
-ACL LEARNING FREEZE RADICAL FIX — VERIFICATION
+ACL LEARNING BOOTSTRAP RADICAL FIX
 
 OVERALL: PASS
 
-PASS  syntax assets/js/session-ui.js
-PASS  syntax assets/js/learning-mode.js
-PASS  syntax assets/js/acl-shared-shell.js
-PASS  syntax assets/js/supabase-client.js
-PASS  syntax assets/js/cloud-progress.js
-PASS  syntax assets/js/user-settings.js
-PASS  syntax service-worker.js
-PASS  DOM quizArea
-PASS  DOM answerFeedbackHost
-PASS  DOM submitAnswer
-PASS  DOM nextQuestion
-PASS  DOM progressFill
-PASS  DOM questionCount
-PASS  DOM saveStatus
-PASS  DOM learningFlashcardModal
-PASS  startup status before auth gate
-PASS  quiz timeout present
-PASS  attempt timeout present
-PASS  profile timeout present
-PASS  auth metadata fallback present
-PASS  service worker cache bumped
+PASS  assets/js/session-ui.js
+PASS  assets/js/learning-mode.js
+PASS  assets/js/acl-shared-shell.js
+PASS  assets/js/learning-bootstrap-20260822.js
+PASS  assets/js/cloud-progress.js
+PASS  assets/js/user-settings.js
+PASS  assets/js/supabase-client.js
+PASS  service-worker.js
+PASS  bootstrap referenced
+PASS  direct learning-mode removed
+PASS  fresh shared shell referenced
+PASS  fresh session dependency
+PASS  fresh cloud dependency
+PASS  fresh settings dependency
+PASS  shell timeout present
+PASS  service worker bumped
 
-Expected runtime stages after this fix:
-1. Restoring session…
-2. Loading settings…
-3. Loading learning mode…
-4. Unfinished learning attempt restored OR New learning attempt saved
-
-If a backend call fails or hangs, the page now shows an explicit error/retry instead of freezing forever.
+What this fixes:
+- The Learning engine is no longer loaded as a silent static module.
+- A dedicated bootstrap catches module import errors and shows them on-screen.
+- All Learning dependencies use fresh cache-busting URLs.
+- Shared-shell session/profile lookups have timeouts and immediate auth-metadata fallback.
+- Old service-worker cache is invalidated.

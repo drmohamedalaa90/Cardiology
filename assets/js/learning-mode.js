@@ -5,7 +5,7 @@ import {
 
 import {
   protectAndRender
-} from "./session-ui.js?v=5.3.0";
+} from "./session-ui.js?v=20260822-bootstrapfix";
 
 
 import {
@@ -13,15 +13,17 @@ import {
   createAttempt,
   saveAttempt,
   completeAttempt
-} from "./cloud-progress.js?v=5.3.0";
+} from "./cloud-progress.js?v=20260822-bootstrapfix";
 
 
 import {
   DEFAULT_ACL_SETTINGS,
   getAclSettings,
   normalizeAclSettings
-} from "./user-settings.js?v=5.3.0";
+} from "./user-settings.js?v=20260822-bootstrapfix";
 
+
+console.log("ACL LEARNING MODE BOOTSTRAP IMPORTED");
 
 /* =========================================================
    DOM HELPERS
@@ -6417,72 +6419,25 @@ document.addEventListener(
 );
 
 
-
-function learningWithTimeout(promise, ms, label) {
-  let timer;
-
-  const timeout = new Promise((_, reject) => {
-    timer = window.setTimeout(
-      () => reject(new Error(`${label} timed out. Please retry.`)),
-      ms
-    );
-  });
-
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timer) window.clearTimeout(timer);
-  });
-}
-
 /* =========================================================
    INITIALISATION
 ========================================================= */
 
 (async () => {
-  const quizArea =
-    $("quizArea");
-
   setStatus("Restoring session…");
+  console.log("ACL LEARNING STARTUP: restoring session");
 
-  let profile = null;
-
-  try {
-    profile =
-      await learningWithTimeout(
-        protectAndRender("login.html"),
-        9000,
-        "Account restoration"
-      );
-  } catch (authError) {
-    console.error("LEARNING AUTH ERROR:", authError);
-
-    setStatus(
-      authError.message || "Could not restore your account",
-      true
+  const profile =
+    await protectAndRender(
+      "login.html"
     );
-
-    if (quizArea) {
-      quizArea.innerHTML = `
-        <div class="empty-state">
-          ${esc(authError.message || "Could not restore your account")}
-          <br>
-          <button
-            type="button"
-            class="primary-btn"
-            onclick="location.reload()"
-            style="margin-top:12px"
-          >
-            Retry
-          </button>
-        </div>
-      `;
-    }
-
-    return;
-  }
 
   if (!profile) {
     return;
   }
+
+  const quizArea =
+    $("quizArea");
 
   if (!quizSlug) {
     if (quizArea) {
@@ -6501,11 +6456,7 @@ function learningWithTimeout(promise, ms, label) {
     try {
       aclSettings =
         normalizeAclSettings(
-          await learningWithTimeout(
-            getAclSettings(),
-            7000,
-            "Settings loading"
-          )
+          await getAclSettings()
         );
     } catch (settingsError) {
       console.warn(
@@ -6527,20 +6478,16 @@ function learningWithTimeout(promise, ms, label) {
       data,
       error
     } =
-      await learningWithTimeout(
-        supabaseClient.rpc(
-          "acl_get_learning_quiz",
-          {
-            p_quiz_slug:
-              quizSlug,
+      await supabaseClient.rpc(
+        "acl_get_learning_quiz",
+        {
+          p_quiz_slug:
+            quizSlug,
 
-            p_module_id:
-              requestedModuleId ||
-              null
-          }
-        ),
-        15000,
-        "Quiz loading"
+          p_module_id:
+            requestedModuleId ||
+            null
+        }
       );
 
     if (error) {
@@ -6649,13 +6596,9 @@ if (challengeId) {
     }
 
     attempt =
-      await learningWithTimeout(
-        getOpenAttempt(
-          quiz.module_id,
-          quiz.id
-        ),
-        9000,
-        "Attempt restoration"
+      await getOpenAttempt(
+        quiz.module_id,
+        quiz.id
       );
 
     if (attempt) {
@@ -6747,35 +6690,31 @@ if (challengeId) {
       resetAllLifelines();
 
       attempt =
-        await learningWithTimeout(
-          createAttempt({
-            moduleId:
-              quiz.module_id,
+        await createAttempt({
+          moduleId:
+            quiz.module_id,
 
-            moduleTitle:
-              quiz.module_title,
+          moduleTitle:
+            quiz.module_title,
 
-            quizId:
-              quiz.id,
+          quizId:
+            quiz.id,
 
-            quizTitle:
-              quiz.title,
+          quizTitle:
+            quiz.title,
 
-            mode:
-              quiz.mode,
+          mode:
+            quiz.mode,
 
-            questionIds:
-              questions.map(
-                (question) =>
-                  question.id
-              ),
+          questionIds:
+            questions.map(
+              (question) =>
+                question.id
+            ),
 
-            lifelines:
-              lifelinesState
-          }),
-          9000,
-          "Attempt creation"
-        );
+          lifelines:
+            lifelinesState
+        });
 
       setStatus(
         "New learning attempt saved"

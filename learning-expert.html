@@ -8,7 +8,7 @@
   <title>Learning Mode | ACL Expert Edition</title>
   <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
   <link rel="stylesheet" href="assets/css/learning-feedback.css?v=5.4.21">
-  <link rel="stylesheet" href="assets/css/learning-expert-shell-v1.css?v=20260822-freezefix">
+  <link rel="stylesheet" href="assets/css/learning-expert-shell-v1.css?v=1.0.1">
   <link rel="stylesheet" href="assets/css/learning-polish-20260820.css?v=1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -16,7 +16,7 @@
   <main class="container learning-shell acl-clean-learning">
     <section class="learning-stage">
       <div class="learning-module-corner"><span>Module</span><strong id="moduleTitle">Opening module…</strong></div>
-      <div class="learning-quiz-banner"><span class="learning-mode-label">Expert Learning Mode</span><h1 id="quizTitle">Restoring questions…</h1><div class="quiz-banner-decoration"><span></span><i></i><span></span></div></div>
+      <div class="learning-quiz-banner"><span class="learning-mode-label">Expert Learning Mode</span><h1 id="quizTitle">Starting learning engine…</h1><div class="quiz-banner-decoration"><span></span><i></i><span></span></div></div>
       <p id="quizDescription" class="muted">Immediate feedback, Confidence Answering, Life Savers and flashcards.</p>
     </section>
     <section class="learning-progress-row" aria-label="Quiz progress">
@@ -24,7 +24,7 @@
       <div class="learning-progress-copy"><strong id="questionCount">Preparing questions…</strong><span id="saveStatus" class="learning-save-status" aria-live="polite">Loading…</span></div>
     </section>
     <section class="learning-card">
-      <section id="quizArea" class="learning-quiz-area" aria-live="polite"><div class="card muted">Restoring your ACL learning session…</div></section>
+      <section id="quizArea" class="learning-quiz-area" aria-live="polite"><div class="card muted">Starting ACL Learning Mode…</div></section>
       <div id="answerFeedbackHost" aria-live="polite"></div>
       <div class="learning-actions"><button id="submitAnswer" class="primary-btn" type="button">Check answer</button><button id="nextQuestion" class="primary-btn" type="button" hidden>Next question</button></div>
     </section>
@@ -37,7 +37,7 @@
       <footer><button id="closeLearningFlashcardBottom" class="secondary-btn" type="button">Return to the question</button></footer>
     </section>
   </div>
-  <script type="module" src="assets/js/acl-shared-shell.js?v=4.0.0"></script>
-  <script type="module" src="assets/js/learning-mode.js?v=6.0.6-freezefix"></script>
+  <script type="module" src="assets/js/acl-shared-shell.js?v=20260822-bootstrapfix"></script>
+  <script type="module" src="assets/js/learning-bootstrap-20260822.js?v=2"></script>
 </body>
 </html>

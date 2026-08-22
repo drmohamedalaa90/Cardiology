@@ -1,4 +1,5 @@
 import { supabaseClient } from "./supabase-client.js";
+
 function aclWithTimeout(promise, ms, label = "Request") {
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -15,12 +16,11 @@ function aclWithTimeout(promise, ms, label = "Request") {
 
 function profileFallbackFromUser(user) {
   if (!user) return null;
-
-  const metadata = user.user_metadata || {};
+  const m = user.user_metadata || {};
   const displayName =
-    metadata.display_name ||
-    metadata.full_name ||
-    metadata.name ||
+    m.display_name ||
+    m.full_name ||
+    m.name ||
     user.email?.split("@")[0] ||
     "ACL User";
 
@@ -28,17 +28,9 @@ function profileFallbackFromUser(user) {
     id: user.id,
     email: user.email || "",
     display_name: displayName,
-    full_name:
-      metadata.full_name ||
-      metadata.name ||
-      metadata.display_name ||
-      displayName,
-    avatar_url:
-      metadata.avatar_url ||
-      metadata.picture ||
-      metadata.photo_url ||
-      "",
-    role: metadata.role || "member",
+    full_name: m.full_name || m.name || displayName,
+    avatar_url: m.avatar_url || m.picture || "",
+    role: m.role || "member",
     account_status: "active",
     __auth_fallback: true
   };
@@ -175,7 +167,7 @@ export async function requireSession(relativeLogin = "login.html") {
       "Session restoration"
     );
 
-    if (error || !data?.session) {
+    if (error || !data?.session?.user) {
       location.replace(root + relativeLogin);
       return null;
     }
@@ -205,54 +197,39 @@ export async function loadProfile() {
     if (!user) return null;
 
     try {
-      const { data, error } =
-        await aclWithTimeout(
-          supabaseClient
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle(),
-          6000,
-          "Profile loading"
-        );
+      const { data, error } = await aclWithTimeout(
+        supabaseClient
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle(),
+        5000,
+        "Profile loading"
+      );
 
       if (!error && data) {
-        const metadata = user.user_metadata || {};
-        const displayName =
-          data.display_name ||
-          data.full_name ||
-          metadata.display_name ||
-          metadata.full_name ||
-          metadata.name ||
-          data.username ||
-          user.email ||
-          "ACL User";
-
         return {
           ...data,
           id: data.id || user.id,
           email: user.email || data.email || "",
-          display_name: displayName,
-          full_name:
+          display_name:
+            data.display_name ||
             data.full_name ||
-            metadata.full_name ||
-            metadata.name ||
-            metadata.display_name ||
-            displayName,
+            user.user_metadata?.display_name ||
+            user.user_metadata?.full_name ||
+            user.email?.split("@")[0] ||
+            "ACL User",
           avatar_url:
             data.avatar_url ||
-            metadata.avatar_url ||
-            metadata.picture ||
-            metadata.photo_url ||
+            user.user_metadata?.avatar_url ||
+            user.user_metadata?.picture ||
             ""
         };
       }
 
-      if (error) {
-        console.warn("ACL profile query fallback:", error);
-      }
+      if (error) console.warn("ACL profile fallback:", error);
     } catch (profileError) {
-      console.warn("ACL profile query timed out/fallback:", profileError);
+      console.warn("ACL profile timeout/fallback:", profileError);
     }
 
     return profileFallbackFromUser(user);
@@ -301,62 +278,26 @@ function renderAdminLink(profile) {
 }
 
 export async function protectAndRender(relativeLogin = "login.html") {
-  try {
-    const session = await requireSession(relativeLogin);
-    if (!session) return null;
-
-    let profile = await loadProfile();
-
-    if (!profile) {
-      profile = profileFallbackFromUser(session.user);
-    }
-
-    if (!profile) {
-      location.replace(root + relativeLogin);
-      return null;
-    }
-
-    try {
-      profile = await aclWithTimeout(
-        applyAdminStatus(profile),
-        3500,
-        "Admin status"
-      );
-    } catch (adminError) {
-      console.warn("ACL admin status fallback:", adminError);
-    }
-
-    if (profile.account_status === "suspended") {
-      try { await supabaseClient.auth.signOut(); } catch {}
-      alert("This account has been suspended. Contact the ACL administrator.");
-      location.replace(root + relativeLogin);
-      return null;
-    }
-
-    window.aclCurrentProfile = profile;
-    renderUserChip(profile);
-    renderAdminLink(profile);
-    applyBrandRename(document);
-
-    return profile;
-  } catch (error) {
-    console.error("ACL protectAndRender:", error);
-
-    try {
-      const { data } = await supabaseClient.auth.getSession();
-      const fallback = profileFallbackFromUser(data?.session?.user);
-
-      if (fallback) {
-        window.aclCurrentProfile = fallback;
-        renderUserChip(fallback);
-        applyBrandRename(document);
-        return fallback;
-      }
-    } catch {}
-
+  const session = await requireSession(relativeLogin);
+  if (!session) return null;
+  let profile = await loadProfile();
+  if (!profile) {
+    await supabaseClient.auth.signOut();
     location.replace(root + relativeLogin);
     return null;
   }
+  profile = await applyAdminStatus(profile);
+  if (profile.account_status === "suspended") {
+    await supabaseClient.auth.signOut();
+    alert("This account has been suspended. Contact the ACL administrator.");
+    location.replace(root + relativeLogin);
+    return null;
+  }
+  window.aclCurrentProfile = profile;
+  renderUserChip(profile);
+  renderAdminLink(profile);
+  applyBrandRename(document);
+  return profile;
 }
 
 export async function signOut() {
