@@ -6417,22 +6417,72 @@ document.addEventListener(
 );
 
 
+
+function learningWithTimeout(promise, ms, label) {
+  let timer;
+
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(
+      () => reject(new Error(`${label} timed out. Please retry.`)),
+      ms
+    );
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) window.clearTimeout(timer);
+  });
+}
+
 /* =========================================================
    INITIALISATION
 ========================================================= */
 
 (async () => {
-  const profile =
-    await protectAndRender(
-      "login.html"
+  const quizArea =
+    $("quizArea");
+
+  setStatus("Restoring session…");
+
+  let profile = null;
+
+  try {
+    profile =
+      await learningWithTimeout(
+        protectAndRender("login.html"),
+        9000,
+        "Account restoration"
+      );
+  } catch (authError) {
+    console.error("LEARNING AUTH ERROR:", authError);
+
+    setStatus(
+      authError.message || "Could not restore your account",
+      true
     );
+
+    if (quizArea) {
+      quizArea.innerHTML = `
+        <div class="empty-state">
+          ${esc(authError.message || "Could not restore your account")}
+          <br>
+          <button
+            type="button"
+            class="primary-btn"
+            onclick="location.reload()"
+            style="margin-top:12px"
+          >
+            Retry
+          </button>
+        </div>
+      `;
+    }
+
+    return;
+  }
 
   if (!profile) {
     return;
   }
-
-  const quizArea =
-    $("quizArea");
 
   if (!quizSlug) {
     if (quizArea) {
@@ -6451,7 +6501,11 @@ document.addEventListener(
     try {
       aclSettings =
         normalizeAclSettings(
-          await getAclSettings()
+          await learningWithTimeout(
+            getAclSettings(),
+            7000,
+            "Settings loading"
+          )
         );
     } catch (settingsError) {
       console.warn(
@@ -6473,16 +6527,20 @@ document.addEventListener(
       data,
       error
     } =
-      await supabaseClient.rpc(
-        "acl_get_learning_quiz",
-        {
-          p_quiz_slug:
-            quizSlug,
+      await learningWithTimeout(
+        supabaseClient.rpc(
+          "acl_get_learning_quiz",
+          {
+            p_quiz_slug:
+              quizSlug,
 
-          p_module_id:
-            requestedModuleId ||
-            null
-        }
+            p_module_id:
+              requestedModuleId ||
+              null
+          }
+        ),
+        15000,
+        "Quiz loading"
       );
 
     if (error) {
@@ -6591,9 +6649,13 @@ if (challengeId) {
     }
 
     attempt =
-      await getOpenAttempt(
-        quiz.module_id,
-        quiz.id
+      await learningWithTimeout(
+        getOpenAttempt(
+          quiz.module_id,
+          quiz.id
+        ),
+        9000,
+        "Attempt restoration"
       );
 
     if (attempt) {
@@ -6685,31 +6747,35 @@ if (challengeId) {
       resetAllLifelines();
 
       attempt =
-        await createAttempt({
-          moduleId:
-            quiz.module_id,
+        await learningWithTimeout(
+          createAttempt({
+            moduleId:
+              quiz.module_id,
 
-          moduleTitle:
-            quiz.module_title,
+            moduleTitle:
+              quiz.module_title,
 
-          quizId:
-            quiz.id,
+            quizId:
+              quiz.id,
 
-          quizTitle:
-            quiz.title,
+            quizTitle:
+              quiz.title,
 
-          mode:
-            quiz.mode,
+            mode:
+              quiz.mode,
 
-          questionIds:
-            questions.map(
-              (question) =>
-                question.id
-            ),
+            questionIds:
+              questions.map(
+                (question) =>
+                  question.id
+              ),
 
-          lifelines:
-            lifelinesState
-        });
+            lifelines:
+              lifelinesState
+          }),
+          9000,
+          "Attempt creation"
+        );
 
       setStatus(
         "New learning attempt saved"

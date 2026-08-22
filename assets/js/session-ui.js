@@ -1,4 +1,48 @@
 import { supabaseClient } from "./supabase-client.js";
+function aclWithTimeout(promise, ms, label = "Request") {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = window.setTimeout(
+      () => reject(new Error(`${label} timed out`)),
+      ms
+    );
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) window.clearTimeout(timer);
+  });
+}
+
+function profileFallbackFromUser(user) {
+  if (!user) return null;
+
+  const metadata = user.user_metadata || {};
+  const displayName =
+    metadata.display_name ||
+    metadata.full_name ||
+    metadata.name ||
+    user.email?.split("@")[0] ||
+    "ACL User";
+
+  return {
+    id: user.id,
+    email: user.email || "",
+    display_name: displayName,
+    full_name:
+      metadata.full_name ||
+      metadata.name ||
+      metadata.display_name ||
+      displayName,
+    avatar_url:
+      metadata.avatar_url ||
+      metadata.picture ||
+      metadata.photo_url ||
+      "",
+    role: metadata.role || "member",
+    account_status: "active",
+    __auth_fallback: true
+  };
+}
 
 const VALID_EDITIONS = new Set(["basic", "expert"]);
 const EDITION_KEY = "aclSelectedEdition";
@@ -124,32 +168,98 @@ export function aclUrl(path, edition = resolveAclEdition({ requireEdition: false
 }
 
 export async function requireSession(relativeLogin = "login.html") {
-  const { data, error } = await supabaseClient.auth.getSession();
-  if (error || !data?.session) {
+  try {
+    const { data, error } = await aclWithTimeout(
+      supabaseClient.auth.getSession(),
+      6000,
+      "Session restoration"
+    );
+
+    if (error || !data?.session) {
+      location.replace(root + relativeLogin);
+      return null;
+    }
+
+    return data.session;
+  } catch (error) {
+    console.warn("ACL session restoration:", error);
     location.replace(root + relativeLogin);
     return null;
   }
-  return data.session;
 }
 
 export async function loadProfile() {
-  const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-  if (sessionError) throw sessionError;
-  const user = sessionData.session?.user;
-  if (!user) return null;
-  const { data, error } = await supabaseClient.from("profiles").select("*").eq("id", user.id).maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  const metadata = user.user_metadata || {};
-  const displayName = data.display_name || data.full_name || metadata.display_name || metadata.full_name || metadata.name || data.username || user.email || "ACL User";
-  return {
-    ...data,
-    id: data.id || user.id,
-    email: user.email || data.email || "",
-    display_name: displayName,
-    full_name: data.full_name || metadata.full_name || metadata.name || metadata.display_name || displayName,
-    avatar_url: data.avatar_url || metadata.avatar_url || metadata.picture || metadata.photo_url || ""
-  };
+  let user = null;
+
+  try {
+    const { data: sessionData, error: sessionError } =
+      await aclWithTimeout(
+        supabaseClient.auth.getSession(),
+        6000,
+        "Session restoration"
+      );
+
+    if (sessionError) throw sessionError;
+
+    user = sessionData?.session?.user || null;
+    if (!user) return null;
+
+    try {
+      const { data, error } =
+        await aclWithTimeout(
+          supabaseClient
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle(),
+          6000,
+          "Profile loading"
+        );
+
+      if (!error && data) {
+        const metadata = user.user_metadata || {};
+        const displayName =
+          data.display_name ||
+          data.full_name ||
+          metadata.display_name ||
+          metadata.full_name ||
+          metadata.name ||
+          data.username ||
+          user.email ||
+          "ACL User";
+
+        return {
+          ...data,
+          id: data.id || user.id,
+          email: user.email || data.email || "",
+          display_name: displayName,
+          full_name:
+            data.full_name ||
+            metadata.full_name ||
+            metadata.name ||
+            metadata.display_name ||
+            displayName,
+          avatar_url:
+            data.avatar_url ||
+            metadata.avatar_url ||
+            metadata.picture ||
+            metadata.photo_url ||
+            ""
+        };
+      }
+
+      if (error) {
+        console.warn("ACL profile query fallback:", error);
+      }
+    } catch (profileError) {
+      console.warn("ACL profile query timed out/fallback:", profileError);
+    }
+
+    return profileFallbackFromUser(user);
+  } catch (error) {
+    console.warn("ACL loadProfile:", error);
+    return profileFallbackFromUser(user);
+  }
 }
 
 export function renderUserChip(profile) {
@@ -191,26 +301,62 @@ function renderAdminLink(profile) {
 }
 
 export async function protectAndRender(relativeLogin = "login.html") {
-  const session = await requireSession(relativeLogin);
-  if (!session) return null;
-  let profile = await loadProfile();
-  if (!profile) {
-    await supabaseClient.auth.signOut();
+  try {
+    const session = await requireSession(relativeLogin);
+    if (!session) return null;
+
+    let profile = await loadProfile();
+
+    if (!profile) {
+      profile = profileFallbackFromUser(session.user);
+    }
+
+    if (!profile) {
+      location.replace(root + relativeLogin);
+      return null;
+    }
+
+    try {
+      profile = await aclWithTimeout(
+        applyAdminStatus(profile),
+        3500,
+        "Admin status"
+      );
+    } catch (adminError) {
+      console.warn("ACL admin status fallback:", adminError);
+    }
+
+    if (profile.account_status === "suspended") {
+      try { await supabaseClient.auth.signOut(); } catch {}
+      alert("This account has been suspended. Contact the ACL administrator.");
+      location.replace(root + relativeLogin);
+      return null;
+    }
+
+    window.aclCurrentProfile = profile;
+    renderUserChip(profile);
+    renderAdminLink(profile);
+    applyBrandRename(document);
+
+    return profile;
+  } catch (error) {
+    console.error("ACL protectAndRender:", error);
+
+    try {
+      const { data } = await supabaseClient.auth.getSession();
+      const fallback = profileFallbackFromUser(data?.session?.user);
+
+      if (fallback) {
+        window.aclCurrentProfile = fallback;
+        renderUserChip(fallback);
+        applyBrandRename(document);
+        return fallback;
+      }
+    } catch {}
+
     location.replace(root + relativeLogin);
     return null;
   }
-  profile = await applyAdminStatus(profile);
-  if (profile.account_status === "suspended") {
-    await supabaseClient.auth.signOut();
-    alert("This account has been suspended. Contact the ACL administrator.");
-    location.replace(root + relativeLogin);
-    return null;
-  }
-  window.aclCurrentProfile = profile;
-  renderUserChip(profile);
-  renderAdminLink(profile);
-  applyBrandRename(document);
-  return profile;
 }
 
 export async function signOut() {
