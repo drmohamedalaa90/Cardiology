@@ -243,3 +243,10 @@ body.acl-command-body{
   .acl-mobile-bottom-nav a,.acl-mobile-bottom-nav button{border:0;background:transparent;color:#75869a;display:grid;place-items:center;align-content:center;gap:2px;font-size:17px;text-decoration:none}
   .acl-mobile-bottom-nav small{font-size:9px;font-weight:800}.acl-mobile-bottom-nav .is-active{color:#176fd1}
 }
+
+/* 2026-08-22 professional drawer final polish */
+.acl-drawer-link.is-active{
+  background:rgba(72,145,230,.18);
+  color:#fff;
+  box-shadow:inset 3px 0 0 #f5b700;
+}
