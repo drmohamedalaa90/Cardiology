@@ -1,41 +1,33 @@
-ACL LEARNING VERIFIED FINAL FIX
+ACL LEARNING FREEZE RADICAL FIX — VERIFICATION
 
 OVERALL: PASS
 
+PASS  syntax assets/js/session-ui.js
 PASS  syntax assets/js/learning-mode.js
 PASS  syntax assets/js/acl-shared-shell.js
 PASS  syntax assets/js/supabase-client.js
-PASS  syntax assets/js/session-ui.js
 PASS  syntax assets/js/cloud-progress.js
 PASS  syntax assets/js/user-settings.js
-PASS  syntax assets/js/modules-auth-bootstrap-20260820.js
-PASS  syntax assets/js/modules-live-core-20260820.js
-PASS  syntax scripts/acl-preflight.mjs
-PASS  learning-mode.js restored byte-for-byte from original upload
-PASS  DOM contract quizArea
-PASS  DOM contract answerFeedbackHost
-PASS  DOM contract submitAnswer
-PASS  DOM contract nextQuestion
-PASS  DOM contract progressFill
-PASS  DOM contract questionCount
-PASS  DOM contract saveStatus
-PASS  DOM contract learningFlashcardModal
-PASS  learning engine reference exists
-PASS  shared shell reference exists
-PASS  modules page references auth bootstrap
-PASS  auth bootstrap imports live core
-PASS  ACL preflight
+PASS  syntax service-worker.js
+PASS  DOM quizArea
+PASS  DOM answerFeedbackHost
+PASS  DOM submitAnswer
+PASS  DOM nextQuestion
+PASS  DOM progressFill
+PASS  DOM questionCount
+PASS  DOM saveStatus
+PASS  DOM learningFlashcardModal
+PASS  startup status before auth gate
+PASS  quiz timeout present
+PASS  attempt timeout present
+PASS  profile timeout present
+PASS  auth metadata fallback present
+PASS  service worker cache bumped
 
-Deliberately untouched:
-- quiz RPC and question loading logic
-- question rendering
-- Confidence Answering
-- Life Savers
-- flashcards
-- cloud progress/autosave
-- challenge logic
+Expected runtime stages after this fix:
+1. Restoring session…
+2. Loading settings…
+3. Loading learning mode…
+4. Unfinished learning attempt restored OR New learning attempt saved
 
-The Learning engine is restored exactly from the original uploaded Cardiology project.
-
-ACL preflight output:
-ACL preflight passed. Current module runtime, navigation, and Learning DOM contracts are valid.
+If a backend call fails or hangs, the page now shows an explicit error/retry instead of freezing forever.
