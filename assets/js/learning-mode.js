@@ -2770,6 +2770,23 @@ async function activateLifeline(
 
       lifelinesState = state;
 
+      window.dispatchEvent(
+        new CustomEvent(
+          "acl:learning-time-bonus",
+          {
+            detail: {
+              seconds: 60,
+              questionId:
+                String(
+                  question.id
+                ),
+              questionNumber:
+                index + 1
+            }
+          }
+        )
+      );
+
       responseConfig = {
         icon: "⏱️",
         title: "+1 Minute",
@@ -4022,6 +4039,42 @@ function render() {
     questionCount.textContent =
       `Question ${index + 1} of ${questions.length}`;
   }
+
+  /* Keep the floating Learning Mode timer / notes synchronized with
+     the actual current question without coupling the UI helper to
+     private engine state. */
+  window.dispatchEvent(
+    new CustomEvent(
+      "acl:learning-question-changed",
+      {
+        detail: {
+          questionId:
+            String(
+              question.id
+            ),
+          questionNumber:
+            index + 1,
+          totalQuestions:
+            questions.length,
+          timeLimitSeconds:
+            Math.max(
+              1,
+              Number(
+                question.time_limit_seconds ||
+                question.timeLimitSeconds ||
+                quiz?.default_question_time_seconds ||
+                quiz?.defaultQuestionTimeSeconds ||
+                60
+              ) || 60
+            ),
+          answered:
+            Boolean(
+              answer
+            )
+        }
+      }
+    )
+  );
 
   if (!quizArea) {
     return;
