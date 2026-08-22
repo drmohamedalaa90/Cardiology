@@ -1,27 +1,17 @@
-ACL LEARNING BOOTSTRAP RADICAL FIX
+ACL LEARNING DEADLOCK FIX — VERIFICATION
 
 OVERALL: PASS
 
-PASS  assets/js/session-ui.js
-PASS  assets/js/learning-mode.js
-PASS  assets/js/acl-shared-shell.js
-PASS  assets/js/learning-bootstrap-20260822.js
-PASS  assets/js/cloud-progress.js
-PASS  assets/js/user-settings.js
-PASS  assets/js/supabase-client.js
-PASS  service-worker.js
-PASS  bootstrap referenced
-PASS  direct learning-mode removed
-PASS  fresh shared shell referenced
-PASS  fresh session dependency
-PASS  fresh cloud dependency
-PASS  fresh settings dependency
-PASS  shell timeout present
-PASS  service worker bumped
+PASS  syntax assets/js/learning-mode.js
+PASS  syntax assets/js/learning-bootstrap-20260822.js
+PASS  blocking session-ui import removed
+PASS  protectAndRender call removed
+PASS  direct Supabase auth gate present
+PASS  direct auth startup status present
+PASS  bootstrap loads new engine URL
 
-What this fixes:
-- The Learning engine is no longer loaded as a silent static module.
-- A dedicated bootstrap catches module import errors and shows them on-screen.
-- All Learning dependencies use fresh cache-busting URLs.
-- Shared-shell session/profile lookups have timeouts and immediate auth-metadata fallback.
-- Old service-worker cache is invalidated.
+Root cause removed:
+- learning-mode.js no longer imports session-ui.js.
+- Learning Mode authenticates directly with Supabase Auth.
+- The shared ACL shell remains independent and still renders the header/drawer.
+- Therefore the Learning engine no longer waits on session-ui's top-level shared-shell import.

@@ -3,9 +3,6 @@ import {
 } from "./supabase-client.js";
 
 
-import {
-  protectAndRender
-} from "./session-ui.js?v=20260822-bootstrapfix";
 
 
 import {
@@ -24,6 +21,86 @@ import {
 
 
 console.log("ACL LEARNING MODE BOOTSTRAP IMPORTED");
+
+
+/* =========================================================
+   DIRECT LEARNING AUTH
+   The Learning engine authenticates directly from Supabase Auth.
+   The page shell independently owns navigation/profile rendering.
+========================================================= */
+
+async function protectLearningSession(relativeLogin = "login.html") {
+  let timer = null;
+
+  try {
+    const timeout = new Promise((_, reject) => {
+      timer = window.setTimeout(
+        () => reject(new Error("Session restoration timed out")),
+        7000
+      );
+    });
+
+    const result = await Promise.race([
+      supabaseClient.auth.getSession(),
+      timeout
+    ]);
+
+    if (timer) {
+      window.clearTimeout(timer);
+      timer = null;
+    }
+
+    const session = result?.data?.session;
+
+    if (result?.error || !session?.user) {
+      location.replace(relativeLogin);
+      return null;
+    }
+
+    return {
+      id: session.user.id,
+      email: session.user.email || "",
+      display_name:
+        session.user.user_metadata?.display_name ||
+        session.user.user_metadata?.full_name ||
+        session.user.user_metadata?.name ||
+        session.user.email?.split("@")[0] ||
+        "ACL User"
+    };
+  } catch (error) {
+    if (timer) {
+      window.clearTimeout(timer);
+    }
+
+    console.error("ACL LEARNING AUTH:", error);
+
+    const area = document.getElementById("quizArea");
+    const status = document.getElementById("saveStatus");
+
+    if (status) {
+      status.textContent = "Session error";
+    }
+
+    if (area) {
+      area.innerHTML = `
+        <div class="empty-state">
+          Could not restore your learning session.
+          <br>
+          <button
+            type="button"
+            class="primary-btn"
+            onclick="location.reload()"
+            style="margin-top:12px"
+          >
+            Retry
+          </button>
+        </div>
+      `;
+    }
+
+    return null;
+  }
+}
 
 /* =========================================================
    DOM HELPERS
@@ -6428,7 +6505,7 @@ document.addEventListener(
   console.log("ACL LEARNING STARTUP: restoring session");
 
   const profile =
-    await protectAndRender(
+    await protectLearningSession(
       "login.html"
     );
 
