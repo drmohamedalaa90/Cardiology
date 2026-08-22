@@ -3,9 +3,6 @@ import {
 } from "./supabase-client.js";
 
 
-import {
-  protectAndRender
-} from "./session-ui.js?v=5.3.0";
 
 
 import {
@@ -6418,21 +6415,126 @@ document.addEventListener(
 
 
 /* =========================================================
+   LEARNING STARTUP GUARD — NON-BLOCKING AUTH + TIMEOUTS
+========================================================= */
+
+function withLearningTimeout(promise, timeoutMs, label) {
+  let timeoutId = null;
+
+  const timeoutPromise =
+    new Promise((_, reject) => {
+      timeoutId =
+        window.setTimeout(
+          () => {
+            reject(
+              new Error(
+                `${label} timed out. Please refresh and try again.`
+              )
+            );
+          },
+          timeoutMs
+        );
+    });
+
+  return Promise.race([
+    promise,
+    timeoutPromise
+  ]).finally(
+    () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(
+          timeoutId
+        );
+      }
+    }
+  );
+}
+
+
+async function requireLearningSession() {
+  const {
+    data,
+    error
+  } =
+    await withLearningTimeout(
+      supabaseClient.auth.getSession(),
+      6000,
+      "Session restoration"
+    );
+
+  if (
+    error ||
+    !data?.session?.user
+  ) {
+    location.replace(
+      "login.html"
+    );
+
+    return null;
+  }
+
+  return data.session;
+}
+
+
+/* =========================================================
    INITIALISATION
 ========================================================= */
 
 (async () => {
-  const profile =
-    await protectAndRender(
-      "login.html"
-    );
-
-  if (!profile) {
-    return;
-  }
-
   const quizArea =
     $("quizArea");
+
+  /*
+   * Learning Mode must never wait for a second profile-table lookup.
+   * Authentication has already been restored by the app shell.
+   * We only require a valid Supabase Auth session here.
+   */
+  try {
+    setStatus(
+      "Restoring session…"
+    );
+
+    const session =
+      await requireLearningSession();
+
+    if (!session) {
+      return;
+    }
+  } catch (sessionError) {
+    console.error(
+      "LEARNING SESSION ERROR:",
+      sessionError
+    );
+
+    setStatus(
+      sessionError.message ||
+      "Could not restore your session",
+      true
+    );
+
+    if (quizArea) {
+      quizArea.innerHTML = `
+        <div class="empty-state">
+          ${esc(
+            sessionError.message ||
+            "Session unavailable"
+          )}
+          <br>
+          <button
+            type="button"
+            class="primary-btn"
+            onclick="location.reload()"
+            style="margin-top:12px"
+          >
+            Retry
+          </button>
+        </div>
+      `;
+    }
+
+    return;
+  }
 
   if (!quizSlug) {
     if (quizArea) {
@@ -6451,7 +6553,11 @@ document.addEventListener(
     try {
       aclSettings =
         normalizeAclSettings(
-          await getAclSettings()
+          await withLearningTimeout(
+            getAclSettings(),
+            7000,
+            "Settings loading"
+          )
         );
     } catch (settingsError) {
       console.warn(
@@ -6473,16 +6579,20 @@ document.addEventListener(
       data,
       error
     } =
-      await supabaseClient.rpc(
-        "acl_get_learning_quiz",
-        {
-          p_quiz_slug:
-            quizSlug,
+      await withLearningTimeout(
+        supabaseClient.rpc(
+          "acl_get_learning_quiz",
+          {
+            p_quiz_slug:
+              quizSlug,
 
-          p_module_id:
-            requestedModuleId ||
-            null
-        }
+            p_module_id:
+              requestedModuleId ||
+              null
+          }
+        ),
+        12000,
+        "Quiz loading"
       );
 
     if (error) {

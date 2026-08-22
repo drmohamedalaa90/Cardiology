@@ -1,1 +1,206 @@
 .acl-clean-learning{padding-top:18px;padding-bottom:70px}.acl-clean-learning .learning-stage{margin-top:0}.learning-progress-row{display:flex;flex-direction:column;gap:7px;margin:14px 0}.learning-progress-track{height:8px;border-radius:999px;background:#e7ecf2;overflow:hidden}.learning-progress-track span{display:block;height:100%;width:0;background:linear-gradient(90deg,#0d315f,#1b7793);border-radius:inherit;transition:width .25s ease}.learning-progress-copy{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:.76rem;color:#68768a}.learning-save-status{font-size:.7rem}.learning-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}.learning-quiz-area{min-height:260px}.learning-flashcard-modal[hidden]{display:none}.learning-flashcard-modal{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:18px}.learning-flashcard-backdrop{position:absolute;inset:0;background:rgba(4,17,37,.62)}.learning-flashcard-dialog{position:relative;z-index:1;width:min(820px,94vw);max-height:88vh;overflow:auto;background:#fff;border-radius:20px;box-shadow:0 25px 70px rgba(0,0,0,.25)}.learning-flashcard-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:18px 20px;border-bottom:1px solid #e5eaf0}.learning-flashcard-header h2{margin:5px 0 0}.learning-flashcard-header button{border:0;background:#eef2f7;border-radius:50%;width:36px;height:36px;font-size:1.35rem}.learning-flashcard-content{padding:18px 20px}.learning-flashcard-dialog footer{padding:0 20px 20px}.learning-flashcard-type{font-size:.67rem;font-weight:900;letter-spacing:.09em;color:#496b8d}.learning-flashcard-type.trial{color:#8a5e00}@media(max-width:720px){.acl-clean-learning{padding-top:8px}.learning-progress-copy{align-items:flex-start;flex-direction:column;gap:3px}.learning-actions{position:sticky;bottom:72px;background:rgba(255,255,255,.96);padding:10px 0;z-index:12}.learning-actions .primary-btn{width:100%}}
+
+/* =========================================================
+   ACL LEARNING WORKSPACE — RADICAL STARTUP FIX
+   Preserve the proven quiz DOM; only change presentation.
+========================================================= */
+
+body.acl-command-body.acl-expert-learning-mode .learning-shell,
+body.acl-expert-learning-mode .learning-shell{
+  width:auto;
+  max-width:none;
+}
+
+body.acl-command-body .acl-command-main.learning-shell{
+  padding-top:18px;
+}
+
+/* Compact module heading instead of giant standalone splash. */
+body.acl-expert-learning-mode .learning-stage{
+  width:min(1120px,100%);
+  min-height:0 !important;
+  margin:0 auto 10px !important;
+  padding:14px 18px !important;
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto !important;
+  grid-template-areas:
+    "module description"
+    "quiz description" !important;
+  align-items:center !important;
+  gap:3px 20px !important;
+  border:1px solid #e1e8ef !important;
+  border-radius:14px !important;
+  background:#fff !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+}
+
+body.acl-expert-learning-mode .learning-module-corner{
+  grid-area:module !important;
+  position:static !important;
+  width:auto !important;
+  min-width:0 !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:baseline !important;
+  gap:9px !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  transform:none !important;
+}
+
+body.acl-expert-learning-mode .learning-module-corner span{
+  font-size:9px !important;
+  color:#718399 !important;
+}
+
+body.acl-expert-learning-mode .learning-module-corner strong{
+  font-size:19px !important;
+  color:#193752 !important;
+  white-space:normal !important;
+}
+
+body.acl-expert-learning-mode .learning-quiz-banner{
+  grid-area:quiz !important;
+  position:static !important;
+  width:auto !important;
+  min-height:0 !important;
+  padding:0 !important;
+  display:block !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  transform:none !important;
+  text-align:left !important;
+}
+
+body.acl-expert-learning-mode .learning-mode-label{
+  display:block !important;
+  margin:0 0 2px !important;
+  padding:0 !important;
+  color:#58738f !important;
+  background:transparent !important;
+  font-size:8.5px !important;
+  letter-spacing:.1em !important;
+}
+
+body.acl-expert-learning-mode .learning-quiz-banner h1{
+  margin:0 !important;
+  color:#2c4965 !important;
+  font-size:12px !important;
+  line-height:1.3 !important;
+  text-align:left !important;
+}
+
+body.acl-expert-learning-mode .quiz-banner-decoration{
+  display:none !important;
+}
+
+body.acl-expert-learning-mode .learning-stage > #quizDescription{
+  grid-area:description !important;
+  position:static !important;
+  max-width:430px !important;
+  margin:0 !important;
+  color:#7e8c9c !important;
+  font-size:10px !important;
+  line-height:1.4 !important;
+  text-align:right !important;
+}
+
+/* Compact progress. */
+body.acl-expert-learning-mode .learning-progress-row{
+  width:min(1120px,100%);
+  margin:0 auto 10px !important;
+  padding:9px 12px !important;
+  border:1px solid #e1e8ef !important;
+  border-radius:11px !important;
+  background:#fff !important;
+}
+
+body.acl-expert-learning-mode .learning-card{
+  width:min(1120px,100%);
+  margin:0 auto !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
+/* Quiet skeleton while actual question is loading. */
+.learning-inline-loader{
+  padding:20px;
+  border:1px solid #e1e8ef;
+  border-radius:16px;
+  background:#fff;
+}
+
+.learning-inline-loader-top{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:18px;
+}
+
+.learning-inline-loader-pill,
+.learning-inline-loader-short,
+.learning-inline-loader-line,
+.learning-inline-loader-options span{
+  display:block;
+  border-radius:999px;
+  background:linear-gradient(90deg,#edf2f6 0%,#f8fafc 45%,#edf2f6 90%);
+  background-size:220% 100%;
+  animation:aclLearningSkeleton 1.2s ease-in-out infinite;
+}
+
+.learning-inline-loader-pill{width:112px;height:23px}
+.learning-inline-loader-short{width:64px;height:17px}
+.learning-inline-loader-line{width:73%;height:15px;margin:10px 0}
+.learning-inline-loader-line.is-wide{width:94%;height:19px}
+
+.learning-inline-loader-options{
+  display:grid;
+  gap:9px;
+  margin-top:22px;
+}
+
+.learning-inline-loader-options span{
+  width:100%;
+  height:50px;
+  border-radius:11px;
+}
+
+@keyframes aclLearningSkeleton{
+  0%{background-position:100% 0}
+  100%{background-position:-100% 0}
+}
+
+/* While skeleton is present, do not show a useless Check answer button. */
+body.acl-expert-learning-mode .learning-card:has(.learning-inline-loader) .learning-actions{
+  display:none !important;
+}
+
+@media(max-width:820px){
+  body.acl-expert-learning-mode .learning-stage{
+    grid-template-columns:1fr !important;
+    grid-template-areas:
+      "module"
+      "quiz" !important;
+    padding:11px 12px !important;
+  }
+
+  body.acl-expert-learning-mode .learning-stage > #quizDescription{
+    display:none !important;
+  }
+
+  body.acl-expert-learning-mode .learning-module-corner{
+    display:block !important;
+  }
+
+  body.acl-expert-learning-mode .learning-module-corner strong{
+    display:block !important;
+    margin-top:2px !important;
+    font-size:16px !important;
+  }
+}
