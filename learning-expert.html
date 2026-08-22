@@ -8,234 +8,73 @@
 
   <title>Learning Mode | ACL Expert Edition</title>
 
+  <!-- Existing app styles -->
   <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
+  <link rel="stylesheet" href="assets/css/learning-feedback.css?v=5.4.21">
+
+  <!-- Shared ACL shell styles -->
   <link rel="stylesheet" href="assets/css/acl-command-center.css?v=20260822b">
   <link rel="stylesheet" href="assets/css/acl-shared-shell.css?v=2.0.0">
-  <link rel="stylesheet" href="assets/css/learning-feedback.css?v=5.4.21">
-  <link rel="stylesheet" href="assets/css/learning-expert-shell-v1.css?v=20260822-workspace">
+
+  <!-- Replacement Learning workspace styling -->
+  <link rel="stylesheet" href="assets/css/learning-expert-shell-v1.css?v=20260822c">
+
+  <!-- Keep current quiz polish -->
   <link rel="stylesheet" href="assets/css/learning-polish-20260820.css?v=1">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
-<body class="acl-command-body acl-shared-page acl-theme-expert acl-expert-learning-mode acl-profile-pending">
+<body class="acl-theme-expert acl-expert-learning-mode">
 
   <!-- =====================================================
-       STATIC ACL APP SHELL
-       Visible immediately; no standalone Learning page flash.
+       IMPORTANT
+       This is the ORIGINAL proven Learning Mode DOM.
+       IDs/classes used by learning-mode.js are preserved.
+       The shared ACL shell is inserted by acl-shared-shell.js.
   ====================================================== -->
-  <div id="aclSharedShell">
 
-    <header class="acl-command-header">
-      <div class="acl-command-header-left">
-        <button
-          id="aclDrawerToggle"
-          class="acl-command-menu"
-          type="button"
-          aria-label="Open navigation"
-          aria-controls="aclCommandDrawer"
-          aria-expanded="false"
-        >
-          <span></span><span></span><span></span>
-        </button>
+  <main class="container learning-shell acl-clean-learning">
 
-        <a class="acl-command-brand" href="modules.html?edition=expert">
-          <img
-            src="assets/images/acl-header-mark.svg"
-            alt="Cardiology League"
-            class="acl-command-brand-logo"
-          >
-          <span class="acl-command-brand-name">Cardiology League</span>
-          <span class="acl-command-brand-separator">•</span>
-          <strong id="aclHeaderEdition">THE EXPERT EDITION</strong>
-        </a>
+    <section class="learning-stage">
+      <div class="learning-module-corner">
+        <span>Module</span>
+        <strong id="moduleTitle">Preparing module…</strong>
       </div>
 
-      <div class="acl-command-header-actions">
-        <span id="aclHeaderUserName" class="acl-command-user-name">Member</span>
+      <div class="learning-quiz-banner">
+        <span class="learning-mode-label">Expert Learning Mode</span>
+        <h1 id="quizTitle">Preparing questions…</h1>
 
-        <a
-          class="acl-command-icon-btn"
-          href="notifications.html?edition=expert"
-          aria-label="Notifications"
-          title="Notifications"
-        >🔔</a>
-
-        <a
-          class="acl-command-icon-btn"
-          href="settings.html?edition=expert"
-          aria-label="Settings"
-          title="Settings"
-        >⚙</a>
-
-        <button
-          id="aclHeaderLogout"
-          class="acl-command-icon-btn"
-          type="button"
-          aria-label="Log out"
-          title="Log out"
-        >↪</button>
-      </div>
-    </header>
-
-    <div id="aclDrawerBackdrop" class="acl-drawer-backdrop" hidden></div>
-
-    <aside id="aclCommandDrawer" class="acl-command-drawer" aria-label="ACL navigation">
-      <div class="acl-drawer-scroll">
-
-        <section class="acl-drawer-profile">
-          <div id="aclDrawerAvatar" class="acl-drawer-avatar"><span>ACL</span></div>
-
-          <div class="acl-drawer-profile-copy">
-            <strong id="aclDrawerName">Member</strong>
-            <a href="profile.html?edition=expert" class="acl-drawer-edit">Edit profile</a>
-          </div>
-        </section>
-
-        <nav class="acl-drawer-nav">
-
-          <a class="acl-drawer-link" href="modules.html?edition=expert">
-            <span class="acl-nav-icon">⌂</span>
-            <span>Home</span>
-          </a>
-
-          <a class="acl-drawer-link is-active" href="modules.html?edition=expert">
-            <span class="acl-nav-icon">▦</span>
-            <span>Modules</span>
-          </a>
-
-          <a class="acl-drawer-link" href="progress.html?edition=expert">
-            <span class="acl-nav-icon">▤</span>
-            <span>My Progress</span>
-          </a>
-
-          <section class="acl-nav-group">
-            <button
-              class="acl-nav-group-toggle"
-              type="button"
-              data-collapse-target="aclEditionMenu"
-              aria-expanded="true"
-            >
-              <span>
-                <span class="acl-nav-icon">⇄</span>
-                Editions
-              </span>
-              <span class="acl-chevron">⌄</span>
-            </button>
-
-            <div id="aclEditionMenu" class="acl-nav-group-content">
-              <a data-edition-link="basic" href="modules.html?edition=basic">Basic Edition</a>
-              <a data-edition-link="expert" class="is-selected" href="modules.html?edition=expert">
-                Expert Edition
-              </a>
-            </div>
-          </section>
-
-          <a class="acl-drawer-link" href="study.html?edition=expert">
-            <span class="acl-nav-icon">◆</span>
-            <span>Mindmaps &amp; Flashcards</span>
-          </a>
-
-          <a class="acl-drawer-link" href="challenge.html?edition=expert">
-            <span class="acl-nav-icon">⚔</span>
-            <span>Challenge Friends</span>
-          </a>
-
-          <a class="acl-drawer-link" href="competitions.html?edition=expert">
-            <span class="acl-nav-icon">🏆</span>
-            <span>Formal ACL Competitions</span>
-          </a>
-
-          <a class="acl-drawer-link" href="notifications.html?edition=expert">
-            <span class="acl-nav-icon">🔔</span>
-            <span>Notifications</span>
-          </a>
-
-          <a class="acl-drawer-link" href="profile.html?edition=expert">
-            <span class="acl-nav-icon">♙</span>
-            <span>Profile</span>
-          </a>
-
-          <a class="acl-drawer-link" href="settings.html?edition=expert">
-            <span class="acl-nav-icon">⚙</span>
-            <span>Settings</span>
-          </a>
-
-        </nav>
-      </div>
-
-      <button id="aclDrawerLogout" class="acl-drawer-logout" type="button">
-        <span>↪</span>
-        <span>Log out</span>
-      </button>
-    </aside>
-
-    <nav class="acl-mobile-bottom-nav" aria-label="Mobile navigation">
-      <a href="modules.html?edition=expert">
-        <span>⌂</span>
-        <small>Home</small>
-      </a>
-
-      <button id="aclMobileModulesButton" type="button" class="is-active">
-        <span>▦</span>
-        <small>Menu</small>
-      </button>
-
-      <a href="progress.html?edition=expert">
-        <span>▤</span>
-        <small>Progress</small>
-      </a>
-
-      <a href="profile.html?edition=expert">
-        <span>♙</span>
-        <small>Profile</small>
-      </a>
-    </nav>
-
-  </div>
-
-  <!-- =====================================================
-       LEARNING WORKSPACE
-  ====================================================== -->
-  <main class="acl-command-main acl-shared-main learning-workspace-main">
-
-    <section class="learning-workspace-head">
-      <div class="learning-workspace-module">
-        <span class="learning-workspace-kicker">EXPERT LEARNING MODE</span>
-
-        <div class="learning-workspace-title-row">
-          <div>
-            <small>Module</small>
-            <h1 id="moduleTitle">Preparing module…</h1>
-          </div>
-
-          <a class="learning-back-modules" href="modules.html?edition=expert">
-            ← Modules
-          </a>
+        <div class="quiz-banner-decoration">
+          <span></span><i></i><span></span>
         </div>
-
-        <h2 id="quizTitle" class="learning-workspace-quiz-title">Preparing questions…</h2>
-
-        <p id="quizDescription" class="learning-workspace-description">
-          Immediate feedback, Confidence Answering, Life Savers and flashcards.
-        </p>
       </div>
 
-      <section class="learning-progress-row" aria-label="Quiz progress">
-        <div class="learning-progress-copy">
-          <strong id="questionCount">Preparing questions…</strong>
-          <span id="saveStatus" class="learning-save-status" aria-live="polite">
-            Loading…
-          </span>
-        </div>
-
-        <div class="learning-progress-track">
-          <span id="progressFill"></span>
-        </div>
-      </section>
+      <p id="quizDescription" class="muted">
+        Immediate feedback, Confidence Answering, Life Savers and flashcards.
+      </p>
     </section>
 
-    <section class="learning-card learning-workspace-card">
+    <section class="learning-progress-row" aria-label="Quiz progress">
+      <div class="learning-progress-track">
+        <span id="progressFill"></span>
+      </div>
+
+      <div class="learning-progress-copy">
+        <strong id="questionCount">Preparing questions…</strong>
+
+        <span
+          id="saveStatus"
+          class="learning-save-status"
+          aria-live="polite"
+        >
+          Loading…
+        </span>
+      </div>
+    </section>
+
+    <section class="learning-card">
 
       <section
         id="quizArea"
@@ -252,7 +91,10 @@
           <span class="learning-inline-loader-line"></span>
 
           <div class="learning-inline-loader-options">
-            <span></span><span></span><span></span><span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
         </div>
       </section>
@@ -260,24 +102,35 @@
       <div id="answerFeedbackHost" aria-live="polite"></div>
 
       <div class="learning-actions">
-        <button id="submitAnswer" class="primary-btn" type="button" hidden>
+        <button
+          id="submitAnswer"
+          class="primary-btn"
+          type="button"
+        >
           Check answer
         </button>
 
-        <button id="nextQuestion" class="primary-btn" type="button" hidden>
+        <button
+          id="nextQuestion"
+          class="primary-btn"
+          type="button"
+          hidden
+        >
           Next question
         </button>
       </div>
 
     </section>
-
   </main>
 
   <!-- =====================================================
-       FLASHCARD MODAL — EXISTING ENGINE IDs PRESERVED
+       ORIGINAL FLASHCARD DOM — PRESERVED
   ====================================================== -->
-  <div id="learningFlashcardModal" class="learning-flashcard-modal" hidden>
-
+  <div
+    id="learningFlashcardModal"
+    class="learning-flashcard-modal"
+    hidden
+  >
     <button
       id="learningFlashcardBackdrop"
       class="learning-flashcard-backdrop"
@@ -293,20 +146,31 @@
     >
       <header class="learning-flashcard-header">
         <div>
-          <span id="learningFlashcardType" class="learning-flashcard-type">
+          <span
+            id="learningFlashcardType"
+            class="learning-flashcard-type"
+          >
             FLASHCARD
           </span>
-          <h2 id="learningFlashcardTitle">Topic review</h2>
+
+          <h2 id="learningFlashcardTitle">
+            Topic review
+          </h2>
         </div>
 
         <button
           id="closeLearningFlashcard"
           type="button"
           aria-label="Close flashcard"
-        >×</button>
+        >
+          ×
+        </button>
       </header>
 
-      <div id="learningFlashcardContent" class="learning-flashcard-content"></div>
+      <div
+        id="learningFlashcardContent"
+        class="learning-flashcard-content"
+      ></div>
 
       <footer>
         <button
@@ -320,11 +184,21 @@
     </section>
   </div>
 
-  <!-- Professional shell controller; no async shell injection needed. -->
-  <script type="module" src="assets/js/acl-command-center.js?v=20260822b"></script>
+  <!--
+    IMPORTANT:
+    Keep the original shared-shell flow.
+    Do NOT add acl-command-center.js here.
+  -->
+  <script
+    type="module"
+    src="assets/js/acl-shared-shell.js?v=4.0.1"
+  ></script>
 
-  <!-- Proven quiz engine untouched. -->
-  <script type="module" src="assets/js/learning-mode.js?v=6.0.1"></script>
+  <!-- Existing proven quiz engine. Only cache-busted. -->
+  <script
+    type="module"
+    src="assets/js/learning-mode.js?v=6.0.2"
+  ></script>
 
 </body>
 </html>
