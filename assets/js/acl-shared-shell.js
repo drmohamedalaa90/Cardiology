@@ -942,19 +942,10 @@ async function renderModuleTree() {
       await timeout(
         supabaseClient
           .from("modules")
-          .select(
-            "id,slug,title,edition,display_order,access_tier"
-          )
+          .select("*")
           .eq(
             "edition",
             edition
-          )
-          .order(
-            "display_order",
-            {
-              ascending: true,
-              nullsFirst: false
-            }
           ),
         7000,
         "Modules"
@@ -964,6 +955,45 @@ async function renderModuleTree() {
       throw error;
     }
 
+    let moduleRows = Array.isArray(data) ? data : [];
+
+    /*
+     * Defensive fallback:
+     * older ACL module records may not carry the edition column consistently.
+     * If the edition-filtered query returns nothing, fetch all modules and
+     * filter client-side instead of showing a false "Modules unavailable".
+     */
+    if (!moduleRows.length) {
+      try {
+        const fallbackResult =
+          await timeout(
+            supabaseClient
+              .from("modules")
+              .select("*"),
+            7000,
+            "Modules fallback"
+          );
+
+        if (!fallbackResult.error && Array.isArray(fallbackResult.data)) {
+          moduleRows =
+            fallbackResult.data.filter(module => {
+              const moduleEdition =
+                String(module?.edition || "").toLowerCase();
+
+              return (
+                !moduleEdition ||
+                moduleEdition === edition
+              );
+            });
+        }
+      } catch (fallbackError) {
+        console.warn(
+          "ACL drawer modules fallback",
+          fallbackError
+        );
+      }
+    }
+
     const buckets = {
       basic: [],
       ecg: [],
@@ -971,12 +1001,24 @@ async function renderModuleTree() {
       interventions: []
     };
 
-    (data || [])
-      .filter(
-        module =>
-          module?.access_tier !==
-          "hidden"
-      )
+    moduleRows
+      .filter(module => {
+        if (module?.is_hidden === true) return false;
+        if (module?.hidden === true) return false;
+        if (String(module?.status || "").toLowerCase() === "hidden") return false;
+        if (String(module?.access_tier || "").toLowerCase() === "hidden") return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const ao = Number(a?.display_order ?? a?.sort_order ?? 9999);
+        const bo = Number(b?.display_order ?? b?.sort_order ?? 9999);
+
+        if (ao !== bo) return ao - bo;
+
+        return String(a?.title || "").localeCompare(
+          String(b?.title || "")
+        );
+      })
       .forEach(module => {
         buckets[
           moduleFamily(module)
@@ -1043,11 +1085,14 @@ async function renderModuleTree() {
       error
     );
 
-    Object.values(hosts)
-      .filter(Boolean)
-      .forEach(host => {
+    Object.entries(hosts)
+      .forEach(([key, host]) => {
+        if (!host) return;
+
         host.innerHTML =
-          '<span class="acl-tree-empty">Modules unavailable</span>';
+          key === "basic"
+            ? '<span class="acl-tree-empty">Could not refresh module list</span>'
+            : "";
       });
   }
 }

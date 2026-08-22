@@ -1,24 +1,14 @@
-ACL UNIFIED SHARED DRAWER — VERIFIED
+ACL SHARED DRAWER MODULE LIST FIX — VERIFIED
 
 PASS  JavaScript syntax
-PASS  Home present
-PASS  My Progress present
-PASS  Editions present
-PASS  Modules group present
-PASS  Guidelines group present
-PASS  ECG group present
-PASS  Echo group present
-PASS  Interventions group present
-PASS  Dynamic module tree
-PASS  Module hub links
-PASS  Current module highlight
-PASS  Profile fallback
+PASS  Tolerant select star
+PASS  No strict access_tier select
+PASS  Client-side sorting
+PASS  Fallback module query
+PASS  Dynamic module tree retained
 
-Result:
-- Secondary pages now use the same full professional drawer structure as Modules.
-- Home is restored.
-- Editions stay expandable.
-- Modules stay expandable.
-- Guidelines / ECG / Echo / Interventions are populated dynamically.
-- Current module is highlighted in the drawer.
-- Module Hub, Quiz Setup, Mistakes, Study, Progress, Settings, etc. no longer switch to the simplified sidebar.
+Fix:
+- Drawer no longer depends on access_tier/display_order existing in the database.
+- It fetches the full module row and sorts client-side.
+- If the edition-filtered query returns no rows, it retries with all modules and filters client-side.
+- The current professional drawer structure is unchanged.
