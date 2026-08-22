@@ -1,27 +1,21 @@
-ACL Expert Learning Mode Fix v6 — 2026-08-22
+ACL Progress Freeze Fix — 2026-08-22
 
-Three requested corrections:
+Replace:
+1. progress.html
+2. assets/js/progress-dashboard-v2.js   (new)
 
-1) SELECTED ANSWER COLOR
-   - Before Check answer: selected option is dark ACL blue, not red.
-   - Red is now reserved for a confirmed wrong answer after checking.
-   - Correct answer can still become green after checking.
+Why the old page could freeze:
+- progress-dashboard-v1 used listAttempts(), which SELECTed * from every quiz_attempt.
+- That transferred every saved answers JSON and question_ids array even though the dashboard did not need them initially.
+- progress-dashboard-v1 imported session-ui.js. session-ui installs a whole-document MutationObserver and scans newly rendered DOM nodes, which becomes expensive on a data-heavy progress page.
 
-2) CONFIDENCE OFF = NO CONFIDENCE RESULTS
-   - High/Low confidence result cards are completely omitted when Confidence Answering was disabled.
-   - Confidence-specific recommendations and Dr. Corazón wording are also omitted.
-   - Scoring remains standard 1 point per correct answer when confidence is off.
+The v2 page:
+- loads acl-shared-shell directly;
+- does not load session-ui.js;
+- restores auth with a 6-second timeout;
+- initially fetches compact attempt metadata only;
+- limits confidence answer payloads to the most recent confidence-enabled attempts;
+- lazy-loads the answers of one attempt only when Review is clicked;
+- limits the initial completed-attempt DOM list to the latest 40 rows.
 
-3) UNFINISHED ATTEMPT CAN NEVER COLLAPSE TO 1 QUESTION
-   - The original 10/20/30/50 session size is stored inside the saved Life Saver state.
-   - A local recovery copy of the complete selected question IDs is also saved.
-   - On resume, ACL validates cloud question_ids; if incomplete, it restores the local set or rebuilds the missing questions from the full bank.
-   - Existing broken one-question attempts are repaired using cloud question_count / saved recovery / URL count; if all legacy metadata is broken, ACL uses the normal 20-question fallback instead of opening a 1-question session.
-   - Already answered/current questions remain fixed; only missing/unseen questions are reconstructed.
-
-Replace these files:
-- learning-expert.html
-- assets/css/learning-session-chrome-20260822.css
-- assets/js/learning-mode.js
-- assets/js/learning-bootstrap-20260822.js
-- assets/js/learning-session-tools-20260822.js (included unchanged for a complete matched package)
+No database migration is required.
