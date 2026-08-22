@@ -1,27 +1,24 @@
-ACL TRADITIONAL QUIZ SETUP — VERIFIED
+ACL UNIFIED SHARED DRAWER — VERIFIED
 
-PASS  assets/js/module-hub-v1.js
-PASS  assets/js/quiz-setup-v1.js
-PASS  hub routes to setup
-PASS  hub selector removed
-PASS  setup count controls
-PASS  confidence control
-PASS  lifelines master
-PASS  four lifelines
-PASS  settings saved before launch
-PASS  no attempt creation here
-PASS  new quiz flag
+PASS  JavaScript syntax
+PASS  Home present
+PASS  My Progress present
+PASS  Editions present
+PASS  Modules group present
+PASS  Guidelines group present
+PASS  ECG group present
+PASS  Echo group present
+PASS  Interventions group present
+PASS  Dynamic module tree
+PASS  Module hub links
+PASS  Current module highlight
+PASS  Profile fallback
 
-Flow:
-Module Hub → Configure & start quiz → Quiz Setup → Start Quiz → Learning Mode
-
-Setup includes:
-- 10 / 20 / 30 / 50 questions
-- Confidence Answering
-- Life Savers master toggle
-- Ask the Expert
-- 50:50
-- Guideline Hint
-- Knowledge Vault
-
-No attempt is created before Start Quiz.
+Result:
+- Secondary pages now use the same full professional drawer structure as Modules.
+- Home is restored.
+- Editions stay expandable.
+- Modules stay expandable.
+- Guidelines / ECG / Echo / Interventions are populated dynamically.
+- Current module is highlighted in the drawer.
+- Module Hub, Quiz Setup, Mistakes, Study, Progress, Settings, etc. no longer switch to the simplified sidebar.
