@@ -1,0 +1,9 @@
+ACL AUTH PROFILE STARTUP FIX
+
+- No more Member/ACL placeholder flash.
+- Drawer/header identity stays hidden while Supabase restores the session.
+- A subtle drawer skeleton preserves layout.
+- Real user name/photo appears only after auth resolution.
+- Missing session redirects to login.
+- Profile table failure falls back to Supabase Auth metadata/email.
+- Module loader logic was not changed.

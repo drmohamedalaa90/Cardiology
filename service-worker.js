@@ -1,5 +1,5 @@
 /* ACL service worker v7.3.0 — network-first app shell */
-const VERSION='acl-v7.4-20260822-professional-drawer';
+const VERSION='acl-v7.5-20260822-auth-profile-flicker';
 const CACHE_NAME=VERSION;
 const BASE='/Cardiology/';
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(Promise.resolve());});
