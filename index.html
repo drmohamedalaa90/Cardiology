@@ -2,70 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ACL Expert Edition</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071a38">
+  <title>Cardiology League</title>
+  <script>
+    (function () {
+      try {
+        sessionStorage.setItem("aclSelectedEdition", "expert");
+        localStorage.setItem("aclSelectedEdition", "expert");
+      } catch (e) {}
+      location.replace("home.html?edition=expert");
+    })();
+  </script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="brand">
-      <div class="brand-logo">ACL</div>
-      <div class="brand-text">Cardiology League<span>Expert Edition</span></div>
-    </div>
-    <div id="status" class="status-pill" aria-live="polite">Loading…</div>
-  </header>
-
-  <main class="app-main">
-    <section id="entry" class="screen">
-      <div class="eyebrow">Competition Module</div>
-      <h1 id="title">Loading quiz…</h1>
-      <p id="desc" class="screen-description"></p>
-      <div class="cards quiz-information">
-        <div class="info-card"><small>Opens</small><b id="opens">—</b></div>
-        <div class="info-card"><small>Closes</small><b id="closes">—</b></div>
-        <div class="info-card"><small>Timer</small><b id="timerMode">—</b></div>
-        <div class="info-card"><small>Questions</small><b id="count">—</b></div>
-      </div>
-      <p id="entryMsg" class="msg" aria-live="polite">Connecting…</p>
-      <button id="enterBtn" type="button" disabled>Enter competition</button>
-    </section>
-
-    <section id="identity" class="screen hidden">
-      <div class="eyebrow">Participant Verification</div>
-      <h2>Confirm your information</h2>
-      <p class="screen-description">Your answers, confidence level, progress and review status will be saved securely.</p>
-      <form id="identityForm" class="identity-form">
-        <div class="form-grid">
-          <label class="form-field"><span>Full name</span><input id="name" type="text" autocomplete="name" required></label>
-          <label class="form-field"><span>Email</span><input id="email" type="email" autocomplete="email" required></label>
-          <label class="form-field"><span>Phone number</span><input id="phone" type="tel" autocomplete="tel" required></label>
-          <label class="form-field"><span>Academic level</span><select id="level" required><option value="">Select academic level</option><option>Medical student</option><option>Intern</option><option>General practitioner</option><option>Resident</option><option>Specialist</option><option>Consultant</option></select></label>
-          <label id="passcodeField" class="form-field full-width hidden"><span>Quiz passcode</span><input id="passcode" type="password" autocomplete="off"></label>
-        </div>
-        <p id="formMsg" class="msg hidden" aria-live="polite"></p>
-        <div class="form-actions"><button id="backBtn" type="button" class="secondary">Back</button><button type="submit">Start or resume</button></div>
-      </form>
-    </section>
-
-    <section id="quiz" class="quiz-screen hidden">
-      <aside class="quiz-sidebar">
-        <div class="sidebar-block"><small>Participant</small><b id="participant">—</b></div>
-        <div class="sidebar-block"><small>Progress</small><p id="progress">Question 1</p><div class="bar"><i id="bar"></i></div></div>
-        <div id="timerBox" class="sidebar-block timer-box"><small id="timerLabel">Time remaining</small><strong id="timer">00:00</strong></div>
-        <div class="sidebar-block warning-block"><small>Recorded warnings</small><b id="warnings">0</b></div>
-        <div id="questionMapSection" class="sidebar-block question-map-section"><small>Question map</small><div id="questionMap" class="question-map" aria-label="Question navigation map"></div></div>
-        <button id="skipQuestion" type="button" class="secondary full-button">Skip and review later</button><button id="saveExit" type="button" class="secondary full-button">Save and exit</button>
-      </aside>
-      <article class="question-card"><div class="top"><span class="question-type">Single best answer</span><small id="saveState" aria-live="polite">Saved</small></div><h2 id="stem">Loading question…</h2><p id="scenario" class="question-scenario hidden"></p><div id="options" class="options-list" role="radiogroup"></div><section id="reviewPanel" class="review-panel hidden" aria-live="polite"><div class="review-heading"><span id="reviewBadge" class="review-badge">Review</span><span id="reviewPoints" class="review-points"></span></div><div class="review-answer-grid"><div><small>Your answer</small><strong id="selectedAnswerText">—</strong></div><div><small>Correct answer</small><strong id="correctAnswerText">—</strong></div></div><div class="review-explanation"><h3>Explanation</h3><p id="reviewExplanation"></p></div><p id="reviewReference" class="review-reference hidden"></p><div class="review-actions"><button id="flashcardBtn" type="button" class="flashcard-button hidden">Review the flashcard</button><button id="continueBtn" type="button">Continue</button></div></section><div id="questionNav" class="nav"><button id="prev" type="button" class="secondary">Previous</button></div></article>
-    </section>
-
-    <section id="result" class="screen result-screen hidden"><div class="result-icon">✓</div><div class="eyebrow">Competition Completed</div><h2>Attempt submitted</h2><p class="screen-description">Your official result has been calculated securely.</p><div id="resultGrid" class="cards result-grid"></div><section id="finalReviewSection" class="final-review-section hidden"><div class="eyebrow">Step 3.9</div><h2>Question-by-question review</h2><div id="finalReviewList" class="final-review-list"></div></section></section>
-  </main>
-
-  <div id="confidenceModal" class="confidence-modal hidden" role="dialog" aria-modal="true" aria-labelledby="confidenceTitle"><div class="confidence-modal-card"><div class="confidence-main-icon">🧠</div><div class="eyebrow">Confidence Check</div><h2 id="confidenceTitle">How confident are you?</h2><p class="confidence-description">Your confidence affects the score awarded for this answer.</p><div class="confidence-choice-grid"><button id="high" type="button" class="confidence-choice high-choice"><span class="confidence-choice-icon">⚡</span><span class="confidence-choice-content"><strong>High confidence</strong><small>I am confident that my answer is correct.</small><span class="score-preview">Correct +2 · Incorrect −1</span></span></button><button id="low" type="button" class="confidence-choice low-choice"><span class="confidence-choice-icon">🤔</span><span class="confidence-choice-content"><strong>Low confidence</strong><small>This is my best answer, but I am uncertain.</small><span class="score-preview">Correct +1 · Incorrect 0</span></span></button><button id="rethink" type="button" class="confidence-choice rethink-choice"><span class="confidence-choice-icon">↩️</span><span class="confidence-choice-content"><strong>Let me think again</strong><small>Return and reconsider my selected answer.</small><span class="score-preview">No confidence submitted yet</span></span></button></div></div></div>
-  <div id="flashcardModal" class="flashcard-modal hidden" role="dialog" aria-modal="true" aria-labelledby="flashcardTitle"><div class="flashcard-modal-card"><div class="flashcard-modal-top"><div><span id="flashcardType" class="flashcard-type">FLASHCARD</span><h2 id="flashcardTitle">Topic review</h2></div><button id="closeFlashcard" type="button" class="icon-button secondary" aria-label="Close flashcard">×</button></div><div id="flashcardContent" class="flashcard-content"></div><button id="closeFlashcardBottom" type="button" class="full-button">Return to question review</button></div></div>
-  <div id="violationToast" class="violation-toast hidden" role="status" aria-live="polite"><div class="violation-toast-icon">⚠️</div><div><strong>Quiz activity notice</strong><p id="violationToastText"></p></div></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script src="supabase-config.js"></script><script src="app.js"></script>
+  <noscript>
+    <p><a href="home.html?edition=expert">Open Cardiology League</a></p>
+  </noscript>
 </body>
 </html>

@@ -14,6 +14,16 @@ function normalizeEgyptWhatsapp(value) {
   return "+20" + raw.slice(1);
 }
 
+function setDefaultEdition() {
+  try { sessionStorage.setItem("aclSelectedEdition", "expert"); } catch {}
+  try { localStorage.setItem("aclSelectedEdition", "expert"); } catch {}
+}
+
+function openAclHome() {
+  setDefaultEdition();
+  window.location.href = "home.html?edition=expert";
+}
+
 function showPanel(panel) {
   const signIn = panel === "signin";
   byId("signInForm").hidden = !signIn;
@@ -39,7 +49,7 @@ byId("signInForm")?.addEventListener("submit", async (event) => {
     if (!data?.session?.access_token || !data?.session?.refresh_token) throw new Error(data?.error || "Invalid username/email or password.");
     const { error: sessionError } = await supabaseClient.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
     if (sessionError) throw sessionError;
-    window.location.href = "home.html";
+    openAclHome();
   } catch (error) {
     setMessage("signInError", error.message || "Could not sign in.");
   } finally { if (submit) submit.disabled = false; }
@@ -73,7 +83,7 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
       setMessage("registerSuccess", "Account created. Open the confirmation email, confirm your address, then return to sign in.");
       event.target.reset();
     } else {
-      window.location.href = "home.html";
+      openAclHome();
     }
   } catch (error) {
     setMessage("registerError", error.message || "Could not create account.");
