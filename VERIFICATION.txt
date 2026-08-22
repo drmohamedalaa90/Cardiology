@@ -1,0 +1,41 @@
+ACL LEARNING VERIFIED FINAL FIX
+
+OVERALL: PASS
+
+PASS  syntax assets/js/learning-mode.js
+PASS  syntax assets/js/acl-shared-shell.js
+PASS  syntax assets/js/supabase-client.js
+PASS  syntax assets/js/session-ui.js
+PASS  syntax assets/js/cloud-progress.js
+PASS  syntax assets/js/user-settings.js
+PASS  syntax assets/js/modules-auth-bootstrap-20260820.js
+PASS  syntax assets/js/modules-live-core-20260820.js
+PASS  syntax scripts/acl-preflight.mjs
+PASS  learning-mode.js restored byte-for-byte from original upload
+PASS  DOM contract quizArea
+PASS  DOM contract answerFeedbackHost
+PASS  DOM contract submitAnswer
+PASS  DOM contract nextQuestion
+PASS  DOM contract progressFill
+PASS  DOM contract questionCount
+PASS  DOM contract saveStatus
+PASS  DOM contract learningFlashcardModal
+PASS  learning engine reference exists
+PASS  shared shell reference exists
+PASS  modules page references auth bootstrap
+PASS  auth bootstrap imports live core
+PASS  ACL preflight
+
+Deliberately untouched:
+- quiz RPC and question loading logic
+- question rendering
+- Confidence Answering
+- Life Savers
+- flashcards
+- cloud progress/autosave
+- challenge logic
+
+The Learning engine is restored exactly from the original uploaded Cardiology project.
+
+ACL preflight output:
+ACL preflight passed. Current module runtime, navigation, and Learning DOM contracts are valid.

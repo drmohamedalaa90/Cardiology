@@ -8,11 +8,22 @@
   <title>Learning Mode | ACL Expert Edition</title>
   <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
   <link rel="stylesheet" href="assets/css/learning-feedback.css?v=5.4.21">
-  <link rel="stylesheet" href="assets/css/learning-expert-shell-v1.css?v=20260822-radical">
+  <link rel="stylesheet" href="assets/css/learning-expert-shell-v1.css?v=20260822-final">
   <link rel="stylesheet" href="assets/css/learning-polish-20260820.css?v=1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body class="acl-learning-booting">
+
+  <div id="aclLearningBoot" class="acl-learning-boot" role="status" aria-live="polite">
+    <div class="acl-learning-boot-card">
+      <span class="acl-learning-boot-kicker">EXPERT LEARNING MODE</span>
+      <strong>Opening module…</strong>
+      <div class="acl-learning-boot-track"><span></span></div>
+      <small id="aclLearningBootText">Restoring your saved session and questions</small>
+      <button id="aclLearningRetry" type="button" hidden>Retry</button>
+    </div>
+  </div>
+
   <main class="container learning-shell acl-clean-learning">
     <section class="learning-stage">
       <div class="learning-module-corner"><span>Module</span><strong id="moduleTitle">Loading module…</strong></div>
@@ -24,17 +35,7 @@
       <div class="learning-progress-copy"><strong id="questionCount">Preparing questions…</strong><span id="saveStatus" class="learning-save-status" aria-live="polite">Loading…</span></div>
     </section>
     <section class="learning-card">
-      <section id="quizArea" class="learning-quiz-area" aria-live="polite"><div class="learning-inline-loader" aria-label="Loading questions">
-          <div class="learning-inline-loader-top">
-            <span class="learning-inline-loader-pill"></span>
-            <span class="learning-inline-loader-short"></span>
-          </div>
-          <span class="learning-inline-loader-line is-wide"></span>
-          <span class="learning-inline-loader-line"></span>
-          <div class="learning-inline-loader-options">
-            <span></span><span></span><span></span><span></span>
-          </div>
-        </div></section>
+      <section id="quizArea" class="learning-quiz-area" aria-live="polite"><div class="card muted">Loading Expert Learning Mode…</div></section>
       <div id="answerFeedbackHost" aria-live="polite"></div>
       <div class="learning-actions"><button id="submitAnswer" class="primary-btn" type="button">Check answer</button><button id="nextQuestion" class="primary-btn" type="button" hidden>Next question</button></div>
     </section>
@@ -47,7 +48,82 @@
       <footer><button id="closeLearningFlashcardBottom" class="secondary-btn" type="button">Return to the question</button></footer>
     </section>
   </div>
-  <script type="module" src="assets/js/acl-shared-shell.js?v=4.0.1"></script>
-  <script type="module" src="assets/js/learning-mode.js?v=6.0.3"></script>
+
+  <script>
+  (() => {
+    const body = document.body;
+    const boot = document.getElementById("aclLearningBoot");
+    const bootText = document.getElementById("aclLearningBootText");
+    const retry = document.getElementById("aclLearningRetry");
+    let finished = false;
+
+    function text(id) {
+      return (document.getElementById(id)?.textContent || "").trim().toLowerCase();
+    }
+
+    function ready() {
+      const area = document.getElementById("quizArea");
+      if (!area) return false;
+
+      const areaText = (area.textContent || "").trim().toLowerCase();
+
+      const placeholders =
+        text("moduleTitle").includes("loading module") ||
+        text("quizTitle").includes("loading quiz") ||
+        areaText.includes("loading expert learning mode");
+
+      if (placeholders) return false;
+
+      return areaText.length > 0 || area.children.length > 0;
+    }
+
+    function reveal() {
+      if (finished) return;
+      finished = true;
+      body.classList.remove("acl-learning-booting");
+      body.classList.add("acl-learning-ready");
+      if (boot) boot.hidden = true;
+    }
+
+    function inspect() {
+      if (ready()) reveal();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      [
+        "quizArea",
+        "moduleTitle",
+        "quizTitle",
+        "questionCount",
+        "saveStatus"
+      ]
+        .map(id => document.getElementById(id))
+        .filter(Boolean)
+        .forEach(node => {
+          new MutationObserver(inspect).observe(node, {
+            childList: true,
+            subtree: true,
+            characterData: true
+          });
+        });
+
+      inspect();
+    }, { once: true });
+
+    setTimeout(() => {
+      if (finished) return;
+      if (bootText) {
+        bootText.textContent =
+          "This module is taking longer than expected. You can retry safely.";
+      }
+      if (retry) retry.hidden = false;
+    }, 12000);
+
+    retry?.addEventListener("click", () => location.reload());
+  })();
+  </script>
+
+  <script type="module" src="assets/js/acl-shared-shell.js?v=4.0.2"></script>
+  <script type="module" src="assets/js/learning-mode.js?v=6.0.5"></script>
 </body>
 </html>
