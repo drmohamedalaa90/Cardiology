@@ -15,7 +15,6 @@ const edition = String(params.get("edition") || "expert").toLowerCase() === "bas
 
 let moduleRow = null;
 let attempts = [];
-let quizCount = 20;
 
 function timeout(promise, ms, label) {
   return Promise.race([
@@ -297,19 +296,18 @@ function render() {
 }
 
 function updateQuizLink() {
-  const link = $("moduleHubQuizLink");
-  link.href = launchUrl({
-    count: quizCount,
-    new: 1
+  const p = new URLSearchParams({
+    edition,
+    module: String(moduleRow.id)
   });
-  link.textContent = `Start ${quizCount}-question quiz`;
 
-  document.querySelectorAll("[data-quiz-count]").forEach(button => {
-    button.classList.toggle(
-      "is-selected",
-      Number(button.dataset.quizCount) === quizCount
-    );
-  });
+  if (moduleRow.slug) {
+    p.set("slug", String(moduleRow.slug));
+  }
+
+  const link = $("moduleHubQuizLink");
+  link.href = `quiz-setup.html?${p.toString()}`;
+  link.textContent = "Configure & start quiz";
 }
 
 async function load() {
@@ -365,13 +363,6 @@ async function load() {
   render();
   show("");
 }
-
-document.querySelectorAll("[data-quiz-count]").forEach(button => {
-  button.addEventListener("click", () => {
-    quizCount = Number(button.dataset.quizCount) || 20;
-    updateQuizLink();
-  });
-});
 
 try {
   await load();

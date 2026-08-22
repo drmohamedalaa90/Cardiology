@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#061c3d">
+  <title>Quiz Setup | ACL Expert Edition</title>
+  <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
+  <link rel="stylesheet" href="assets/css/acl-command-center.css?v=20260822b">
+  <link rel="stylesheet" href="assets/css/acl-shared-shell.css?v=2.0.0">
+  <link rel="stylesheet" href="assets/css/quiz-setup-v1.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="container quiz-setup-page">
+    <section class="quiz-setup-hero card">
+      <div>
+        <span class="quiz-setup-kicker">ACL EXPERT EDITION</span>
+        <h1 id="quizSetupModuleTitle">Prepare your quiz</h1>
+        <p class="muted">Customize the session before the attempt is created.</p>
+      </div>
+      <a id="quizSetupBack" class="secondary-btn" href="modules.html?edition=expert">← Module</a>
+    </section>
+
+    <section class="quiz-setup-layout">
+      <div class="quiz-setup-main">
+        <section class="quiz-setup-card card">
+          <div class="quiz-setup-section-head">
+            <div class="quiz-setup-step">1</div>
+            <div>
+              <h2>Number of questions</h2>
+              <p>Choose the size of this focused session.</p>
+            </div>
+          </div>
+          <div class="quiz-count-grid">
+            <button type="button" data-count="10">10</button>
+            <button type="button" data-count="20" class="is-selected">20</button>
+            <button type="button" data-count="30">30</button>
+            <button type="button" data-count="50">50</button>
+          </div>
+        </section>
+
+        <section class="quiz-setup-card card">
+          <div class="quiz-setup-section-head">
+            <div class="quiz-setup-step">2</div>
+            <div>
+              <h2>Confidence Answering</h2>
+              <p>Record how certain you are after each answer.</p>
+            </div>
+          </div>
+          <label class="quiz-toggle-row">
+            <div>
+              <strong>Confidence Answering</strong>
+              <span>Build confidence calibration and detect confident misconceptions.</span>
+            </div>
+            <span class="quiz-switch">
+              <input id="confidenceEnabled" type="checkbox" checked>
+              <span></span>
+            </span>
+          </label>
+        </section>
+
+        <section class="quiz-setup-card card">
+          <div class="quiz-setup-section-head">
+            <div class="quiz-setup-step">3</div>
+            <div>
+              <h2>Life Savers</h2>
+              <p>Select the assistance tools available during this quiz.</p>
+            </div>
+          </div>
+
+          <label class="quiz-toggle-row lifeline-master">
+            <div>
+              <strong>Enable Life Savers</strong>
+              <span>Allow assistance tools during this attempt.</span>
+            </div>
+            <span class="quiz-switch">
+              <input id="lifelinesEnabled" type="checkbox" checked>
+              <span></span>
+            </span>
+          </label>
+
+          <div id="lifelineChoices" class="lifeline-choice-grid">
+            <label class="lifeline-choice">
+              <input id="lifelineExpert" type="checkbox" checked>
+              <span class="lifeline-choice-icon">🩺</span>
+              <span><strong>Ask the Expert</strong><small>Dr. Corazón gives a focused clue.</small></span>
+            </label>
+
+            <label class="lifeline-choice">
+              <input id="lifelineFilter" type="checkbox" checked>
+              <span class="lifeline-choice-icon">50</span>
+              <span><strong>50:50</strong><small>Remove two distractors.</small></span>
+            </label>
+
+            <label class="lifeline-choice">
+              <input id="lifelineGuideline" type="checkbox" checked>
+              <span class="lifeline-choice-icon">G</span>
+              <span><strong>Guideline Hint</strong><small>Reveal a guideline-oriented clue.</small></span>
+            </label>
+
+            <label class="lifeline-choice">
+              <input id="lifelineVault" type="checkbox" checked>
+              <span class="lifeline-choice-icon">V</span>
+              <span><strong>Knowledge Vault</strong><small>Open a concise supporting concept.</small></span>
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <aside class="quiz-setup-summary card">
+        <span class="quiz-setup-kicker">SESSION SUMMARY</span>
+        <h2 id="quizSetupSummaryTitle">20-question quiz</h2>
+
+        <div class="quiz-summary-list">
+          <div><span>Questions</span><strong id="summaryCount">20</strong></div>
+          <div><span>Confidence</span><strong id="summaryConfidence">On</strong></div>
+          <div><span>Life Savers</span><strong id="summaryLifelines">4 enabled</strong></div>
+        </div>
+
+        <p class="quiz-setup-note">
+          Your attempt starts only after you press <strong>Start Quiz</strong>.
+        </p>
+
+        <button id="startConfiguredQuiz" class="primary-btn quiz-start-btn" type="button">
+          Start Quiz
+        </button>
+
+        <div id="quizSetupStatus" class="status-box" hidden></div>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/acl-shared-shell.js?v=20260822-bootstrapfix"></script>
+  <script type="module" src="assets/js/quiz-setup-v1.js?v=1"></script>
+</body>
+</html>

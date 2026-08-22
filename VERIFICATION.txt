@@ -1,27 +1,27 @@
-ACL MODULE HUB REPLACEMENT — VERIFICATION
+ACL TRADITIONAL QUIZ SETUP — VERIFIED
 
-OVERALL: PASS
+PASS  assets/js/module-hub-v1.js
+PASS  assets/js/quiz-setup-v1.js
+PASS  hub routes to setup
+PASS  hub selector removed
+PASS  setup count controls
+PASS  confidence control
+PASS  lifelines master
+PASS  four lifelines
+PASS  settings saved before launch
+PASS  no attempt creation here
+PASS  new quiz flag
 
-PASS  syntax assets/js/module-hub-v1.js
-PASS  syntax assets/js/module-mistakes-v1.js
-PASS  syntax assets/js/modules-live-core-20260820.js
-PASS  syntax assets/js/study-hub-v1.js
-PASS  syntax assets/js/learning-mode.js
-PASS  module cards route to hub
-PASS  module hub does not create quiz attempt
-PASS  module hub new quiz count choices
-PASS  learning count capped at 50
-PASS  learning new attempt flag
-PASS  study module filter supported
-PASS  mistakes uses existing answers only
+Flow:
+Module Hub → Configure & start quiz → Quiz Setup → Start Quiz → Learning Mode
 
-New navigation:
-Modules → Module Hub
-Module Hub → Review & Study
-Module Hub → New Quiz (10/20/50)
-Module Hub → My Mistakes
+Setup includes:
+- 10 / 20 / 30 / 50 questions
+- Confidence Answering
+- Life Savers master toggle
+- Ask the Expert
+- 50:50
+- Guideline Hint
+- Knowledge Vault
 
-Important:
-- Opening a module no longer creates a quiz_attempts row.
-- New quiz attempts are limited to max 50 questions to avoid the old 350-question constraint error.
-- Continue unfinished quiz remains available separately.
+No attempt is created before Start Quiz.
