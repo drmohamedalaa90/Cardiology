@@ -1,0 +1,17 @@
+ACL FULL PROJECT REPLACEMENT — 2026-08-22
+
+This package was rebuilt from the uploaded Cardiology-2-development project.
+
+FIXED:
+- Removed temporary acl-universal-drawer JS/CSS from the project.
+- Removed its references from modules.html and home.html.
+- Removed automatic injection from assets/js/session-ui.js.
+- Restored professional acl-command-center.css.
+- Uses cleaned acl-command-center.js with no risky #modules MutationObserver.
+- Restored full professional drawer markup on Modules and Home.
+- Other authenticated pages continue to use acl-shared-shell.js with the same professional CSS.
+- Bumped service-worker cache version to force fresh app code.
+
+IMPORTANT:
+Upload/replace the WHOLE CONTENTS of this project on v2-development.
+Do not copy the outer folder itself if GitHub expects files at repository root.
