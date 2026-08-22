@@ -454,10 +454,10 @@ body.learning-notes-open .learning-floating-tools {
   }
 
   .learning-floating-tools {
-    top: auto;
-    right: 14px;
-    bottom: 82px;
-    display: flex;
+    top: 178px;
+    right: 12px;
+    bottom: auto;
+    display: grid;
     width: auto;
   }
 
@@ -472,11 +472,11 @@ body.learning-notes-open .learning-floating-tools {
   }
 
   .learning-notes-panel {
-    top: auto;
+    top: 72px;
     right: 12px;
-    bottom: 82px;
+    bottom: auto;
     width: min(380px, calc(100vw - 24px));
-    max-height: min(560px, calc(100vh - 110px));
+    max-height: calc(100vh - 92px);
   }
 }
 
@@ -548,8 +548,9 @@ body.learning-notes-open .learning-floating-tools {
   }
 
   .learning-floating-tools {
-    right: 10px;
-    bottom: 78px;
+    top: 174px;
+    right: 8px;
+    bottom: auto;
     gap: 6px;
   }
 
@@ -573,14 +574,106 @@ body.learning-notes-open .learning-floating-tools {
   }
 
   .learning-notes-panel {
+    top: 68px;
     right: 8px;
-    bottom: 76px;
+    bottom: auto;
     width: calc(100vw - 16px);
-    max-height: calc(100vh - 98px);
+    max-height: calc(100vh - 84px);
     border-radius: 17px;
   }
 
   .learning-notes-panel textarea {
     min-height: 220px;
   }
+}
+
+
+/* =========================================================
+   MOBILE DRAWER — PUSH CONTENT, DO NOT OVERLAY IT
+   The legacy command-center CSS overlays the drawer on <=820px.
+   Learning Mode deliberately overrides that behavior here.
+========================================================= */
+@media (max-width: 820px) {
+  body.acl-shared-page {
+    --acl-learning-mobile-drawer-width: min(86vw, 310px);
+    overflow-x: hidden !important;
+  }
+
+  body.acl-shared-page .acl-command-main,
+  body.acl-shared-page .acl-shared-main {
+    transform: translateX(0) !important;
+    transition: transform .22s ease !important;
+    will-change: transform;
+  }
+
+  body.acl-shared-page.drawer-open .acl-command-main,
+  body.acl-shared-page.drawer-open .acl-shared-main {
+    transform: translateX(var(--acl-learning-mobile-drawer-width)) !important;
+  }
+
+  /* The page is physically pushed away from the drawer, so a dark
+     overlay/backdrop is unnecessary and would block interaction. */
+  body.acl-shared-page .acl-drawer-backdrop,
+  body.acl-shared-page.drawer-open .acl-drawer-backdrop {
+    display: none !important;
+  }
+
+  /* Keep the floating learning tools out of the drawer while it is open. */
+  body.acl-shared-page.drawer-open .learning-floating-tools,
+  body.acl-shared-page.drawer-open .learning-notes-panel {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+/* Very small phones: keep the upper-right tools compact and away from the
+   bottom sticky Check answer control. */
+@media (max-width: 480px) {
+  .learning-floating-tools {
+    top: 166px !important;
+    right: 7px !important;
+  }
+
+  .learning-floating-timer,
+  .learning-floating-notes-button {
+    min-height: 40px !important;
+  }
+
+  .learning-floating-timer {
+    min-width: 84px !important;
+  }
+}
+
+
+/* =========================================================
+   ANSWER SELECTION STATE — NAVY/BLUE BEFORE CHECKING
+   Red is reserved for a confirmed incorrect answer only.
+========================================================= */
+body.acl-expert-learning-mode
+.learning-option.selected:not(.correct):not(.incorrect):not(.is-correct):not(.is-incorrect),
+body.acl-shared-page
+.learning-option.selected:not(.correct):not(.incorrect):not(.is-correct):not(.is-incorrect) {
+  border-color: #0b5791 !important;
+  background: #eef6ff !important;
+  box-shadow: 0 0 0 2px rgba(11, 87, 145, .12) !important;
+}
+
+body.acl-expert-learning-mode
+.learning-option.selected:not(.correct):not(.incorrect):not(.is-correct):not(.is-incorrect)
+.option-key,
+body.acl-shared-page
+.learning-option.selected:not(.correct):not(.incorrect):not(.is-correct):not(.is-incorrect)
+.option-key {
+  background: #0b5791 !important;
+  color: #ffffff !important;
+  border-color: #0b5791 !important;
+}
+
+body.acl-expert-learning-mode
+.learning-option.selected:not(.correct):not(.incorrect):not(.is-correct):not(.is-incorrect)
+input,
+body.acl-shared-page
+.learning-option.selected:not(.correct):not(.incorrect):not(.is-correct):not(.is-incorrect)
+input {
+  accent-color: #0b5791 !important;
 }

@@ -540,6 +540,444 @@ function randomItems(
 
   return selected;
 }
+
+
+/* =========================================================
+   DISTRIBUTED QUESTION SELECTION
+
+   Random selection alone can accidentally place several questions from the
+   same topic consecutively. ACL now creates a balanced interleaved sequence:
+   one question from each available topic before returning to that topic.
+========================================================= */
+
+function questionDistributionKey(question) {
+  const candidates = [
+    question?.subtopic,
+    question?.sub_topic,
+    question?.topic,
+    question?.section,
+    question?.category,
+    question?.domain,
+    question?.learning_objective,
+    question?.learningObjective
+  ];
+
+  const value = candidates.find(
+    item => String(item || "").trim()
+  );
+
+  return String(value || "General")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function distributedQuestionSelection(
+  items,
+  count,
+  {
+    randomize = true,
+    previousTopicKey = ""
+  } = {}
+) {
+  const target = Math.max(
+    0,
+    Math.min(
+      Number(count || 0),
+      Array.isArray(items) ? items.length : 0
+    )
+  );
+
+  if (!target) {
+    return [];
+  }
+
+  const source = randomize
+    ? shuffle(items)
+    : [...items];
+
+  const grouped = new Map();
+
+  source.forEach(question => {
+    const key = questionDistributionKey(question);
+
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+
+    grouped.get(key).push(question);
+  });
+
+  let groups = [...grouped.entries()].map(
+    ([key, questionsInGroup]) => ({
+      key,
+      items: randomize
+        ? shuffle(questionsInGroup)
+        : [...questionsInGroup]
+    })
+  );
+
+  if (randomize) {
+    groups = shuffle(groups);
+  }
+
+  /* If the previous/current question belongs to the first group, rotate the
+     group order so the next selected question starts from another topic when
+     one is available. */
+  const previousKey = String(previousTopicKey || "");
+
+  if (
+    previousKey &&
+    groups.length > 1 &&
+    groups[0]?.key === previousKey
+  ) {
+    const alternateIndex = groups.findIndex(
+      group => group.key !== previousKey
+    );
+
+    if (alternateIndex > 0) {
+      groups = [
+        ...groups.slice(alternateIndex),
+        ...groups.slice(0, alternateIndex)
+      ];
+    }
+  }
+
+  const selected = [];
+  let lastKey = previousKey;
+
+  while (selected.length < target) {
+    let addedThisRound = false;
+
+    for (const group of groups) {
+      if (
+        selected.length >= target ||
+        !group.items.length
+      ) {
+        continue;
+      }
+
+      /* Avoid the same topic twice in a row whenever another non-empty topic
+         still exists. */
+      if (group.key === lastKey) {
+        const alternativeExists = groups.some(
+          other =>
+            other.key !== lastKey &&
+            other.items.length
+        );
+
+        if (alternativeExists) {
+          continue;
+        }
+      }
+
+      selected.push(group.items.shift());
+      lastKey = group.key;
+      addedThisRound = true;
+    }
+
+    if (!addedThisRound) {
+      const remaining = groups.find(group => group.items.length);
+      if (!remaining) break;
+
+      selected.push(remaining.items.shift());
+      lastKey = remaining.key;
+    }
+  }
+
+  return selected;
+}
+
+function redistributeRemainingQuestions(
+  questionList,
+  currentIndex
+) {
+  if (!Array.isArray(questionList) || questionList.length < 3) {
+    return questionList;
+  }
+
+  const safeIndex = Math.max(
+    0,
+    Math.min(
+      Number(currentIndex || 0),
+      questionList.length - 1
+    )
+  );
+
+  /* Keep every already-visited question plus the current question exactly
+     where it is. Only rebalance what the learner has not reached yet. */
+  const fixed = questionList.slice(0, safeIndex + 1);
+  const remaining = questionList.slice(safeIndex + 1);
+
+  if (remaining.length < 2) {
+    return questionList;
+  }
+
+  const previousTopicKey = questionDistributionKey(
+    fixed[fixed.length - 1]
+  );
+
+  return [
+    ...fixed,
+    ...distributedQuestionSelection(
+      remaining,
+      remaining.length,
+      {
+        randomize: false,
+        previousTopicKey
+      }
+    )
+  ];
+}
+
+
+
+/* =========================================================
+   ATTEMPT QUESTION-SET RECOVERY
+
+   An unfinished attempt must always reopen with its original session size.
+   The cloud row remains primary. We also keep a local recovery copy and
+   persist sessionQuestionCount inside the Life Saver state so a partial or
+   legacy question_ids array can never collapse a 10/20/30/50-question
+   session into a one-question attempt.
+========================================================= */
+
+const STANDARD_SESSION_COUNTS = [10, 20, 30, 50];
+
+function normalizedSessionCount(value, poolLength = Infinity) {
+  const n = Number(value || 0);
+
+  if (!Number.isFinite(n) || n <= 0) {
+    return 0;
+  }
+
+  const rounded = Math.round(n);
+
+  if (!STANDARD_SESSION_COUNTS.includes(rounded)) {
+    return 0;
+  }
+
+  return Math.min(
+    rounded,
+    Number.isFinite(poolLength)
+      ? Math.max(0, Math.floor(poolLength))
+      : rounded
+  );
+}
+
+function questionSetRecoveryKey() {
+  const quizKey =
+    quiz?.id ||
+    quizSlug ||
+    "quiz";
+
+  const moduleKey =
+    quiz?.module_id ||
+    requestedModuleId ||
+    "module";
+
+  return `acl:learning-question-set:${String(moduleKey)}:${String(quizKey)}`;
+}
+
+function loadQuestionSetRecovery() {
+  try {
+    const raw = localStorage.getItem(
+      questionSetRecoveryKey()
+    );
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    const ids = Array.isArray(parsed?.questionIds)
+      ? parsed.questionIds.map(String).filter(Boolean)
+      : [];
+
+    const count = normalizedSessionCount(
+      parsed?.questionCount || ids.length,
+      Number.POSITIVE_INFINITY
+    );
+
+    return {
+      questionIds: ids,
+      questionCount: count || ids.length,
+      savedAt: parsed?.savedAt || null
+    };
+  } catch (error) {
+    console.warn(
+      "ACL QUESTION SET RECOVERY READ ERROR:",
+      error
+    );
+    return null;
+  }
+}
+
+function saveQuestionSetRecovery(questionList = questions) {
+  if (!Array.isArray(questionList) || !questionList.length) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(
+      questionSetRecoveryKey(),
+      JSON.stringify({
+        questionIds:
+          questionList
+            .map(question => String(question?.id || ""))
+            .filter(Boolean),
+        questionCount: questionList.length,
+        savedAt: new Date().toISOString()
+      })
+    );
+  } catch (error) {
+    console.warn(
+      "ACL QUESTION SET RECOVERY SAVE ERROR:",
+      error
+    );
+  }
+}
+
+function targetCountForRestoredAttempt(
+  attemptRecord,
+  recovery,
+  poolLength
+) {
+  const lifeSaverCount =
+    normalizedSessionCount(
+      attemptRecord?.lifelines?.sessionQuestionCount ??
+      attemptRecord?.lifelines_state?.sessionQuestionCount ??
+      attemptRecord?.lifelinesState?.sessionQuestionCount,
+      poolLength
+    );
+
+  const cloudQuestionCount =
+    normalizedSessionCount(
+      attemptRecord?.question_count ??
+      attemptRecord?.questionCount,
+      poolLength
+    );
+
+  const metadataQuestionCount =
+    normalizedSessionCount(
+      attemptRecord?.acl_metadata?.selectedQuestionCount ??
+      attemptRecord?.acl_metadata?.questionCount,
+      poolLength
+    );
+
+  const recoveryCount =
+    normalizedSessionCount(
+      recovery?.questionCount,
+      poolLength
+    );
+
+  const urlCount =
+    normalizedSessionCount(
+      requestedStandaloneQuestionCount,
+      poolLength
+    );
+
+  const quizCount =
+    normalizedSessionCount(
+      quiz?.question_count,
+      poolLength
+    );
+
+  return (
+    lifeSaverCount ||
+    cloudQuestionCount ||
+    metadataQuestionCount ||
+    recoveryCount ||
+    urlCount ||
+    quizCount ||
+    Math.min(20, poolLength)
+  );
+}
+
+function restoredAttemptQuestions({
+  attemptRecord,
+  pool,
+  savedQuestionIds
+}) {
+  const questionMap = new Map(
+    pool.map(question => [String(question.id), question])
+  );
+
+  const recovery = loadQuestionSetRecovery();
+  const targetCount = targetCountForRestoredAttempt(
+    attemptRecord,
+    recovery,
+    pool.length
+  );
+
+  const validCloudIds = Array.isArray(savedQuestionIds)
+    ? savedQuestionIds
+        .map(String)
+        .filter(id => questionMap.has(id))
+    : [];
+
+  const validRecoveryIds = Array.isArray(recovery?.questionIds)
+    ? recovery.questionIds
+        .map(String)
+        .filter(id => questionMap.has(id))
+    : [];
+
+  /* Prefer an intact cloud set. If it is suspiciously short (the bug that
+     produced a 1-question restored attempt), use the local full set. */
+  let ids =
+    validCloudIds.length >= targetCount
+      ? validCloudIds.slice(0, targetCount)
+      : validRecoveryIds.length >= targetCount
+        ? validRecoveryIds.slice(0, targetCount)
+        : [...validCloudIds];
+
+  /* Merge any locally remembered IDs that are not already in the partial
+     cloud set. */
+  if (ids.length < targetCount) {
+    for (const id of validRecoveryIds) {
+      if (ids.length >= targetCount) break;
+      if (!ids.includes(id)) ids.push(id);
+    }
+  }
+
+  /* Final repair path: rebuild only the missing questions from the full bank,
+     still using the distributed topic algorithm. */
+  if (ids.length < targetCount) {
+    const usedIds = new Set(ids);
+    const existingQuestions = ids
+      .map(id => questionMap.get(id))
+      .filter(Boolean);
+
+    const remainingPool = pool.filter(
+      question => !usedIds.has(String(question.id))
+    );
+
+    const previousTopicKey = existingQuestions.length
+      ? questionDistributionKey(
+          existingQuestions[existingQuestions.length - 1]
+        )
+      : "";
+
+    const additions = distributedQuestionSelection(
+      remainingPool,
+      targetCount - ids.length,
+      {
+        randomize: true,
+        previousTopicKey
+      }
+    );
+
+    ids.push(
+      ...additions.map(question => String(question.id))
+    );
+  }
+
+  return ids
+    .slice(0, targetCount)
+    .map(id => questionMap.get(id))
+    .filter(Boolean);
+}
+
 async function loadPreQuizReviewConfig() {
   if (!quiz?.id) {
     return;
@@ -1470,6 +1908,19 @@ async function persist(
     const state =
       appState();
 
+    const lifeSaverState =
+      ensureLifelinesState();
+
+    lifeSaverState.sessionQuestionCount =
+      questions.length;
+
+    lifelinesState =
+      lifeSaverState;
+
+    saveQuestionSetRecovery(
+      questions
+    );
+
     attempt =
       done
         ? await completeAttempt(
@@ -1728,6 +2179,18 @@ function ensureLifelinesState() {
       ? Math.round(bonusSeconds)
       : 0;
 
+  const storedSessionQuestionCount =
+    Number(
+      lifelinesState.sessionQuestionCount ||
+      0
+    );
+
+  lifelinesState.sessionQuestionCount =
+    Number.isFinite(storedSessionQuestionCount) &&
+    storedSessionQuestionCount > 0
+      ? Math.round(storedSessionQuestionCount)
+      : 0;
+
   if (
     !lifelinesState.usedOnQuestion ||
     typeof lifelinesState.usedOnQuestion !== "object" ||
@@ -1948,6 +2411,19 @@ function restoreLifelinesState(
       ? Math.round(
           storedBonusSeconds
         )
+      : 0;
+
+  const storedSessionQuestionCount =
+    Number(
+      storedState.sessionQuestionCount ||
+      storedState.session_question_count ||
+      0
+    );
+
+  restored.sessionQuestionCount =
+    Number.isFinite(storedSessionQuestionCount) &&
+    storedSessionQuestionCount > 0
+      ? Math.round(storedSessionQuestionCount)
       : 0;
 
   const eliminatedMap =
@@ -4648,41 +5124,52 @@ function learningAnalytics() {
     totalQuestions -
     correctAnswers;
 
+  const showConfidence =
+    confidenceEnabled();
+
   const highConfidenceCorrect =
-    answers.filter(
-      (answer) =>
-        answer.correct &&
-        answer.confidence ===
-          "high"
-    ).length;
+    showConfidence
+      ? answers.filter(
+          (answer) =>
+            answer.correct &&
+            answer.confidence ===
+              "high"
+        ).length
+      : 0;
 
   const highConfidenceIncorrect =
-    answers.filter(
-      (answer) =>
-        !answer.correct &&
-        answer.confidence ===
-          "high"
-    ).length;
+    showConfidence
+      ? answers.filter(
+          (answer) =>
+            !answer.correct &&
+            answer.confidence ===
+              "high"
+        ).length
+      : 0;
 
   const lowConfidenceCorrect =
-    answers.filter(
-      (answer) =>
-        answer.correct &&
-        answer.confidence ===
-          "low"
-    ).length;
+    showConfidence
+      ? answers.filter(
+          (answer) =>
+            answer.correct &&
+            answer.confidence ===
+              "low"
+        ).length
+      : 0;
 
   const lowConfidenceIncorrect =
-    answers.filter(
-      (answer) =>
-        !answer.correct &&
-        answer.confidence ===
-          "low"
-    ).length;
+    showConfidence
+      ? answers.filter(
+          (answer) =>
+            !answer.correct &&
+            answer.confidence ===
+              "low"
+        ).length
+      : 0;
 
   const lifelinesUsed =
     lifelineUsedCount();
-  
+
   return {
     totalQuestions,
     correctAnswers,
@@ -4691,7 +5178,9 @@ function learningAnalytics() {
     highConfidenceIncorrect,
     lowConfidenceCorrect,
     lowConfidenceIncorrect,
-    lifelinesUsed
+    lifelinesUsed,
+    confidenceEnabled:
+      showConfidence
   };
 }
 function resultLifelineHistoryHtml() {
@@ -4856,200 +5345,88 @@ function resultAnalyticsHtml(
         )
       : 0;
 
-  return `
-    <section class="result-performance-panels">
-
-      <article
-        class="
-          result-performance-card
-          is-correct
-        "
-      >
-
-        <div class="result-performance-header">
-
-          <div
-            class="result-performance-icon"
-            aria-hidden="true"
-          >
-            ✓
-          </div>
-
-          <div class="result-performance-summary">
-
-            <span class="result-performance-label">
-              Correct Answers
-            </span>
-
-            <strong class="result-performance-total">
-              ${analytics.correctAnswers}
-            </strong>
-
-            <small>
-              of ${analytics.totalQuestions}
-              questions
-              ·
-              ${correctPercentage}%
-            </small>
-
-          </div>
-
-        </div>
-
-
+  const correctConfidenceHtml =
+    analytics.confidenceEnabled
+      ? `
         <div class="result-confidence-breakdown">
-
           <div class="result-confidence-card">
-
-            <span
-              class="result-confidence-symbol"
-              aria-hidden="true"
-            >
-              🔥
-            </span>
-
+            <span class="result-confidence-symbol" aria-hidden="true">🔥</span>
             <div>
-
-              <span>
-                High-confidence correct
-              </span>
-
-              <strong>
-                ${analytics.highConfidenceCorrect}
-              </strong>
-
+              <span>High-confidence correct</span>
+              <strong>${analytics.highConfidenceCorrect}</strong>
             </div>
-
           </div>
 
-
           <div class="result-confidence-card">
-
-            <span
-              class="result-confidence-symbol"
-              aria-hidden="true"
-            >
-              🤔
-            </span>
-
+            <span class="result-confidence-symbol" aria-hidden="true">🤔</span>
             <div>
-
-              <span>
-                Low-confidence correct
-              </span>
-
-              <strong>
-                ${analytics.lowConfidenceCorrect}
-              </strong>
-
+              <span>Low-confidence correct</span>
+              <strong>${analytics.lowConfidenceCorrect}</strong>
             </div>
-
           </div>
-
         </div>
+      `
+      : "";
 
+  const incorrectConfidenceHtml =
+    analytics.confidenceEnabled
+      ? `
+        <div class="result-confidence-breakdown">
+          <div class="result-confidence-card">
+            <span class="result-confidence-symbol" aria-hidden="true">🔥</span>
+            <div>
+              <span>High-confidence errors</span>
+              <strong>${analytics.highConfidenceIncorrect}</strong>
+            </div>
+          </div>
+
+          <div class="result-confidence-card">
+            <span class="result-confidence-symbol" aria-hidden="true">🤔</span>
+            <div>
+              <span>Low-confidence incorrect</span>
+              <strong>${analytics.lowConfidenceIncorrect}</strong>
+            </div>
+          </div>
+        </div>
+      `
+      : "";
+
+  return `
+    <section class="result-performance-panels ${analytics.confidenceEnabled ? "has-confidence" : "no-confidence"}">
+
+      <article class="result-performance-card is-correct">
+        <div class="result-performance-header">
+          <div class="result-performance-icon" aria-hidden="true">✓</div>
+          <div class="result-performance-summary">
+            <span class="result-performance-label">Correct Answers</span>
+            <strong class="result-performance-total">${analytics.correctAnswers}</strong>
+            <small>
+              of ${analytics.totalQuestions} questions · ${correctPercentage}%
+            </small>
+          </div>
+        </div>
+        ${correctConfidenceHtml}
       </article>
 
-
-      <article
-        class="
-          result-performance-card
-          is-incorrect
-        "
-      >
-
+      <article class="result-performance-card is-incorrect">
         <div class="result-performance-header">
-
-          <div
-            class="result-performance-icon"
-            aria-hidden="true"
-          >
-            ×
-          </div>
-
+          <div class="result-performance-icon" aria-hidden="true">×</div>
           <div class="result-performance-summary">
-
-            <span class="result-performance-label">
-              Incorrect Answers
-            </span>
-
-            <strong class="result-performance-total">
-              ${analytics.incorrectAnswers}
-            </strong>
-
+            <span class="result-performance-label">Incorrect Answers</span>
+            <strong class="result-performance-total">${analytics.incorrectAnswers}</strong>
             <small>
-              of ${analytics.totalQuestions}
-              questions
-              ·
-              ${incorrectPercentage}%
+              of ${analytics.totalQuestions} questions · ${incorrectPercentage}%
             </small>
-
           </div>
-
         </div>
-
-
-        <div class="result-confidence-breakdown">
-
-          <div class="result-confidence-card">
-
-            <span
-              class="result-confidence-symbol"
-              aria-hidden="true"
-            >
-              🔥
-            </span>
-
-            <div>
-
-              <span>
-                High-confidence errors
-              </span>
-
-              <strong>
-                ${analytics.highConfidenceIncorrect}
-              </strong>
-
-            </div>
-
-          </div>
-
-
-          <div class="result-confidence-card">
-
-            <span
-              class="result-confidence-symbol"
-              aria-hidden="true"
-            >
-              🤔
-            </span>
-
-            <div>
-
-              <span>
-                Low-confidence incorrect
-              </span>
-
-              <strong>
-                ${analytics.lowConfidenceIncorrect}
-              </strong>
-
-            </div>
-
-          </div>
-
-        </div>
-
+        ${incorrectConfidenceHtml}
       </article>
 
     </section>
 
-
-    ${resultLifelineHistoryHtml()} 
-    
-    `;
+    ${resultLifelineHistoryHtml()}
+  `;
 }
-
 function clinicalPerformanceHtml(
   percentage
 ) {
@@ -5243,134 +5620,12 @@ function nextStepsHtml(
       safePercentage
     );
 
-  return `
-    <section class="result-next-steps">
-
-      <div class="result-next-steps-heading">
-
-        <span
-          aria-hidden="true"
-          class="result-next-steps-heading-icon"
-        >
-          🚀
-        </span>
-
-        <div>
-
-          <h3>
-            What’s next?
-          </h3>
-
-          <p>
-            Personalized recommendations from this attempt
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <div class="result-next-steps-grid">
-
+  const confidenceCard =
+    analytics.confidenceEnabled
+      ? `
         <button
           type="button"
-          class="
-            result-next-step-card
-            is-review
-          "
-          data-result-action="review"
-          ${
-            incorrectCount === 0
-              ? "disabled"
-              : ""
-          }
-        >
-
-          <span
-            class="result-next-step-icon"
-            aria-hidden="true"
-          >
-            🎯
-          </span>
-
-          <span class="result-next-step-copy">
-
-            <strong>
-              ${
-                incorrectCount > 0
-                  ? `Review ${incorrectCount} incorrect ${
-                      incorrectCount === 1
-                        ? "question"
-                        : "questions"
-                    }`
-                  : "No incorrect questions"
-              }
-            </strong>
-
-            <small>
-              ${
-                incorrectCount > 0
-                  ? "Focus on the concepts you missed before retrying."
-                  : "You answered every question correctly."
-              }
-            </small>
-
-          </span>
-
-          <span
-            class="result-next-step-arrow"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-
-        </button>
-
-
-        <button
-          type="button"
-          class="
-            result-next-step-card
-            is-flashcard
-          "
-          data-result-action="review"
-        >
-
-          <span
-            class="result-next-step-icon"
-            aria-hidden="true"
-          >
-            📚
-          </span>
-
-          <span class="result-next-step-copy">
-
-            <strong>
-              Study related flashcards
-            </strong>
-
-            <small>
-              Review the high-yield notes linked to your answered questions.
-            </small>
-
-          </span>
-
-          <span
-            class="result-next-step-arrow"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-
-        </button>
-
-
-        <button
-          type="button"
-          class="
-            result-next-step-card
-            is-confidence
-          "
+          class="result-next-step-card is-confidence"
           data-result-action="review"
           ${
             overconfidentErrors === 0 &&
@@ -5379,105 +5634,112 @@ function nextStepsHtml(
               : ""
           }
         >
-
-          <span
-            class="result-next-step-icon"
-            aria-hidden="true"
-          >
-            🔥
-          </span>
-
+          <span class="result-next-step-icon" aria-hidden="true">🔥</span>
           <span class="result-next-step-copy">
-
             <strong>
               ${
                 overconfidentErrors > 0
                   ? `Review ${overconfidentErrors} overconfident ${
-                      overconfidentErrors === 1
-                        ? "error"
-                        : "errors"
+                      overconfidentErrors === 1 ? "error" : "errors"
                     }`
                   : uncertainCorrect > 0
                     ? "Build confidence in correct reasoning"
                     : "Confidence well aligned"
               }
             </strong>
-
             <small>
               ${
                 overconfidentErrors > 0
                   ? "These mistakes deserve priority review."
                   : uncertainCorrect > 0
                     ? `You had ${uncertainCorrect} correct ${
-                        uncertainCorrect === 1
-                          ? "answer"
-                          : "answers"
+                        uncertainCorrect === 1 ? "answer" : "answers"
                       } with low confidence.`
                     : "Your confidence matched your answers well."
               }
             </small>
-
           </span>
-
-          <span
-            class="result-next-step-arrow"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-
+          <span class="result-next-step-arrow" aria-hidden="true">›</span>
         </button>
+      `
+      : "";
 
+  return `
+    <section class="result-next-steps">
+      <div class="result-next-steps-heading">
+        <span aria-hidden="true" class="result-next-steps-heading-icon">🚀</span>
+        <div>
+          <h3>What’s next?</h3>
+          <p>Personalized recommendations from this attempt</p>
+        </div>
+      </div>
+
+      <div class="result-next-steps-grid">
+        <button
+          type="button"
+          class="result-next-step-card is-review"
+          data-result-action="review"
+          ${incorrectCount === 0 ? "disabled" : ""}
+        >
+          <span class="result-next-step-icon" aria-hidden="true">🎯</span>
+          <span class="result-next-step-copy">
+            <strong>
+              ${
+                incorrectCount > 0
+                  ? `Review ${incorrectCount} incorrect ${
+                      incorrectCount === 1 ? "question" : "questions"
+                    }`
+                  : "No incorrect questions"
+              }
+            </strong>
+            <small>
+              ${
+                incorrectCount > 0
+                  ? "Focus on the concepts you missed before retrying."
+                  : "You answered every question correctly."
+              }
+            </small>
+          </span>
+          <span class="result-next-step-arrow" aria-hidden="true">›</span>
+        </button>
 
         <button
           type="button"
-          class="
-            result-next-step-card
-            is-retry
-          "
+          class="result-next-step-card is-flashcard"
+          data-result-action="review"
+        >
+          <span class="result-next-step-icon" aria-hidden="true">📚</span>
+          <span class="result-next-step-copy">
+            <strong>Study related flashcards</strong>
+            <small>Review the high-yield notes linked to your answered questions.</small>
+          </span>
+          <span class="result-next-step-arrow" aria-hidden="true">›</span>
+        </button>
+
+        ${confidenceCard}
+
+        <button
+          type="button"
+          class="result-next-step-card is-retry"
           data-result-action="retry"
         >
-
-          <span
-            class="result-next-step-icon"
-            aria-hidden="true"
-          >
-            🏆
-          </span>
-
+          <span class="result-next-step-icon" aria-hidden="true">🏆</span>
           <span class="result-next-step-copy">
-
-            <strong>
-              Retry the quiz
-            </strong>
-
+            <strong>Retry the quiz</strong>
             <small>
               ${
                 safePercentage >= 90
                   ? "Maintain your Expert performance."
-                  : `Current level: ${esc(
-                      profile.level
-                    )}. Aim for Expert performance above 90%.`
+                  : `Current level: ${esc(profile.level)}. Aim for Expert performance above 90%.`
               }
             </small>
-
           </span>
-
-          <span
-            class="result-next-step-arrow"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-
+          <span class="result-next-step-arrow" aria-hidden="true">›</span>
         </button>
-
       </div>
-
     </section>
   `;
 }
-
 function clampPercentage(
   value
 ) {
@@ -5528,7 +5790,9 @@ function performanceProfile(
         "🏆",
 
       message:
-        "Excellent mastery. Your knowledge and confidence are strongly aligned."
+        confidenceEnabled()
+          ? "Excellent mastery. Your knowledge and confidence are strongly aligned."
+          : "Excellent mastery with consistently strong clinical reasoning."
     };
   }
 
@@ -5564,7 +5828,9 @@ function performanceProfile(
         "📈",
 
       message:
-        "Good progress. Review incorrect and uncertain answers to strengthen mastery."
+        confidenceEnabled()
+          ? "Good progress. Review incorrect and uncertain answers to strengthen mastery."
+          : "Good progress. Review incorrect answers to strengthen mastery."
     };
   }
 
@@ -5586,6 +5852,11 @@ function resultInsight(
   analytics,
   percentage
 ) {
+  const showConfidence =
+    Boolean(
+      analytics.confidenceEnabled
+    );
+
   if (
     percentage === 100
   ) {
@@ -5597,11 +5868,14 @@ function resultInsight(
         "Complete mastery",
 
       message:
-        "You answered every question correctly. Your knowledge and confidence were perfectly aligned."
+        showConfidence
+          ? "You answered every question correctly. Your knowledge and confidence were perfectly aligned."
+          : "You answered every question correctly. Excellent mastery of this question set."
     };
   }
 
   if (
+    showConfidence &&
     analytics
       .highConfidenceIncorrect >
     0
@@ -5615,12 +5889,9 @@ function resultInsight(
 
       message:
         `You made ${
-          analytics
-            .highConfidenceIncorrect
+          analytics.highConfidenceIncorrect
         } high-confidence ${
-          analytics
-            .highConfidenceIncorrect ===
-          1
+          analytics.highConfidenceIncorrect === 1
             ? "error"
             : "errors"
         }. Review these concepts carefully before relying on them clinically.`
@@ -5628,6 +5899,7 @@ function resultInsight(
   }
 
   if (
+    showConfidence &&
     analytics
       .lowConfidenceCorrect >
     analytics
@@ -5687,7 +5959,9 @@ function resultInsight(
         "Developing mastery",
 
       message:
-        "You are progressing well. Focus your review on incorrect answers and questions answered with uncertainty."
+        showConfidence
+          ? "You are progressing well. Focus your review on incorrect answers and questions answered with uncertainty."
+          : "You are progressing well. Focus your review on the incorrect answers before retrying."
     };
   }
 
@@ -5703,7 +5977,7 @@ function resultInsight(
         "Strategic learning",
 
       message:
-        "You used the Expert Panel during this attempt. Revisit those concepts so you can answer independently next time."
+        "You used Life Savers during this attempt. Revisit those concepts so you can answer independently next time."
     };
   }
 
@@ -5898,7 +6172,9 @@ if (
     "Expert performance";
 
   performanceMessage =
-    "Excellent mastery. Your knowledge and confidence were highly aligned.";
+    analytics.confidenceEnabled
+      ? "Excellent mastery. Your knowledge and confidence were highly aligned."
+      : "Excellent mastery with consistently strong clinical reasoning.";
 
   resultMascot =
     GOOD_JOB_MASCOT;
@@ -5926,7 +6202,9 @@ if (
     "Developing mastery";
 
   performanceMessage =
-    "Good progress. Review your incorrect and uncertain answers.";
+    analytics.confidenceEnabled
+      ? "Good progress. Review your incorrect and uncertain answers."
+      : "Good progress. Review your incorrect answers.";
 
   resultMascot =
     HAPPY_MASCOT;
@@ -6023,12 +6301,20 @@ quizArea.innerHTML = `
       <p>
         ${
           percentage >= 90
-            ? "Outstanding work! Your confidence matched your knowledge."
+            ? (
+                analytics.confidenceEnabled
+                  ? "Outstanding work! Your confidence matched your knowledge."
+                  : "Outstanding work! Excellent clinical performance."
+              )
             : percentage >= 75
               ? "Very good performance. Polish the remaining weak points."
               : percentage >= 60
-                ? "You are progressing. Review the uncertain concepts carefully."
-                : "Do not worry. Review the explanations and flashcards, then try again."
+                ? (
+                    analytics.confidenceEnabled
+                      ? "You are progressing. Review the uncertain concepts carefully."
+                      : "You are progressing. Review the incorrect concepts carefully."
+                  )
+                : "Review the explanations and flashcards, then try again."
         }
       </p>
 
@@ -6605,13 +6891,19 @@ const requestedQuestionCount =
 
 
 questions =
-  pool.slice(
-    0,
-    Math.min(
-      requestedQuestionCount,
-      pool.length
-    )
-  );
+  challengeId
+    ? pool.slice(
+        0,
+        Math.min(
+          requestedQuestionCount,
+          pool.length
+        )
+      )
+    : distributedQuestionSelection(
+        pool,
+        requestedQuestionCount,
+        { randomize: true }
+      );
 
 
 /*
@@ -6638,37 +6930,17 @@ if (challengeId) {
           );
 
     if (attempt) {
-      const questionMap =
-        new Map(
-          questions.map(
-            (question) => [
-              String(
-                question.id
-              ),
-
-              question
-            ]
-          )
-        );
-
       const savedQuestionIds =
         attempt.question_ids ||
         attempt.questionIds ||
         [];
 
       const restoredQuestions =
-        savedQuestionIds
-          .map(
-            (questionId) =>
-              questionMap.get(
-                String(
-                  questionId
-                )
-              )
-          )
-          .filter(
-            Boolean
-          );
+        restoredAttemptQuestions({
+          attemptRecord: attempt,
+          pool,
+          savedQuestionIds
+        });
 
       if (
         restoredQuestions.length
@@ -6699,6 +6971,19 @@ if (challengeId) {
         )
           ? attempt.answers
           : [];
+
+      if (!challengeId) {
+        questions =
+          redistributeRemainingQuestions(
+            questions,
+            index
+          );
+      }
+
+      saveQuestionSetRecovery(
+        questions
+      );
+
            preQuizReviewSeen =
   Boolean(
     attempt.preQuizReviewSeen ??
@@ -6724,6 +7009,19 @@ if (challengeId) {
       );
     } else {
       resetAllLifelines();
+
+      const initialLifeSaverState =
+        ensureLifelinesState();
+
+      initialLifeSaverState.sessionQuestionCount =
+        questions.length;
+
+      lifelinesState =
+        initialLifeSaverState;
+
+      saveQuestionSetRecovery(
+        questions
+      );
 
       attempt =
         await createAttempt({
