@@ -1,5 +1,5 @@
 /* ACL service worker v7.3.0 — network-first app shell */
-const VERSION='acl-v7.8-20261022-edition-chooser';
+const VERSION='acl-v7.9-20261022-basic-question-manager';
 const CACHE_NAME=VERSION;
 const BASE='/Cardiology/';
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(Promise.resolve());});
