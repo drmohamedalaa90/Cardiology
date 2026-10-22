@@ -20,7 +20,7 @@ import { supabaseClient } from "./supabase-client.js";
 
 const $ = id => document.getElementById(id);
 
-const EDITION = "expert";
+const EDITION = String(new URLSearchParams(location.search).get("edition") || localStorage.getItem("aclSelectedEdition") || "expert").toLowerCase() === "basic" ? "basic" : "expert";
 const INITIAL_COMPLETED_LIMIT = 40;
 const CONFIDENCE_SAMPLE_LIMIT = 30;
 
