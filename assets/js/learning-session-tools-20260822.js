@@ -16,6 +16,11 @@ const edition =
     ? "basic"
     : "expert";
 
+const timerSession =
+  params.get("timer_session") ||
+  params.get("challenge") ||
+  "default";
+
 const timerCard = $("learningTimerCard");
 const timerValue = $("learningTimerValue");
 const timerLabel = $("learningTimerLabel");
@@ -34,6 +39,7 @@ let timerInterval = null;
 let timerDeadline = 0;
 let timerPausedRemaining = null;
 let saveTimer = null;
+let expiredQuestionId = null;
 
 function safeGet(storage, key) {
   try {
@@ -56,7 +62,7 @@ function safeRemove(storage, key) {
 }
 
 function timerStorageKey(questionId) {
-  return `acl:learning-timer:${edition}:${moduleKey}:${questionId}`;
+  return `acl:learning-timer:${edition}:${moduleKey}:${timerSession}:${questionId}`;
 }
 
 function noteStorageKey(questionId) {
@@ -87,7 +93,7 @@ function resolvedDefaultSeconds(detail = {}) {
     }
   }
 
-  return 60;
+  return edition === "basic" ? 120 : 60;
 }
 
 function currentRemaining() {
@@ -135,6 +141,26 @@ function startInterval() {
 
     if (currentRemaining() <= 0) {
       clearTimerInterval();
+
+      if (
+        edition === "basic" &&
+        activeQuestion?.id &&
+        expiredQuestionId !== activeQuestion.id
+      ) {
+        expiredQuestionId = activeQuestion.id;
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "acl:learning-time-expired",
+            {
+              detail: {
+                questionId: activeQuestion.id,
+                questionNumber: activeQuestion.number
+              }
+            }
+          )
+        );
+      }
     }
   }, 250);
 }
@@ -169,6 +195,7 @@ function restoreOrStartTimer(detail) {
   }
 
   if (!sameQuestion) {
+    expiredQuestionId = null;
     timerPausedRemaining = null;
     timerDeadline = 0;
 
@@ -391,7 +418,7 @@ if (questionCount) {
       questionId: fallbackId,
       questionNumber,
       totalQuestions,
-      timeLimitSeconds: 60,
+      timeLimitSeconds: edition === "basic" ? 120 : 60,
       answered: false
     });
   });
