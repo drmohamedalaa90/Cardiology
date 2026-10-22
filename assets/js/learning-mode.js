@@ -2732,6 +2732,16 @@ function showLifelineResponse({
 function expertHintFor(
   question
 ) {
+  if (basicQuizMode) {
+    const topic =
+      String(
+        question?.topic ||
+        "the core concept"
+      ).trim();
+
+    return `Think about ${topic}. Focus on the defining sign, mechanism or clinical clue, then eliminate choices that belong to a different condition. I will not tell you the answer directly.`;
+  }
+
   return (
     question.expert_hint ||
     question.expertHint ||
