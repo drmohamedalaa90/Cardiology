@@ -298,6 +298,11 @@ let aclSettings =
     DEFAULT_ACL_SETTINGS
   );
 
+let currentLearningUserId = "";
+
+let starredQuestionIds =
+  new Set();
+
 
 /* =========================================================
    SCIENTIFIC LIFELINES
@@ -480,6 +485,253 @@ function setAnswer(answer) {
       answer
     );
   }
+}
+
+
+async function loadStarredQuestions() {
+  if (
+    !basicQuizMode ||
+    !currentLearningUserId
+  ) {
+    return;
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("acl_starred_questions")
+      .select("question_id")
+      .eq(
+        "user_id",
+        currentLearningUserId
+      );
+
+  if (error) {
+    console.warn(
+      "ACL STARRED QUESTIONS LOAD:",
+      error
+    );
+
+    return;
+  }
+
+  starredQuestionIds =
+    new Set(
+      (data || []).map(
+        row =>
+          String(
+            row.question_id
+          )
+      )
+    );
+}
+
+
+function starQuestionButtonHtml(
+  question
+) {
+  if (
+    !basicQuizMode ||
+    !question?.id
+  ) {
+    return "";
+  }
+
+  const starred =
+    starredQuestionIds.has(
+      String(
+        question.id
+      )
+    );
+
+  return `
+    <button
+      id="starQuestionButton"
+      class="star-question-button ${starred ? "is-starred" : ""}"
+      type="button"
+      aria-pressed="${starred ? "true" : "false"}"
+      title="${starred ? "Remove from starred questions" : "Star this question for later review"}"
+    >
+      <span
+        class="star-question-icon"
+        aria-hidden="true"
+      >
+        ${starred ? "★" : "☆"}
+      </span>
+      <span class="star-question-label">
+        ${starred ? "Starred" : "Star"}
+      </span>
+    </button>
+  `;
+}
+
+
+async function toggleStarQuestion(
+  question
+) {
+  if (
+    !basicQuizMode ||
+    !currentLearningUserId ||
+    !question?.id
+  ) {
+    return;
+  }
+
+  const questionId =
+    String(
+      question.id
+    );
+
+  const currentlyStarred =
+    starredQuestionIds.has(
+      questionId
+    );
+
+  const button =
+    $("starQuestionButton");
+
+  if (button) {
+    button.disabled =
+      true;
+  }
+
+  try {
+    if (currentlyStarred) {
+      const {
+        error
+      } =
+        await supabaseClient
+          .from(
+            "acl_starred_questions"
+          )
+          .delete()
+          .eq(
+            "user_id",
+            currentLearningUserId
+          )
+          .eq(
+            "question_id",
+            questionId
+          );
+
+      if (error) {
+        throw error;
+      }
+
+      starredQuestionIds.delete(
+        questionId
+      );
+    } else {
+      const {
+        error
+      } =
+        await supabaseClient
+          .from(
+            "acl_starred_questions"
+          )
+          .insert({
+            user_id:
+              currentLearningUserId,
+
+            question_id:
+              questionId,
+
+            module_id:
+              String(
+                quiz?.module_id ||
+                requestedModuleId ||
+                ""
+              ),
+
+            quiz_id:
+              quiz?.id ||
+              null
+          });
+
+      if (error) {
+        throw error;
+      }
+
+      starredQuestionIds.add(
+        questionId
+      );
+    }
+
+    const nowStarred =
+      starredQuestionIds.has(
+        questionId
+      );
+
+    if (button) {
+      button.classList.toggle(
+        "is-starred",
+        nowStarred
+      );
+
+      button.setAttribute(
+        "aria-pressed",
+        nowStarred
+          ? "true"
+          : "false"
+      );
+
+      button.title =
+        nowStarred
+          ? "Remove from starred questions"
+          : "Star this question for later review";
+
+      const icon =
+        button.querySelector(
+          ".star-question-icon"
+        );
+
+      const label =
+        button.querySelector(
+          ".star-question-label"
+        );
+
+      if (icon) {
+        icon.textContent =
+          nowStarred
+            ? "★"
+            : "☆";
+      }
+
+      if (label) {
+        label.textContent =
+          nowStarred
+            ? "Starred"
+            : "Star";
+      }
+    }
+  } catch (error) {
+    console.error(
+      "ACL STAR QUESTION ERROR:",
+      error
+    );
+  } finally {
+    if (button) {
+      button.disabled =
+        false;
+    }
+  }
+}
+
+
+function bindStarQuestionButton(
+  question
+) {
+  $("starQuestionButton")
+    ?.addEventListener(
+      "click",
+      () => {
+        void toggleStarQuestion(
+          question
+        );
+      }
+    );
 }
 
 
@@ -4680,10 +4932,16 @@ function render() {
           )}
         </span>
 
-        ${scientificLifelinesToolbarHtml(
-          question,
-          answer
-        )}
+        <div class="question-topic-actions">
+          ${scientificLifelinesToolbarHtml(
+            question,
+            answer
+          )}
+
+          ${starQuestionButtonHtml(
+            question
+          )}
+        </div>
 
       </div>
 
@@ -4937,6 +5195,10 @@ return `
       isLastQuestion
     );
   }
+
+  bindStarQuestionButton(
+    question
+  );
 
   if (answer) {
     bindFeedback(
@@ -6925,6 +7187,14 @@ document.addEventListener(
   if (!profile) {
     return;
   }
+
+  currentLearningUserId =
+    String(
+      profile.id ||
+      ""
+    );
+
+  await loadStarredQuestions();
 
   const quizArea =
     $("quizArea");
