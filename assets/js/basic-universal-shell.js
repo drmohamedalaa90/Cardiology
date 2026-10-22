@@ -36,13 +36,7 @@ if(edition==="basic"){
     <a class="${activeAny(["basic-progress.html","progress.html"])}" href="basic-progress.html?edition=basic"><span>▤</span><strong>Progress</strong></a>
   </nav>
   <div class="basic-level-modal" id="basicLevelModal" hidden><section class="basic-level-dialog" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitle"><div class="basic-level-icon">◆</div><h2 id="basicLevelTitle">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelClose">Continue Basic Edition</button></section></div>`;
-  if (!isBasicLearningPage) {
-    document.body.insertBefore(shell,document.body.firstChild);
-  } else {
-    shell.querySelector(".basic-universal-topbar")?.remove();
-    shell.querySelector(".basic-universal-bottom")?.remove();
-    document.body.insertBefore(shell,document.body.firstChild);
-  }
+  document.body.insertBefore(shell,document.body.firstChild);
   const modal=document.getElementById("basicLevelModal");
   const close=()=>{if(modal)modal.hidden=true};
   document.getElementById("basicExpertLocked")?.addEventListener("click",()=>{if(modal)modal.hidden=false});
