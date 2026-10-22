@@ -9,3 +9,478 @@ body.acl-basic-unified>main{margin-left:auto!important;margin-right:auto!importa
 .basic-level-modal{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;padding:20px;background:rgba(5,26,45,.54);backdrop-filter:blur(7px)}.basic-level-modal[hidden]{display:none}.basic-level-dialog{width:min(430px,100%);padding:26px;border:1px solid #d5e3eb;border-radius:22px;background:#fff;box-shadow:0 28px 80px rgba(4,35,57,.28);text-align:center}.basic-level-icon{display:grid;place-items:center;width:54px;height:54px;margin:0 auto 14px;border-radius:16px;background:#fff5db;color:#9a6300;font-size:1.35rem}.basic-level-dialog h2{margin:0;color:#072b49;font-size:1.3rem}.basic-level-dialog p{margin:10px auto 18px;color:#657d90;font-size:.84rem;line-height:1.55}.basic-level-dialog button{min-height:42px;padding:0 20px;border:0;border-radius:12px;background:#072b49;color:#fff;font-size:.76rem;font-weight:800;cursor:pointer}
 html.acl-basic-shell-mode .acl-command-header,html.acl-basic-shell-mode .acl-command-drawer,html.acl-basic-shell-mode .acl-drawer-backdrop,html.acl-basic-shell-mode .acl-mobile-bottom-nav,#aclSharedShell.basic-shell-hidden{display:none!important}
 @media(max-width:720px){body.acl-basic-unified{padding-bottom:80px!important}.basic-universal-topbar{min-height:62px;padding:8px 10px}.basic-universal-brand img{width:34px;height:34px}.basic-universal-brand-copy strong{font-size:.84rem}.basic-universal-brand-copy small{font-size:.55rem}.basic-universal-user strong{display:none}.basic-universal-avatar{width:32px;height:32px}.basic-universal-logout{display:none}.basic-expert-lock{min-height:38px;padding:0 9px;border-radius:11px}.basic-expert-lock>span:not(.basic-lock-dot),.basic-expert-lock small{display:none}.basic-universal-bottom{bottom:7px;width:calc(100% - 14px);gap:3px;padding:5px;border-radius:16px}.basic-universal-bottom a{min-width:0;flex:1;min-height:48px;flex-direction:column;gap:2px;padding:3px 2px;font-size:.57rem}.basic-universal-bottom a span{font-size:.88rem}}
+
+
+/* =========================================================
+   BASIC LEARNING QUIZ — COMPACT DISTRACTION-FREE LAYOUT
+   Applies only to edition=basic Learning Mode.
+========================================================= */
+body.acl-basic-learning-quiz{
+  padding:0!important;
+  min-height:100vh;
+  background:#f6f9fb!important;
+}
+body.acl-basic-learning-quiz .basic-universal-topbar,
+body.acl-basic-learning-quiz .basic-universal-bottom{
+  display:none!important;
+}
+body.acl-basic-learning-quiz .acl-clean-learning{
+  width:min(1120px,calc(100% - 190px))!important;
+  max-width:1120px!important;
+  margin:0 auto!important;
+  padding:10px 0 34px!important;
+}
+
+/* Only module identity + back button remain. */
+body.acl-basic-learning-quiz .learning-stage.learning-session-header{
+  position:sticky!important;
+  top:8px!important;
+  z-index:60!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:10px!important;
+  min-height:54px!important;
+  margin:0 0 8px!important;
+  padding:7px 10px!important;
+  overflow:visible!important;
+  border:1px solid #d5e3ec!important;
+  border-top:3px solid #1774c9!important;
+  border-radius:14px!important;
+  background:rgba(255,255,255,.97)!important;
+  box-shadow:0 8px 22px rgba(7,43,73,.07)!important;
+  backdrop-filter:blur(12px);
+}
+body.acl-basic-learning-quiz .learning-session-module{
+  grid-column:1!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+  min-width:0!important;
+  padding:0!important;
+  border:0!important;
+}
+body.acl-basic-learning-quiz .learning-session-module-mark{
+  width:34px!important;
+  min-width:34px!important;
+  height:34px!important;
+  border-radius:10px!important;
+}
+body.acl-basic-learning-quiz .learning-session-module-mark img{
+  width:25px!important;
+  height:25px!important;
+}
+body.acl-basic-learning-quiz .learning-session-eyebrow{
+  display:none!important;
+}
+body.acl-basic-learning-quiz .learning-session-module-copy strong{
+  display:block!important;
+  overflow:hidden!important;
+  color:#082a52!important;
+  font-size:.9rem!important;
+  font-weight:900!important;
+  line-height:1.2!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+body.acl-basic-learning-quiz .learning-session-main{
+  display:none!important;
+}
+body.acl-basic-learning-quiz .learning-back-module{
+  position:static!important;
+  grid-column:2!important;
+  display:inline-flex!important;
+  min-height:34px!important;
+  padding:0 10px!important;
+  margin:0!important;
+  border-radius:10px!important;
+  font-size:.68rem!important;
+}
+
+/* Progress becomes a tiny status strip. */
+body.acl-basic-learning-quiz .learning-progress-row{
+  margin:0 0 8px!important;
+  padding:5px 8px 6px!important;
+  border:0!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+body.acl-basic-learning-quiz .learning-progress-track{
+  height:4px!important;
+  margin:0 0 4px!important;
+}
+body.acl-basic-learning-quiz .learning-progress-copy{
+  min-height:18px!important;
+  font-size:.62rem!important;
+}
+body.acl-basic-learning-quiz .learning-progress-copy strong,
+body.acl-basic-learning-quiz .learning-save-status{
+  font-size:.62rem!important;
+}
+
+/* Question itself uses the available screen, not a giant card. */
+body.acl-basic-learning-quiz .learning-card{
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body.acl-basic-learning-quiz .expert-question-layout{
+  margin:0!important;
+  padding:14px 16px!important;
+  border:1px solid #dbe6ed!important;
+  border-radius:16px!important;
+  background:#fff!important;
+  box-shadow:0 7px 20px rgba(7,43,73,.045)!important;
+}
+body.acl-basic-learning-quiz .question-topic-row{
+  margin:0 0 9px!important;
+  gap:8px!important;
+}
+body.acl-basic-learning-quiz .learning-topic{
+  padding:4px 8px!important;
+  font-size:.61rem!important;
+  line-height:1!important;
+}
+body.acl-basic-learning-quiz .expert-question-layout h2{
+  margin:8px 0 12px!important;
+  color:#0b2f50!important;
+  font-size:clamp(.98rem,1.7vw,1.18rem)!important;
+  line-height:1.35!important;
+  letter-spacing:-.01em!important;
+}
+body.acl-basic-learning-quiz .clinical-scenario{
+  margin:7px 0 9px!important;
+  padding:9px 11px!important;
+  border-left-width:3px!important;
+  border-radius:0 10px 10px 0!important;
+  font-size:.78rem!important;
+  line-height:1.4!important;
+}
+body.acl-basic-learning-quiz .learning-options{
+  gap:7px!important;
+}
+body.acl-basic-learning-quiz .learning-option{
+  min-height:46px!important;
+  padding:8px 10px!important;
+  border-radius:11px!important;
+  font-size:.8rem!important;
+  line-height:1.3!important;
+}
+body.acl-basic-learning-quiz .learning-option input{
+  margin:0 7px 0 0!important;
+  transform:scale(.9);
+}
+body.acl-basic-learning-quiz .option-key{
+  flex:0 0 28px!important;
+  width:28px!important;
+  height:28px!important;
+  border-radius:9px!important;
+  font-size:.73rem!important;
+}
+body.acl-basic-learning-quiz .question-image{
+  max-height:280px!important;
+  margin:9px auto!important;
+  border-radius:12px!important;
+}
+
+/* Do not float Check answer in Basic Edition. */
+body.acl-basic-learning-quiz .learning-actions{
+  position:static!important;
+  z-index:auto!important;
+  margin:8px 0 0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+}
+body.acl-basic-learning-quiz .learning-actions .primary-btn{
+  min-width:150px!important;
+  min-height:40px!important;
+  padding:0 16px!important;
+  border-radius:11px!important;
+  font-size:.76rem!important;
+}
+
+/* Floating timer and notes remain the only floating quiz controls. */
+body.acl-basic-learning-quiz .learning-floating-tools{
+  top:10px!important;
+  right:10px!important;
+  z-index:100!important;
+  width:150px!important;
+  gap:6px!important;
+}
+body.acl-basic-learning-quiz .learning-floating-timer,
+body.acl-basic-learning-quiz .learning-floating-notes-button{
+  min-height:44px!important;
+  padding:6px 9px!important;
+  border-radius:13px!important;
+  box-shadow:0 7px 20px rgba(7,42,77,.12)!important;
+}
+
+/* Compact Life Savers so they do not dominate the question. */
+body.acl-basic-learning-quiz .compact-lifelines-toolbar{
+  gap:5px!important;
+  padding:4px 6px!important;
+  border-radius:12px!important;
+}
+body.acl-basic-learning-quiz .compact-lifelines-label{
+  font-size:.56rem!important;
+}
+body.acl-basic-learning-quiz .compact-lifelines-buttons{
+  gap:4px!important;
+}
+body.acl-basic-learning-quiz .compact-lifeline-button{
+  min-width:34px!important;
+  min-height:34px!important;
+  padding:2px!important;
+  border-radius:10px!important;
+}
+body.acl-basic-learning-quiz .compact-lifeline-icon{
+  width:27px!important;
+  height:27px!important;
+}
+body.acl-basic-learning-quiz .compact-lifeline-name,
+body.acl-basic-learning-quiz .compact-lifeline-used-copy{
+  display:none!important;
+}
+body.acl-basic-learning-quiz .compact-lifelines-counter{
+  min-height:27px!important;
+  padding:0 7px!important;
+  font-size:.55rem!important;
+}
+
+/* The old Expert banner pseudo-elements must never reappear. */
+body.acl-basic-learning-quiz .learning-session-header::before,
+body.acl-basic-learning-quiz .learning-session-header::after{
+  display:none!important;
+  content:none!important;
+}
+
+@media(max-width:900px){
+  body.acl-basic-learning-quiz .acl-clean-learning{
+    width:calc(100% - 18px)!important;
+    padding-top:8px!important;
+  }
+  body.acl-basic-learning-quiz .learning-stage.learning-session-header{
+    padding-right:148px!important;
+  }
+  body.acl-basic-learning-quiz .learning-back-module{
+    position:absolute!important;
+    right:106px!important;
+    top:10px!important;
+    width:34px!important;
+    min-width:34px!important;
+    min-height:34px!important;
+    padding:0!important;
+  }
+  body.acl-basic-learning-quiz .learning-back-module span:last-child{
+    display:none!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-tools{
+    top:10px!important;
+    right:10px!important;
+    display:flex!important;
+    width:auto!important;
+    gap:5px!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-timer{
+    min-width:84px!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-notes-button{
+    width:40px!important;
+    min-width:40px!important;
+    justify-content:center!important;
+    padding:5px!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-notes-button>span:not(.learning-floating-tool-icon){
+    display:none!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-timer-copy small{
+    display:none!important;
+  }
+}
+
+@media(max-width:600px){
+  body.acl-basic-learning-quiz .acl-clean-learning{
+    width:100%!important;
+    padding:6px 7px 18px!important;
+  }
+  body.acl-basic-learning-quiz .learning-stage.learning-session-header{
+    top:5px!important;
+    min-height:48px!important;
+    margin-bottom:5px!important;
+    padding:5px 134px 5px 7px!important;
+    border-radius:11px!important;
+  }
+  body.acl-basic-learning-quiz .learning-session-module{
+    gap:6px!important;
+  }
+  body.acl-basic-learning-quiz .learning-session-module-mark{
+    width:30px!important;
+    min-width:30px!important;
+    height:30px!important;
+  }
+  body.acl-basic-learning-quiz .learning-session-module-mark img{
+    width:22px!important;
+    height:22px!important;
+  }
+  body.acl-basic-learning-quiz .learning-session-module-copy strong{
+    font-size:.76rem!important;
+  }
+  body.acl-basic-learning-quiz .learning-back-module{
+    right:96px!important;
+    top:7px!important;
+    width:30px!important;
+    min-width:30px!important;
+    min-height:30px!important;
+    font-size:.66rem!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-tools{
+    top:7px!important;
+    right:7px!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-timer,
+  body.acl-basic-learning-quiz .learning-floating-notes-button{
+    min-height:34px!important;
+    border-radius:10px!important;
+    padding:4px 6px!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-timer{
+    min-width:78px!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-tool-icon{
+    width:24px!important;
+    min-width:24px!important;
+    height:24px!important;
+    border-radius:8px!important;
+    font-size:.76rem!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-timer-copy strong{
+    font-size:.78rem!important;
+  }
+
+  body.acl-basic-learning-quiz .learning-progress-row{
+    margin-bottom:5px!important;
+    padding:3px 5px 4px!important;
+  }
+  body.acl-basic-learning-quiz .learning-progress-track{
+    height:3px!important;
+    margin-bottom:3px!important;
+  }
+  body.acl-basic-learning-quiz .learning-progress-copy{
+    min-height:14px!important;
+  }
+  body.acl-basic-learning-quiz .learning-save-status{
+    display:none!important;
+  }
+
+  body.acl-basic-learning-quiz .expert-question-layout{
+    padding:9px 9px 10px!important;
+    border-radius:12px!important;
+  }
+  body.acl-basic-learning-quiz .question-topic-row{
+    margin-bottom:5px!important;
+    align-items:center!important;
+    flex-direction:row!important;
+    flex-wrap:wrap!important;
+  }
+  body.acl-basic-learning-quiz .learning-topic{
+    padding:3px 6px!important;
+    font-size:.54rem!important;
+  }
+  body.acl-basic-learning-quiz .expert-question-layout h2{
+    margin:5px 0 8px!important;
+    font-size:.9rem!important;
+    line-height:1.27!important;
+  }
+  body.acl-basic-learning-quiz .clinical-scenario{
+    margin:4px 0 6px!important;
+    padding:6px 8px!important;
+    font-size:.7rem!important;
+    line-height:1.3!important;
+  }
+  body.acl-basic-learning-quiz .learning-options{
+    gap:5px!important;
+  }
+  body.acl-basic-learning-quiz .learning-option{
+    min-height:40px!important;
+    padding:6px 7px!important;
+    border-radius:9px!important;
+    font-size:.72rem!important;
+    line-height:1.22!important;
+  }
+  body.acl-basic-learning-quiz .learning-option input{
+    margin-right:5px!important;
+    transform:scale(.82);
+  }
+  body.acl-basic-learning-quiz .option-key{
+    flex-basis:24px!important;
+    width:24px!important;
+    height:24px!important;
+    border-radius:8px!important;
+    font-size:.64rem!important;
+  }
+  body.acl-basic-learning-quiz .question-image{
+    max-height:180px!important;
+    margin:5px auto!important;
+  }
+  body.acl-basic-learning-quiz .learning-actions{
+    margin-top:6px!important;
+  }
+  body.acl-basic-learning-quiz .learning-actions .primary-btn{
+    width:100%!important;
+    min-height:37px!important;
+    font-size:.7rem!important;
+  }
+
+  body.acl-basic-learning-quiz .compact-lifelines-toolbar{
+    max-width:100%!important;
+    overflow-x:auto!important;
+    padding:3px 4px!important;
+  }
+  body.acl-basic-learning-quiz .compact-lifelines-label{
+    display:none!important;
+  }
+  body.acl-basic-learning-quiz .compact-lifeline-button{
+    min-width:30px!important;
+    min-height:30px!important;
+  }
+  body.acl-basic-learning-quiz .compact-lifeline-icon{
+    width:24px!important;
+    height:24px!important;
+  }
+  body.acl-basic-learning-quiz .dr-corazon-lifeline-avatar{
+    max-width:24px!important;
+    max-height:24px!important;
+  }
+  body.acl-basic-learning-quiz .compact-lifelines-counter{
+    min-height:24px!important;
+    white-space:nowrap!important;
+  }
+}
+
+@media(max-width:390px){
+  body.acl-basic-learning-quiz .learning-stage.learning-session-header{
+    padding-right:126px!important;
+  }
+  body.acl-basic-learning-quiz .learning-session-module-copy strong{
+    font-size:.7rem!important;
+  }
+  body.acl-basic-learning-quiz .learning-back-module{
+    right:91px!important;
+  }
+  body.acl-basic-learning-quiz .learning-floating-timer{
+    min-width:73px!important;
+  }
+  body.acl-basic-learning-quiz .expert-question-layout h2{
+    font-size:.84rem!important;
+  }
+  body.acl-basic-learning-quiz .learning-option{
+    font-size:.68rem!important;
+    min-height:38px!important;
+  }
+}
