@@ -88,6 +88,42 @@ function filteredQuestions() {
   });
 }
 
+function detailsHtml(question) {
+  const options = optionsMap(question);
+
+  return `
+    <div class="baq-details" data-details="${question.id}" hidden>
+      <div class="baq-preview-options">
+        ${options.map(option => `
+          <div class="baq-preview-option ${option.isCorrect ? "is-correct" : ""}">
+            <strong>${option.key}</strong>
+            <span>${esc(option.text || "—")}</span>
+            ${option.isCorrect ? '<em>Correct answer</em>' : ""}
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="baq-preview-grid">
+        <div class="baq-preview-note">
+          <span>Explanation</span>
+          <p>${esc(question.explanation || "No explanation added.")}</p>
+        </div>
+
+        <div class="baq-preview-note">
+          <span>Reference</span>
+          <p>${esc(question.reference_text || "No reference added.")}</p>
+        </div>
+
+        <div class="baq-preview-note">
+          <span>Dr. Corazón advice</span>
+          <p>${esc(question.dr_corazon_hint || "No custom advice added.")}</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
 function editorHtml(question) {
   const options = optionsMap(question);
   const correct = options.find(option => option.isCorrect)?.key || "A";
@@ -163,7 +199,7 @@ function render() {
 
   $("baqList").innerHTML = rows.map((question, index) => `
     <article class="baq-card ${question.status === "archived" ? "is-hidden" : ""}" data-card="${question.id}">
-      <div class="baq-card-head">
+      <div class="baq-card-head" data-expand="${question.id}" role="button" tabindex="0" aria-expanded="false">
         <span class="baq-number">${index + 1}</span>
 
         <div class="baq-card-main">
@@ -179,6 +215,7 @@ function render() {
           </div>
 
           <h2>${esc(question.stem || "Question")}</h2>
+          <small class="baq-expand-hint">Click to view choices and details</small>
         </div>
 
         <div class="baq-card-actions">
@@ -190,6 +227,7 @@ function render() {
         </div>
       </div>
 
+      ${detailsHtml(question)}
       ${editorHtml(question)}
     </article>
   `).join("");
@@ -202,6 +240,37 @@ function questionById(id) {
 }
 
 function bindCardActions() {
+  const toggleDetails = id => {
+    const details = document.querySelector(`[data-details="${id}"]`);
+    const head = document.querySelector(`[data-expand="${id}"]`);
+
+    if (!details || !head) return;
+
+    details.hidden = !details.hidden;
+    head.setAttribute("aria-expanded", details.hidden ? "false" : "true");
+
+    const hint = head.querySelector(".baq-expand-hint");
+    if (hint) {
+      hint.textContent = details.hidden
+        ? "Click to view choices and details"
+        : "Click to collapse";
+    }
+  };
+
+  document.querySelectorAll("[data-expand]").forEach(head => {
+    head.addEventListener("click", event => {
+      if (event.target.closest("button,a,input,select,textarea,label")) return;
+      toggleDetails(head.dataset.expand);
+    });
+
+    head.addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (event.target !== head) return;
+      event.preventDefault();
+      toggleDetails(head.dataset.expand);
+    });
+  });
+
   document.querySelectorAll("[data-edit]").forEach(button => {
     button.addEventListener("click", () => {
       const id = button.dataset.edit;
