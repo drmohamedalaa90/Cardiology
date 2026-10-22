@@ -10,8 +10,7 @@
 .baq-card-head[data-expand]:hover{background:#fbfdfe}
 .baq-card-head[data-expand][aria-expanded="true"]{background:#f8fcfd}
 .baq-expand-hint{display:block;margin-top:6px;color:#8aa0ae;font-size:.56rem;font-weight:700}
-.baq-details{padding:0 14px 14px;border-top:1px solid #e6eef2;background:#fbfdfe}
-.baq-details[hidden]{display:none}
+.baq-details{display:none;padding:0 14px 14px;border-top:1px solid #e6eef2;background:#fbfdfe}.baq-details.is-open{display:block}
 .baq-preview-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px}
 .baq-preview-option{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:44px;padding:8px 10px;border:1px solid #dce7ed;border-radius:11px;background:#fff}
 .baq-preview-option>strong{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:#edf5f8;color:#126482;font-size:.64rem}
@@ -27,3 +26,6 @@
   .baq-preview-option{grid-template-columns:26px minmax(0,1fr)}
   .baq-preview-option>em{grid-column:2}
 }
+
+.baq-expand-chevron{align-self:center;color:#6f8797;font-size:1rem;font-weight:900;transition:transform .15s ease}
+.baq-card-head[aria-expanded="true"] .baq-expand-chevron{color:#0d6883}
