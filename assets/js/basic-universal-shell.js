@@ -11,6 +11,7 @@ if(edition==="basic"){
   const main=document.querySelector("body>main");main?.classList.remove("acl-command-main","acl-shared-main");
   const page=location.pathname.split("/").pop()||"";
   const active=(name)=>page===name?"is-active":"";
+  const activeAny=(names)=>names.includes(page)?"is-active":"";
   const shell=document.createElement("div");
   shell.innerHTML=`<header class="basic-universal-topbar">
     <a class="basic-universal-brand" href="basic-home.html?edition=basic"><img src="assets/images/acl-header-mark.svg" alt=""><span class="basic-universal-brand-copy"><strong>Cardiology League</strong><small>Basic Edition</small></span></a>
@@ -22,9 +23,9 @@ if(edition==="basic"){
   </header>
   <nav class="basic-universal-bottom" aria-label="Basic Edition navigation">
     <a class="${active("basic-home.html")}" href="basic-home.html?edition=basic"><span>⌂</span><strong>Home</strong></a>
-    <a class="${active("profile.html")}" href="profile.html?edition=basic"><span>♙</span><strong>Profile</strong></a>
-    <a class="${active("challenge.html")}" href="challenge.html?edition=basic"><span>⚔</span><strong>Challenges</strong></a>
-    <a class="${active("progress.html")}" href="progress.html?edition=basic"><span>▤</span><strong>Progress</strong></a>
+    <a class="${activeAny(["basic-profile.html","profile.html"])}" href="basic-profile.html?edition=basic"><span>♙</span><strong>Profile</strong></a>
+    <a class="${activeAny(["basic-challenges.html","challenge.html"])}" href="basic-challenges.html?edition=basic"><span>⚔</span><strong>Challenges</strong></a>
+    <a class="${activeAny(["basic-progress.html","progress.html"])}" href="basic-progress.html?edition=basic"><span>▤</span><strong>Progress</strong></a>
   </nav>
   <div class="basic-level-modal" id="basicLevelModal" hidden><section class="basic-level-dialog" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitle"><div class="basic-level-icon">◆</div><h2 id="basicLevelTitle">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelClose">Continue Basic Edition</button></section></div>`;
   document.body.insertBefore(shell,document.body.firstChild);
