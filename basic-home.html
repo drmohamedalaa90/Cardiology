@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#083452">
+  <title>Basic Edition | Cardiology League</title>
+  <script>
+    (function(){
+      let granted="";
+      try{
+        granted=String(sessionStorage.getItem("aclEditionEntryGranted")||"").toLowerCase();
+      }catch{}
+      if(granted!=="basic"){
+        location.replace("edition-select.html");
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/basic-home.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="basic-home-page">
+  <header class="basic-topbar">
+    <a class="basic-brand" href="basic-home.html?edition=basic" aria-label="Cardiology League Basic Edition home">
+      <img src="assets/images/acl-header-mark.svg" alt="" class="basic-brand-mark">
+      <span>
+        <strong>Cardiology League</strong>
+        <small>Basic Edition</small>
+      </span>
+    </a>
+
+    <div class="basic-account-actions">
+      <button class="basic-edition-switch basic-expert-lock-home" id="basicExpertLockedHome" type="button"><span class="basic-lock-mark">◆</span><span>Expert Edition</span><small>Locked</small></button>
+      <div class="basic-user-chip">
+        <span id="basicAvatar" class="basic-avatar">ACL</span>
+        <span class="basic-user-copy">
+          <strong id="basicUserName">Member</strong>
+          <small>Basic learner</small>
+        </span>
+      </div>
+      <button id="basicLogout" class="basic-logout" type="button">Log out</button>
+    </div>
+  </header>
+
+  <main class="basic-shell">
+    <section class="basic-intro">
+      <div>
+        <span class="basic-eyebrow">ACL • BASIC EDITION</span>
+        <h1>Build your cardiology foundation, one module at a time.</h1>
+        <p>Complete each module with more than 70% to unlock the next step in your learning pathway.</p>
+      </div>
+      <div class="basic-path-summary">
+        <span>YOUR PATH</span>
+        <strong><span id="basicUnlockedCount">—</span> / <span id="basicTotalCount">—</span></strong>
+        <small>modules unlocked</small>
+      </div>
+    </section>
+
+    <section class="basic-section">
+      <div class="basic-section-head">
+        <div>
+          <span class="basic-section-kicker">READY TO LEARN</span>
+          <h2>Available modules</h2>
+        </div>
+        <p id="basicAvailableSummary">Loading your modules…</p>
+      </div>
+      <div id="basicAvailableModules" class="basic-module-grid" aria-live="polite">
+        <div class="basic-loading-card">Loading available modules…</div>
+      </div>
+    </section>
+
+    <section class="basic-section basic-locked-section">
+      <div class="basic-section-head">
+        <div>
+          <span class="basic-section-kicker">LEARNING PATH</span>
+          <h2>Locked modules</h2>
+        </div>
+        <p>Score <strong>&gt;70%</strong> in the previous module to unlock the next module.</p>
+      </div>
+      <div id="basicLockedModules" class="basic-locked-list" aria-live="polite">
+        <div class="basic-loading-card">Checking your learning path…</div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="basic-bottom-nav" aria-label="Basic Edition navigation">
+    <a class="is-active" href="basic-home.html?edition=basic"><span aria-hidden="true">⌂</span><strong>Home</strong></a>
+    <a href="basic-profile.html?edition=basic"><span aria-hidden="true">♙</span><strong>Profile</strong></a>
+    <a href="basic-challenges.html?edition=basic"><span aria-hidden="true">⚔</span><strong>Challenges</strong></a>
+    <a href="basic-progress.html?edition=basic"><span aria-hidden="true">▤</span><strong>Progress</strong></a>
+  </nav>
+
+  <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>\n  <script type="module" src="assets/js/basic-home.js?v=3"></script>
+</body>
+</html>
