@@ -6,6 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#061c3d">
   <title>ACL Expert Command Center | Cardiology League</title>
+<script>
+(function(){
+  const q=new URLSearchParams(location.search).get("edition");
+  if(String(q||"").toLowerCase()==="basic"){
+    try{localStorage.setItem("aclSelectedEdition","basic")}catch{}
+    location.replace("basic-home.html?edition=basic");
+  }
+})();
+</script>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
   <link rel="stylesheet" href="assets/css/acl-command-center.css?v=20260822b">
