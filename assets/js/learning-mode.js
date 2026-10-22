@@ -152,6 +152,23 @@ const requestedStandaloneQuestionCount =
 
 const forceNewAttempt =
   params.get("new") === "1";
+
+const selectedLearningEdition =
+  String(params.get("edition") || "expert").toLowerCase() === "basic"
+    ? "basic"
+    : "expert";
+
+const basicQuizMode =
+  selectedLearningEdition === "basic" &&
+  params.get("basic_quiz") === "1";
+
+const requestedBasicLifelines =
+  new Set(
+    String(params.get("lifelines") || "")
+      .split(",")
+      .map(value => value.trim())
+      .filter(Boolean)
+  );
 /* =========================================================
    CHALLENGE MODE URL PARAMETERS
 ========================================================= */
@@ -233,6 +250,9 @@ let quiz =
 let questions =
   [];
 
+let questionPool =
+  [];
+
 
 let index =
   0;
@@ -289,6 +309,7 @@ const LIFELINES = {
   flashcard: "flashcard",
   time: "time",
   filter: "filter",
+  swap: "swap",
   guideline: "guideline", // legacy saved-attempt compatibility only
   vault: "vault"
 };
@@ -298,6 +319,7 @@ const ACTIVE_LIFELINES = [
   LIFELINES.flashcard,
   LIFELINES.time,
   LIFELINES.filter,
+  LIFELINES.swap,
   LIFELINES.vault
 ];
 
@@ -1735,6 +1757,10 @@ function resetPreQuizReviewForNewAttempt() {
 ========================================================= */
 
 function confidenceEnabled() {
+  if (basicQuizMode) {
+    return false;
+  }
+
   return Boolean(
     aclSettings
       .confidenceEnabled
@@ -1962,6 +1988,10 @@ async function persist(
 ========================================================= */
 
 function lifelinesEnabled() {
+  if (basicQuizMode) {
+    return requestedBasicLifelines.size > 0;
+  }
+
   return Boolean(
     aclSettings
       .lifelinesEnabled
@@ -1972,6 +2002,10 @@ function lifelinesEnabled() {
 function enabledLifeline(
   lifeline
 ) {
+  if (basicQuizMode) {
+    return requestedBasicLifelines.has(lifeline);
+  }
+
   return (
     lifelinesEnabled() &&
     aclSettings
@@ -2018,6 +2052,10 @@ function lifelineAllowance() {
     return 0;
   }
 
+  if (basicQuizMode) {
+    return requestedBasicLifelines.size;
+  }
+
   const totalQuestions =
     questions.length ||
     requestedStandaloneQuestionCount ||
@@ -2040,6 +2078,7 @@ function defaultQuizLifelines() {
     flashcard: false,
     time: false,
     filter: false,
+    swap: false,
     guideline: false,
     vault: false,
 
@@ -2051,6 +2090,7 @@ function defaultQuizLifelines() {
       flashcard: null,
       time: null,
       filter: null,
+      swap: null,
       guideline: null,
       vault: null
     },
@@ -2279,6 +2319,10 @@ function markLifelineUsed(
     lifelineIsUsed(
       question,
       lifeline
+    ) ||
+    (
+      basicQuizMode &&
+      usageForLifeline(lifeline).length > 0
     ) ||
     lifelineCapacityReached()
   ) {
@@ -2738,50 +2782,24 @@ function knowledgeVaultFor(
 ========================================================= */
 
 function lifelineDefinitions() {
+  if (basicQuizMode) {
+    return [
+      { id: LIFELINES.filter, icon: "✂️", image: "", title: "50:50", shortTitle: "50:50" },
+      { id: LIFELINES.swap, icon: "↻", image: "", title: "Swap Question", shortTitle: "Swap" },
+      { id: LIFELINES.expert, icon: "", image: HAPPY_MASCOT, title: "Ask Dr. Corazón", shortTitle: "Dr. Corazón" },
+      { id: LIFELINES.time, icon: "⏱️", image: "", title: "+1 Minute", shortTitle: "+1 min" }
+    ].filter(definition => enabledLifeline(definition.id));
+  }
+
   const definitions = [
-    {
-      id: LIFELINES.expert,
-      icon: "",
-      image: HAPPY_MASCOT,
-      title: "Dr. Corazón Help",
-      shortTitle: "Dr. Corazón"
-    },
-    {
-      id: LIFELINES.flashcard,
-      icon: "📘",
-      image: "",
-      title: "View Topic Flashcard",
-      shortTitle: "Flashcard"
-    },
-    {
-      id: LIFELINES.time,
-      icon: "⏱️",
-      image: "",
-      title: "+1 Minute",
-      shortTitle: "+1 min"
-    },
-    {
-      id: LIFELINES.filter,
-      icon: "✂️",
-      image: "",
-      title: "Remove 2 Answers",
-      shortTitle: "Remove 2"
-    },
-    {
-      id: LIFELINES.vault,
-      icon: "🧠",
-      image: "",
-      title: "Knowledge Vault",
-      shortTitle: "Knowledge Vault"
-    }
+    { id: LIFELINES.expert, icon: "", image: HAPPY_MASCOT, title: "Dr. Corazón Help", shortTitle: "Dr. Corazón" },
+    { id: LIFELINES.flashcard, icon: "📘", image: "", title: "View Topic Flashcard", shortTitle: "Flashcard" },
+    { id: LIFELINES.time, icon: "⏱️", image: "", title: "+1 Minute", shortTitle: "+1 min" },
+    { id: LIFELINES.filter, icon: "✂️", image: "", title: "Remove 2 Answers", shortTitle: "Remove 2" },
+    { id: LIFELINES.vault, icon: "🧠", image: "", title: "Knowledge Vault", shortTitle: "Knowledge Vault" }
   ];
 
-  return definitions.filter(
-    (definition) =>
-      enabledLifeline(
-        definition.id
-      )
-  );
+  return definitions.filter(definition => enabledLifeline(definition.id));
 }
 
 
@@ -2795,19 +2813,26 @@ function compactLifelineButtonHtml(
       definition.id
     );
 
+  const usedAnywhere =
+    basicQuizMode &&
+    usageForLifeline(definition.id).length > 0;
+
   const noUsesRemaining =
     lifelineCapacityReached();
 
   const disabled =
     usedOnThisQuestion ||
+    usedAnywhere ||
     noUsesRemaining;
 
   const usageLabel =
-    usedOnThisQuestion
-      ? `${definition.title} — already used on this question`
-      : noUsesRemaining
-        ? `${definition.title} — no Life Savers remaining`
-        : definition.title;
+    usedAnywhere
+      ? `${definition.title} — already used`
+      : usedOnThisQuestion
+        ? `${definition.title} — already used on this question`
+        : noUsesRemaining
+          ? `${definition.title} — no Life Savers remaining`
+          : definition.title;
 
   return `
     <button
@@ -3140,6 +3165,49 @@ async function activateEvidenceFilter(
 }
 
 
+async function activateQuestionSwap(question) {
+  if (!question || !questions.length) {
+    throw new Error("No question is available to swap.");
+  }
+
+  const activeIds = new Set(questions.map(item => String(item.id)));
+  const answeredIds = new Set(answers.map(answer => String(answer.questionId)));
+
+  const unused = questionPool.filter(
+    item =>
+      String(item.id) !== String(question.id) &&
+      !activeIds.has(String(item.id)) &&
+      !answeredIds.has(String(item.id))
+  );
+
+  if (unused.length) {
+    questions[index] = unused[Math.floor(Math.random() * unused.length)];
+  } else {
+    const futureIndexes = questions
+      .map((item, position) => ({ item, position }))
+      .filter(
+        entry =>
+          entry.position > index &&
+          !answeredIds.has(String(entry.item.id))
+      );
+
+    if (!futureIndexes.length) {
+      throw new Error("There are no remaining questions available to swap.");
+    }
+
+    const chosen =
+      futureIndexes[Math.floor(Math.random() * futureIndexes.length)].position;
+
+    const current = questions[index];
+    questions[index] = questions[chosen];
+    questions[chosen] = current;
+  }
+
+  pendingSelectedIds = [];
+  saveQuestionSetRecovery(questions);
+}
+
+
 /* =========================================================
    LIFELINE ACTIVATION
 ========================================================= */
@@ -3193,7 +3261,7 @@ async function activateLifeline(
 
       responseConfig = {
         icon: "✂️",
-        title: "Remove 2 Answers",
+        title: basicQuizMode ? "50:50" : "Remove 2 Answers",
         message:
           "Two incorrect options have been removed. Reassess the two remaining choices carefully."
       };
@@ -3229,6 +3297,19 @@ async function activateLifeline(
           "A topic flashcard has not yet been added for this question."
         );
       }
+    }
+
+    if (
+      lifeline ===
+      LIFELINES.swap
+    ) {
+      await activateQuestionSwap(question);
+
+      responseConfig = {
+        icon: "↻",
+        title: "Question Swapped",
+        message: "A different question has replaced the current one."
+      };
     }
 
     if (
@@ -4533,16 +4614,18 @@ function render() {
           totalQuestions:
             questions.length,
           timeLimitSeconds:
-            Math.max(
-              1,
-              Number(
-                question.time_limit_seconds ||
-                question.timeLimitSeconds ||
-                quiz?.default_question_time_seconds ||
-                quiz?.defaultQuestionTimeSeconds ||
-                60
-              ) || 60
-            ),
+            basicQuizMode
+              ? 120
+              : Math.max(
+                  1,
+                  Number(
+                    question.time_limit_seconds ||
+                    question.timeLimitSeconds ||
+                    quiz?.default_question_time_seconds ||
+                    quiz?.defaultQuestionTimeSeconds ||
+                    60
+                  ) || 60
+                ),
           answered:
             Boolean(
               answer
@@ -5105,6 +5188,89 @@ window.requestAnimationFrame(
     }
   }
 }
+
+
+async function submitTimedOutQuestion() {
+  if (!basicQuizMode || reviewMode || saving || finishing) {
+    return;
+  }
+
+  const question = currentQuestion();
+
+  if (!question || answerFor(question)) {
+    return;
+  }
+
+  try {
+    const correctIds = await secureCorrectOptionIds(question);
+    const correctSet = new Set(correctIds.map(String));
+    const incorrect = optionsFor(question).find(
+      option => !correctSet.has(String(option.id))
+    );
+
+    let explanation = question.explanation || "";
+    let referenceText =
+      question.reference_text ||
+      question.referenceText ||
+      "";
+
+    if (incorrect) {
+      const { data } = await supabaseClient.rpc(
+        "acl_check_learning_answer",
+        {
+          p_quiz_id: quiz.id,
+          p_question_id: question.id,
+          p_option_ids: [String(incorrect.id)]
+        }
+      );
+
+      explanation = data?.explanation || explanation;
+      referenceText =
+        data?.reference_text ||
+        data?.referenceText ||
+        referenceText;
+    }
+
+    setAnswer({
+      questionId: question.id,
+      selectedIds: [],
+      correct: false,
+      points: 0,
+      confidence: null,
+      confidenceEnabled: false,
+      correctOptionIds: correctIds,
+      explanation,
+      referenceText,
+      referenceUrl: "",
+      flashcard: null,
+      timedOut: true,
+      answeredAt: new Date().toISOString()
+    });
+
+    pendingSelectedIds = [];
+    await persist(false);
+    render();
+
+    const feedbackHost = $("answerFeedbackHost");
+
+    if (feedbackHost) {
+      feedbackHost.insertAdjacentHTML(
+        "afterbegin",
+        '<div class="answer-feedback incorrect">Time is over. This question has been recorded as incorrect.</div>'
+      );
+    }
+  } catch (error) {
+    console.error("BASIC QUESTION TIMEOUT ERROR:", error);
+  }
+}
+
+
+window.addEventListener(
+  "acl:learning-time-expired",
+  () => {
+    void submitTimedOutQuestion();
+  }
+);
 
 
 /* =========================================================
@@ -6853,6 +7019,9 @@ if (challengeId) {
     let pool =
       quiz.questions ||
       [];
+
+    questionPool =
+      [...pool];
 
     if (
       quiz.randomize_questions ||
