@@ -10,6 +10,14 @@ if(edition==="basic"){
   document.body.classList.remove("acl-command-body","acl-shared-page","drawer-open","drawer-collapsed");
   const main=document.querySelector("body>main");main?.classList.remove("acl-command-main","acl-shared-main");
   const page=location.pathname.split("/").pop()||"";
+  const isBasicLearningPage =
+    page === "learning-expert.html" ||
+    page === "learning.html";
+
+  if (isBasicLearningPage) {
+    document.body.classList.add("acl-basic-learning-quiz");
+  }
+
   const active=(name)=>page===name?"is-active":"";
   const activeAny=(names)=>names.includes(page)?"is-active":"";
   const shell=document.createElement("div");
@@ -28,7 +36,13 @@ if(edition==="basic"){
     <a class="${activeAny(["basic-progress.html","progress.html"])}" href="basic-progress.html?edition=basic"><span>▤</span><strong>Progress</strong></a>
   </nav>
   <div class="basic-level-modal" id="basicLevelModal" hidden><section class="basic-level-dialog" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitle"><div class="basic-level-icon">◆</div><h2 id="basicLevelTitle">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelClose">Continue Basic Edition</button></section></div>`;
-  document.body.insertBefore(shell,document.body.firstChild);
+  if (!isBasicLearningPage) {
+    document.body.insertBefore(shell,document.body.firstChild);
+  } else {
+    shell.querySelector(".basic-universal-topbar")?.remove();
+    shell.querySelector(".basic-universal-bottom")?.remove();
+    document.body.insertBefore(shell,document.body.firstChild);
+  }
   const modal=document.getElementById("basicLevelModal");
   const close=()=>{if(modal)modal.hidden=true};
   document.getElementById("basicExpertLocked")?.addEventListener("click",()=>{if(modal)modal.hidden=false});
@@ -58,6 +72,12 @@ if(edition==="basic"){
   const back=document.getElementById("learningBackToModule");if(back){const mid=new URLSearchParams(location.search).get("module");back.href=mid?`basic-module.html?edition=basic&module=${encodeURIComponent(mid)}`:"basic-home.html?edition=basic";}
   document.querySelectorAll(".learning-mode-label").forEach(el=>el.textContent="BASIC LEARNING MODE");
   const desc=document.getElementById("quizDescription");if(desc)desc.textContent="Focused foundation-level learning with immediate feedback and topic review.";
+  if (isBasicLearningPage) {
+    const title = document.getElementById("quizTitle");
+    const main = document.querySelector(".learning-session-main");
+    if (main) main.setAttribute("aria-hidden","true");
+    if (title) title.setAttribute("aria-hidden","true");
+  }
   const progressCopy=document.querySelector(".progress-hero .muted");if(progressCopy)progressCopy.textContent="Your Basic Edition performance, module progress and learning momentum.";
   const profileCopy=document.querySelector("main .card > .muted");if(profileCopy&&profileCopy.textContent.includes("Expert Edition"))profileCopy.textContent=profileCopy.textContent.replace("Expert Edition","Basic Edition");
 }
