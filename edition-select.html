@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#082f4d">
+  <title>Choose Edition | Cardiology League</title>
+  <link rel="stylesheet" href="assets/css/edition-select.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="edition-entry">
+    <header class="edition-entry-header">
+      <a class="edition-entry-brand" href="edition-select.html" aria-label="Cardiology League">
+        <img src="assets/images/acl-header-mark.svg" alt="">
+        <span>
+          <strong>Cardiology League</strong>
+          <small>ALEXANDRIA CARDIOLOGY LEAGUE</small>
+        </span>
+      </a>
+
+      <div class="edition-user">
+        <span id="editionAvatar" class="edition-avatar">ACL</span>
+        <span class="edition-user-copy">
+          <strong id="editionUserName">Member</strong>
+          <small id="editionUserLevel">Choose your learning edition</small>
+        </span>
+        <button id="editionLogout" type="button">Log out</button>
+      </div>
+    </header>
+
+    <section class="edition-hero">
+      <span class="edition-kicker">CHOOSE YOUR LEARNING PATH</span>
+      <h1>Which edition would you like to open?</h1>
+      <p>Choose the learning experience designed for your current level. You can return to this screen later from the edition menu.</p>
+    </section>
+
+    <section class="edition-grid" aria-label="Available Cardiology League editions">
+      <article class="edition-card edition-card-basic">
+        <div class="edition-card-top">
+          <span class="edition-icon basic">B</span>
+          <span class="edition-status available">Available</span>
+        </div>
+
+        <div class="edition-card-copy">
+          <span class="edition-label">BASIC EDITION</span>
+          <h2>Build your cardiology foundation.</h2>
+          <p>Undergraduate-focused modules, lectures, flashcards, quizzes, friend challenges and progressive unlocking.</p>
+        </div>
+
+        <div class="edition-feature-row">
+          <span>Foundation modules</span>
+          <span>Guided progression</span>
+          <span>Interactive quizzes</span>
+        </div>
+
+        <a id="basicEditionCard" class="edition-enter basic" href="basic-home.html?edition=basic">
+          Enter Basic Edition
+          <span>→</span>
+        </a>
+      </article>
+
+      <article id="expertEditionCard" class="edition-card edition-card-expert is-locked" aria-describedby="expertAccessNote">
+        <div class="edition-card-top">
+          <span class="edition-icon expert">E</span>
+          <span id="expertStatus" class="edition-status locked">Locked</span>
+        </div>
+
+        <div class="edition-card-copy">
+          <span class="edition-label">EXPERT EDITION</span>
+          <h2>Advanced clinical decision-making.</h2>
+          <p>High-level guideline modules, evidence-based cases, expert question banks and advanced challenge tools.</p>
+        </div>
+
+        <div class="edition-feature-row">
+          <span>Advanced guidelines</span>
+          <span>Clinical reasoning</span>
+          <span>Expert-level cases</span>
+        </div>
+
+        <button id="expertEditionButton" class="edition-enter expert" type="button">
+          <span id="expertButtonText">Locked for your level</span>
+          <span id="expertButtonIcon">◆</span>
+        </button>
+
+        <p id="expertAccessNote" class="edition-lock-note">
+          This edition is not available for your current level.
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <div id="editionLockModal" class="edition-modal" hidden>
+    <section class="edition-dialog" role="dialog" aria-modal="true" aria-labelledby="editionLockTitle">
+      <div class="edition-dialog-icon">◆</div>
+      <span class="edition-kicker">EXPERT EDITION</span>
+      <h2 id="editionLockTitle">Locked for your level</h2>
+      <p>The Expert Edition is not available for your current academic level. Continue with the Basic Edition to progress through your learning pathway.</p>
+      <button id="editionLockClose" type="button">Continue</button>
+    </section>
+  </div>
+
+  <script type="module" src="assets/js/edition-select.js?v=1"></script>
+</body>
+</html>
