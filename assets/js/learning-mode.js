@@ -824,16 +824,27 @@ function randomItems(
 ========================================================= */
 
 function questionDistributionKey(question) {
-  const candidates = [
-    question?.subtopic,
-    question?.sub_topic,
-    question?.topic,
-    question?.section,
-    question?.category,
-    question?.domain,
-    question?.learning_objective,
-    question?.learningObjective
-  ];
+  const candidates = basicQuizMode
+    ? [
+        question?.topic,
+        question?.subtopic,
+        question?.sub_topic,
+        question?.section,
+        question?.category,
+        question?.domain,
+        question?.learning_objective,
+        question?.learningObjective
+      ]
+    : [
+        question?.subtopic,
+        question?.sub_topic,
+        question?.topic,
+        question?.section,
+        question?.category,
+        question?.domain,
+        question?.learning_objective,
+        question?.learningObjective
+      ];
 
   const value = candidates.find(
     item => String(item || "").trim()
@@ -1015,7 +1026,7 @@ function redistributeRemainingQuestions(
    session into a one-question attempt.
 ========================================================= */
 
-const STANDARD_SESSION_COUNTS = [10, 20, 30, 50];
+const STANDARD_SESSION_COUNTS = [10, 20, 25, 30, 50];
 
 function normalizedSessionCount(value, poolLength = Infinity) {
   const n = Number(value || 0);
@@ -2984,6 +2995,17 @@ function expertHintFor(
   question
 ) {
   if (basicQuizMode) {
+    const savedHint =
+      question?.dr_corazon_hint ||
+      question?.drCorazonHint ||
+      question?.expert_hint ||
+      question?.expertHint ||
+      "";
+
+    if (String(savedHint).trim()) {
+      return String(savedHint).trim();
+    }
+
     const topic =
       String(
         question?.topic ||
@@ -3156,6 +3178,41 @@ function compactLifelineButtonHtml(
           : ""
       }
     </button>
+  `;
+}
+
+
+function difficultyIndicatorHtml(question) {
+  if (!basicQuizMode) {
+    return "";
+  }
+
+  const difficulty =
+    String(question?.difficulty || "foundation").toLowerCase();
+
+  const normalized =
+    difficulty === "advanced" || difficulty === "expert"
+      ? "advanced"
+      : difficulty === "intermediate"
+        ? "intermediate"
+        : "foundation";
+
+  const label =
+    normalized === "advanced"
+      ? "Difficult"
+      : normalized === "intermediate"
+        ? "Moderate"
+        : "Easy";
+
+  return `
+    <span
+      class="question-difficulty question-difficulty-${normalized}"
+      title="${label} question"
+      aria-label="${label} question"
+    >
+      <i aria-hidden="true"></i>
+      <span>${label}</span>
+    </span>
   `;
 }
 
@@ -4925,12 +4982,18 @@ function render() {
 
       <div class="question-topic-row">
 
-        <span class="learning-topic">
-          ${esc(
-            question.topic ||
-            "Clinical question"
+        <div class="question-topic-labels">
+          <span class="learning-topic">
+            ${esc(
+              question.topic ||
+              "Clinical question"
+            )}
+          </span>
+
+          ${difficultyIndicatorHtml(
+            question
           )}
-        </span>
+        </div>
 
         <div class="question-topic-actions">
           ${scientificLifelinesToolbarHtml(
