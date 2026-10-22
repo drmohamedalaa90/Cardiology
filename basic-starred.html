@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#072b49">
+  <title>Starred Questions | ACL Basic Edition</title>
+  <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=5">
+  <link rel="stylesheet" href="assets/css/basic-pages.css?v=2">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="basic-page">
+    <section class="basic-page-hero">
+      <div>
+        <span class="basic-page-kicker">SAVED FOR REVIEW</span>
+        <h1 id="bsTitle">Starred questions</h1>
+        <p id="bsSubtitle">Questions you marked during Basic Edition quizzes.</p>
+      </div>
+      <a id="bsBack" class="basic-secondary-btn" href="basic-progress.html?edition=basic">← Back</a>
+    </section>
+
+    <section class="basic-card basic-section-block">
+      <div class="basic-section-title">
+        <div>
+          <h2>Review list</h2>
+          <p><span id="bsCount">0</span> questions saved.</p>
+        </div>
+      </div>
+
+      <div id="bsList" class="basic-starred-review-list">
+        <div class="basic-empty-state">Loading starred questions…</div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/basic-starred.js?v=1"></script>
+  <script type="module" src="assets/js/basic-universal-shell.js?v=5"></script>
+</body>
+</html>
