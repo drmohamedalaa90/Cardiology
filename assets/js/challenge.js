@@ -66,6 +66,16 @@ const questionCountSelect =
     "challengeQuestions"
   );
 
+const participantCountSelect =
+  el(
+    "challengeParticipants"
+  );
+
+const participantCountField =
+  el(
+    "challengeParticipantsField"
+  );
+
 
 const expirySelect =
   el(
@@ -403,6 +413,18 @@ function renderEdition() {
       isBasic
         ? "ACL BASIC EDITION"
         : "ACL EXPERT EDITION";
+  }
+
+  if (participantCountField) {
+    participantCountField.hidden = !isBasic;
+  }
+
+  if (isBasic && questionCountSelect) {
+    questionCountSelect.innerHTML = `
+      <option value="10" selected>10 questions</option>
+      <option value="25">25 questions</option>
+      <option value="50">50 questions</option>
+    `;
   }
 
 
@@ -1072,7 +1094,15 @@ async function createChallenge(
             questionIds,
 
           maximum_participants:
-            2,
+            selectedEdition === "basic"
+              ? Math.max(
+                  2,
+                  Math.min(
+                    6,
+                    Number(participantCountSelect?.value || 2)
+                  )
+                )
+              : 2,
 
           starts_at:
             startsAt.toISOString(),
