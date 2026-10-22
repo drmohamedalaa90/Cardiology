@@ -45,21 +45,31 @@ async function refreshActualQuestionCount() {
     return;
   }
 
-  const { count: storedCount, error } =
-    await supabaseClient
+  const [
+    { count: publishedCount, error: publishedError },
+    { count: totalCount, error: totalError }
+  ] = await Promise.all([
+    supabaseClient
       .from("questions")
       .select("id", { count: "exact", head: true })
-      .eq("quiz_id", quiz.id);
+      .eq("quiz_id", quiz.id)
+      .eq("status", "published"),
 
-  if (error) {
-    console.warn("BASIC QUESTION COUNT:", error);
+    supabaseClient
+      .from("questions")
+      .select("id", { count: "exact", head: true })
+      .eq("quiz_id", quiz.id)
+  ]);
+
+  if (publishedError || totalError) {
+    console.warn("BASIC QUESTION COUNT:", publishedError || totalError);
     return;
   }
 
-  actualQuestionCount = Number(storedCount || 0);
+  actualQuestionCount = Number(publishedCount || 0);
 
   if ($("bmAdminQuestionCount")) {
-    $("bmAdminQuestionCount").textContent = String(actualQuestionCount);
+    $("bmAdminQuestionCount").textContent = String(totalCount || 0);
   }
 
   document.querySelectorAll("[data-count]").forEach(button => {
@@ -105,6 +115,11 @@ function setupAdminEditor(session) {
 
   adminTools.hidden = false;
 
+  if ($("bmAdminManage")) {
+    $("bmAdminManage").href =
+      `basic-admin-questions.html?edition=basic&module=${encodeURIComponent(moduleId)}`;
+  }
+
   $("bmAdminToggle")?.addEventListener("click", () => {
     const form = $("bmAdminForm");
     if (!form) return;
@@ -140,7 +155,8 @@ function setupAdminEditor(session) {
     status.className = "basic-admin-status";
 
     const { data, error } =
-      await supabaseClient.rpc("acl_admin_add_basic_question", {
+      await supabaseClient.rpc("acl_admin_save_basic_question", {
+        p_question_id: null,
         p_module_id: moduleId,
         p_stem: $("bmAdminStem").value.trim(),
         p_option_a: $("bmOptionA").value.trim(),
@@ -148,9 +164,12 @@ function setupAdminEditor(session) {
         p_option_c: $("bmOptionC").value.trim(),
         p_option_d: $("bmOptionD").value.trim(),
         p_correct_key: correct,
-        p_explanation: $("bmAdminExplanation").value.trim() || null,
         p_topic: $("bmAdminTopic").value.trim() || null,
-        p_reference_text: $("bmAdminReference").value.trim() || null
+        p_reference_text: $("bmAdminReference").value.trim() || null,
+        p_explanation: $("bmAdminExplanation").value.trim() || null,
+        p_dr_corazon_hint: $("bmAdminHint").value.trim() || null,
+        p_difficulty: $("bmAdminDifficulty").value || "foundation",
+        p_status: "published"
       });
 
     if (error) {
