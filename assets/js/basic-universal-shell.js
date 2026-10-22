@@ -48,9 +48,15 @@ if(edition==="basic"){
     }
   }catch{}
   document.querySelectorAll("a[href*='edition=expert']").forEach(a=>{
-    if(a.closest(".basic-universal-topbar"))return;
-    a.addEventListener("click",e=>{e.preventDefault();if(modal)modal.hidden=false});
+    try{
+      const u=new URL(a.href,location.href);
+      u.searchParams.set("edition","basic");
+      a.href=u.origin===location.origin?`${u.pathname}${u.search}${u.hash}`:u.toString();
+    }catch{}
   });
+  const back=document.getElementById("learningBackToModule");if(back)back.href="basic-home.html?edition=basic";
   document.querySelectorAll(".learning-mode-label").forEach(el=>el.textContent="BASIC LEARNING MODE");
   const desc=document.getElementById("quizDescription");if(desc)desc.textContent="Focused foundation-level learning with immediate feedback and topic review.";
+  const progressCopy=document.querySelector(".progress-hero .muted");if(progressCopy)progressCopy.textContent="Your Basic Edition performance, module progress and learning momentum.";
+  const profileCopy=document.querySelector("main .card > .muted");if(profileCopy&&profileCopy.textContent.includes("Expert Edition"))profileCopy.textContent=profileCopy.textContent.replace("Expert Edition","Basic Edition");
 }
