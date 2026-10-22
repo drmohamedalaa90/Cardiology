@@ -16,13 +16,15 @@ html.acl-basic-shell-mode .acl-command-header,html.acl-basic-shell-mode .acl-com
    Applies only to edition=basic Learning Mode.
 ========================================================= */
 body.acl-basic-learning-quiz{
-  padding:0!important;
+  padding:0 0 92px!important;
   min-height:100vh;
   background:#f6f9fb!important;
 }
-body.acl-basic-learning-quiz .basic-universal-topbar,
+body.acl-basic-learning-quiz .basic-universal-topbar{
+  display:flex!important;
+}
 body.acl-basic-learning-quiz .basic-universal-bottom{
-  display:none!important;
+  display:flex!important;
 }
 body.acl-basic-learning-quiz .acl-clean-learning{
   width:min(1120px,calc(100% - 190px))!important;
@@ -207,7 +209,7 @@ body.acl-basic-learning-quiz .learning-actions .primary-btn{
 
 /* Floating timer and notes remain the only floating quiz controls. */
 body.acl-basic-learning-quiz .learning-floating-tools{
-  top:10px!important;
+  top:86px!important;
   right:10px!important;
   z-index:100!important;
   width:150px!important;
@@ -283,7 +285,7 @@ body.acl-basic-learning-quiz .learning-session-header::after{
     display:none!important;
   }
   body.acl-basic-learning-quiz .learning-floating-tools{
-    top:10px!important;
+    top:72px!important;
     right:10px!important;
     display:flex!important;
     width:auto!important;
@@ -343,7 +345,7 @@ body.acl-basic-learning-quiz .learning-session-header::after{
     font-size:.66rem!important;
   }
   body.acl-basic-learning-quiz .learning-floating-tools{
-    top:7px!important;
+    top:69px!important;
     right:7px!important;
   }
   body.acl-basic-learning-quiz .learning-floating-timer,
