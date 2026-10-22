@@ -14,14 +14,14 @@ function normalizeEgyptWhatsapp(value) {
   return "+20" + raw.slice(1);
 }
 
-function setDefaultEdition() {
-  try { sessionStorage.setItem("aclSelectedEdition", "expert"); } catch {}
-  try { localStorage.setItem("aclSelectedEdition", "expert"); } catch {}
+function clearEditionChoice() {
+  try { sessionStorage.removeItem("aclSelectedEdition"); } catch {}
+  try { localStorage.removeItem("aclSelectedEdition"); } catch {}
 }
 
 function openAclHome() {
-  setDefaultEdition();
-  window.location.href = "home.html?edition=expert";
+  clearEditionChoice();
+  window.location.href = "edition-select.html";
 }
 
 function showPanel(panel) {
