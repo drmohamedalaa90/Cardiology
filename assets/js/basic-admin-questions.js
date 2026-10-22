@@ -92,7 +92,7 @@ function detailsHtml(question) {
   const options = optionsMap(question);
 
   return `
-    <div class="baq-details" data-details="${question.id}" hidden>
+    <div class="baq-details" data-details="${question.id}">
       <div class="baq-preview-options">
         ${options.map(option => `
           <div class="baq-preview-option ${option.isCorrect ? "is-correct" : ""}">
@@ -215,8 +215,10 @@ function render() {
           </div>
 
           <h2>${esc(question.stem || "Question")}</h2>
-          <small class="baq-expand-hint">Click to view choices and details</small>
+          <small class="baq-expand-hint">Click question to expand</small>
         </div>
+
+        <span class="baq-expand-chevron" aria-hidden="true">⌄</span>
 
         <div class="baq-card-actions">
           <button class="baq-btn" type="button" data-edit="${question.id}">Edit</button>
@@ -239,38 +241,31 @@ function questionById(id) {
   return questions.find(question => String(question.id) === String(id));
 }
 
+function toggleQuestionDetails(id) {
+  const details = document.querySelector(`[data-details="${id}"]`);
+  const head = document.querySelector(`[data-expand="${id}"]`);
+
+  if (!details || !head) return;
+
+  const willOpen = !details.classList.contains("is-open");
+
+  details.classList.toggle("is-open", willOpen);
+  head.setAttribute("aria-expanded", willOpen ? "true" : "false");
+
+  const hint = head.querySelector(".baq-expand-hint");
+  if (hint) {
+    hint.textContent = willOpen
+      ? "Click question to collapse"
+      : "Click question to expand";
+  }
+
+  const chevron = head.querySelector(".baq-expand-chevron");
+  if (chevron) {
+    chevron.textContent = willOpen ? "⌃" : "⌄";
+  }
+}
+
 function bindCardActions() {
-  const toggleDetails = id => {
-    const details = document.querySelector(`[data-details="${id}"]`);
-    const head = document.querySelector(`[data-expand="${id}"]`);
-
-    if (!details || !head) return;
-
-    details.hidden = !details.hidden;
-    head.setAttribute("aria-expanded", details.hidden ? "false" : "true");
-
-    const hint = head.querySelector(".baq-expand-hint");
-    if (hint) {
-      hint.textContent = details.hidden
-        ? "Click to view choices and details"
-        : "Click to collapse";
-    }
-  };
-
-  document.querySelectorAll("[data-expand]").forEach(head => {
-    head.addEventListener("click", event => {
-      if (event.target.closest("button,a,input,select,textarea,label")) return;
-      toggleDetails(head.dataset.expand);
-    });
-
-    head.addEventListener("keydown", event => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      if (event.target !== head) return;
-      event.preventDefault();
-      toggleDetails(head.dataset.expand);
-    });
-  });
-
   document.querySelectorAll("[data-edit]").forEach(button => {
     button.addEventListener("click", () => {
       const id = button.dataset.edit;
@@ -406,6 +401,27 @@ async function loadQuestions() {
   populateTopicFilter();
   render();
 }
+
+$("baqList")?.addEventListener("click", event => {
+  if (event.target.closest("button,a,input,select,textarea,label,form")) {
+    return;
+  }
+
+  const head = event.target.closest("[data-expand]");
+  if (!head) return;
+
+  toggleQuestionDetails(head.dataset.expand);
+});
+
+$("baqList")?.addEventListener("keydown", event => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+
+  const head = event.target.closest("[data-expand]");
+  if (!head || event.target !== head) return;
+
+  event.preventDefault();
+  toggleQuestionDetails(head.dataset.expand);
+});
 
 ["baqSearch","baqStatusFilter","baqDifficultyFilter","baqTopicFilter"]
   .forEach(id => {
