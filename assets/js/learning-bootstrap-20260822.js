@@ -55,7 +55,7 @@ function setStage(text) {
 setStage("Starting learning engine…");
 
 const importPromise = import(
-  "./learning-mode.js?v=20260822-answer-confidence-resume-v6"
+  "./learning-mode.js?v=20261022-basic-module-flow-v1"
 );
 
 const timeoutPromise = new Promise((_, reject) => {
