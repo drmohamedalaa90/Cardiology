@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#072b49"><title>Module | ACL Basic Edition</title><link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=5"><link rel="stylesheet" href="assets/css/basic-module-hub.css?v=3"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#072b49"><title>Module | ACL Basic Edition</title><link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=6"><link rel="stylesheet" href="assets/css/basic-module-hub.css?v=4"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
 <main class="basic-module-page">
   <section class="basic-module-hero">
     <a class="basic-module-back" href="basic-home.html?edition=basic">← Modules</a>
@@ -22,7 +22,10 @@
         <h2>Question bank</h2>
         <p><strong id="bmAdminQuestionCount">0</strong> questions currently stored in this module.</p>
       </div>
-      <button id="bmAdminToggle" class="basic-admin-toggle" type="button">+ Add question</button>
+      <div class="basic-admin-head-actions">
+        <a id="bmAdminManage" class="basic-admin-manage" href="#">Manage all questions</a>
+        <button id="bmAdminToggle" class="basic-admin-toggle" type="button">+ Add question</button>
+      </div>
     </header>
 
     <form id="bmAdminForm" class="basic-admin-form" hidden>
@@ -62,6 +65,21 @@
         <label class="basic-admin-field">
           <span>Reference</span>
           <input id="bmAdminReference" type="text" placeholder="Textbook / guideline / lecture">
+        </label>
+      </div>
+
+      <div class="basic-admin-meta-grid">
+        <label class="basic-admin-field">
+          <span>Difficulty</span>
+          <select id="bmAdminDifficulty">
+            <option value="foundation">🟢 Easy</option>
+            <option value="intermediate">🟠 Moderate</option>
+            <option value="advanced">🔴 Difficult</option>
+          </select>
+        </label>
+        <label class="basic-admin-field">
+          <span>Dr. Corazón advice</span>
+          <input id="bmAdminHint" type="text" placeholder="Indirect clue only — do not reveal the answer">
         </label>
       </div>
 
@@ -126,4 +144,4 @@
     </div>
   </section>
 </main>
-<script type="module" src="assets/js/basic-module-hub.js?v=4"></script><script type="module" src="assets/js/basic-universal-shell.js?v=5"></script></body></html>
+<script type="module" src="assets/js/basic-module-hub.js?v=5"></script><script type="module" src="assets/js/basic-universal-shell.js?v=5"></script></body></html>
