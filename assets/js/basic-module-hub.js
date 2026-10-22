@@ -117,7 +117,7 @@ function setupAdminEditor(session) {
 
   if ($("bmAdminManage")) {
     $("bmAdminManage").href =
-      `basic-admin-questions.html?edition=basic&module=${encodeURIComponent(moduleId)}`;
+      `basic-admin-questions.html?edition=basic&module=${encodeURIComponent(moduleId)}&build=3`;
   }
 
   $("bmAdminToggle")?.addEventListener("click", () => {
