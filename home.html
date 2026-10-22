@@ -6,9 +6,11 @@
 <script>
 (function(){
   const q=new URLSearchParams(location.search).get("edition");
-  let saved="";
-  try{saved=localStorage.getItem("aclSelectedEdition")||""}catch{}
-  if(String(q||saved).toLowerCase()==="basic"){
+  if(!q){
+    location.replace("edition-select.html");
+    return;
+  }
+  if(String(q).toLowerCase()==="basic"){
     location.replace("basic-home.html?edition=basic");
   }
 })();
