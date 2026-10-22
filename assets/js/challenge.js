@@ -22,6 +22,9 @@ console.log(
 const selectedEdition =
   resolveAclEdition();
 
+const requestedChallengeModule =
+  new URLSearchParams(window.location.search).get("module") || "";
+
 
 const state = {
   user: null,
@@ -61,6 +64,16 @@ const quizSelect =
 const questionCountSelect =
   el(
     "challengeQuestions"
+  );
+
+const participantCountSelect =
+  el(
+    "challengeParticipants"
+  );
+
+const participantCountField =
+  el(
+    "challengeParticipantsField"
   );
 
 
@@ -400,6 +413,18 @@ function renderEdition() {
       isBasic
         ? "ACL BASIC EDITION"
         : "ACL EXPERT EDITION";
+  }
+
+  if (participantCountField) {
+    participantCountField.hidden = !isBasic;
+  }
+
+  if (isBasic && questionCountSelect) {
+    questionCountSelect.innerHTML = `
+      <option value="10" selected>10 questions</option>
+      <option value="25">25 questions</option>
+      <option value="50">50 questions</option>
+    `;
   }
 
 
@@ -1069,7 +1094,15 @@ async function createChallenge(
             questionIds,
 
           maximum_participants:
-            2,
+            selectedEdition === "basic"
+              ? Math.max(
+                  2,
+                  Math.min(
+                    6,
+                    Number(participantCountSelect?.value || 2)
+                  )
+                )
+              : 2,
 
           starts_at:
             startsAt.toISOString(),
@@ -2374,6 +2407,13 @@ async function initChallengePage() {
       );
     } else {
       await loadModules();
+
+      if (requestedChallengeModule && moduleSelect) {
+        moduleSelect.value = requestedChallengeModule;
+        if (moduleSelect.value === requestedChallengeModule) {
+          await loadQuizzesForModule(requestedChallengeModule);
+        }
+      }
     }
 
 
