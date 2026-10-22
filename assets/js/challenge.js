@@ -353,6 +353,122 @@ function shuffleItems(
 }
 
 
+function distributedChallengeQuestions(
+  items,
+  count
+) {
+  const target =
+    Math.max(
+      0,
+      Math.min(
+        Number(count || 0),
+        Array.isArray(items)
+          ? items.length
+          : 0
+      )
+    );
+
+  if (!target) {
+    return [];
+  }
+
+  if (selectedEdition !== "basic") {
+    return shuffleItems(items)
+      .slice(0, target);
+  }
+
+  const groups =
+    new Map();
+
+  shuffleItems(items)
+    .forEach(question => {
+      const key =
+        String(
+          question.topic ||
+          "General"
+        )
+          .trim()
+          .toLowerCase() ||
+        "general";
+
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+
+      groups
+        .get(key)
+        .push(question);
+    });
+
+  let topicGroups =
+    shuffleItems(
+      [...groups.entries()]
+        .map(([key, groupItems]) => ({
+          key,
+          items:
+            shuffleItems(groupItems)
+        }))
+    );
+
+  const selected = [];
+  let lastTopic = "";
+
+  while (selected.length < target) {
+    let added = false;
+
+    for (const group of topicGroups) {
+      if (
+        selected.length >= target ||
+        !group.items.length
+      ) {
+        continue;
+      }
+
+      if (
+        group.key === lastTopic &&
+        topicGroups.some(
+          other =>
+            other.key !== lastTopic &&
+            other.items.length
+        )
+      ) {
+        continue;
+      }
+
+      selected.push(
+        group.items.shift()
+      );
+
+      lastTopic =
+        group.key;
+
+      added = true;
+    }
+
+    if (!added) {
+      const fallback =
+        topicGroups.find(
+          group =>
+            group.items.length
+        );
+
+      if (!fallback) {
+        break;
+      }
+
+      selected.push(
+        fallback.items.shift()
+      );
+
+      lastTopic =
+        fallback.key;
+    }
+  }
+
+  return selected;
+}
+
+
 function challengeInvitationUrl(
   challengeCode
 ) {
@@ -997,11 +1113,17 @@ async function createChallenge(
         )
         .select(`
           id,
-          order_index
+          order_index,
+          topic,
+          status
         `)
         .eq(
           "quiz_id",
           state.quiz.id
+        )
+        .eq(
+          "status",
+          "published"
         )
         .order(
           "order_index",
@@ -1030,16 +1152,10 @@ async function createChallenge(
 
 
     const questionIds =
-      shuffleItems(
-        questionRows
+      distributedChallengeQuestions(
+        questionRows,
+        requestedCount
       )
-        .slice(
-          0,
-          Math.min(
-            requestedCount,
-            questionRows.length
-          )
-        )
         .map(
           (question) =>
             question.id
