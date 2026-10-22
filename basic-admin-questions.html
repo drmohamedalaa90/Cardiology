@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#072b49">
+  <title>Manage Questions | ACL Basic Edition</title>
+  <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=5">
+  <link rel="stylesheet" href="assets/css/basic-admin-questions.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="baq-shell">
+    <section class="baq-hero">
+      <div>
+        <span class="baq-kicker">ADMIN · BASIC EDITION</span>
+        <h1 id="baqModuleTitle">Question manager</h1>
+        <p>View, edit, hide or remove every question in this module.</p>
+      </div>
+      <div class="baq-hero-actions">
+        <span id="baqCount" class="baq-count">0 questions</span>
+        <a id="baqBack" class="baq-back" href="basic-home.html?edition=basic">← Module</a>
+      </div>
+    </section>
+
+    <section class="baq-toolbar">
+      <input id="baqSearch" type="search" placeholder="Search question, topic or explanation…">
+      <select id="baqStatusFilter">
+        <option value="all">All status</option>
+        <option value="published">Visible</option>
+        <option value="archived">Hidden</option>
+      </select>
+      <select id="baqDifficultyFilter">
+        <option value="all">All difficulty</option>
+        <option value="foundation">🟢 Easy</option>
+        <option value="intermediate">🟠 Moderate</option>
+        <option value="advanced">🔴 Difficult</option>
+      </select>
+      <select id="baqTopicFilter">
+        <option value="all">All topics</option>
+      </select>
+    </section>
+
+    <div id="baqStatus" class="baq-page-status" aria-live="polite"></div>
+    <section id="baqList" class="baq-list">
+      <div class="baq-empty">Loading module questions…</div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/basic-admin-questions.js?v=1"></script>
+  <script type="module" src="assets/js/basic-universal-shell.js?v=5"></script>
+</body>
+</html>
