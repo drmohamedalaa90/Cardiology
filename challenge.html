@@ -329,7 +329,7 @@
     }
 
   </style>
-</head>
+  <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=1">\n</head>
 
 
 <body class="challenge-page">
@@ -576,6 +576,41 @@
 
         </div>
 
+        <div
+          id="challengeParticipantsField"
+          class="challenge-field"
+          hidden
+        >
+          <label for="challengeParticipants">
+            Competitors
+          </label>
+
+          <select
+            id="challengeParticipants"
+            name="maximum_participants"
+          >
+            <option value="2" selected>
+              Me + 1 friend
+            </option>
+            <option value="3">
+              Me + 2 friends
+            </option>
+            <option value="4">
+              Me + 3 friends
+            </option>
+            <option value="5">
+              Me + 4 friends
+            </option>
+            <option value="6">
+              Me + 5 friends
+            </option>
+          </select>
+
+          <small>
+            Share the same invitation link with the friends you want to challenge.
+          </small>
+        </div>
+
 
         <div class="challenge-field">
 
@@ -614,7 +649,7 @@
           <span>
 
             <strong>
-              Use identical questions for both competitors
+              Use identical questions for all competitors
             </strong>
 
             <small>
@@ -1091,7 +1126,7 @@
 
   <script
     type="module"
-    src="assets/js/challenge.js?v=2.1.4"
+    src="assets/js/challenge.js?v=2.1.5"
   ></script>
 
 
@@ -1100,6 +1135,6 @@
     src="assets/js/pwa.js?v=1.6.0"
   ></script>
 
-</body>
+  <script type="module" src="assets/js/basic-universal-shell.js?v=3"></script>\n</body>
 
 </html>
