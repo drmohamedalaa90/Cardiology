@@ -15,8 +15,14 @@ function normalizeEgyptWhatsapp(value) {
 }
 
 function clearEditionChoice() {
-  try { sessionStorage.removeItem("aclSelectedEdition"); } catch {}
-  try { localStorage.removeItem("aclSelectedEdition"); } catch {}
+  try {
+    sessionStorage.removeItem("aclSelectedEdition");
+    sessionStorage.removeItem("aclEditionEntryGranted");
+  } catch {}
+
+  try {
+    localStorage.removeItem("aclSelectedEdition");
+  } catch {}
 }
 
 function openAclHome() {
