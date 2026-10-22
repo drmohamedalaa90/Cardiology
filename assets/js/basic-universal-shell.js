@@ -61,3 +61,29 @@ if(edition==="basic"){
   const progressCopy=document.querySelector(".progress-hero .muted");if(progressCopy)progressCopy.textContent="Your Basic Edition performance, module progress and learning momentum.";
   const profileCopy=document.querySelector("main .card > .muted");if(profileCopy&&profileCopy.textContent.includes("Expert Edition"))profileCopy.textContent=profileCopy.textContent.replace("Expert Edition","Basic Edition");
 }
+
+/* acl-basic-module-route-guard */
+if (edition === "basic") {
+  document.addEventListener("click", event => {
+    const link = event.target.closest("a[href]");
+    if (!link) return;
+
+    const raw = link.getAttribute("href") || "";
+
+    if (
+      raw === "modules.html" ||
+      raw === "modules.html?edition=basic" ||
+      raw === "module-hub.html?edition=basic"
+    ) {
+      event.preventDefault();
+
+      const moduleId =
+        new URLSearchParams(location.search).get("module");
+
+      location.href =
+        moduleId
+          ? `basic-module.html?edition=basic&module=${encodeURIComponent(moduleId)}`
+          : "basic-home.html?edition=basic";
+    }
+  });
+}
