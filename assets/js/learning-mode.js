@@ -159,8 +159,7 @@ const selectedLearningEdition =
     : "expert";
 
 const basicQuizMode =
-  selectedLearningEdition === "basic" &&
-  params.get("basic_quiz") === "1";
+  selectedLearningEdition === "basic";
 
 const requestedBasicLifelines =
   new Set(
