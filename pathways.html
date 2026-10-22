@@ -3,26 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#071a38">
-  <title>Cardiology League</title>
+  <meta name="theme-color" content="#082f4d">
+  <title>Choose Edition | Cardiology League</title>
   <script>
-    (function () {
-      /*
-       * Legacy pathway URL.
-       * The ACL app now opens the Expert dashboard directly.
-       * Basic Edition remains available from the Editions menu.
-       */
-      try {
-        sessionStorage.setItem("aclSelectedEdition", "expert");
-        localStorage.setItem("aclSelectedEdition", "expert");
-      } catch (e) {}
-      location.replace("home.html?edition=expert");
-    })();
+    location.replace("edition-select.html");
   </script>
 </head>
 <body>
   <noscript>
-    <p><a href="home.html?edition=expert">Open Cardiology League</a></p>
+    <p><a href="edition-select.html">Choose your ACL edition</a></p>
   </noscript>
 </body>
 </html>
