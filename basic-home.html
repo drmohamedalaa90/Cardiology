@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#083452">
   <title>Basic Edition | Cardiology League</title>
+  <script>
+    (function(){
+      let granted="";
+      try{
+        granted=String(sessionStorage.getItem("aclEditionEntryGranted")||"").toLowerCase();
+      }catch{}
+      if(granted!=="basic"){
+        location.replace("edition-select.html");
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="assets/css/basic-home.css?v=1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
