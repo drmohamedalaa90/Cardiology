@@ -22,6 +22,9 @@ console.log(
 const selectedEdition =
   resolveAclEdition();
 
+const requestedChallengeModule =
+  new URLSearchParams(window.location.search).get("module") || "";
+
 
 const state = {
   user: null,
@@ -2374,6 +2377,13 @@ async function initChallengePage() {
       );
     } else {
       await loadModules();
+
+      if (requestedChallengeModule && moduleSelect) {
+        moduleSelect.value = requestedChallengeModule;
+        if (moduleSelect.value === requestedChallengeModule) {
+          await loadQuizzesForModule(requestedChallengeModule);
+        }
+      }
     }
 
 
