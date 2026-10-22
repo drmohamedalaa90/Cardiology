@@ -3,9 +3,6 @@ import {
 } from "./supabase-client.js";
 
 
-import {
-  protectAndRender
-} from "./session-ui.js?v=5.3.0";
 
 
 import {
@@ -13,15 +10,97 @@ import {
   createAttempt,
   saveAttempt,
   completeAttempt
-} from "./cloud-progress.js?v=5.3.0";
+} from "./cloud-progress.js?v=20260822-bootstrapfix";
 
 
 import {
   DEFAULT_ACL_SETTINGS,
   getAclSettings,
   normalizeAclSettings
-} from "./user-settings.js?v=5.3.0";
+} from "./user-settings.js?v=20260822-bootstrapfix";
 
+
+console.log("ACL LEARNING MODE BOOTSTRAP IMPORTED");
+
+
+/* =========================================================
+   DIRECT LEARNING AUTH
+   The Learning engine authenticates directly from Supabase Auth.
+   The page shell independently owns navigation/profile rendering.
+========================================================= */
+
+async function protectLearningSession(relativeLogin = "login.html") {
+  let timer = null;
+
+  try {
+    const timeout = new Promise((_, reject) => {
+      timer = window.setTimeout(
+        () => reject(new Error("Session restoration timed out")),
+        7000
+      );
+    });
+
+    const result = await Promise.race([
+      supabaseClient.auth.getSession(),
+      timeout
+    ]);
+
+    if (timer) {
+      window.clearTimeout(timer);
+      timer = null;
+    }
+
+    const session = result?.data?.session;
+
+    if (result?.error || !session?.user) {
+      location.replace(relativeLogin);
+      return null;
+    }
+
+    return {
+      id: session.user.id,
+      email: session.user.email || "",
+      display_name:
+        session.user.user_metadata?.display_name ||
+        session.user.user_metadata?.full_name ||
+        session.user.user_metadata?.name ||
+        session.user.email?.split("@")[0] ||
+        "ACL User"
+    };
+  } catch (error) {
+    if (timer) {
+      window.clearTimeout(timer);
+    }
+
+    console.error("ACL LEARNING AUTH:", error);
+
+    const area = document.getElementById("quizArea");
+    const status = document.getElementById("saveStatus");
+
+    if (status) {
+      status.textContent = "Session error";
+    }
+
+    if (area) {
+      area.innerHTML = `
+        <div class="empty-state">
+          Could not restore your learning session.
+          <br>
+          <button
+            type="button"
+            class="primary-btn"
+            onclick="location.reload()"
+            style="margin-top:12px"
+          >
+            Retry
+          </button>
+        </div>
+      `;
+    }
+
+    return null;
+  }
+}
 
 /* =========================================================
    DOM HELPERS
@@ -61,6 +140,34 @@ const quizSlug =
 
 const requestedModuleId =
   params.get("module");
+
+const requestedStandaloneQuestionCount =
+  Math.max(
+    0,
+    Math.min(
+      50,
+      Number(params.get("count") || 0)
+    )
+  );
+
+const forceNewAttempt =
+  params.get("new") === "1";
+
+const selectedLearningEdition =
+  String(params.get("edition") || "expert").toLowerCase() === "basic"
+    ? "basic"
+    : "expert";
+
+const basicQuizMode =
+  selectedLearningEdition === "basic";
+
+const requestedBasicLifelines =
+  new Set(
+    String(params.get("lifelines") || "")
+      .split(",")
+      .map(value => value.trim())
+      .filter(Boolean)
+  );
 /* =========================================================
    CHALLENGE MODE URL PARAMETERS
 ========================================================= */
@@ -142,6 +249,9 @@ let quiz =
 let questions =
   [];
 
+let questionPool =
+  [];
+
 
 let index =
   0;
@@ -188,6 +298,11 @@ let aclSettings =
     DEFAULT_ACL_SETTINGS
   );
 
+let currentLearningUserId = "";
+
+let starredQuestionIds =
+  new Set();
+
 
 /* =========================================================
    SCIENTIFIC LIFELINES
@@ -195,10 +310,22 @@ let aclSettings =
 
 const LIFELINES = {
   expert: "expert",
+  flashcard: "flashcard",
+  time: "time",
   filter: "filter",
-  guideline: "guideline",
+  swap: "swap",
+  guideline: "guideline", // legacy saved-attempt compatibility only
   vault: "vault"
 };
+
+const ACTIVE_LIFELINES = [
+  LIFELINES.expert,
+  LIFELINES.flashcard,
+  LIFELINES.time,
+  LIFELINES.filter,
+  LIFELINES.swap,
+  LIFELINES.vault
+];
 
 
 /* =========================================================
@@ -361,6 +488,253 @@ function setAnswer(answer) {
 }
 
 
+async function loadStarredQuestions() {
+  if (
+    !basicQuizMode ||
+    !currentLearningUserId
+  ) {
+    return;
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("acl_starred_questions")
+      .select("question_id")
+      .eq(
+        "user_id",
+        currentLearningUserId
+      );
+
+  if (error) {
+    console.warn(
+      "ACL STARRED QUESTIONS LOAD:",
+      error
+    );
+
+    return;
+  }
+
+  starredQuestionIds =
+    new Set(
+      (data || []).map(
+        row =>
+          String(
+            row.question_id
+          )
+      )
+    );
+}
+
+
+function starQuestionButtonHtml(
+  question
+) {
+  if (
+    !basicQuizMode ||
+    !question?.id
+  ) {
+    return "";
+  }
+
+  const starred =
+    starredQuestionIds.has(
+      String(
+        question.id
+      )
+    );
+
+  return `
+    <button
+      id="starQuestionButton"
+      class="star-question-button ${starred ? "is-starred" : ""}"
+      type="button"
+      aria-pressed="${starred ? "true" : "false"}"
+      title="${starred ? "Remove from starred questions" : "Star this question for later review"}"
+    >
+      <span
+        class="star-question-icon"
+        aria-hidden="true"
+      >
+        ${starred ? "★" : "☆"}
+      </span>
+      <span class="star-question-label">
+        ${starred ? "Starred" : "Star"}
+      </span>
+    </button>
+  `;
+}
+
+
+async function toggleStarQuestion(
+  question
+) {
+  if (
+    !basicQuizMode ||
+    !currentLearningUserId ||
+    !question?.id
+  ) {
+    return;
+  }
+
+  const questionId =
+    String(
+      question.id
+    );
+
+  const currentlyStarred =
+    starredQuestionIds.has(
+      questionId
+    );
+
+  const button =
+    $("starQuestionButton");
+
+  if (button) {
+    button.disabled =
+      true;
+  }
+
+  try {
+    if (currentlyStarred) {
+      const {
+        error
+      } =
+        await supabaseClient
+          .from(
+            "acl_starred_questions"
+          )
+          .delete()
+          .eq(
+            "user_id",
+            currentLearningUserId
+          )
+          .eq(
+            "question_id",
+            questionId
+          );
+
+      if (error) {
+        throw error;
+      }
+
+      starredQuestionIds.delete(
+        questionId
+      );
+    } else {
+      const {
+        error
+      } =
+        await supabaseClient
+          .from(
+            "acl_starred_questions"
+          )
+          .insert({
+            user_id:
+              currentLearningUserId,
+
+            question_id:
+              questionId,
+
+            module_id:
+              String(
+                quiz?.module_id ||
+                requestedModuleId ||
+                ""
+              ),
+
+            quiz_id:
+              quiz?.id ||
+              null
+          });
+
+      if (error) {
+        throw error;
+      }
+
+      starredQuestionIds.add(
+        questionId
+      );
+    }
+
+    const nowStarred =
+      starredQuestionIds.has(
+        questionId
+      );
+
+    if (button) {
+      button.classList.toggle(
+        "is-starred",
+        nowStarred
+      );
+
+      button.setAttribute(
+        "aria-pressed",
+        nowStarred
+          ? "true"
+          : "false"
+      );
+
+      button.title =
+        nowStarred
+          ? "Remove from starred questions"
+          : "Star this question for later review";
+
+      const icon =
+        button.querySelector(
+          ".star-question-icon"
+        );
+
+      const label =
+        button.querySelector(
+          ".star-question-label"
+        );
+
+      if (icon) {
+        icon.textContent =
+          nowStarred
+            ? "★"
+            : "☆";
+      }
+
+      if (label) {
+        label.textContent =
+          nowStarred
+            ? "Starred"
+            : "Star";
+      }
+    }
+  } catch (error) {
+    console.error(
+      "ACL STAR QUESTION ERROR:",
+      error
+    );
+  } finally {
+    if (button) {
+      button.disabled =
+        false;
+    }
+  }
+}
+
+
+function bindStarQuestionButton(
+  question
+) {
+  $("starQuestionButton")
+    ?.addEventListener(
+      "click",
+      () => {
+        void toggleStarQuestion(
+          question
+        );
+      }
+    );
+}
+
+
 function optionsFor(question) {
   if (
     !Array.isArray(
@@ -439,6 +813,444 @@ function randomItems(
 
   return selected;
 }
+
+
+/* =========================================================
+   DISTRIBUTED QUESTION SELECTION
+
+   Random selection alone can accidentally place several questions from the
+   same topic consecutively. ACL now creates a balanced interleaved sequence:
+   one question from each available topic before returning to that topic.
+========================================================= */
+
+function questionDistributionKey(question) {
+  const candidates = [
+    question?.subtopic,
+    question?.sub_topic,
+    question?.topic,
+    question?.section,
+    question?.category,
+    question?.domain,
+    question?.learning_objective,
+    question?.learningObjective
+  ];
+
+  const value = candidates.find(
+    item => String(item || "").trim()
+  );
+
+  return String(value || "General")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function distributedQuestionSelection(
+  items,
+  count,
+  {
+    randomize = true,
+    previousTopicKey = ""
+  } = {}
+) {
+  const target = Math.max(
+    0,
+    Math.min(
+      Number(count || 0),
+      Array.isArray(items) ? items.length : 0
+    )
+  );
+
+  if (!target) {
+    return [];
+  }
+
+  const source = randomize
+    ? shuffle(items)
+    : [...items];
+
+  const grouped = new Map();
+
+  source.forEach(question => {
+    const key = questionDistributionKey(question);
+
+    if (!grouped.has(key)) {
+      grouped.set(key, []);
+    }
+
+    grouped.get(key).push(question);
+  });
+
+  let groups = [...grouped.entries()].map(
+    ([key, questionsInGroup]) => ({
+      key,
+      items: randomize
+        ? shuffle(questionsInGroup)
+        : [...questionsInGroup]
+    })
+  );
+
+  if (randomize) {
+    groups = shuffle(groups);
+  }
+
+  /* If the previous/current question belongs to the first group, rotate the
+     group order so the next selected question starts from another topic when
+     one is available. */
+  const previousKey = String(previousTopicKey || "");
+
+  if (
+    previousKey &&
+    groups.length > 1 &&
+    groups[0]?.key === previousKey
+  ) {
+    const alternateIndex = groups.findIndex(
+      group => group.key !== previousKey
+    );
+
+    if (alternateIndex > 0) {
+      groups = [
+        ...groups.slice(alternateIndex),
+        ...groups.slice(0, alternateIndex)
+      ];
+    }
+  }
+
+  const selected = [];
+  let lastKey = previousKey;
+
+  while (selected.length < target) {
+    let addedThisRound = false;
+
+    for (const group of groups) {
+      if (
+        selected.length >= target ||
+        !group.items.length
+      ) {
+        continue;
+      }
+
+      /* Avoid the same topic twice in a row whenever another non-empty topic
+         still exists. */
+      if (group.key === lastKey) {
+        const alternativeExists = groups.some(
+          other =>
+            other.key !== lastKey &&
+            other.items.length
+        );
+
+        if (alternativeExists) {
+          continue;
+        }
+      }
+
+      selected.push(group.items.shift());
+      lastKey = group.key;
+      addedThisRound = true;
+    }
+
+    if (!addedThisRound) {
+      const remaining = groups.find(group => group.items.length);
+      if (!remaining) break;
+
+      selected.push(remaining.items.shift());
+      lastKey = remaining.key;
+    }
+  }
+
+  return selected;
+}
+
+function redistributeRemainingQuestions(
+  questionList,
+  currentIndex
+) {
+  if (!Array.isArray(questionList) || questionList.length < 3) {
+    return questionList;
+  }
+
+  const safeIndex = Math.max(
+    0,
+    Math.min(
+      Number(currentIndex || 0),
+      questionList.length - 1
+    )
+  );
+
+  /* Keep every already-visited question plus the current question exactly
+     where it is. Only rebalance what the learner has not reached yet. */
+  const fixed = questionList.slice(0, safeIndex + 1);
+  const remaining = questionList.slice(safeIndex + 1);
+
+  if (remaining.length < 2) {
+    return questionList;
+  }
+
+  const previousTopicKey = questionDistributionKey(
+    fixed[fixed.length - 1]
+  );
+
+  return [
+    ...fixed,
+    ...distributedQuestionSelection(
+      remaining,
+      remaining.length,
+      {
+        randomize: false,
+        previousTopicKey
+      }
+    )
+  ];
+}
+
+
+
+/* =========================================================
+   ATTEMPT QUESTION-SET RECOVERY
+
+   An unfinished attempt must always reopen with its original session size.
+   The cloud row remains primary. We also keep a local recovery copy and
+   persist sessionQuestionCount inside the Life Saver state so a partial or
+   legacy question_ids array can never collapse a 10/20/30/50-question
+   session into a one-question attempt.
+========================================================= */
+
+const STANDARD_SESSION_COUNTS = [10, 20, 30, 50];
+
+function normalizedSessionCount(value, poolLength = Infinity) {
+  const n = Number(value || 0);
+
+  if (!Number.isFinite(n) || n <= 0) {
+    return 0;
+  }
+
+  const rounded = Math.round(n);
+
+  if (!STANDARD_SESSION_COUNTS.includes(rounded)) {
+    return 0;
+  }
+
+  return Math.min(
+    rounded,
+    Number.isFinite(poolLength)
+      ? Math.max(0, Math.floor(poolLength))
+      : rounded
+  );
+}
+
+function questionSetRecoveryKey() {
+  const quizKey =
+    quiz?.id ||
+    quizSlug ||
+    "quiz";
+
+  const moduleKey =
+    quiz?.module_id ||
+    requestedModuleId ||
+    "module";
+
+  return `acl:learning-question-set:${String(moduleKey)}:${String(quizKey)}`;
+}
+
+function loadQuestionSetRecovery() {
+  try {
+    const raw = localStorage.getItem(
+      questionSetRecoveryKey()
+    );
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    const ids = Array.isArray(parsed?.questionIds)
+      ? parsed.questionIds.map(String).filter(Boolean)
+      : [];
+
+    const count = normalizedSessionCount(
+      parsed?.questionCount || ids.length,
+      Number.POSITIVE_INFINITY
+    );
+
+    return {
+      questionIds: ids,
+      questionCount: count || ids.length,
+      savedAt: parsed?.savedAt || null
+    };
+  } catch (error) {
+    console.warn(
+      "ACL QUESTION SET RECOVERY READ ERROR:",
+      error
+    );
+    return null;
+  }
+}
+
+function saveQuestionSetRecovery(questionList = questions) {
+  if (!Array.isArray(questionList) || !questionList.length) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(
+      questionSetRecoveryKey(),
+      JSON.stringify({
+        questionIds:
+          questionList
+            .map(question => String(question?.id || ""))
+            .filter(Boolean),
+        questionCount: questionList.length,
+        savedAt: new Date().toISOString()
+      })
+    );
+  } catch (error) {
+    console.warn(
+      "ACL QUESTION SET RECOVERY SAVE ERROR:",
+      error
+    );
+  }
+}
+
+function targetCountForRestoredAttempt(
+  attemptRecord,
+  recovery,
+  poolLength
+) {
+  const lifeSaverCount =
+    normalizedSessionCount(
+      attemptRecord?.lifelines?.sessionQuestionCount ??
+      attemptRecord?.lifelines_state?.sessionQuestionCount ??
+      attemptRecord?.lifelinesState?.sessionQuestionCount,
+      poolLength
+    );
+
+  const cloudQuestionCount =
+    normalizedSessionCount(
+      attemptRecord?.question_count ??
+      attemptRecord?.questionCount,
+      poolLength
+    );
+
+  const metadataQuestionCount =
+    normalizedSessionCount(
+      attemptRecord?.acl_metadata?.selectedQuestionCount ??
+      attemptRecord?.acl_metadata?.questionCount,
+      poolLength
+    );
+
+  const recoveryCount =
+    normalizedSessionCount(
+      recovery?.questionCount,
+      poolLength
+    );
+
+  const urlCount =
+    normalizedSessionCount(
+      requestedStandaloneQuestionCount,
+      poolLength
+    );
+
+  const quizCount =
+    normalizedSessionCount(
+      quiz?.question_count,
+      poolLength
+    );
+
+  return (
+    lifeSaverCount ||
+    cloudQuestionCount ||
+    metadataQuestionCount ||
+    recoveryCount ||
+    urlCount ||
+    quizCount ||
+    Math.min(20, poolLength)
+  );
+}
+
+function restoredAttemptQuestions({
+  attemptRecord,
+  pool,
+  savedQuestionIds
+}) {
+  const questionMap = new Map(
+    pool.map(question => [String(question.id), question])
+  );
+
+  const recovery = loadQuestionSetRecovery();
+  const targetCount = targetCountForRestoredAttempt(
+    attemptRecord,
+    recovery,
+    pool.length
+  );
+
+  const validCloudIds = Array.isArray(savedQuestionIds)
+    ? savedQuestionIds
+        .map(String)
+        .filter(id => questionMap.has(id))
+    : [];
+
+  const validRecoveryIds = Array.isArray(recovery?.questionIds)
+    ? recovery.questionIds
+        .map(String)
+        .filter(id => questionMap.has(id))
+    : [];
+
+  /* Prefer an intact cloud set. If it is suspiciously short (the bug that
+     produced a 1-question restored attempt), use the local full set. */
+  let ids =
+    validCloudIds.length >= targetCount
+      ? validCloudIds.slice(0, targetCount)
+      : validRecoveryIds.length >= targetCount
+        ? validRecoveryIds.slice(0, targetCount)
+        : [...validCloudIds];
+
+  /* Merge any locally remembered IDs that are not already in the partial
+     cloud set. */
+  if (ids.length < targetCount) {
+    for (const id of validRecoveryIds) {
+      if (ids.length >= targetCount) break;
+      if (!ids.includes(id)) ids.push(id);
+    }
+  }
+
+  /* Final repair path: rebuild only the missing questions from the full bank,
+     still using the distributed topic algorithm. */
+  if (ids.length < targetCount) {
+    const usedIds = new Set(ids);
+    const existingQuestions = ids
+      .map(id => questionMap.get(id))
+      .filter(Boolean);
+
+    const remainingPool = pool.filter(
+      question => !usedIds.has(String(question.id))
+    );
+
+    const previousTopicKey = existingQuestions.length
+      ? questionDistributionKey(
+          existingQuestions[existingQuestions.length - 1]
+        )
+      : "";
+
+    const additions = distributedQuestionSelection(
+      remainingPool,
+      targetCount - ids.length,
+      {
+        randomize: true,
+        previousTopicKey
+      }
+    );
+
+    ids.push(
+      ...additions.map(question => String(question.id))
+    );
+  }
+
+  return ids
+    .slice(0, targetCount)
+    .map(id => questionMap.get(id))
+    .filter(Boolean);
+}
+
 async function loadPreQuizReviewConfig() {
   if (!quiz?.id) {
     return;
@@ -1196,6 +2008,10 @@ function resetPreQuizReviewForNewAttempt() {
 ========================================================= */
 
 function confidenceEnabled() {
+  if (basicQuizMode) {
+    return false;
+  }
+
   return Boolean(
     aclSettings
       .confidenceEnabled
@@ -1369,6 +2185,19 @@ async function persist(
     const state =
       appState();
 
+    const lifeSaverState =
+      ensureLifelinesState();
+
+    lifeSaverState.sessionQuestionCount =
+      questions.length;
+
+    lifelinesState =
+      lifeSaverState;
+
+    saveQuestionSetRecovery(
+      questions
+    );
+
     attempt =
       done
         ? await completeAttempt(
@@ -1410,6 +2239,10 @@ async function persist(
 ========================================================= */
 
 function lifelinesEnabled() {
+  if (basicQuizMode) {
+    return requestedBasicLifelines.size > 0;
+  }
+
   return Boolean(
     aclSettings
       .lifelinesEnabled
@@ -1420,6 +2253,10 @@ function lifelinesEnabled() {
 function enabledLifeline(
   lifeline
 ) {
+  if (basicQuizMode) {
+    return requestedBasicLifelines.has(lifeline);
+  }
+
   return (
     lifelinesEnabled() &&
     aclSettings
@@ -1433,257 +2270,255 @@ function enabledLifeline(
    QUIZ-WIDE LIFELINE STATE
 ========================================================= */
 
+function lifelineAllowanceForQuestionCount(
+  questionCount
+) {
+  const total =
+    Math.max(
+      1,
+      Number(
+        questionCount ||
+        0
+      )
+    );
+
+  if (total <= 10) {
+    return 2;
+  }
+
+  if (total <= 20) {
+    return 3;
+  }
+
+  if (total <= 30) {
+    return 4;
+  }
+
+  return 5;
+}
+
+
+function lifelineAllowance() {
+  if (!lifelinesEnabled()) {
+    return 0;
+  }
+
+  if (basicQuizMode) {
+    return requestedBasicLifelines.size;
+  }
+
+  const totalQuestions =
+    questions.length ||
+    requestedStandaloneQuestionCount ||
+    challengeQuestionCount ||
+    Number(
+      quiz?.question_count ||
+      20
+    );
+
+  return lifelineAllowanceForQuestionCount(
+    totalQuestions
+  );
+}
+
+
 function defaultQuizLifelines() {
-    return {
-    expert:
-      false,
+  return {
+    // Compatibility flags retained so older cloud attempts remain readable.
+    expert: false,
+    flashcard: false,
+    time: false,
+    filter: false,
+    swap: false,
+    guideline: false,
+    vault: false,
 
-    filter:
-      false,
+    usage: [],
+    bonusSeconds: 0,
 
-    guideline:
-      false,
+    usedOnQuestion: {
+      expert: null,
+      flashcard: null,
+      time: null,
+      filter: null,
+      swap: null,
+      guideline: null,
+      vault: null
+    },
 
-    vault:
-      false,
-
-    usedOnQuestion:
-      {
-        expert:
-          null,
-
-        filter:
-          null,
-
-        guideline:
-          null,
-
-        vault:
-          null
-      },
-eliminatedOptionIdsByQuestion:
-      {}
+    eliminatedOptionIdsByQuestion: {}
   };
 }
+
+
+function normalizedUsageEntry(
+  entry
+) {
+  if (
+    !entry ||
+    typeof entry !== "object" ||
+    Array.isArray(entry)
+  ) {
+    return null;
+  }
+
+  const type =
+    String(
+      entry.type ||
+      entry.lifeline ||
+      ""
+    );
+
+  if (
+    !ACTIVE_LIFELINES.includes(type)
+  ) {
+    return null;
+  }
+
+  const questionNumber =
+    Number(
+      entry.questionNumber ||
+      entry.question_number ||
+      0
+    );
+
+  const questionId =
+    entry.questionId ??
+    entry.question_id ??
+    "";
+
+  return {
+    type,
+    questionId:
+      String(questionId || ""),
+    questionNumber:
+      Number.isFinite(questionNumber) &&
+      questionNumber > 0
+        ? questionNumber
+        : null
+  };
+}
+
+
+function syncCompatibilityLifelineFlags(
+  state
+) {
+  const usage =
+    Array.isArray(state.usage)
+      ? state.usage
+      : [];
+
+  [
+    ...ACTIVE_LIFELINES,
+    LIFELINES.guideline
+  ].forEach(
+    (lifeline) => {
+      state[lifeline] =
+        usage.some(
+          (entry) =>
+            entry.type === lifeline
+        );
+
+      const latest =
+        [...usage]
+          .reverse()
+          .find(
+            (entry) =>
+              entry.type === lifeline
+          );
+
+      state.usedOnQuestion[lifeline] =
+        latest?.questionNumber ||
+        null;
+    }
+  );
+}
+
 
 function ensureLifelinesState() {
   if (
     !lifelinesState ||
-    typeof lifelinesState !==
-      "object" ||
-    Array.isArray(
-      lifelinesState
-    )
+    typeof lifelinesState !== "object" ||
+    Array.isArray(lifelinesState)
   ) {
     lifelinesState =
       defaultQuizLifelines();
   }
 
-  [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].forEach(
-    (lifeline) => {
-      lifelinesState[
-        lifeline
-      ] =
-        Boolean(
-          lifelinesState[
-            lifeline
-          ]
-        );
-    }
-  );
   if (
-    !lifelinesState
-      .usedOnQuestion ||
-    typeof lifelinesState
-      .usedOnQuestion !==
-      "object" ||
-    Array.isArray(
-      lifelinesState
-        .usedOnQuestion
+    !Array.isArray(
+      lifelinesState.usage
     )
   ) {
-    lifelinesState
-      .usedOnQuestion =
-        {
-          expert:
-            null,
-
-          filter:
-            null,
-
-          guideline:
-            null,
-
-          vault:
-            null
-        };
+    lifelinesState.usage = [];
   }
 
-  [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].forEach(
-    (lifeline) => {
-      const questionNumber =
-        Number(
-          lifelinesState
-            .usedOnQuestion[
-              lifeline
-            ]
-        );
+  lifelinesState.usage =
+    lifelinesState.usage
+      .map(normalizedUsageEntry)
+      .filter(Boolean);
 
-      lifelinesState
-        .usedOnQuestion[
-          lifeline
-        ] =
-          Number.isFinite(
-            questionNumber
-          ) &&
-          questionNumber >
-            0
-            ? questionNumber
-            : null;
-    }
-  );
+  const bonusSeconds =
+    Number(
+      lifelinesState.bonusSeconds ||
+      0
+    );
+
+  lifelinesState.bonusSeconds =
+    Number.isFinite(bonusSeconds) &&
+    bonusSeconds > 0
+      ? Math.round(bonusSeconds)
+      : 0;
+
+  const storedSessionQuestionCount =
+    Number(
+      lifelinesState.sessionQuestionCount ||
+      0
+    );
+
+  lifelinesState.sessionQuestionCount =
+    Number.isFinite(storedSessionQuestionCount) &&
+    storedSessionQuestionCount > 0
+      ? Math.round(storedSessionQuestionCount)
+      : 0;
+
   if (
-    !lifelinesState
-      .eliminatedOptionIdsByQuestion ||
-    typeof lifelinesState
-      .eliminatedOptionIdsByQuestion !==
-      "object" ||
+    !lifelinesState.usedOnQuestion ||
+    typeof lifelinesState.usedOnQuestion !== "object" ||
     Array.isArray(
-      lifelinesState
-        .eliminatedOptionIdsByQuestion
+      lifelinesState.usedOnQuestion
     )
   ) {
-    lifelinesState
-      .eliminatedOptionIdsByQuestion =
-        {};
+    lifelinesState.usedOnQuestion = {};
   }
+
+  if (
+    !lifelinesState.eliminatedOptionIdsByQuestion ||
+    typeof lifelinesState.eliminatedOptionIdsByQuestion !== "object" ||
+    Array.isArray(
+      lifelinesState.eliminatedOptionIdsByQuestion
+    )
+  ) {
+    lifelinesState.eliminatedOptionIdsByQuestion = {};
+  }
+
+  syncCompatibilityLifelineFlags(
+    lifelinesState
+  );
 
   return lifelinesState;
 }
 
 
-function lifelinesForQuestion(
-  question
+function usageForLifeline(
+  lifeline
 ) {
-  const state =
-    ensureLifelinesState();
-
-  const questionId =
-    question
-      ? String(
-          question.id
-        )
-      : "";
-
-  const eliminatedOptionIds =
-    questionId &&
-    Array.isArray(
-      state
-        .eliminatedOptionIdsByQuestion[
-          questionId
-        ]
-    )
-      ? state
-          .eliminatedOptionIdsByQuestion[
-            questionId
-          ]
-      : [];
-
-  return {
-    expert:
-      state.expert,
-
-    filter:
-      state.filter,
-
-    guideline:
-      state.guideline,
-
-    vault:
-      state.vault,
-
-    eliminatedOptionIds:
-      eliminatedOptionIds.map(
-        String
-      )
-  };
-}
-
-
-function updateQuestionLifelines(
-  question,
-  changes = {}
-) {
-  const state =
-    ensureLifelinesState();
-
-  [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].forEach(
-    (lifeline) => {
-      if (
-        Object.prototype
-          .hasOwnProperty.call(
-            changes,
-            lifeline
-          )
-      ) {
-        state[
-          lifeline
-        ] =
-          Boolean(
-            changes[
-              lifeline
-            ]
-          );
-      }
-    }
-  );
-
-  if (
-    question &&
-    Object.prototype
-      .hasOwnProperty.call(
-        changes,
-        "eliminatedOptionIds"
-      )
-  ) {
-    const questionId =
-      String(
-        question.id
-      );
-
-    state
-      .eliminatedOptionIdsByQuestion[
-        questionId
-      ] =
-        Array.isArray(
-          changes
-            .eliminatedOptionIds
-        )
-          ? changes
-              .eliminatedOptionIds
-              .map(
-                String
-              )
-          : [];
-  }
-
-  lifelinesState =
-    state;
+  return ensureLifelinesState()
+    .usage
+    .filter(
+      (entry) =>
+        entry.type === lifeline
+    );
 }
 
 
@@ -1691,12 +2526,34 @@ function lifelineIsUsed(
   question,
   lifeline
 ) {
-  void question;
+  if (!question) {
+    return false;
+  }
 
-  return Boolean(
-    ensureLifelinesState()[
-      lifeline
-    ]
+  const questionId =
+    String(question.id);
+
+  return usageForLifeline(
+    lifeline
+  ).some(
+    (entry) =>
+      entry.questionId ===
+      questionId
+  );
+}
+
+
+function lifelineUsedCount() {
+  return ensureLifelinesState()
+    .usage
+    .length;
+}
+
+
+function lifelineCapacityReached() {
+  return (
+    lifelineUsedCount() >=
+    lifelineAllowance()
   );
 }
 
@@ -1705,68 +2562,53 @@ function markLifelineUsed(
   question,
   lifeline
 ) {
+  if (
+    !question ||
+    !ACTIVE_LIFELINES.includes(
+      lifeline
+    ) ||
+    lifelineIsUsed(
+      question,
+      lifeline
+    ) ||
+    (
+      basicQuizMode &&
+      usageForLifeline(lifeline).length > 0
+    ) ||
+    lifelineCapacityReached()
+  ) {
+    return;
+  }
+
   const state =
     ensureLifelinesState();
 
-  state[
-    lifeline
-  ] =
-    true;
+  state.usage.push({
+    type: lifeline,
+    questionId:
+      String(question.id),
+    questionNumber:
+      index + 1
+  });
 
-  state
-    .usedOnQuestion[
-      lifeline
-    ] =
-      index + 1;
+  syncCompatibilityLifelineFlags(
+    state
+  );
 
   lifelinesState =
     state;
 }
 
-function lifelineUsedCount(
-  question
-) {
-  void question;
 
-  const state =
-    ensureLifelinesState();
-
-  return [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ]
+function enabledLifelineCount() {
+  return ACTIVE_LIFELINES
     .filter(
       (lifeline) =>
         enabledLifeline(
           lifeline
         )
     )
-    .filter(
-      (lifeline) =>
-        Boolean(
-          state[
-            lifeline
-          ]
-        )
-    )
     .length;
-}
-
-
-function enabledLifelineCount() {
-  return [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].filter(
-    (lifeline) =>
-      enabledLifeline(
-        lifeline
-      )
-  ).length;
 }
 
 
@@ -1842,225 +2684,204 @@ function restoreLifelinesState(
 
   if (
     !storedState ||
-    typeof storedState !==
-      "object" ||
-    Array.isArray(
-      storedState
-    )
+    typeof storedState !== "object" ||
+    Array.isArray(storedState)
   ) {
     lifelinesState =
       restored;
-
     return;
   }
 
-  /*
-   * Restore the new quiz-wide format.
-   */
+  const storedBonusSeconds =
+    Number(
+      storedState.bonusSeconds ||
+      0
+    );
 
-  const newFormatDetected =
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "expert"
-      ) ||
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "filter"
-      ) ||
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "guideline"
-      ) ||
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "vault"
-      ) ||
-    Object.prototype
-      .hasOwnProperty.call(
-        storedState,
-        "eliminatedOptionIdsByQuestion"
-      );
+  restored.bonusSeconds =
+    Number.isFinite(
+      storedBonusSeconds
+    ) &&
+    storedBonusSeconds > 0
+      ? Math.round(
+          storedBonusSeconds
+        )
+      : 0;
+
+  const storedSessionQuestionCount =
+    Number(
+      storedState.sessionQuestionCount ||
+      storedState.session_question_count ||
+      0
+    );
+
+  restored.sessionQuestionCount =
+    Number.isFinite(storedSessionQuestionCount) &&
+    storedSessionQuestionCount > 0
+      ? Math.round(storedSessionQuestionCount)
+      : 0;
+
+  const eliminatedMap =
+    storedState
+      .eliminatedOptionIdsByQuestion;
 
   if (
-    newFormatDetected
+    eliminatedMap &&
+    typeof eliminatedMap === "object" &&
+    !Array.isArray(eliminatedMap)
   ) {
-    restored.expert =
-      Boolean(
-        storedState.expert
-      );
+    Object.entries(
+      eliminatedMap
+    ).forEach(
+      ([questionId, optionIds]) => {
+        restored
+          .eliminatedOptionIdsByQuestion[
+            String(questionId)
+          ] =
+            Array.isArray(optionIds)
+              ? optionIds.map(String)
+              : [];
+      }
+    );
+  }
 
-    restored.filter =
-      Boolean(
-        storedState.filter
-      );
+  // Current quota-aware format.
+  if (
+    Array.isArray(
+      storedState.usage
+    )
+  ) {
+    restored.usage =
+      storedState.usage
+        .map(normalizedUsageEntry)
+        .filter(Boolean);
 
-    restored.guideline =
-      Boolean(
-        storedState.guideline
-      );
-
-    restored.vault =
-      Boolean(
-        storedState.vault
-      );
-        const storedUsage =
-      storedState
-        .usedOnQuestion;
-
-    if (
-      storedUsage &&
-      typeof storedUsage ===
-        "object" &&
-      !Array.isArray(
-        storedUsage
-      )
-    ) {
-      [
-        LIFELINES.expert,
-        LIFELINES.filter,
-        LIFELINES.guideline,
-        LIFELINES.vault
-      ].forEach(
-        (lifeline) => {
-          const questionNumber =
-            Number(
-              storedUsage[
-                lifeline
-              ]
-            );
-
-          restored
-            .usedOnQuestion[
-              lifeline
-            ] =
-              Number.isFinite(
-                questionNumber
-              ) &&
-              questionNumber >
-                0
-                ? questionNumber
-                : null;
-        }
-      );
-    }
-
-    const eliminatedMap =
-      storedState
-        .eliminatedOptionIdsByQuestion;
-
-    if (
-      eliminatedMap &&
-      typeof eliminatedMap ===
-        "object" &&
-      !Array.isArray(
-        eliminatedMap
-      )
-    ) {
-      Object.entries(
-        eliminatedMap
-      ).forEach(
-        (
-          [
-            questionId,
-            optionIds
-          ]
-        ) => {
-          restored
-            .eliminatedOptionIdsByQuestion[
-              String(
-                questionId
-              )
-            ] =
-              Array.isArray(
-                optionIds
-              )
-                ? optionIds.map(
-                    String
-                  )
-                : [];
-        }
-      );
-    }
+    syncCompatibilityLifelineFlags(
+      restored
+    );
 
     lifelinesState =
       restored;
-
     return;
   }
 
-  /*
-   * Migrate old per-question saved attempts.
-   * A lifeline is considered used for the whole quiz when it
-   * had already been used on any question.
-   */
+  // Migrate the previous quiz-wide one-use-per-type format.
+  const previousTypes = [
+    LIFELINES.expert,
+    LIFELINES.filter,
+    LIFELINES.vault,
+    LIFELINES.guideline
+  ];
 
+  const storedUsage =
+    storedState.usedOnQuestion &&
+    typeof storedState.usedOnQuestion === "object" &&
+    !Array.isArray(
+      storedState.usedOnQuestion
+    )
+      ? storedState.usedOnQuestion
+      : {};
+
+  let migratedPreviousFormat =
+    false;
+
+  previousTypes.forEach(
+    (lifeline) => {
+      if (!storedState[lifeline]) {
+        return;
+      }
+
+      migratedPreviousFormat =
+        true;
+
+      // Old guideline hint is mapped to the new topic flashcard slot.
+      const mappedType =
+        lifeline === LIFELINES.guideline
+          ? LIFELINES.flashcard
+          : lifeline;
+
+      const questionNumber =
+        Number(
+          storedUsage[lifeline] ||
+          0
+        );
+
+      restored.usage.push({
+        type: mappedType,
+        questionId: "",
+        questionNumber:
+          Number.isFinite(questionNumber) &&
+          questionNumber > 0
+            ? questionNumber
+            : null
+      });
+    }
+  );
+
+  if (migratedPreviousFormat) {
+    syncCompatibilityLifelineFlags(
+      restored
+    );
+    lifelinesState = restored;
+    return;
+  }
+
+  // Migrate the oldest per-question format.
   Object.entries(
     storedState
   ).forEach(
-    (
-      [
-        questionId,
-        questionState
-      ]
-    ) => {
+    ([questionId, questionState]) => {
       if (
         !questionState ||
-        typeof questionState !==
-          "object" ||
-        Array.isArray(
-          questionState
-        )
+        typeof questionState !== "object" ||
+        Array.isArray(questionState)
       ) {
         return;
       }
 
-      restored.expert =
-        restored.expert ||
-        Boolean(
-          questionState.expert
-        );
+      const questionNumber =
+        Number(questionState.questionNumber || 0);
 
-      restored.filter =
-        restored.filter ||
-        Boolean(
-          questionState.filter
-        );
-
-      restored.guideline =
-        restored.guideline ||
-        Boolean(
-          questionState.guideline
-        );
-
-      restored.vault =
-        restored.vault ||
-        Boolean(
-          questionState.vault
-        );
+      [
+        [LIFELINES.expert, LIFELINES.expert],
+        [LIFELINES.filter, LIFELINES.filter],
+        [LIFELINES.guideline, LIFELINES.flashcard],
+        [LIFELINES.vault, LIFELINES.vault]
+      ].forEach(
+        ([legacyType, mappedType]) => {
+          if (questionState[legacyType]) {
+            restored.usage.push({
+              type: mappedType,
+              questionId:
+                String(questionId),
+              questionNumber:
+                Number.isFinite(questionNumber) &&
+                questionNumber > 0
+                  ? questionNumber
+                  : null
+            });
+          }
+        }
+      );
 
       if (
         Array.isArray(
-          questionState
-            .eliminatedOptionIds
+          questionState.eliminatedOptionIds
         )
       ) {
         restored
           .eliminatedOptionIdsByQuestion[
-            String(
-              questionId
-            )
+            String(questionId)
           ] =
             questionState
               .eliminatedOptionIds
-              .map(
-                String
-              );
+              .map(String);
       }
     }
+  );
+
+  syncCompatibilityLifelineFlags(
+    restored
   );
 
   lifelinesState =
@@ -2162,6 +2983,16 @@ function showLifelineResponse({
 function expertHintFor(
   question
 ) {
+  if (basicQuizMode) {
+    const topic =
+      String(
+        question?.topic ||
+        "the core concept"
+      ).trim();
+
+    return `Think about ${topic}. Focus on the defining sign, mechanism or clinical clue, then eliminate choices that belong to a different condition. I will not tell you the answer directly.`;
+  }
+
   return (
     question.expert_hint ||
     question.expertHint ||
@@ -2188,87 +3019,48 @@ function guidelineHintFor(
 }
 
 
+function knowledgeVaultFor(
+  question
+) {
+  return (
+    question.knowledge_vault ||
+    question.knowledgeVault ||
+    question.supporting_concept ||
+    question.supportingConcept ||
+    question.key_learning_point ||
+    question.keyLearningPoint ||
+    question.learning_point ||
+    question.learningPoint ||
+    question.high_yield_point ||
+    question.highYieldPoint ||
+    "Recall the high-yield concept behind this decision: identify the decisive mechanism, threshold or contraindication before comparing the answer choices."
+  );
+}
+
+
 /* =========================================================
    LIFELINE TOOLBAR
 ========================================================= */
 
 function lifelineDefinitions() {
+  if (basicQuizMode) {
+    return [
+      { id: LIFELINES.filter, icon: "✂️", image: "", title: "50:50", shortTitle: "50:50" },
+      { id: LIFELINES.swap, icon: "↻", image: "", title: "Swap Question", shortTitle: "Swap" },
+      { id: LIFELINES.expert, icon: "", image: HAPPY_MASCOT, title: "Ask Dr. Corazón", shortTitle: "Dr. Corazón" },
+      { id: LIFELINES.time, icon: "⏱️", image: "", title: "+1 Minute", shortTitle: "+1 min" }
+    ].filter(definition => enabledLifeline(definition.id));
+  }
+
   const definitions = [
-    {
-      id:
-        LIFELINES.expert,
-
-      icon:
-        "",
-
-      image:
-        HAPPY_MASCOT,
-
-      title:
-        "Ask Dr. Corazón",
-
-      shortTitle:
-        "Dr. Corazón"
-    },
-
-    {
-      id:
-        LIFELINES.filter,
-
-      icon:
-        "✂️",
-
-      image:
-        "",
-
-      title:
-        "Evidence Filter",
-
-      shortTitle:
-        "Evidence Filter"
-    },
-
-    {
-      id:
-        LIFELINES.guideline,
-
-      icon:
-        "📘",
-
-      image:
-        "",
-
-      title:
-        "ESC Pocket Guideline",
-
-      shortTitle:
-        "ESC Guideline"
-    },
-
-    {
-      id:
-        LIFELINES.vault,
-
-      icon:
-        "🧠",
-
-      image:
-        "",
-
-      title:
-        "Knowledge Vault",
-
-      shortTitle:
-        "Knowledge Vault"
-    }
+    { id: LIFELINES.expert, icon: "", image: HAPPY_MASCOT, title: "Dr. Corazón Help", shortTitle: "Dr. Corazón" },
+    { id: LIFELINES.flashcard, icon: "📘", image: "", title: "View Topic Flashcard", shortTitle: "Flashcard" },
+    { id: LIFELINES.time, icon: "⏱️", image: "", title: "+1 Minute", shortTitle: "+1 min" },
+    { id: LIFELINES.filter, icon: "✂️", image: "", title: "Remove 2 Answers", shortTitle: "Remove 2" },
+    { id: LIFELINES.vault, icon: "🧠", image: "", title: "Knowledge Vault", shortTitle: "Knowledge Vault" }
   ];
 
-  return definitions.filter(
-    (definition) =>
-      enabledLifeline(
-        definition.id
-      )
-  );
+  return definitions.filter(definition => enabledLifeline(definition.id));
 }
 
 
@@ -2276,50 +3068,52 @@ function compactLifelineButtonHtml(
   question,
   definition
 ) {
-  const used =
+  const usedOnThisQuestion =
     lifelineIsUsed(
       question,
       definition.id
     );
-    const lifelineState =
-    ensureLifelinesState();
 
-  const usedOnQuestion =
-    lifelineState
-      .usedOnQuestion[
-        definition.id
-      ];
+  const usedAnywhere =
+    basicQuizMode &&
+    usageForLifeline(definition.id).length > 0;
+
+  const noUsesRemaining =
+    lifelineCapacityReached();
+
+  const disabled =
+    usedOnThisQuestion ||
+    usedAnywhere ||
+    noUsesRemaining;
 
   const usageLabel =
-    used
-      ? (
-          usedOnQuestion
-            ? `Used on Question ${usedOnQuestion}`
-            : "Already used in this attempt"
-        )
-      : definition.title;
+    usedAnywhere
+      ? `${definition.title} — already used`
+      : usedOnThisQuestion
+        ? `${definition.title} — already used on this question`
+        : noUsesRemaining
+          ? `${definition.title} — no Life Savers remaining`
+          : definition.title;
 
   return `
     <button
       type="button"
       class="
         compact-lifeline-button
-        ${used ? "is-used" : ""}
+        ${usedOnThisQuestion ? "is-used" : ""}
       "
       data-lifeline="${esc(
         definition.id
       )}"
-           aria-label="${esc(
+      aria-label="${esc(
         usageLabel
       )}"
       title="${esc(
         usageLabel
       )}"
-      ${used ? "disabled" : ""}
+      ${disabled ? "disabled" : ""}
     >
-
       <span class="compact-lifeline-icon">
-
         ${
           definition.image
             ? `
@@ -2340,7 +3134,6 @@ function compactLifelineButtonHtml(
               </span>
             `
         }
-
       </span>
 
       <span class="compact-lifeline-name">
@@ -2349,25 +3142,16 @@ function compactLifelineButtonHtml(
         )}
       </span>
 
-            ${
-        used
+      ${
+        usedOnThisQuestion
           ? `
-            <span
-              class="compact-lifeline-used-copy"
-            >
-              ${
-                usedOnQuestion
-                  ? `Used on Q${usedOnQuestion}`
-                  : "Used"
-              }
+            <span class="compact-lifeline-used-copy">
+              Used on this Q
             </span>
-
             <span
               class="compact-lifeline-used-mark"
               aria-hidden="true"
-            >
-              ✓
-            </span>
+            >✓</span>
           `
           : ""
       }
@@ -2392,12 +3176,10 @@ function scientificLifelinesToolbarHtml(
   const definitions =
     lifelineDefinitions();
     const usedCount =
-    lifelineUsedCount(
-      question
-    );
+    lifelineUsedCount();
 
   const totalCount =
-    enabledLifelineCount();
+    lifelineAllowance();
 
   const remainingCount =
     Math.max(
@@ -2417,11 +3199,11 @@ function scientificLifelinesToolbarHtml(
 
       <div
         class="compact-lifelines-toolbar"
-        aria-label="Scientific Lifelines — The Expert Panel"
+        aria-label="Life Savers"
       >
 
         <span class="compact-lifelines-label">
-          Expert Panel
+          Life Savers
         </span>
 
         <div class="compact-lifelines-buttons">
@@ -2644,6 +3426,49 @@ async function activateEvidenceFilter(
 }
 
 
+async function activateQuestionSwap(question) {
+  if (!question || !questions.length) {
+    throw new Error("No question is available to swap.");
+  }
+
+  const activeIds = new Set(questions.map(item => String(item.id)));
+  const answeredIds = new Set(answers.map(answer => String(answer.questionId)));
+
+  const unused = questionPool.filter(
+    item =>
+      String(item.id) !== String(question.id) &&
+      !activeIds.has(String(item.id)) &&
+      !answeredIds.has(String(item.id))
+  );
+
+  if (unused.length) {
+    questions[index] = unused[Math.floor(Math.random() * unused.length)];
+  } else {
+    const futureIndexes = questions
+      .map((item, position) => ({ item, position }))
+      .filter(
+        entry =>
+          entry.position > index &&
+          !answeredIds.has(String(entry.item.id))
+      );
+
+    if (!futureIndexes.length) {
+      throw new Error("There are no remaining questions available to swap.");
+    }
+
+    const chosen =
+      futureIndexes[Math.floor(Math.random() * futureIndexes.length)].position;
+
+    const current = questions[index];
+    questions[index] = questions[chosen];
+    questions[chosen] = current;
+  }
+
+  pendingSelectedIds = [];
+  saveQuestionSetRecovery(questions);
+}
+
+
 /* =========================================================
    LIFELINE ACTIVATION
 ========================================================= */
@@ -2660,7 +3485,8 @@ async function activateLifeline(
     lifelineIsUsed(
       question,
       lifeline
-    )
+    ) ||
+    lifelineCapacityReached()
   ) {
     return;
   }
@@ -2695,62 +3521,31 @@ async function activateLifeline(
       );
 
       responseConfig = {
-        icon:
-          "✂️",
-
-        title:
-          "Evidence Filter",
-
+        icon: "✂️",
+        title: basicQuizMode ? "50:50" : "Remove 2 Answers",
         message:
-          "Two incorrect options have been removed. Reassess the remaining choices carefully."
+          "Two incorrect options have been removed. Reassess the two remaining choices carefully."
       };
     }
-
 
     if (
       lifeline ===
       LIFELINES.expert
     ) {
-            responseConfig = {
-        icon:
-          "🩺",
-
-        title:
-          "Dr. Corazón says",
-
+      responseConfig = {
+        icon: "🩺",
+        title: "Dr. Corazón says",
         message:
           expertHintFor(
             question
           ),
-
-        expert:
-          true
+        expert: true
       };
     }
 
-
     if (
       lifeline ===
-      LIFELINES.guideline
-    ) {
-      responseConfig = {
-        icon:
-          "📘",
-
-        title:
-          "ESC Pocket Guideline",
-
-        message:
-          guidelineHintFor(
-            question
-          )
-      };
-    }
-
-
-    if (
-      lifeline ===
-      LIFELINES.vault
+      LIFELINES.flashcard
     ) {
       flashcardToOpen =
         await loadFlashcard(
@@ -2760,11 +3555,77 @@ async function activateLifeline(
 
       if (!flashcardToOpen) {
         throw new Error(
-          "A review flashcard has not yet been added for this question."
+          "A topic flashcard has not yet been added for this question."
         );
       }
     }
 
+    if (
+      lifeline ===
+      LIFELINES.swap
+    ) {
+      await activateQuestionSwap(question);
+
+      responseConfig = {
+        icon: "↻",
+        title: "Question Swapped",
+        message: "A different question has replaced the current one."
+      };
+    }
+
+    if (
+      lifeline ===
+      LIFELINES.time
+    ) {
+      const state =
+        ensureLifelinesState();
+
+      state.bonusSeconds =
+        Number(
+          state.bonusSeconds ||
+          0
+        ) + 60;
+
+      lifelinesState = state;
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "acl:learning-time-bonus",
+          {
+            detail: {
+              seconds: 60,
+              questionId:
+                String(
+                  question.id
+                ),
+              questionNumber:
+                index + 1
+            }
+          }
+        )
+      );
+
+      responseConfig = {
+        icon: "⏱️",
+        title: "+1 Minute",
+        message:
+          "One extra minute has been added to your attempt time allowance."
+      };
+    }
+
+    if (
+      lifeline ===
+      LIFELINES.vault
+    ) {
+      responseConfig = {
+        icon: "🧠",
+        title: "Knowledge Vault",
+        message:
+          knowledgeVaultFor(
+            question
+          )
+      };
+    }
 
     markLifelineUsed(
       question,
@@ -3997,6 +4858,44 @@ function render() {
       `Question ${index + 1} of ${questions.length}`;
   }
 
+  /* Keep the floating Learning Mode timer / notes synchronized with
+     the actual current question without coupling the UI helper to
+     private engine state. */
+  window.dispatchEvent(
+    new CustomEvent(
+      "acl:learning-question-changed",
+      {
+        detail: {
+          questionId:
+            String(
+              question.id
+            ),
+          questionNumber:
+            index + 1,
+          totalQuestions:
+            questions.length,
+          timeLimitSeconds:
+            basicQuizMode
+              ? 120
+              : Math.max(
+                  1,
+                  Number(
+                    question.time_limit_seconds ||
+                    question.timeLimitSeconds ||
+                    quiz?.default_question_time_seconds ||
+                    quiz?.defaultQuestionTimeSeconds ||
+                    60
+                  ) || 60
+                ),
+          answered:
+            Boolean(
+              answer
+            )
+        }
+      }
+    )
+  );
+
   if (!quizArea) {
     return;
   }
@@ -4033,10 +4932,16 @@ function render() {
           )}
         </span>
 
-        ${scientificLifelinesToolbarHtml(
-          question,
-          answer
-        )}
+        <div class="question-topic-actions">
+          ${scientificLifelinesToolbarHtml(
+            question,
+            answer
+          )}
+
+          ${starQuestionButtonHtml(
+            question
+          )}
+        </div>
 
       </div>
 
@@ -4290,6 +5195,10 @@ return `
       isLastQuestion
     );
   }
+
+  bindStarQuestionButton(
+    question
+  );
 
   if (answer) {
     bindFeedback(
@@ -4552,6 +5461,89 @@ window.requestAnimationFrame(
 }
 
 
+async function submitTimedOutQuestion() {
+  if (!basicQuizMode || reviewMode || saving || finishing) {
+    return;
+  }
+
+  const question = currentQuestion();
+
+  if (!question || answerFor(question)) {
+    return;
+  }
+
+  try {
+    const correctIds = await secureCorrectOptionIds(question);
+    const correctSet = new Set(correctIds.map(String));
+    const incorrect = optionsFor(question).find(
+      option => !correctSet.has(String(option.id))
+    );
+
+    let explanation = question.explanation || "";
+    let referenceText =
+      question.reference_text ||
+      question.referenceText ||
+      "";
+
+    if (incorrect) {
+      const { data } = await supabaseClient.rpc(
+        "acl_check_learning_answer",
+        {
+          p_quiz_id: quiz.id,
+          p_question_id: question.id,
+          p_option_ids: [String(incorrect.id)]
+        }
+      );
+
+      explanation = data?.explanation || explanation;
+      referenceText =
+        data?.reference_text ||
+        data?.referenceText ||
+        referenceText;
+    }
+
+    setAnswer({
+      questionId: question.id,
+      selectedIds: [],
+      correct: false,
+      points: 0,
+      confidence: null,
+      confidenceEnabled: false,
+      correctOptionIds: correctIds,
+      explanation,
+      referenceText,
+      referenceUrl: "",
+      flashcard: null,
+      timedOut: true,
+      answeredAt: new Date().toISOString()
+    });
+
+    pendingSelectedIds = [];
+    await persist(false);
+    render();
+
+    const feedbackHost = $("answerFeedbackHost");
+
+    if (feedbackHost) {
+      feedbackHost.insertAdjacentHTML(
+        "afterbegin",
+        '<div class="answer-feedback incorrect">Time is over. This question has been recorded as incorrect.</div>'
+      );
+    }
+  } catch (error) {
+    console.error("BASIC QUESTION TIMEOUT ERROR:", error);
+  }
+}
+
+
+window.addEventListener(
+  "acl:learning-time-expired",
+  () => {
+    void submitTimedOutQuestion();
+  }
+);
+
+
 /* =========================================================
    COMPLETION
 ========================================================= */
@@ -4569,56 +5561,52 @@ function learningAnalytics() {
     totalQuestions -
     correctAnswers;
 
+  const showConfidence =
+    confidenceEnabled();
+
   const highConfidenceCorrect =
-    answers.filter(
-      (answer) =>
-        answer.correct &&
-        answer.confidence ===
-          "high"
-    ).length;
+    showConfidence
+      ? answers.filter(
+          (answer) =>
+            answer.correct &&
+            answer.confidence ===
+              "high"
+        ).length
+      : 0;
 
   const highConfidenceIncorrect =
-    answers.filter(
-      (answer) =>
-        !answer.correct &&
-        answer.confidence ===
-          "high"
-    ).length;
+    showConfidence
+      ? answers.filter(
+          (answer) =>
+            !answer.correct &&
+            answer.confidence ===
+              "high"
+        ).length
+      : 0;
 
   const lowConfidenceCorrect =
-    answers.filter(
-      (answer) =>
-        answer.correct &&
-        answer.confidence ===
-          "low"
-    ).length;
+    showConfidence
+      ? answers.filter(
+          (answer) =>
+            answer.correct &&
+            answer.confidence ===
+              "low"
+        ).length
+      : 0;
 
   const lowConfidenceIncorrect =
-    answers.filter(
-      (answer) =>
-        !answer.correct &&
-        answer.confidence ===
-          "low"
-    ).length;
+    showConfidence
+      ? answers.filter(
+          (answer) =>
+            !answer.correct &&
+            answer.confidence ===
+              "low"
+        ).length
+      : 0;
 
-  const lifelineState =
-  ensureLifelinesState();
+  const lifelinesUsed =
+    lifelineUsedCount();
 
-const lifelinesUsed =
-  [
-    LIFELINES.expert,
-    LIFELINES.filter,
-    LIFELINES.guideline,
-    LIFELINES.vault
-  ].filter(
-    (lifeline) =>
-      Boolean(
-        lifelineState[
-          lifeline
-        ]
-      )
-  ).length;
-  
   return {
     totalQuestions,
     correctAnswers,
@@ -4627,7 +5615,9 @@ const lifelinesUsed =
     highConfidenceIncorrect,
     lowConfidenceCorrect,
     lowConfidenceIncorrect,
-    lifelinesUsed
+    lifelinesUsed,
+    confidenceEnabled:
+      showConfidence
   };
 }
 function resultLifelineHistoryHtml() {
@@ -4638,100 +5628,87 @@ function resultLifelineHistoryHtml() {
     lifelineDefinitions();
 
   const usedCount =
-    definitions.filter(
-      (definition) =>
-        Boolean(
-          state[
-            definition.id
-          ]
-        )
-    ).length;
+    state.usage.length;
 
   const totalCount =
-    definitions.length;
+    lifelineAllowance();
 
   const remainingCount =
     Math.max(
-      totalCount -
-      usedCount,
+      totalCount - usedCount,
       0
     );
 
   return `
     <section class="result-expert-panel">
-
       <div class="result-expert-panel-summary">
-
         <div
           class="result-expert-panel-symbol"
           aria-hidden="true"
-        >
-          🛟
-        </div>
+        >🛟</div>
 
         <div class="result-expert-panel-heading">
-
-          <span>
-            Expert Panel
-          </span>
-
+          <span>Life Savers</span>
           <strong>
-            ${usedCount}
-            /
-            ${totalCount}
-            used
+            ${usedCount} / ${totalCount} used
           </strong>
-
           <small>
             ${
               remainingCount === 0
-                ? "No lifelines remaining"
+                ? "No Life Savers remaining"
                 : `${remainingCount} ${
                     remainingCount === 1
-                      ? "lifeline"
-                      : "lifelines"
+                      ? "Life Saver"
+                      : "Life Savers"
                   } remaining`
             }
           </small>
-
         </div>
-
       </div>
 
-
       <div class="result-lifeline-history">
-
         ${definitions
           .map(
             (definition) => {
-              const used =
-                Boolean(
-                  state[
+              const uses =
+                state.usage.filter(
+                  (entry) =>
+                    entry.type ===
                     definition.id
-                  ]
                 );
 
-              const questionNumber =
-                state
-                  .usedOnQuestion?.[
-                    definition.id
-                  ] ||
-                null;
+              const questionNumbers =
+                uses
+                  .map(
+                    (entry) =>
+                      entry.questionNumber
+                  )
+                  .filter(Boolean);
+
+              const used =
+                uses.length > 0;
+
+              const useCopy =
+                used
+                  ? `${uses.length} ${
+                      uses.length === 1
+                        ? "use"
+                        : "uses"
+                    }${
+                      questionNumbers.length
+                        ? ` · Q${questionNumbers.join(", Q")}`
+                        : ""
+                    }`
+                  : "Not used";
 
               return `
                 <div
                   class="
                     result-lifeline-history-item
-                    ${
-                      used
-                        ? "is-used"
-                        : "is-unused"
-                    }
+                    ${used ? "is-used" : "is-unused"}
                   "
                 >
-
                   <div class="result-lifeline-history-icon">
-
                     ${
                       definition.image
                         ? `
@@ -4751,63 +5728,32 @@ function resultLifelineHistoryHtml() {
                           </span>
                         `
                     }
-
                   </div>
 
-
                   <div class="result-lifeline-history-copy">
-
                     <strong>
                       ${esc(
                         definition.title
                       )}
                     </strong>
-
-                    <span>
-                      ${
-                        used
-                          ? (
-                              questionNumber
-                                ? `Used on Question ${questionNumber}`
-                                : "Used during this attempt"
-                            )
-                          : "Not used"
-                      }
-                    </span>
-
+                    <span>${esc(useCopy)}</span>
                   </div>
-
 
                   <span
                     class="
                       result-lifeline-history-status
-                      ${
-                        used
-                          ? "is-used"
-                          : "is-unused"
-                      }
+                      ${used ? "is-used" : "is-unused"}
                     "
-                    aria-label="${
-                      used
-                        ? "Used"
-                        : "Not used"
-                    }"
+                    aria-label="${used ? `${uses.length} uses` : "Not used"}"
                   >
-                    ${
-                      used
-                        ? "✓"
-                        : "—"
-                    }
+                    ${used ? `${uses.length}×` : "—"}
                   </span>
-
                 </div>
               `;
             }
           )
           .join("")}
-
       </div>
-
     </section>
   `;
 }
@@ -4836,200 +5782,88 @@ function resultAnalyticsHtml(
         )
       : 0;
 
-  return `
-    <section class="result-performance-panels">
-
-      <article
-        class="
-          result-performance-card
-          is-correct
-        "
-      >
-
-        <div class="result-performance-header">
-
-          <div
-            class="result-performance-icon"
-            aria-hidden="true"
-          >
-            ✓
-          </div>
-
-          <div class="result-performance-summary">
-
-            <span class="result-performance-label">
-              Correct Answers
-            </span>
-
-            <strong class="result-performance-total">
-              ${analytics.correctAnswers}
-            </strong>
-
-            <small>
-              of ${analytics.totalQuestions}
-              questions
-              ·
-              ${correctPercentage}%
-            </small>
-
-          </div>
-
-        </div>
-
-
+  const correctConfidenceHtml =
+    analytics.confidenceEnabled
+      ? `
         <div class="result-confidence-breakdown">
-
           <div class="result-confidence-card">
-
-            <span
-              class="result-confidence-symbol"
-              aria-hidden="true"
-            >
-              🔥
-            </span>
-
+            <span class="result-confidence-symbol" aria-hidden="true">🔥</span>
             <div>
-
-              <span>
-                High-confidence correct
-              </span>
-
-              <strong>
-                ${analytics.highConfidenceCorrect}
-              </strong>
-
+              <span>High-confidence correct</span>
+              <strong>${analytics.highConfidenceCorrect}</strong>
             </div>
-
           </div>
 
-
           <div class="result-confidence-card">
-
-            <span
-              class="result-confidence-symbol"
-              aria-hidden="true"
-            >
-              🤔
-            </span>
-
+            <span class="result-confidence-symbol" aria-hidden="true">🤔</span>
             <div>
-
-              <span>
-                Low-confidence correct
-              </span>
-
-              <strong>
-                ${analytics.lowConfidenceCorrect}
-              </strong>
-
+              <span>Low-confidence correct</span>
+              <strong>${analytics.lowConfidenceCorrect}</strong>
             </div>
-
           </div>
-
         </div>
+      `
+      : "";
 
+  const incorrectConfidenceHtml =
+    analytics.confidenceEnabled
+      ? `
+        <div class="result-confidence-breakdown">
+          <div class="result-confidence-card">
+            <span class="result-confidence-symbol" aria-hidden="true">🔥</span>
+            <div>
+              <span>High-confidence errors</span>
+              <strong>${analytics.highConfidenceIncorrect}</strong>
+            </div>
+          </div>
+
+          <div class="result-confidence-card">
+            <span class="result-confidence-symbol" aria-hidden="true">🤔</span>
+            <div>
+              <span>Low-confidence incorrect</span>
+              <strong>${analytics.lowConfidenceIncorrect}</strong>
+            </div>
+          </div>
+        </div>
+      `
+      : "";
+
+  return `
+    <section class="result-performance-panels ${analytics.confidenceEnabled ? "has-confidence" : "no-confidence"}">
+
+      <article class="result-performance-card is-correct">
+        <div class="result-performance-header">
+          <div class="result-performance-icon" aria-hidden="true">✓</div>
+          <div class="result-performance-summary">
+            <span class="result-performance-label">Correct Answers</span>
+            <strong class="result-performance-total">${analytics.correctAnswers}</strong>
+            <small>
+              of ${analytics.totalQuestions} questions · ${correctPercentage}%
+            </small>
+          </div>
+        </div>
+        ${correctConfidenceHtml}
       </article>
 
-
-      <article
-        class="
-          result-performance-card
-          is-incorrect
-        "
-      >
-
+      <article class="result-performance-card is-incorrect">
         <div class="result-performance-header">
-
-          <div
-            class="result-performance-icon"
-            aria-hidden="true"
-          >
-            ×
-          </div>
-
+          <div class="result-performance-icon" aria-hidden="true">×</div>
           <div class="result-performance-summary">
-
-            <span class="result-performance-label">
-              Incorrect Answers
-            </span>
-
-            <strong class="result-performance-total">
-              ${analytics.incorrectAnswers}
-            </strong>
-
+            <span class="result-performance-label">Incorrect Answers</span>
+            <strong class="result-performance-total">${analytics.incorrectAnswers}</strong>
             <small>
-              of ${analytics.totalQuestions}
-              questions
-              ·
-              ${incorrectPercentage}%
+              of ${analytics.totalQuestions} questions · ${incorrectPercentage}%
             </small>
-
           </div>
-
         </div>
-
-
-        <div class="result-confidence-breakdown">
-
-          <div class="result-confidence-card">
-
-            <span
-              class="result-confidence-symbol"
-              aria-hidden="true"
-            >
-              🔥
-            </span>
-
-            <div>
-
-              <span>
-                High-confidence errors
-              </span>
-
-              <strong>
-                ${analytics.highConfidenceIncorrect}
-              </strong>
-
-            </div>
-
-          </div>
-
-
-          <div class="result-confidence-card">
-
-            <span
-              class="result-confidence-symbol"
-              aria-hidden="true"
-            >
-              🤔
-            </span>
-
-            <div>
-
-              <span>
-                Low-confidence incorrect
-              </span>
-
-              <strong>
-                ${analytics.lowConfidenceIncorrect}
-              </strong>
-
-            </div>
-
-          </div>
-
-        </div>
-
+        ${incorrectConfidenceHtml}
       </article>
 
     </section>
 
-
-    ${resultLifelineHistoryHtml()} 
-    
-    `;
+    ${resultLifelineHistoryHtml()}
+  `;
 }
-
 function clinicalPerformanceHtml(
   percentage
 ) {
@@ -5223,134 +6057,12 @@ function nextStepsHtml(
       safePercentage
     );
 
-  return `
-    <section class="result-next-steps">
-
-      <div class="result-next-steps-heading">
-
-        <span
-          aria-hidden="true"
-          class="result-next-steps-heading-icon"
-        >
-          🚀
-        </span>
-
-        <div>
-
-          <h3>
-            What’s next?
-          </h3>
-
-          <p>
-            Personalized recommendations from this attempt
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <div class="result-next-steps-grid">
-
+  const confidenceCard =
+    analytics.confidenceEnabled
+      ? `
         <button
           type="button"
-          class="
-            result-next-step-card
-            is-review
-          "
-          data-result-action="review"
-          ${
-            incorrectCount === 0
-              ? "disabled"
-              : ""
-          }
-        >
-
-          <span
-            class="result-next-step-icon"
-            aria-hidden="true"
-          >
-            🎯
-          </span>
-
-          <span class="result-next-step-copy">
-
-            <strong>
-              ${
-                incorrectCount > 0
-                  ? `Review ${incorrectCount} incorrect ${
-                      incorrectCount === 1
-                        ? "question"
-                        : "questions"
-                    }`
-                  : "No incorrect questions"
-              }
-            </strong>
-
-            <small>
-              ${
-                incorrectCount > 0
-                  ? "Focus on the concepts you missed before retrying."
-                  : "You answered every question correctly."
-              }
-            </small>
-
-          </span>
-
-          <span
-            class="result-next-step-arrow"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-
-        </button>
-
-
-        <button
-          type="button"
-          class="
-            result-next-step-card
-            is-flashcard
-          "
-          data-result-action="review"
-        >
-
-          <span
-            class="result-next-step-icon"
-            aria-hidden="true"
-          >
-            📚
-          </span>
-
-          <span class="result-next-step-copy">
-
-            <strong>
-              Study related flashcards
-            </strong>
-
-            <small>
-              Review the high-yield notes linked to your answered questions.
-            </small>
-
-          </span>
-
-          <span
-            class="result-next-step-arrow"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-
-        </button>
-
-
-        <button
-          type="button"
-          class="
-            result-next-step-card
-            is-confidence
-          "
+          class="result-next-step-card is-confidence"
           data-result-action="review"
           ${
             overconfidentErrors === 0 &&
@@ -5359,105 +6071,112 @@ function nextStepsHtml(
               : ""
           }
         >
-
-          <span
-            class="result-next-step-icon"
-            aria-hidden="true"
-          >
-            🔥
-          </span>
-
+          <span class="result-next-step-icon" aria-hidden="true">🔥</span>
           <span class="result-next-step-copy">
-
             <strong>
               ${
                 overconfidentErrors > 0
                   ? `Review ${overconfidentErrors} overconfident ${
-                      overconfidentErrors === 1
-                        ? "error"
-                        : "errors"
+                      overconfidentErrors === 1 ? "error" : "errors"
                     }`
                   : uncertainCorrect > 0
                     ? "Build confidence in correct reasoning"
                     : "Confidence well aligned"
               }
             </strong>
-
             <small>
               ${
                 overconfidentErrors > 0
                   ? "These mistakes deserve priority review."
                   : uncertainCorrect > 0
                     ? `You had ${uncertainCorrect} correct ${
-                        uncertainCorrect === 1
-                          ? "answer"
-                          : "answers"
+                        uncertainCorrect === 1 ? "answer" : "answers"
                       } with low confidence.`
                     : "Your confidence matched your answers well."
               }
             </small>
-
           </span>
-
-          <span
-            class="result-next-step-arrow"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-
+          <span class="result-next-step-arrow" aria-hidden="true">›</span>
         </button>
+      `
+      : "";
 
+  return `
+    <section class="result-next-steps">
+      <div class="result-next-steps-heading">
+        <span aria-hidden="true" class="result-next-steps-heading-icon">🚀</span>
+        <div>
+          <h3>What’s next?</h3>
+          <p>Personalized recommendations from this attempt</p>
+        </div>
+      </div>
+
+      <div class="result-next-steps-grid">
+        <button
+          type="button"
+          class="result-next-step-card is-review"
+          data-result-action="review"
+          ${incorrectCount === 0 ? "disabled" : ""}
+        >
+          <span class="result-next-step-icon" aria-hidden="true">🎯</span>
+          <span class="result-next-step-copy">
+            <strong>
+              ${
+                incorrectCount > 0
+                  ? `Review ${incorrectCount} incorrect ${
+                      incorrectCount === 1 ? "question" : "questions"
+                    }`
+                  : "No incorrect questions"
+              }
+            </strong>
+            <small>
+              ${
+                incorrectCount > 0
+                  ? "Focus on the concepts you missed before retrying."
+                  : "You answered every question correctly."
+              }
+            </small>
+          </span>
+          <span class="result-next-step-arrow" aria-hidden="true">›</span>
+        </button>
 
         <button
           type="button"
-          class="
-            result-next-step-card
-            is-retry
-          "
+          class="result-next-step-card is-flashcard"
+          data-result-action="review"
+        >
+          <span class="result-next-step-icon" aria-hidden="true">📚</span>
+          <span class="result-next-step-copy">
+            <strong>Study related flashcards</strong>
+            <small>Review the high-yield notes linked to your answered questions.</small>
+          </span>
+          <span class="result-next-step-arrow" aria-hidden="true">›</span>
+        </button>
+
+        ${confidenceCard}
+
+        <button
+          type="button"
+          class="result-next-step-card is-retry"
           data-result-action="retry"
         >
-
-          <span
-            class="result-next-step-icon"
-            aria-hidden="true"
-          >
-            🏆
-          </span>
-
+          <span class="result-next-step-icon" aria-hidden="true">🏆</span>
           <span class="result-next-step-copy">
-
-            <strong>
-              Retry the quiz
-            </strong>
-
+            <strong>Retry the quiz</strong>
             <small>
               ${
                 safePercentage >= 90
                   ? "Maintain your Expert performance."
-                  : `Current level: ${esc(
-                      profile.level
-                    )}. Aim for Expert performance above 90%.`
+                  : `Current level: ${esc(profile.level)}. Aim for Expert performance above 90%.`
               }
             </small>
-
           </span>
-
-          <span
-            class="result-next-step-arrow"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-
+          <span class="result-next-step-arrow" aria-hidden="true">›</span>
         </button>
-
       </div>
-
     </section>
   `;
 }
-
 function clampPercentage(
   value
 ) {
@@ -5508,7 +6227,9 @@ function performanceProfile(
         "🏆",
 
       message:
-        "Excellent mastery. Your knowledge and confidence are strongly aligned."
+        confidenceEnabled()
+          ? "Excellent mastery. Your knowledge and confidence are strongly aligned."
+          : "Excellent mastery with consistently strong clinical reasoning."
     };
   }
 
@@ -5544,7 +6265,9 @@ function performanceProfile(
         "📈",
 
       message:
-        "Good progress. Review incorrect and uncertain answers to strengthen mastery."
+        confidenceEnabled()
+          ? "Good progress. Review incorrect and uncertain answers to strengthen mastery."
+          : "Good progress. Review incorrect answers to strengthen mastery."
     };
   }
 
@@ -5566,6 +6289,11 @@ function resultInsight(
   analytics,
   percentage
 ) {
+  const showConfidence =
+    Boolean(
+      analytics.confidenceEnabled
+    );
+
   if (
     percentage === 100
   ) {
@@ -5577,11 +6305,14 @@ function resultInsight(
         "Complete mastery",
 
       message:
-        "You answered every question correctly. Your knowledge and confidence were perfectly aligned."
+        showConfidence
+          ? "You answered every question correctly. Your knowledge and confidence were perfectly aligned."
+          : "You answered every question correctly. Excellent mastery of this question set."
     };
   }
 
   if (
+    showConfidence &&
     analytics
       .highConfidenceIncorrect >
     0
@@ -5595,12 +6326,9 @@ function resultInsight(
 
       message:
         `You made ${
-          analytics
-            .highConfidenceIncorrect
+          analytics.highConfidenceIncorrect
         } high-confidence ${
-          analytics
-            .highConfidenceIncorrect ===
-          1
+          analytics.highConfidenceIncorrect === 1
             ? "error"
             : "errors"
         }. Review these concepts carefully before relying on them clinically.`
@@ -5608,6 +6336,7 @@ function resultInsight(
   }
 
   if (
+    showConfidence &&
     analytics
       .lowConfidenceCorrect >
     analytics
@@ -5667,7 +6396,9 @@ function resultInsight(
         "Developing mastery",
 
       message:
-        "You are progressing well. Focus your review on incorrect answers and questions answered with uncertainty."
+        showConfidence
+          ? "You are progressing well. Focus your review on incorrect answers and questions answered with uncertainty."
+          : "You are progressing well. Focus your review on the incorrect answers before retrying."
     };
   }
 
@@ -5683,7 +6414,7 @@ function resultInsight(
         "Strategic learning",
 
       message:
-        "You used the Expert Panel during this attempt. Revisit those concepts so you can answer independently next time."
+        "You used Life Savers during this attempt. Revisit those concepts so you can answer independently next time."
     };
   }
 
@@ -5721,7 +6452,7 @@ async function saveChallengeResult() {
         ).getTime()
       : Date.now();
 
-  const durationSeconds =
+  const rawDurationSeconds =
     Math.max(
       0,
       Math.round(
@@ -5730,6 +6461,17 @@ async function saveChallengeResult() {
           startedAt
         ) /
         1000
+      )
+    );
+
+  const durationSeconds =
+    Math.max(
+      0,
+      rawDurationSeconds -
+      Number(
+        ensureLifelinesState()
+          .bonusSeconds ||
+        0
       )
     );
 
@@ -5867,7 +6609,9 @@ if (
     "Expert performance";
 
   performanceMessage =
-    "Excellent mastery. Your knowledge and confidence were highly aligned.";
+    analytics.confidenceEnabled
+      ? "Excellent mastery. Your knowledge and confidence were highly aligned."
+      : "Excellent mastery with consistently strong clinical reasoning.";
 
   resultMascot =
     GOOD_JOB_MASCOT;
@@ -5895,7 +6639,9 @@ if (
     "Developing mastery";
 
   performanceMessage =
-    "Good progress. Review your incorrect and uncertain answers.";
+    analytics.confidenceEnabled
+      ? "Good progress. Review your incorrect and uncertain answers."
+      : "Good progress. Review your incorrect answers.";
 
   resultMascot =
     HAPPY_MASCOT;
@@ -5992,12 +6738,20 @@ quizArea.innerHTML = `
       <p>
         ${
           percentage >= 90
-            ? "Outstanding work! Your confidence matched your knowledge."
+            ? (
+                analytics.confidenceEnabled
+                  ? "Outstanding work! Your confidence matched your knowledge."
+                  : "Outstanding work! Excellent clinical performance."
+              )
             : percentage >= 75
               ? "Very good performance. Polish the remaining weak points."
               : percentage >= 60
-                ? "You are progressing. Review the uncertain concepts carefully."
-                : "Do not worry. Review the explanations and flashcards, then try again."
+                ? (
+                    analytics.confidenceEnabled
+                      ? "You are progressing. Review the uncertain concepts carefully."
+                      : "You are progressing. Review the incorrect concepts carefully."
+                  )
+                : "Review the explanations and flashcards, then try again."
         }
       </p>
 
@@ -6417,72 +7171,33 @@ document.addEventListener(
 );
 
 
-
-function learningWithTimeout(promise, ms, label) {
-  let timer;
-
-  const timeout = new Promise((_, reject) => {
-    timer = window.setTimeout(
-      () => reject(new Error(`${label} timed out. Please retry.`)),
-      ms
-    );
-  });
-
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timer) window.clearTimeout(timer);
-  });
-}
-
 /* =========================================================
    INITIALISATION
 ========================================================= */
 
 (async () => {
-  const quizArea =
-    $("quizArea");
-
   setStatus("Restoring session…");
+  console.log("ACL LEARNING STARTUP: restoring session");
 
-  let profile = null;
-
-  try {
-    profile =
-      await learningWithTimeout(
-        protectAndRender("login.html"),
-        9000,
-        "Account restoration"
-      );
-  } catch (authError) {
-    console.error("LEARNING AUTH ERROR:", authError);
-
-    setStatus(
-      authError.message || "Could not restore your account",
-      true
+  const profile =
+    await protectLearningSession(
+      "login.html"
     );
-
-    if (quizArea) {
-      quizArea.innerHTML = `
-        <div class="empty-state">
-          ${esc(authError.message || "Could not restore your account")}
-          <br>
-          <button
-            type="button"
-            class="primary-btn"
-            onclick="location.reload()"
-            style="margin-top:12px"
-          >
-            Retry
-          </button>
-        </div>
-      `;
-    }
-
-    return;
-  }
 
   if (!profile) {
     return;
   }
+
+  currentLearningUserId =
+    String(
+      profile.id ||
+      ""
+    );
+
+  await loadStarredQuestions();
+
+  const quizArea =
+    $("quizArea");
 
   if (!quizSlug) {
     if (quizArea) {
@@ -6501,11 +7216,7 @@ function learningWithTimeout(promise, ms, label) {
     try {
       aclSettings =
         normalizeAclSettings(
-          await learningWithTimeout(
-            getAclSettings(),
-            7000,
-            "Settings loading"
-          )
+          await getAclSettings()
         );
     } catch (settingsError) {
       console.warn(
@@ -6527,20 +7238,16 @@ function learningWithTimeout(promise, ms, label) {
       data,
       error
     } =
-      await learningWithTimeout(
-        supabaseClient.rpc(
-          "acl_get_learning_quiz",
-          {
-            p_quiz_slug:
-              quizSlug,
+      await supabaseClient.rpc(
+        "acl_get_learning_quiz",
+        {
+          p_quiz_slug:
+            quizSlug,
 
-            p_module_id:
-              requestedModuleId ||
-              null
-          }
-        ),
-        15000,
-        "Quiz loading"
+          p_module_id:
+            requestedModuleId ||
+            null
+        }
       );
 
     if (error) {
@@ -6592,6 +7299,9 @@ if (challengeId) {
       quiz.questions ||
       [];
 
+    questionPool =
+      [...pool];
+
     if (
       quiz.randomize_questions ||
       quiz.selection_mode ===
@@ -6617,20 +7327,31 @@ const requestedQuestionCount =
   isChallengeAttempt() &&
   challengeQuestionCount > 0
     ? challengeQuestionCount
-    : Number(
-        quiz.question_count ||
-        pool.length
-      );
+    : requestedStandaloneQuestionCount > 0
+      ? requestedStandaloneQuestionCount
+      : Math.min(
+          50,
+          Number(
+            quiz.question_count ||
+            pool.length
+          )
+        );
 
 
 questions =
-  pool.slice(
-    0,
-    Math.min(
-      requestedQuestionCount,
-      pool.length
-    )
-  );
+  challengeId
+    ? pool.slice(
+        0,
+        Math.min(
+          requestedQuestionCount,
+          pool.length
+        )
+      )
+    : distributedQuestionSelection(
+        pool,
+        requestedQuestionCount,
+        { randomize: true }
+      );
 
 
 /*
@@ -6649,47 +7370,25 @@ if (challengeId) {
     }
 
     attempt =
-      await learningWithTimeout(
-        getOpenAttempt(
-          quiz.module_id,
-          quiz.id
-        ),
-        9000,
-        "Attempt restoration"
-      );
+      forceNewAttempt
+        ? null
+        : await getOpenAttempt(
+            quiz.module_id,
+            quiz.id
+          );
 
     if (attempt) {
-      const questionMap =
-        new Map(
-          questions.map(
-            (question) => [
-              String(
-                question.id
-              ),
-
-              question
-            ]
-          )
-        );
-
       const savedQuestionIds =
         attempt.question_ids ||
         attempt.questionIds ||
         [];
 
       const restoredQuestions =
-        savedQuestionIds
-          .map(
-            (questionId) =>
-              questionMap.get(
-                String(
-                  questionId
-                )
-              )
-          )
-          .filter(
-            Boolean
-          );
+        restoredAttemptQuestions({
+          attemptRecord: attempt,
+          pool,
+          savedQuestionIds
+        });
 
       if (
         restoredQuestions.length
@@ -6720,6 +7419,19 @@ if (challengeId) {
         )
           ? attempt.answers
           : [];
+
+      if (!challengeId) {
+        questions =
+          redistributeRemainingQuestions(
+            questions,
+            index
+          );
+      }
+
+      saveQuestionSetRecovery(
+        questions
+      );
+
            preQuizReviewSeen =
   Boolean(
     attempt.preQuizReviewSeen ??
@@ -6746,36 +7458,45 @@ if (challengeId) {
     } else {
       resetAllLifelines();
 
+      const initialLifeSaverState =
+        ensureLifelinesState();
+
+      initialLifeSaverState.sessionQuestionCount =
+        questions.length;
+
+      lifelinesState =
+        initialLifeSaverState;
+
+      saveQuestionSetRecovery(
+        questions
+      );
+
       attempt =
-        await learningWithTimeout(
-          createAttempt({
-            moduleId:
-              quiz.module_id,
+        await createAttempt({
+          moduleId:
+            quiz.module_id,
 
-            moduleTitle:
-              quiz.module_title,
+          moduleTitle:
+            quiz.module_title,
 
-            quizId:
-              quiz.id,
+          quizId:
+            quiz.id,
 
-            quizTitle:
-              quiz.title,
+          quizTitle:
+            quiz.title,
 
-            mode:
-              quiz.mode,
+          mode:
+            quiz.mode,
 
-            questionIds:
-              questions.map(
-                (question) =>
-                  question.id
-              ),
+          questionIds:
+            questions.map(
+              (question) =>
+                question.id
+            ),
 
-            lifelines:
-              lifelinesState
-          }),
-          9000,
-          "Attempt creation"
-        );
+          lifelines:
+            lifelinesState
+        });
 
       setStatus(
         "New learning attempt saved"
