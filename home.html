@@ -5,13 +5,36 @@
 <title>Home | Cardiology League</title>
 <script>
 (function(){
-  const q=new URLSearchParams(location.search).get("edition");
+  const q=
+    String(
+      new URLSearchParams(location.search).get("edition") || ""
+    ).toLowerCase();
+
+  let granted="";
+  try{
+    granted=
+      String(
+        sessionStorage.getItem("aclEditionEntryGranted") || ""
+      ).toLowerCase();
+  }catch{}
+
   if(!q){
     location.replace("edition-select.html");
     return;
   }
-  if(String(q).toLowerCase()==="basic"){
+
+  if(q==="basic"){
+    if(granted!=="basic"){
+      location.replace("edition-select.html");
+      return;
+    }
+
     location.replace("basic-home.html?edition=basic");
+    return;
+  }
+
+  if(q==="expert" && granted!=="expert"){
+    location.replace("edition-select.html");
   }
 })();
 </script>
