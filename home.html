@@ -3,6 +3,16 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071a38">
 <title>Home | Cardiology League</title>
+<script>
+(function(){
+  const q=new URLSearchParams(location.search).get("edition");
+  let saved="";
+  try{saved=localStorage.getItem("aclSelectedEdition")||""}catch{}
+  if(String(q||saved).toLowerCase()==="basic"){
+    location.replace("basic-home.html?edition=basic");
+  }
+})();
+</script>
 <link rel="stylesheet" href="assets/css/acl-command-center.css?v=20260822b">
 <link rel="stylesheet" href="assets/css/home-dashboard-20260820.css?v=6">
 <link rel="stylesheet" href="assets/css/home-header-match-20260820.css?v=1">
