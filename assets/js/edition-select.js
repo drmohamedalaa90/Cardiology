@@ -158,6 +158,11 @@ if (!session?.user) {
             "aclSelectedEdition",
             "expert"
           );
+
+          sessionStorage.setItem(
+            "aclEditionEntryGranted",
+            "expert"
+          );
         } catch {}
 
         location.href =
@@ -186,6 +191,11 @@ if (!session?.user) {
 
           sessionStorage.setItem(
             "aclSelectedEdition",
+            "basic"
+          );
+
+          sessionStorage.setItem(
+            "aclEditionEntryGranted",
             "basic"
           );
         } catch {}
