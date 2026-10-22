@@ -490,3 +490,63 @@ body.acl-basic-learning-quiz .learning-session-header::after{
     min-height:38px!important;
   }
 }
+
+/* =========================================================
+   BASIC QUIZ — STAR QUESTION
+========================================================= */
+body.acl-basic-learning-quiz .question-topic-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:7px;
+  margin-left:auto;
+}
+body.acl-basic-learning-quiz .star-question-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-height:34px;
+  padding:0 10px;
+  border:1px solid #d5e2ea;
+  border-radius:11px;
+  background:#fff;
+  color:#597184;
+  font:inherit;
+  font-size:.65rem;
+  font-weight:850;
+  cursor:pointer;
+  transition:.16s ease;
+}
+body.acl-basic-learning-quiz .star-question-button:hover{
+  border-color:#e7b949;
+  background:#fffaf0;
+  color:#865c00;
+}
+body.acl-basic-learning-quiz .star-question-button.is-starred{
+  border-color:#edc65d;
+  background:#fff7d9;
+  color:#8b6100;
+}
+body.acl-basic-learning-quiz .star-question-icon{
+  font-size:1rem;
+  line-height:1;
+}
+@media(max-width:600px){
+  body.acl-basic-learning-quiz .question-topic-actions{
+    gap:4px;
+  }
+  body.acl-basic-learning-quiz .star-question-button{
+    width:30px;
+    min-width:30px;
+    min-height:30px;
+    padding:0;
+    border-radius:9px;
+  }
+  body.acl-basic-learning-quiz .star-question-label{
+    display:none;
+  }
+  body.acl-basic-learning-quiz .star-question-icon{
+    font-size:.9rem;
+  }
+}
