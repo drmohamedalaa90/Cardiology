@@ -99,3 +99,5 @@ html,body,button,input,select,textarea{
     line-height:1.5;
   }
 }
+
+.basic-challenge-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.basic-challenge-form label{display:grid;gap:8px;font-size:.8rem;font-weight:700;color:#123b54}.basic-challenge-form select{width:100%;min-height:45px;padding:10px;border:1px solid #ccdee8;border-radius:11px;background:#f7fbfd;font:inherit;color:#173d56}.basic-challenge-note,.basic-challenge-form [role=status]{grid-column:1/-1;margin:0;font-size:.8rem;color:#637e90}.basic-challenge-row .basic-primary-btn{white-space:nowrap}.basic-challenge-meta{display:block;font-size:.7rem;color:#71889a;margin-top:6px}@media(max-width:600px){.basic-challenge-form{grid-template-columns:1fr}}
