@@ -5642,6 +5642,7 @@ async function submitTimedOutQuestion(detail={}) {
         referenceText;
     }
 
+    if(basicIntegrityEnded||String(currentQuestion()?.id)!==String(question.id)||answerFor(question)||(detail.attemptId&&String(detail.attemptId)!==String(attempt?.id)))return;
     setAnswer({
       questionId: question.id,
       selectedIds: [],
