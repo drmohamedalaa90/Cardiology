@@ -606,9 +606,7 @@ function renderEdition() {
 
 async function requireAuthenticatedUser() {
   const profile =
-    await protectAndRender(
-      "login.html"
-    );
+    await protectAndRender("acl-access.html?build=20261023-clean");
 
 
   if (!profile) {
@@ -644,6 +642,30 @@ async function requireAuthenticatedUser() {
   state.profile =
     profile;
 
+  const {
+    data: allowed,
+    error: accessError
+  } = await supabaseClient.rpc(
+    "acl_can_access_learning_area",
+    {
+      p_edition: selectedEdition,
+      p_module_id:
+        requestedChallengeModule ||
+        null
+    }
+  );
+
+  if (
+    accessError ||
+    allowed !== true
+  ) {
+    location.replace(
+      selectedEdition === "basic"
+        ? "basic-home.html?edition=basic&admin_hold=1"
+        : "edition-select.html?locked=1"
+    );
+    return false;
+  }
 
   return true;
 }
@@ -725,10 +747,11 @@ async function loadModules() {
 
   const modules =
     (data || []).filter(module =>
-      selectedEdition !== "basic" ||
       isAdminUser ||
-      Number(module.display_order || 0) === 1 ||
-      module.basic_admin_released === true
+      (
+        selectedEdition === "basic" &&
+        Number(module.display_order || 0) === 1
+      )
     );
 
 
