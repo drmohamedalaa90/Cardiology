@@ -259,6 +259,15 @@ if (!session?.user) {
 
     if (quizError) throw quizError;
 
+    if (
+      !isAdmin &&
+      Number(moduleData.display_order || 0) > 1 &&
+      moduleData.basic_admin_released !== true
+    ) {
+      location.replace("basic-home.html?edition=basic&admin_hold=1");
+      throw new Error("Module is on admin hold");
+    }
+
     module = moduleData;
 
     quiz =
