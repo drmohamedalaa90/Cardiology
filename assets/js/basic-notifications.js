@@ -1,6 +1,19 @@
 import { supabaseClient } from "./supabase-client.js";
 const $=id=>document.getElementById(id);
 const esc=(v="")=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeHref=(value="")=>{
+  const raw=String(value||"").trim();
+  if(!raw)return "";
+  try{
+    const url=new URL(raw,location.href);
+    if(!["http:","https:"].includes(url.protocol))return "";
+    return url.origin===location.origin
+      ? url.pathname+url.search+url.hash
+      : url.toString();
+  }catch{
+    return "";
+  }
+};
 let items=[];
 let filter="all";
 
@@ -45,9 +58,13 @@ function render(){
   $("bnUnreadCount").textContent=String(items.filter(x=>x.is_unread).length);
 
   host.innerHTML=rows.length?rows.map(item=>{
-    const href=item.link_url||"#";
+    const href=safeHref(item.link_url);
     return `
-      <article class="basic-notification-card ${item.is_unread?"is-unread":""}" data-key="${esc(item.key)}">
+      <article
+        class="basic-notification-card ${item.is_unread?"is-unread":""} ${href?"is-clickable":""}"
+        data-key="${esc(item.key)}"
+        data-href="${esc(href)}"
+        ${href?'role="link" tabindex="0"':''}>
         <div class="basic-notification-icon ${esc(item.kind)}">${iconFor(item.kind)}</div>
         <div class="basic-notification-copy">
           <div class="basic-notification-title-row">
@@ -55,27 +72,52 @@ function render(){
             <span>${esc(when(item.event_at))}</span>
           </div>
           <p>${esc(item.body||"")}</p>
-          ${href&&href!=="#" ? `<a href="${esc(href)}" data-open-notification="${esc(item.key)}">Open →</a>` : ""}
+          ${href ? '<span class="basic-notification-open-hint">Open →</span>' : ""}
         </div>
         ${item.is_unread?'<span class="basic-unread-dot" aria-label="Unread"></span>':""}
       </article>
     `;
   }).join(""):'<div class="basic-empty-state">No notifications in this category yet.</div>';
 
-  host.querySelectorAll("[data-open-notification]").forEach(link=>{
-    link.addEventListener("click",async()=>{
-      const key=link.dataset.openNotification;
-      try{await supabaseClient.rpc("acl_mark_notification_read",{p_notification_key:key})}catch{}
-    });
-  });
+  async function openNotificationCard(card){
+    const item=items.find(x=>x.key===card.dataset.key);
+    if(!item)return;
+
+    if(item.is_unread){
+      try{
+        const {error}=await supabaseClient.rpc(
+          "acl_mark_notification_read",
+          {p_notification_key:item.key}
+        );
+        if(!error)item.is_unread=false;
+      }catch{}
+    }
+
+    const href=safeHref(card.dataset.href);
+    if(href){
+      if(/^https?:\/\//i.test(href) && !href.startsWith(location.origin)){
+        window.open(href,"_blank","noopener");
+      }else{
+        location.href=href;
+      }
+      return;
+    }
+
+    render();
+  }
 
   host.querySelectorAll(".basic-notification-card").forEach(card=>{
-    card.addEventListener("click",async event=>{
-      if(event.target.closest("a,button"))return;
-      const item=items.find(x=>x.key===card.dataset.key);
-      if(!item?.is_unread)return;
-      const {error}=await supabaseClient.rpc("acl_mark_notification_read",{p_notification_key:item.key});
-      if(!error){item.is_unread=false;render();}
+    card.addEventListener("click",event=>{
+      if(event.target.closest("button,a,input,select,textarea,label"))return;
+      void openNotificationCard(card);
+    });
+
+    card.addEventListener("keydown",event=>{
+      if(!card.dataset.href)return;
+      if(event.key==="Enter"||event.key===" "){
+        event.preventDefault();
+        void openNotificationCard(card);
+      }
     });
   });
 }
