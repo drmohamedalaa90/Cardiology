@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#072b49">
+  <title>Basic Members Admin | Cardiology League</title>
+  <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=6">
+  <link rel="stylesheet" href="assets/css/basic-admin-members.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="bam-shell">
+    <section class="bam-hero">
+      <div>
+        <span class="bam-kicker">ADMIN · BASIC EDITION</span>
+        <h1>Members & access control</h1>
+        <p>Review registered Basic members, activity, progress, friendships, challenges and account status.</p>
+      </div>
+      <a class="bam-back" href="basic-home.html?edition=basic">← Basic home</a>
+    </section>
+
+    <section class="bam-stats">
+      <article><span>Basic members</span><strong id="bamMemberCount">—</strong></article>
+      <article><span>Active</span><strong id="bamActiveCount">—</strong></article>
+      <article><span>On hold</span><strong id="bamHeldCount">—</strong></article>
+      <article><span>Modules released</span><strong id="bamReleasedCount">—</strong></article>
+    </section>
+
+    <section class="bam-panel">
+      <header class="bam-panel-head">
+        <div>
+          <span class="bam-section-kicker">MODULE ACCESS</span>
+          <h2>Admin release controls</h2>
+          <p>Module 1 stays available. Modules 2 onward remain blocked until you release them.</p>
+        </div>
+      </header>
+      <div id="bamModuleAccess" class="bam-module-access">
+        <div class="bam-empty">Loading module controls…</div>
+      </div>
+    </section>
+
+    <section class="bam-panel">
+      <header class="bam-panel-head bam-member-head">
+        <div>
+          <span class="bam-section-kicker">REGISTERED MEMBERS</span>
+          <h2>Basic Edition members</h2>
+        </div>
+        <div class="bam-tools">
+          <input id="bamSearch" type="search" placeholder="Search name, email or username…">
+          <select id="bamStatusFilter">
+            <option value="all">All accounts</option>
+            <option value="active">Active</option>
+            <option value="suspended">On hold</option>
+          </select>
+        </div>
+      </header>
+
+      <div id="bamMembers" class="bam-members">
+        <div class="bam-empty">Loading members…</div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/basic-admin-members.js?v=1"></script>
+  <script type="module" src="assets/js/basic-universal-shell.js?v=6"></script>
+</body>
+</html>
