@@ -16,7 +16,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/basic-home.css?v=1">
+  <link rel="stylesheet" href="assets/css/basic-home.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="basic-home-page">
@@ -29,7 +29,7 @@
       </span>
     </a>
 
-    <div class="basic-account-actions">
+    <div class="basic-account-actions"><a id="basicAdminMembers" class="basic-admin-members-link" href="basic-admin-members.html?edition=basic" hidden>Admin · Members</a>
       <button class="basic-edition-switch basic-expert-lock-home" id="basicExpertLockedHome" type="button"><span class="basic-lock-mark">◆</span><span>Expert Edition</span><small>Locked</small></button>
       <div class="basic-user-chip">
         <span id="basicAvatar" class="basic-avatar">ACL</span>
@@ -47,7 +47,7 @@
       <div>
         <span class="basic-eyebrow">ACL • BASIC EDITION</span>
         <h1>Build your cardiology foundation, one module at a time.</h1>
-        <p>Complete each module with more than 70% to unlock the next step in your learning pathway.</p>
+        <p>Complete each module with more than 70%. The next module also becomes available only after ACL admin release.</p>
       </div>
       <div class="basic-path-summary">
         <span>YOUR PATH</span>
@@ -75,7 +75,7 @@
           <span class="basic-section-kicker">LEARNING PATH</span>
           <h2>Locked modules</h2>
         </div>
-        <p>Score <strong>&gt;70%</strong> in the previous module to unlock the next module.</p>
+        <p>Modules require <strong>ACL admin release</strong> plus a score <strong>&gt;70%</strong> in the previous module.</p>
       </div>
       <div id="basicLockedModules" class="basic-locked-list" aria-live="polite">
         <div class="basic-loading-card">Checking your learning path…</div>
@@ -90,6 +90,6 @@
     <a href="basic-progress.html?edition=basic"><span aria-hidden="true">▤</span><strong>Progress</strong></a>
   </nav>
 
-  <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>\n  <script type="module" src="assets/js/basic-home.js?v=4"></script>
+  <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>\n  <script type="module" src="assets/js/basic-home.js?v=5"></script>
 </body>
 </html>
