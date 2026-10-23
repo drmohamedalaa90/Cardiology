@@ -1,3 +1,4 @@
+import {formatQuizTime} from "./basic-quiz-results.js?v=4";
 import { supabaseClient } from "./supabase-client.js";
 
 const $ = id => document.getElementById(id);
@@ -79,7 +80,7 @@ if (!session?.user) {
 
       supabaseClient
         .from("quiz_attempts")
-        .select("id,module_id,status,question_count,current_question_index,score,accuracy_percent,percentage,correct_count,incorrect_count,completed_at,updated_at")
+        .select("id,module_id,status,question_count,current_question_index,score,accuracy_percent,percentage,correct_count,incorrect_count,completed_at,updated_at,lifelines,answers,challenge_id")
         .eq("user_id", uid)
         .order("updated_at", { ascending: false }),
 
@@ -105,9 +106,7 @@ if (!session?.user) {
       (attemptResult.data || [])
         .filter(
           attempt =>
-            moduleIds.has(
-              String(attempt.module_id)
-            )
+            moduleIds.has(String(attempt.module_id))&&attempt.status!=='abandoned'&&attempt.status!=='invalidated'&&(attempt.status!=='in_progress'||attempt.challenge_id||attempt.lifelines?.basicResume?.allowed)
         );
 
     stars =
@@ -323,6 +322,12 @@ function render() {
                   Review starred
                 </a>
               </div>
+              <details open class="basic-quiz-history" style="grid-column:1/-1;width:100%;margin-top:12px"><summary style="cursor:pointer;font-weight:700">Quiz history · ${completedRows.length} completed</summary><div style="display:grid;gap:8px;margin-top:12px">${completedRows.length?completedRows.map((row,i)=>{
+                const meta=row.lifelines?._aclMeta||{};
+                const seconds=row.lifelines?.basicTimingVersion===1?(meta.activeTimeSeconds??meta.durationSeconds):null;
+                const date=row.completed_at||row.updated_at;
+                return `<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px;background:#f3f7fb;border-radius:10px"><span><strong>Quiz ${completedRows.length-i}</strong> · ${esc(date?new Date(date).toLocaleString():'')}</span><span>${Number(row.question_count)||0} questions · ${accuracy(row)??'—'}% correct · <strong>Time: ${esc(formatQuizTime(seconds))}</strong></span></div>`;
+              }).join(''):'<p>No completed quizzes yet.</p>'}</div></details>
             </article>
           `;
         }).join("")
@@ -649,3 +654,4 @@ $("bpResetProgress")?.addEventListener("click", async () => {
     localStorage.removeItem("aclLearningSession");
   } catch {}
 });
+
