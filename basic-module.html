@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#072b49"><title>Module | ACL Basic Edition</title><link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=6"><link rel="stylesheet" href="assets/css/basic-module-hub.css?v=5"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#072b49"><title>Module | ACL Basic Edition</title><link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=6"><link rel="stylesheet" href="assets/css/basic-module-hub.css?v=6"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
 <main class="basic-module-page">
   <section class="basic-module-hero">
     <a class="basic-module-back" href="basic-home.html?edition=basic">← Modules</a>
@@ -102,10 +102,10 @@
       <a id="bmLectureLink" class="basic-path-action" href="#" target="_blank" rel="noopener">Watch on YouTube ↗</a>
     </article>
 
-    <article class="basic-path-card flashcards">
+    <article id="bmFlashcardsCard" class="basic-path-card flashcards">
       <div class="basic-path-icon">▣</div>
-      <div class="basic-path-copy"><span class="basic-module-kicker">STEP 2</span><h2>Review flashcards</h2><p>Revise the high-yield concepts from this module at your own pace.</p></div>
-      <a id="bmFlashcardsLink" class="basic-path-action" href="#">Open flashcards →</a>
+      <div class="basic-path-copy"><span class="basic-module-kicker">STEP 2</span><h2>Review flashcards</h2><p id="bmFlashcardsCopy">Revise the high-yield concepts from this module at your own pace.</p></div>
+      <span id="bmFlashcardsLink" class="basic-path-action coming-soon-resource" aria-disabled="true">Coming soon</span>
     </article>
 
     <article class="basic-path-card quiz">
@@ -134,7 +134,7 @@
         <div class="basic-lifeline-grid">
           <button type="button" data-life="filter"><span>✂</span><strong>50:50</strong><small>Remove 2 incorrect answers.</small></button>
           <button type="button" data-life="swap"><span>↻</span><strong>Swap Question</strong><small>Replace the current question.</small></button>
-          <button type="button" data-life="expert"><img src="assets/images/dr-corazon-happy.webp" alt=""><strong>Ask Dr. Corazón</strong><small>He gives an indirect clue, never the answer.</small></button>
+          <button type="button" class="coming-soon-lifeline" data-life="expert" disabled aria-disabled="true"><img src="assets/images/dr-corazon-happy.webp" alt=""><strong>Ask Dr. Corazón</strong><small>Will be available soon.</small><em>COMING SOON</em></button>
           <button type="button" data-life="time"><span>+1</span><strong>Extra Minute</strong><small>Add 60 seconds to the current question.</small></button>
         </div>
       </div>
@@ -144,4 +144,4 @@
     </div>
   </section>
 </main>
-<script type="module" src="assets/js/basic-module-hub.js?v=6"></script><script type="module" src="assets/js/basic-universal-shell.js?v=5"></script></body></html>
+<script type="module" src="assets/js/basic-module-hub.js?v=7"></script><script type="module" src="assets/js/basic-universal-shell.js?v=5"></script></body></html>
