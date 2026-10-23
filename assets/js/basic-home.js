@@ -5,7 +5,7 @@ function safeArray(v){if(Array.isArray(v))return v;if(typeof v==="string"&&v.tri
 function accuracyOf(a){if(!a||a.status!=="completed")return null;const answers=safeArray(a.answers);if(answers.length){const c=answers.filter(x=>x?.correct===true).length;return Math.round(c/answers.length*100)}const score=Number(a.score),total=Number(a.question_count);return Number.isFinite(score)&&Number.isFinite(total)&&total>0&&score>=0&&score<=total?Math.round(score/total*100):null}
 function bestAttemptByModule(attempts){
  const map=new Map();
- for(const a of attempts){
+ for(const a of attempts){if(a.status==="invalidated")continue;
   const id=String(a.module_id||"");if(!id)continue;
   const cur=map.get(id)||{bestAccuracy:null,latest:null,inProgress:null,questionResults:new Map()};
   const acc=accuracyOf(a);if(acc!==null&&(cur.bestAccuracy===null||acc>cur.bestAccuracy))cur.bestAccuracy=acc;
