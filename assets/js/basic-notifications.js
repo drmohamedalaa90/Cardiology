@@ -16,6 +16,7 @@ const safeHref=(value="")=>{
 };
 let items=[];
 let filter="all";
+const expandedKeys=new Set();
 
 const iconFor=kind=>{
   if(kind==="friend_request") return "👤";
@@ -59,6 +60,10 @@ function render(){
 
   host.innerHTML=rows.length?rows.map(item=>{
     const href=safeHref(item.link_url);
+    const bodyText=String(item.body||"");
+    const expanded=expandedKeys.has(String(item.key));
+    const needsMore=bodyText.length>145||bodyText.includes("\n");
+
     return `
       <article
         class="basic-notification-card ${item.is_unread?"is-unread":""} ${href?"is-clickable":""}"
@@ -71,8 +76,12 @@ function render(){
             <strong>${esc(item.title||"ACL notification")}</strong>
             <span>${esc(when(item.event_at))}</span>
           </div>
-          <p>${esc(item.body||"")}</p>
-          ${href ? '<span class="basic-notification-open-hint">Open →</span>' : ""}
+          <p class="${expanded?"is-expanded":""}">${esc(bodyText)}</p>
+          ${href
+            ? '<span class="basic-notification-open-hint">Read more →</span>'
+            : needsMore
+              ? `<button class="basic-notification-read-more" type="button" data-expand-notification="${esc(item.key)}">${expanded?"Show less":"Read more"}</button>`
+              : ""}
         </div>
         ${item.is_unread?'<span class="basic-unread-dot" aria-label="Unread"></span>':""}
       </article>
@@ -105,6 +114,17 @@ function render(){
 
     render();
   }
+
+  host.querySelectorAll("[data-expand-notification]").forEach(button=>{
+    button.addEventListener("click",event=>{
+      event.stopPropagation();
+      const key=String(button.dataset.expandNotification||"");
+      if(!key)return;
+      if(expandedKeys.has(key))expandedKeys.delete(key);
+      else expandedKeys.add(key);
+      render();
+    });
+  });
 
   host.querySelectorAll(".basic-notification-card").forEach(card=>{
     card.addEventListener("click",event=>{
