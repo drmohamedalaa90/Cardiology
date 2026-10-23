@@ -89,7 +89,7 @@ function basicNewsSafeStyle(value){
 }
 
 function basicNewsSafeEffect(value){
-  return ["none","zoom","pulse","fade","slide","glow"].includes(String(value))
+  return ["none","zoom","pulse","fade","slide","glow","bounce"].includes(String(value))
     ? String(value)
     : "none";
 }
@@ -148,10 +148,15 @@ function renderBasicNews(){
   }
 
   host.innerHTML=rows.map(item=>{
-    const color=basicNewsSafeColor(item.text_color);
-    const size=basicNewsSafeSize(item.text_size);
+    const titleColor=basicNewsSafeColor(item.title_color||item.text_color);
+    const bodyColor=basicNewsSafeColor(item.body_color||item.text_color);
+    const titleSize=basicNewsSafeSize(item.title_size||"normal");
+    const bodySize=basicNewsSafeSize(item.body_size||item.text_size);
     const style=basicNewsSafeStyle(item.card_style);
-    const effect=basicNewsSafeEffect(item.text_effect);
+    const titleEffect=basicNewsSafeEffect(item.title_effect||"none");
+    const bodyEffect=basicNewsSafeEffect(item.body_effect||item.text_effect||"none");
+    const titleBold=item.title_bold!==false;
+    const bodyBold=item.body_bold===true;
     const href=basicNewsSafeHref(item.link_url);
     const image=basicNewsSafeHref(item.image_url);
     const body=esc(item.body||"").replace(/\n/g,"<br>");
@@ -160,7 +165,7 @@ function renderBasicNews(){
       : "";
 
     return `
-      <article class="basic-news-card ${style} size-${size} effect-${effect}" style="--news-text:${color}">
+      <article class="basic-news-card ${style} title-size-${titleSize} body-size-${bodySize} title-effect-${titleEffect} body-effect-${bodyEffect}" style="--news-title:${titleColor};--news-body:${bodyColor};--news-title-weight:${titleBold?900:500};--news-body-weight:${bodyBold?800:400}">
         ${image?`<div class="basic-news-image"><img src="${esc(image)}" alt="" loading="lazy"></div>`:""}
         <div class="basic-news-card-body">
           <div class="basic-news-meta">
@@ -190,10 +195,15 @@ function resetBasicNewsEditor(){
   if(!form)return;
   form.reset();
   document.getElementById("basicNewsId").value="";
-  document.getElementById("basicNewsColor").value="#173d56";
-  document.getElementById("basicNewsSize").value="normal";
+  document.getElementById("basicNewsTitleColor").value="#173d56";
+  document.getElementById("basicNewsTitleSize").value="normal";
+  document.getElementById("basicNewsTitleBold").checked=true;
+  document.getElementById("basicNewsTitleEffect").value="none";
+  document.getElementById("basicNewsBodyColor").value="#173d56";
+  document.getElementById("basicNewsBodySize").value="normal";
+  document.getElementById("basicNewsBodyBold").checked=false;
+  document.getElementById("basicNewsBodyEffect").value="none";
   document.getElementById("basicNewsStyle").value="standard";
-  document.getElementById("basicNewsEffect").value="none";
   document.getElementById("basicNewsActive").checked=true;
   document.getElementById("basicNewsPinned").checked=false;
   document.getElementById("basicNewsEditorTitle").textContent="Create a new update";
@@ -218,10 +228,15 @@ function openBasicNewsEditor(item=null){
   document.getElementById("basicNewsTitle").value=item.title||"";
   document.getElementById("basicNewsKind").value=item.kind||"announcement";
   document.getElementById("basicNewsBody").value=item.body||"";
-  document.getElementById("basicNewsColor").value=basicNewsSafeColor(item.text_color);
-  document.getElementById("basicNewsSize").value=basicNewsSafeSize(item.text_size);
+  document.getElementById("basicNewsTitleColor").value=basicNewsSafeColor(item.title_color||item.text_color);
+  document.getElementById("basicNewsTitleSize").value=basicNewsSafeSize(item.title_size||"normal");
+  document.getElementById("basicNewsTitleBold").checked=item.title_bold!==false;
+  document.getElementById("basicNewsTitleEffect").value=basicNewsSafeEffect(item.title_effect||"none");
+  document.getElementById("basicNewsBodyColor").value=basicNewsSafeColor(item.body_color||item.text_color);
+  document.getElementById("basicNewsBodySize").value=basicNewsSafeSize(item.body_size||item.text_size);
+  document.getElementById("basicNewsBodyBold").checked=item.body_bold===true;
+  document.getElementById("basicNewsBodyEffect").value=basicNewsSafeEffect(item.body_effect||item.text_effect||"none");
   document.getElementById("basicNewsStyle").value=basicNewsSafeStyle(item.card_style);
-  document.getElementById("basicNewsEffect").value=basicNewsSafeEffect(item.text_effect);
   document.getElementById("basicNewsLink").value=item.link_url||"";
   document.getElementById("basicNewsPinned").checked=Boolean(item.is_pinned);
   document.getElementById("basicNewsActive").checked=item.is_active!==false;
@@ -247,7 +262,7 @@ async function loadBasicNews(){
 
   let query=supabaseClient
     .from("acl_announcements")
-    .select("id,title,body,kind,edition,link_url,is_pinned,is_active,published_at,created_at,text_color,text_size,image_url,card_style,text_effect")
+    .select("id,title,body,kind,edition,link_url,is_pinned,is_active,published_at,created_at,text_color,text_size,image_url,card_style,text_effect,title_color,title_size,title_bold,title_effect,body_color,body_size,body_bold,body_effect")
     .order("published_at",{ascending:false})
     .limit(20);
 
@@ -332,11 +347,19 @@ document.getElementById("basicNewsForm")?.addEventListener("submit",async event=
       link_url:document.getElementById("basicNewsLink").value.trim()||null,
       is_pinned:document.getElementById("basicNewsPinned").checked,
       is_active:document.getElementById("basicNewsActive").checked,
-      text_color:document.getElementById("basicNewsColor").value,
-      text_size:document.getElementById("basicNewsSize").value,
+      title_color:document.getElementById("basicNewsTitleColor").value,
+      title_size:document.getElementById("basicNewsTitleSize").value,
+      title_bold:document.getElementById("basicNewsTitleBold").checked,
+      title_effect:document.getElementById("basicNewsTitleEffect").value,
+      body_color:document.getElementById("basicNewsBodyColor").value,
+      body_size:document.getElementById("basicNewsBodySize").value,
+      body_bold:document.getElementById("basicNewsBodyBold").checked,
+      body_effect:document.getElementById("basicNewsBodyEffect").value,
+      text_color:document.getElementById("basicNewsBodyColor").value,
+      text_size:document.getElementById("basicNewsBodySize").value,
+      text_effect:document.getElementById("basicNewsBodyEffect").value,
       image_url:imageUrl||null,
       card_style:document.getElementById("basicNewsStyle").value,
-      text_effect:document.getElementById("basicNewsEffect").value,
       published_at:new Date().toISOString()
     };
 
