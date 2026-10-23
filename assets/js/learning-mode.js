@@ -2193,8 +2193,8 @@ window.addEventListener('pageshow',event=>{if(event.persisted&&basicQuizMode&&!c
 function installBasicSaveExit(){
  if(!basicQuizMode||challengeId||document.getElementById('basicSaveExit'))return;
  const bar=document.createElement('div');bar.className='basic-save-exit-bar';
- bar.innerHTML='<button type="button" class="primary-btn" id="basicSaveExit">Save progress &amp; exit</button><span>Use this button to continue this quiz later.</span>';
- document.querySelector('.learning-session-header')?.after(bar);
+ bar.innerHTML='<button type="button" class="basic-save-exit-button" id="basicSaveExit">Save progress &amp; exit</button>';
+ document.getElementById('learningNotesToggle')?.before(bar);
  bar.querySelector('button').onclick=async()=>{
   if(!attempt||basicExplicitExit||reviewMode||finishing||basicCompletionPending)return;
   if(basicAnswerBusy||advancingQuestion){setStatus('Please wait for your answer to finish saving.');return;}
