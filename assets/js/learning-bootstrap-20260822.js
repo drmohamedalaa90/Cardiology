@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
 function showBootError(message) {
+  document.documentElement.classList.remove("basic-quiz-booting");
   const area = $("quizArea");
   const status = $("saveStatus");
 
@@ -55,7 +56,7 @@ function setStage(text) {
 setStage("Starting learning engine…");
 
 const importPromise = import(
-  "./learning-mode.js?v=20261023-safe-restart2"
+  "./learning-mode.js?v=20261023-save-exit1"
 );
 
 const timeoutPromise = new Promise((_, reject) => {
