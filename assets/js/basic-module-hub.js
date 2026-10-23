@@ -229,7 +229,7 @@ if (!session?.user) {
 
       supabaseClient
         .from("quiz_attempts")
-        .select("status,accuracy_percent,percentage,question_count,correct_count,updated_at")
+        .select("id,quiz_id,status,accuracy_percent,percentage,question_count,correct_count,updated_at")
         .eq("user_id", session.user.id)
         .eq("module_id", moduleId)
         .order("updated_at", { ascending: false }),
@@ -338,6 +338,24 @@ if (!session?.user) {
     }
 
     await refreshActualQuestionCount();
+    const unfinished=(attempts||[]).find(item=>item.status==='in_progress'&&String(item.quiz_id)===String(quiz?.id));
+    if(unfinished){
+      const button=$("bmOpenQuiz");
+      button.disabled=false;
+      button.textContent='Continue saved quiz →';
+      button.addEventListener('click',event=>{
+        event.stopImmediatePropagation();
+        const url=new URL('learning.html',location.href);
+        url.searchParams.set('edition','basic');
+        url.searchParams.set('module',module.id);
+        url.searchParams.set('quiz',quiz.slug);
+        url.searchParams.set('count',String(unfinished.question_count||10));
+        url.searchParams.set('basic_quiz','1');
+        url.searchParams.set('question_time_seconds','120');
+        url.searchParams.set('timer_session',unfinished.id);
+        location.href=url.toString();
+      },{capture:true});
+    }
   } catch (error) {
     console.error(error);
     $("bmTitle").textContent = "Module unavailable";
@@ -450,7 +468,7 @@ $("bmStartSolo")?.addEventListener("click", () => {
   url.searchParams.set("module", module.id);
   url.searchParams.set("quiz", quiz.slug);
   url.searchParams.set("count", String(count));
-  url.searchParams.set("new", "1");
+  // Resume unfinished attempts before creating another quiz.
   url.searchParams.set("question_time_seconds", "120");
   url.searchParams.set("lifelines", [...selected].join(","));
   url.searchParams.set("basic_quiz", "1");
