@@ -1,5 +1,5 @@
 /* ACL service worker v7.3.0 — network-first app shell */
-const VERSION='acl-v7.25-20261023-news-split-editor';
+const VERSION='acl-v7.25-20261023-basic-home-editor-carousel';
 const CACHE_NAME=VERSION;
 const BASE='/Cardiology/';
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(Promise.resolve());});
