@@ -609,7 +609,7 @@ $("bpResetProgress")?.addEventListener("click", async () => {
   status.textContent = "Resetting your Basic progress…";
   status.className = "basic-reset-status";
 
-  const { data, error } =
+  const { error } =
     await supabaseClient.rpc("acl_reset_my_basic_progress");
 
   if (error) {
