@@ -17,3 +17,6 @@
 
 .basic-admin-members-link{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border:1px solid rgba(255,255,255,.24);border-radius:12px;background:rgba(255,255,255,.1);color:#fff;text-decoration:none;font-size:.66rem;font-weight:900;white-space:nowrap}.basic-admin-members-link:hover{background:rgba(255,255,255,.16)}.basic-admin-members-link[hidden]{display:none!important}
 @media(max-width:760px){.basic-admin-members-link{order:4;width:100%}}
+
+.basic-contact-link{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border-radius:12px;color:#c8e6f0;text-decoration:none;font-size:.7rem;font-weight:800;white-space:nowrap}.basic-contact-link:hover{background:rgba(255,255,255,.08);color:#fff}
+@media(max-width:760px){.basic-contact-link{min-height:36px;padding:0 8px;font-size:.6rem}}
