@@ -28,7 +28,19 @@ function wireHeader(name){
 
 async function init(){
   const {data:{session}}=await supabaseClient.auth.getSession();
-  if(!session?.user){location.replace('login.html');return}
+  if(!session?.user){location.replace('acl-access.html?build=20261023-clean');return}
+  if(
+    edition==='expert' &&
+    String(session.user.email||'').trim().toLowerCase()!=='drmohamedalaa90@gmail.com'
+  ){
+    try{
+      sessionStorage.removeItem('aclEditionEntryGranted');
+      localStorage.setItem('aclSelectedEdition','basic');
+      sessionStorage.setItem('aclSelectedEdition','basic');
+    }catch{}
+    location.replace('edition-select.html?locked=1');
+    return;
+  }
   let profile=null;try{const r=await supabaseClient.from('profiles').select('*').eq('id',session.user.id).maybeSingle();profile=r.data}catch{}
   const name=displayName(profile,session.user);
   set('#welcomeName',name);set('#heroEdition',edition==='basic'?'Basic':'Expert');wireHeader(name);
