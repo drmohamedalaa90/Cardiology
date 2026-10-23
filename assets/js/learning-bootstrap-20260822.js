@@ -55,7 +55,7 @@ function setStage(text) {
 setStage("Starting learning engine…");
 
 const importPromise = import(
-  "./learning-mode.js?v=20261023-safe-restart"
+  "./learning-mode.js?v=20261023-safe-restart2"
 );
 
 const timeoutPromise = new Promise((_, reject) => {
