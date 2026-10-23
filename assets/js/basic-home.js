@@ -88,6 +88,12 @@ function basicNewsSafeStyle(value){
     : "standard";
 }
 
+function basicNewsSafeEffect(value){
+  return ["none","zoom","pulse","fade","slide","glow"].includes(String(value))
+    ? String(value)
+    : "none";
+}
+
 function basicNewsSafeHref(value){
   const raw=String(value||"").trim();
   if(!raw)return "";
@@ -145,6 +151,7 @@ function renderBasicNews(){
     const color=basicNewsSafeColor(item.text_color);
     const size=basicNewsSafeSize(item.text_size);
     const style=basicNewsSafeStyle(item.card_style);
+    const effect=basicNewsSafeEffect(item.text_effect);
     const href=basicNewsSafeHref(item.link_url);
     const image=basicNewsSafeHref(item.image_url);
     const body=esc(item.body||"").replace(/\n/g,"<br>");
@@ -153,7 +160,7 @@ function renderBasicNews(){
       : "";
 
     return `
-      <article class="basic-news-card ${style} size-${size}" style="--news-text:${color}">
+      <article class="basic-news-card ${style} size-${size} effect-${effect}" style="--news-text:${color}">
         ${image?`<div class="basic-news-image"><img src="${esc(image)}" alt="" loading="lazy"></div>`:""}
         <div class="basic-news-card-body">
           <div class="basic-news-meta">
@@ -186,6 +193,7 @@ function resetBasicNewsEditor(){
   document.getElementById("basicNewsColor").value="#173d56";
   document.getElementById("basicNewsSize").value="normal";
   document.getElementById("basicNewsStyle").value="standard";
+  document.getElementById("basicNewsEffect").value="none";
   document.getElementById("basicNewsActive").checked=true;
   document.getElementById("basicNewsPinned").checked=false;
   document.getElementById("basicNewsEditorTitle").textContent="Create a new update";
@@ -213,6 +221,7 @@ function openBasicNewsEditor(item=null){
   document.getElementById("basicNewsColor").value=basicNewsSafeColor(item.text_color);
   document.getElementById("basicNewsSize").value=basicNewsSafeSize(item.text_size);
   document.getElementById("basicNewsStyle").value=basicNewsSafeStyle(item.card_style);
+  document.getElementById("basicNewsEffect").value=basicNewsSafeEffect(item.text_effect);
   document.getElementById("basicNewsLink").value=item.link_url||"";
   document.getElementById("basicNewsPinned").checked=Boolean(item.is_pinned);
   document.getElementById("basicNewsActive").checked=item.is_active!==false;
@@ -238,7 +247,7 @@ async function loadBasicNews(){
 
   let query=supabaseClient
     .from("acl_announcements")
-    .select("id,title,body,kind,edition,link_url,is_pinned,is_active,published_at,created_at,text_color,text_size,image_url,card_style")
+    .select("id,title,body,kind,edition,link_url,is_pinned,is_active,published_at,created_at,text_color,text_size,image_url,card_style,text_effect")
     .order("published_at",{ascending:false})
     .limit(20);
 
@@ -327,6 +336,7 @@ document.getElementById("basicNewsForm")?.addEventListener("submit",async event=
       text_size:document.getElementById("basicNewsSize").value,
       image_url:imageUrl||null,
       card_style:document.getElementById("basicNewsStyle").value,
+      text_effect:document.getElementById("basicNewsEffect").value,
       published_at:new Date().toISOString()
     };
 
