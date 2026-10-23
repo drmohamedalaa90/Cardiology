@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#072b49">
+  <title>Notifications | ACL Basic Edition</title>
+  <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=6">
+  <link rel="stylesheet" href="assets/css/basic-pages.css?v=4">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="basic-page">
+    <section class="basic-page-hero">
+      <div>
+        <span class="basic-page-kicker">ACL UPDATES</span>
+        <h1>Notifications</h1>
+        <p>Friend activity, official competitions, admin messages and ACL platform updates.</p>
+      </div>
+      <button id="bnMarkAll" class="basic-secondary-btn" type="button">Mark all as read</button>
+    </section>
+
+    <section class="basic-notification-summary">
+      <div>
+        <span>Unread</span>
+        <strong id="bnUnreadCount">0</strong>
+      </div>
+      <div class="basic-notification-filter" role="group" aria-label="Notification filters">
+        <button type="button" class="is-active" data-filter="all">All</button>
+        <button type="button" data-filter="friends">Friends</button>
+        <button type="button" data-filter="competition">Competitions</button>
+        <button type="button" data-filter="updates">Updates</button>
+      </div>
+    </section>
+
+    <section id="bnList" class="basic-notification-list" aria-live="polite">
+      <div class="basic-empty-state">Loading notifications…</div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/basic-notifications.js?v=1"></script>
+  <script type="module" src="assets/js/basic-universal-shell.js?v=9"></script>
+</body>
+</html>
