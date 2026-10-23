@@ -494,3 +494,5 @@ function enableQuestionPaste(stem,choices,extra=[]){
   [stem,...choices,...(lines.length===8?extra:[])].forEach(field=>field?.dispatchEvent(new Event('input',{bubbles:true})));
  });
 }
+
+$('bmChallengeMode')?.addEventListener('click',()=>{location.href=`basic-challenges.html?edition=basic&module=${encodeURIComponent(module?.id||moduleId)}`;});
