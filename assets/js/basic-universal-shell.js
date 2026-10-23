@@ -101,3 +101,27 @@ if (edition === "basic") {
     }
   });
 }
+
+
+/* ACL Basic membership presence + suspension enforcement */
+async function aclBasicPresenceHeartbeat(){
+  if(edition!=="basic") return;
+  try{
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(!session?.user) return;
+    const {data,error}=await supabaseClient.rpc("acl_touch_basic_presence");
+    if(error) return;
+    if(data?.allowed===false){
+      try{await supabaseClient.auth.signOut()}catch{}
+      location.replace("login.html?held=1");
+    }
+  }catch{}
+}
+if(edition==="basic"){
+  void aclBasicPresenceHeartbeat();
+  const aclBasicPresenceTimer=setInterval(()=>void aclBasicPresenceHeartbeat(),120000);
+  document.addEventListener("visibilitychange",()=>{
+    if(!document.hidden) void aclBasicPresenceHeartbeat();
+  });
+  window.addEventListener("pagehide",()=>clearInterval(aclBasicPresenceTimer),{once:true});
+}
