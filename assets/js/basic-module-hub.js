@@ -311,9 +311,6 @@ if (!session?.user) {
     $("bmStarredLink").href =
       `basic-starred.html?edition=basic&module=${encodeURIComponent(module.id)}`;
 
-    $("bmChallengeMode").href =
-      `challenge.html?edition=basic&module=${encodeURIComponent(module.id)}`;
-
     const lecture = (videos || [])[0];
     const lectureLink = $("bmLectureLink");
 
