@@ -106,7 +106,7 @@ function showPanel(panel) {
   byId("registerForm").hidden = signIn;
   byId("signInTab").classList.toggle("active", signIn);
   byId("registerTab").classList.toggle("active", !signIn);
-  history.replaceState(null, "", signIn ? "login.html" : "login.html#register");
+  history.replaceState(null, "", signIn ? "acl-access.html?build=20261023-clean" : "acl-access.html?build=20261023-clean#register");
 }
 
 byId("signInTab")?.addEventListener("click", () => showPanel("signin"));
