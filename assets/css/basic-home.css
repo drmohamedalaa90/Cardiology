@@ -64,3 +64,70 @@
   .basic-news-card[class*="title-effect-"] h3,
   .basic-news-card[class*="body-effect-"] p{animation:none!important}
 }
+
+
+/* =========================================================
+   BASIC HOME — CAROUSEL / HOMEPAGE EDITOR / TEXT MOTION
+========================================================= */
+.basic-news-admin-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.basic-news-carousel{position:relative;display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:10px}
+.basic-news-grid{display:block;min-width:0}
+.basic-news-grid .basic-news-card{width:100%}
+.basic-news-arrow{display:grid;place-items:center;width:40px;height:40px;border:1px solid #c7dce5;border-radius:50%;background:#fff;color:#0d5877;font:inherit;font-size:1.35rem;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(7,43,73,.08);transition:.15s ease}
+.basic-news-arrow:hover{transform:translateY(-1px);border-color:#8fc1d2;background:#f1fafc}
+.basic-news-arrow[hidden]{visibility:hidden;display:grid!important;pointer-events:none;opacity:0}
+.basic-news-dots{display:flex;align-items:center;justify-content:center;gap:6px;min-height:18px;margin-top:9px}
+.basic-news-dots button{width:7px;height:7px;padding:0;border:0;border-radius:999px;background:#bfd0d9;cursor:pointer;transition:.18s ease}
+.basic-news-dots button.is-active{width:22px;background:#14809a}
+.basic-home-text-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.basic-home-text-form .wide{grid-column:1/-1}
+.basic-home-text-form .basic-news-form-actions{grid-column:1/-1}
+.basic-home-text-panel{border-left:4px solid #14809a}
+
+/* Independent title motion */
+.basic-news-card.title-effect-zoom h3{animation:aclNewsZoom 2.8s ease-in-out infinite}
+.basic-news-card.title-effect-pulse h3{animation:aclNewsPulse 2.2s ease-in-out infinite}
+.basic-news-card.title-effect-fade h3{animation:aclNewsFade 2.6s ease-in-out infinite}
+.basic-news-card.title-effect-slide h3{animation:aclNewsSlide 3s ease-in-out infinite}
+.basic-news-card.title-effect-bounce h3{animation:aclNewsBounce 2.4s ease-in-out infinite}
+.basic-news-card.title-effect-glow h3{animation:aclNewsGlow 2.2s ease-in-out infinite}
+
+/* Independent body motion */
+.basic-news-card.body-effect-zoom p{animation:aclNewsZoom 2.8s ease-in-out infinite}
+.basic-news-card.body-effect-pulse p{animation:aclNewsPulse 2.2s ease-in-out infinite}
+.basic-news-card.body-effect-fade p{animation:aclNewsFade 2.6s ease-in-out infinite}
+.basic-news-card.body-effect-slide p{animation:aclNewsSlide 3s ease-in-out infinite}
+.basic-news-card.body-effect-bounce p{animation:aclNewsBounce 2.4s ease-in-out infinite}
+.basic-news-card.body-effect-glow p{animation:aclNewsGlow 2.2s ease-in-out infinite}
+
+@keyframes aclNewsZoom{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
+@keyframes aclNewsPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.025);opacity:.68}}
+@keyframes aclNewsFade{0%,100%{opacity:1}50%{opacity:.34}}
+@keyframes aclNewsSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+@keyframes aclNewsBounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-5px)}60%{transform:translateY(1px)}}
+@keyframes aclNewsGlow{0%,100%{text-shadow:0 0 0 transparent}50%{text-shadow:0 0 12px currentColor}}
+
+@media(max-width:900px){
+  .basic-news-carousel{grid-template-columns:36px minmax(0,1fr) 36px;gap:7px}
+  .basic-news-arrow{width:34px;height:34px}
+}
+
+@media(max-width:680px){
+  .basic-news-admin-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .basic-news-carousel{grid-template-columns:30px minmax(0,1fr) 30px;gap:4px}
+  .basic-news-arrow{width:30px;height:30px;font-size:1rem}
+  .basic-home-text-form{grid-template-columns:1fr}
+  .basic-home-text-form .wide,.basic-home-text-form .basic-news-form-actions{grid-column:1}
+  .basic-news-style-editor{grid-template-columns:1fr 1fr}
+}
+
+@media(max-width:480px){
+  .basic-news-admin-actions{grid-template-columns:1fr}
+  .basic-news-carousel{grid-template-columns:26px minmax(0,1fr) 26px}
+  .basic-news-arrow{width:26px;height:26px}
+  .basic-news-style-editor{grid-template-columns:1fr}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .basic-news-card h3,.basic-news-card p{animation:none!important}
+}
