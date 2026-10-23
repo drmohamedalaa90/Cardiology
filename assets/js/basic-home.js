@@ -609,3 +609,6 @@ document.addEventListener("visibilitychange",()=>{
 
 void loadBasicHomeSettings();
 void loadBasicNews();
+
+
+document.getElementById("basicRefreshPage")?.addEventListener("click",()=>location.reload());
