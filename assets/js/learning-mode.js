@@ -167,6 +167,7 @@ const requestedBasicLifelines =
       .split(",")
       .map(value => value.trim())
       .filter(Boolean)
+      .filter(value => !(basicQuizMode && value === "expert"))
   );
 /* =========================================================
    CHALLENGE MODE URL PARAMETERS
@@ -3069,7 +3070,6 @@ function lifelineDefinitions() {
     return [
       { id: LIFELINES.filter, icon: "✂️", image: "", title: "50:50", shortTitle: "50:50" },
       { id: LIFELINES.swap, icon: "↻", image: "", title: "Swap Question", shortTitle: "Swap" },
-      { id: LIFELINES.expert, icon: "", image: HAPPY_MASCOT, title: "Ask Dr. Corazón", shortTitle: "Dr. Corazón" },
       { id: LIFELINES.time, icon: "⏱️", image: "", title: "+1 Minute", shortTitle: "+1 min" }
     ].filter(definition => enabledLifeline(definition.id));
   }
