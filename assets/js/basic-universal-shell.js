@@ -26,7 +26,8 @@ if(edition==="basic"){
     <div class="basic-universal-actions">
       <button class="basic-expert-lock" id="basicExpertLocked" type="button"><span class="basic-lock-dot">◆</span><span>Expert Edition</span><small>Locked</small></button>
       <div class="basic-universal-user"><span class="basic-universal-avatar" id="basicUniversalAvatar">ACL</span><strong id="basicUniversalName">Member</strong></div>
-      <button class="basic-universal-refresh" id="basicUniversalRefresh" type="button" aria-label="Refresh page" title="Refresh page"><span aria-hidden="true">↻</span></button>\n      <a class="basic-universal-contact" href="mailto:drmohamedalaa90@gmail.com" aria-label="Email ACL" title="Email ACL"><span aria-hidden="true">✉</span></a>
+      <button class="basic-universal-refresh" id="basicUniversalRefresh" type="button" aria-label="Refresh page" title="Refresh page"><span aria-hidden="true">↻</span></button>
+      <a class="basic-universal-contact" href="mailto:drmohamedalaa90@gmail.com" aria-label="Email ACL" title="Email ACL"><span aria-hidden="true">✉</span></a>
       <button class="basic-universal-logout" id="basicUniversalLogout" type="button">Log out</button>
     </div>
   </header>
@@ -45,7 +46,8 @@ if(edition==="basic"){
   document.getElementById("basicLevelClose")?.addEventListener("click",close);
   modal?.addEventListener("click",e=>{if(e.target===modal)close()});
   document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
-  document.getElementById("basicUniversalRefresh")?.addEventListener("click",()=>location.reload());\n  document.getElementById("basicUniversalLogout")?.addEventListener("click",async()=>{try{await supabaseClient.auth.signOut()}catch{}location.replace("acl-access.html?build=20261023-clean")});
+  document.getElementById("basicUniversalRefresh")?.addEventListener("click",()=>location.reload());
+  document.getElementById("basicUniversalLogout")?.addEventListener("click",async()=>{try{await supabaseClient.auth.signOut()}catch{}location.replace("acl-access.html?build=20261023-clean")});
   try{
     const {data:{session}}=await supabaseClient.auth.getSession();
     const u=session?.user;
