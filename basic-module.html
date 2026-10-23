@@ -31,8 +31,8 @@
 
     <form id="bmAdminForm" class="basic-admin-form" hidden>
       <label class="basic-admin-field basic-admin-question">
-        <span>Question</span><small>Paste 5 lines here: question, choice A, choice B, choice C, choice D. Then select the correct answer.</small>
-        <textarea id="bmAdminStem" rows="4" required placeholder="Write the question, or paste 5 lines: question then choices A–D"></textarea>
+        <span>Question</span><small>Paste 8 lines here: question, choices A–D, topic, Dr. Corazón’s indirect advice, explanation. Then select the correct answer.</small>
+        <textarea id="bmAdminStem" rows="4" required placeholder="Write the question, or paste all 8 lines here"></textarea>
       </label>
 
       <div class="basic-admin-choices">
@@ -58,18 +58,27 @@
         </label>
       </div>
 
-      <div class="basic-admin-meta-grid">
-        <label class="basic-admin-field">
+      <label class="basic-admin-field">
           <span>Topic</span>
           <input id="bmAdminTopic" type="text" placeholder="e.g. Aortic stenosis">
         </label>
+
+      <label class="basic-admin-field">
+          <span>Dr. Corazón advice</span>
+          <input id="bmAdminHint" type="text" placeholder="Indirect clue only — do not reveal the answer">
+        </label>
+
+      <label class="basic-admin-field">
+        <span>Explanation</span>
+        <textarea id="bmAdminExplanation" rows="3" placeholder="Why is the selected answer correct?"></textarea>
+      </label>
+
+      <div class="basic-admin-meta-grid">
         <label class="basic-admin-field">
           <span>Reference</span>
           <input id="bmAdminReference" type="text" placeholder="Textbook / guideline / lecture">
         </label>
-      </div>
 
-      <div class="basic-admin-meta-grid">
         <label class="basic-admin-field">
           <span>Difficulty</span>
           <select id="bmAdminDifficulty">
@@ -78,16 +87,7 @@
             <option value="advanced">🔴 Difficult</option>
           </select>
         </label>
-        <label class="basic-admin-field">
-          <span>Dr. Corazón advice</span>
-          <input id="bmAdminHint" type="text" placeholder="Indirect clue only — do not reveal the answer">
-        </label>
       </div>
-
-      <label class="basic-admin-field">
-        <span>Explanation</span>
-        <textarea id="bmAdminExplanation" rows="3" placeholder="Why is the selected answer correct?"></textarea>
-      </label>
 
       <div class="basic-admin-form-footer">
         <span id="bmAdminStatus" class="basic-admin-status" aria-live="polite"></span>
@@ -146,4 +146,4 @@
     </div>
   </section>
 </main>
-<script type="module" src="assets/js/basic-module-hub.js?v=13"></script><script type="module" src="assets/js/basic-universal-shell.js?v=20261023-simple"></script></body></html>
+<script type="module" src="assets/js/basic-module-hub.js?v=14"></script><script type="module" src="assets/js/basic-universal-shell.js?v=20261023-simple"></script></body></html>
