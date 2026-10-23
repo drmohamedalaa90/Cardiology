@@ -302,8 +302,12 @@ if (!session?.user) {
         ? `${completedAttempts.length} completed attempt${completedAttempts.length === 1 ? "" : "s"}`
         : "No attempts yet";
 
-    $("bmFlashcardsLink").href =
-      `basic-flashcards.html?edition=basic&module=${encodeURIComponent(module.id)}`;
+    if (module.id === "basic-valvular-heart-disease") {
+      $("bmFlashcardsCopy").textContent =
+        "Flashcards for this module will be available soon.";
+      $("bmFlashcardsLink").textContent = "Coming soon";
+      $("bmFlashcardsCard")?.classList.add("coming-soon-resource-card");
+    }
 
     $("bmStarredCount").textContent =
       String((stars || []).length);
@@ -391,19 +395,19 @@ document.querySelectorAll("[data-count]").forEach(button =>
     button.classList.add("selected");
 
     count = Number(button.dataset.count);
-    limit = count === 10 ? 2 : count === 25 ? 3 : 4;
+    limit = count === 10 ? 2 : 3;
 
     selected =
       count === 50
-        ? new Set(["filter", "swap", "expert", "time"])
+        ? new Set(["filter", "swap", "time"])
         : new Set();
 
     $("bmLifeSaverBlock").hidden = false;
 
     $("bmLifeSaverInstruction").textContent =
       count === 50
-        ? "All four Life Savers are available. Each can be used once."
-        : `Choose any ${limit} of the four Life Savers. Each selected Life Saver can be used once.`;
+        ? "All currently available Life Savers are enabled. Each can be used once."
+        : `Choose ${limit} of the currently available Life Savers. Each selected Life Saver can be used once.`;
 
     refresh();
 
@@ -417,6 +421,7 @@ document.querySelectorAll("[data-count]").forEach(button =>
 
 document.querySelectorAll("[data-life]").forEach(button =>
   button.addEventListener("click", () => {
+    if (button.disabled || button.dataset.life === "expert") return;
     if (!count || count === 50) return;
 
     const id = button.dataset.life;
