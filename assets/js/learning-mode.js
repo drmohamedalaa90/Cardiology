@@ -486,6 +486,7 @@ function setAnswer(answer) {
       answer
     );
   }
+  writeBasicCheckpoint();
 }
 
 
@@ -2175,8 +2176,63 @@ function appState() {
 }
 
 
-async function persist(
-  done = false
+
+/* Basic solo quizzes: history-aware selection and crash recovery. */
+let basicSaveQueue = Promise.resolve();
+let basicCompletionPending = false;
+function basicCheckpointKey(){return `acl-basic-progress-v1:${currentLearningUserId}:${quiz?.module_id}:${quiz?.id}`;}
+function writeBasicCheckpoint(done=false){
+  if(!basicQuizMode||challengeId||!attempt||reviewMode||(!done&&basicCompletionPending))return null;
+  const state=JSON.parse(JSON.stringify(appState()));
+  const snapshot={attemptId:attempt.id,savedAt:new Date().toISOString(),done,state};
+  try{localStorage.setItem(basicCheckpointKey(),JSON.stringify(snapshot));}catch(e){console.warn('Local progress unavailable:',e);}
+  return state;
+}
+function readBasicCheckpoint(){try{return JSON.parse(localStorage.getItem(basicCheckpointKey())||'null');}catch{return null;}}
+async function selectBasicFreshQuestions(count){
+  const bank=quiz.questions||[];
+  const history=[];
+  for(let offset=0;;offset+=500){
+    const {data,error}=await supabaseClient.from('quiz_attempts').select('id,answers,created_at,updated_at').eq('user_id',currentLearningUserId).eq('module_id',quiz.module_id).order('created_at',{ascending:true}).order('id',{ascending:true}).range(offset,offset+499);
+    if(error)throw error;
+    history.push(...(data||[]));
+    if((data||[]).length<500)break;
+  }
+  await loadStarredQuestions();
+  const latest=new Map();
+  for(const row of history){
+    let recorded=row.answers||[];
+    if(typeof recorded==='string'){try{recorded=JSON.parse(recorded);}catch{recorded=[];}}
+    for(const answer of Array.isArray(recorded)?recorded:[]){
+      const id=String(answer.questionId||answer.question_id||'');if(!id)continue;
+      const time=Date.parse(answer.answeredAt||row.updated_at||row.created_at)||0;
+      if(!latest.has(id)||latest.get(id).time<=time)latest.set(id,{correct:answer.correct===true,time});
+    }
+  }
+  const allAttempted=bank.length>0&&bank.every(q=>latest.has(String(q.id)));
+  const unseen=bank.filter(q=>!latest.has(String(q.id)));
+  const eligible=allAttempted?bank:bank.filter(q=>!latest.has(String(q.id))||!latest.get(String(q.id)).correct||starredQuestionIds.has(String(q.id)));
+  questionPool=[...eligible]; // Swap must obey the same no-repeat rule.
+  const fresh=distributedQuestionSelection(unseen,count,{randomize:true});
+  const used=new Set(fresh.map(q=>String(q.id)));
+  const review=distributedQuestionSelection(eligible.filter(q=>!used.has(String(q.id))),Math.max(0,count-fresh.length),{randomize:true});
+  return distributedQuestionSelection([...fresh,...review],fresh.length+review.length,{randomize:true});
+}
+function persist(done=false){
+  if(!basicQuizMode||challengeId)return persistNow(done);
+  if(!attempt||reviewMode||(!done&&basicCompletionPending))return basicSaveQueue;
+  const state=writeBasicCheckpoint(done);
+  if(done)basicCompletionPending=true;
+  basicSaveQueue=basicSaveQueue.catch(()=>{}).then(()=>persistNow(done,state));
+  return basicSaveQueue;
+}
+window.addEventListener('pagehide',()=>{writeBasicCheckpoint();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){writeBasicCheckpoint();void persist(false);}});
+window.addEventListener('online',()=>{if(basicCompletionPending&&attempt?.status!=='completed')void persist(true);else void persist(false);});
+setInterval(()=>{if(basicQuizMode&&!challengeId&&attempt?.status==='in_progress'&&!reviewMode&&!basicCompletionPending)void persist(false);},15000);
+
+async function persistNow(
+  done = false, queuedState = null
 ) {
   if (
     !attempt ||
@@ -2195,10 +2251,10 @@ async function persist(
 
   try {
     const state =
-      appState();
+      queuedState || appState();
 
     const lifeSaverState =
-      ensureLifelinesState();
+      queuedState?.lifelinesState || ensureLifelinesState();
 
     lifeSaverState.sessionQuestionCount =
       questions.length;
@@ -7035,6 +7091,13 @@ quizArea.innerHTML = `
         "Preparing new attempt…"
       );
   
+      if(basicQuizMode&&!challengeId){
+        await basicSaveQueue;
+        if(attempt?.status!=='completed')throw new Error('Please reconnect and save this quiz before starting another.');
+        questions=await selectBasicFreshQuestions(requestedStandaloneQuestionCount || questions.length);
+        if(!questions.length)throw new Error('No eligible questions are available.');
+      }
+      basicCompletionPending=false;
       answers =
         [];
   
@@ -7454,14 +7517,28 @@ if (challengeId) {
     }
 
     attempt =
-      forceNewAttempt
+      forceNewAttempt && !(basicQuizMode && !challengeId)
         ? null
         : await getOpenAttempt(
             quiz.module_id,
             quiz.id
           );
 
+    if (basicQuizMode && !challengeId && attempt) {
+      const checkpoint=readBasicCheckpoint();
+      if(checkpoint?.attemptId===attempt.id && checkpoint.state &&
+         (checkpoint.state.answers?.length||0)>=(attempt.answers?.length||0) &&
+         Date.parse(checkpoint.savedAt)>=(Date.parse(attempt.updated_at)||0)){
+        if(checkpoint.done){
+          await completeAttempt(attempt.id,checkpoint.state,checkpoint.state.lifelinesState);
+          attempt=null;
+        }else{
+          attempt={...attempt,question_ids:checkpoint.state.questionIds,current_question_index:checkpoint.state.currentIndex,answers:checkpoint.state.answers,lifelines:checkpoint.state.lifelinesState,preQuizReviewSeen:checkpoint.state.preQuizReviewSeen};
+        }
+      }
+    }
     if (attempt) {
+      if(basicQuizMode&&!challengeId)await selectBasicFreshQuestions(0);
       const savedQuestionIds =
         attempt.question_ids ||
         attempt.questionIds ||
@@ -7504,7 +7581,7 @@ if (challengeId) {
           ? attempt.answers
           : [];
 
-      if (!challengeId) {
+      if (!challengeId && !basicQuizMode) {
         questions =
           redistributeRemainingQuestions(
             questions,
@@ -7540,6 +7617,11 @@ if (challengeId) {
         "Unfinished learning attempt restored"
       );
     } else {
+      if(basicQuizMode&&!challengeId){
+        questions=await selectBasicFreshQuestions(requestedQuestionCount);
+        if(!questions.length)throw new Error('No eligible questions are available.');
+      }
+      basicCompletionPending=false;
       resetAllLifelines();
 
       const initialLifeSaverState =
