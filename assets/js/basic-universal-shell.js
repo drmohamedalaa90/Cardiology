@@ -33,6 +33,7 @@ if(edition==="basic"){
   </header>
   <nav class="basic-universal-bottom" aria-label="Basic Edition navigation">
     <a class="${active("basic-home.html")}" href="basic-home.html?edition=basic"><span>⌂</span><strong>Home</strong></a>
+    <a class="${active("basic-modules.html")}" href="basic-modules.html?edition=basic"><span>▦</span><strong>Modules</strong></a>
     <a class="${activeAny(["basic-profile.html","profile.html"])}" href="basic-profile.html?edition=basic"><span>♙</span><strong>Profile</strong></a>
     <a class="${activeAny(["basic-challenges.html","challenge.html"])}" href="basic-challenges.html?edition=basic"><span>⚔</span><strong>Challenges</strong></a>
     <a class="${activeAny(["basic-progress.html","progress.html"])}" href="basic-progress.html?edition=basic"><span>▤</span><strong>Progress</strong></a>
@@ -73,7 +74,7 @@ if(edition==="basic"){
   if (isBasicLearningPage) {
     const title = document.getElementById("quizTitle");
     const main = document.querySelector(".learning-session-main");
-    if (main) main.setAttribute("aria-hidden","true");
+    if (main) main.removeAttribute("aria-hidden");
     if (title) title.setAttribute("aria-hidden","true");
   }
   const progressCopy=document.querySelector(".progress-hero .muted");if(progressCopy)progressCopy.textContent="Your Basic Edition performance, module progress and learning momentum.";
