@@ -816,3 +816,110 @@ form[hidden]{
     min-height:48px;
   }
 }
+
+.auth-about{
+  margin-top:18px;
+  padding:22px 24px;
+  border:1px solid #d7e5ec;
+  border-radius:18px;
+  background:linear-gradient(135deg,#ffffff,#f4fafc);
+  box-shadow:0 10px 28px rgba(7,47,83,.05);
+}
+
+.auth-about-kicker{
+  display:block;
+  color:#157f9b;
+  font-size:.54rem;
+  font-weight:900;
+  letter-spacing:.11em;
+}
+
+.auth-about h2{
+  margin:6px 0 8px;
+  color:#082f57;
+  font-size:1.08rem;
+  letter-spacing:-.02em;
+}
+
+.auth-about p{
+  max-width:980px;
+  margin:0;
+  color:#5f7687;
+  font-size:.68rem;
+  line-height:1.65;
+}
+
+.auth-about-contact{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:14px;
+}
+
+.auth-about-contact a{
+  display:inline-flex;
+  align-items:center;
+  min-height:34px;
+  padding:0 10px;
+  border:1px solid #cfe0e8;
+  border-radius:10px;
+  background:#fff;
+  color:#145c7c;
+  text-decoration:none;
+  font-size:.59rem;
+  font-weight:850;
+}
+
+.auth-about-contact a:hover{
+  border-color:#9fc8d8;
+  background:#f1f9fb;
+}
+
+.auth-about-signature{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid #e4edf2;
+}
+
+.auth-about-signature strong{
+  color:#143d59;
+  font-size:.66rem;
+}
+
+.auth-about-signature span{
+  color:#7a8e9c;
+  font-size:.58rem;
+  font-weight:750;
+}
+
+@media(max-width:650px){
+  .auth-about{
+    margin-top:10px;
+    padding:16px;
+    border-radius:14px;
+  }
+
+  .auth-about h2{
+    font-size:.95rem;
+  }
+
+  .auth-about p{
+    font-size:.62rem;
+    line-height:1.55;
+  }
+
+  .auth-about-contact{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .auth-about-contact a{
+    width:100%;
+    justify-content:center;
+    text-align:center;
+  }
+}
