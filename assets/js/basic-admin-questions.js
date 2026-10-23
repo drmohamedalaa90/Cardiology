@@ -132,6 +132,7 @@ function editorHtml(question) {
     <form class="baq-editor" data-editor="${question.id}" hidden>
       <label class="baq-field">
         <span>Question</span>
+        <small>Paste 5 lines: question, then choices A–D. Select the correct answer below.</small>
         <textarea data-field="stem" rows="4" required>${esc(question.stem || "")}</textarea>
       </label>
 
@@ -455,8 +456,9 @@ function bindCardActions() {
       const id = button.dataset.edit;
       const editor = document.querySelector(`[data-editor="${id}"]`);
       if (!editor) return;
-      editor.hidden = false;
-      editor.scrollIntoView({behavior:"smooth",block:"nearest"});
+      editor.hidden = !editor.hidden;
+      button.setAttribute("aria-expanded",String(!editor.hidden));
+      if(!editor.hidden)editor.scrollIntoView({behavior:"smooth",block:"nearest"});
     });
   });
 
@@ -468,6 +470,7 @@ function bindCardActions() {
   });
 
   document.querySelectorAll(".baq-editor").forEach(form => {
+    enableQuestionPaste(form.querySelector('[data-field="stem"]'),['A','B','C','D'].map(key=>form.querySelector(`[data-option="${key}"]`)));
     form.addEventListener("submit", async event => {
       event.preventDefault();
       const id = form.dataset.editor;
@@ -651,4 +654,16 @@ if (!session?.user) {
     $("baqList").innerHTML =
       '<div class="baq-empty">Question bank unavailable.</div>';
   }
+}
+
+function enableQuestionPaste(stem,choices){
+ if(!stem)return;
+ stem.addEventListener('paste',event=>{
+  const lines=(event.clipboardData?.getData('text/plain')||'').replace(/\r/g,'').split('\n').map(line=>line.trim()).filter(Boolean);
+  if(lines.length!==5)return;
+  event.preventDefault();
+  stem.value=lines[0].replace(/^(?:Q(?:uestion)?\s*\d*[:.)-]|\d+[.)])\s*/i,'');
+  choices.forEach((field,i)=>{if(field)field.value=lines[i+1].replace(/^(?:[A-Da-d][).:\-]|[•●])\s*/,'');});
+  [stem,...choices].forEach(field=>field?.dispatchEvent(new Event('input',{bubbles:true})));
+ });
 }
