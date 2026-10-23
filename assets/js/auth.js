@@ -2,6 +2,76 @@ import { supabaseClient } from "./supabase-client.js";
 import { ACL_CONFIG } from "./config.js";
 
 const byId = (id) => document.getElementById(id);
+const REMEMBER_KEY = "aclRememberMe";
+const REMEMBER_IDENTIFIER_KEY = "aclRememberIdentifier";
+let deferredInstallPrompt = null;
+
+function isIosDevice() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isStandaloneApp() {
+  return window.matchMedia?.("(display-mode: standalone)")?.matches ||
+    window.navigator.standalone === true;
+}
+
+function setPasswordVisibility(inputIds, visible) {
+  inputIds.forEach(id => {
+    const input = byId(id);
+    if (input) input.type = visible ? "text" : "password";
+  });
+}
+
+function installInstructionsHtml() {
+  if (isStandaloneApp()) {
+    return "<p>ACL is already installed on this device.</p>";
+  }
+
+  if (isIosDevice()) {
+    return `
+      <ol>
+        <li>Open this page in <strong>Safari</strong>.</li>
+        <li>Tap the <strong>Share</strong> button.</li>
+        <li>Choose <strong>Add to Home Screen</strong>.</li>
+        <li>Tap <strong>Add</strong> to install ACL.</li>
+      </ol>
+    `;
+  }
+
+  if (deferredInstallPrompt) {
+    return "<p>Install ACL on this device for faster full-screen access from your home screen.</p>";
+  }
+
+  return `
+    <p>Open this page in Chrome or another supported browser, then use the browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+  `;
+}
+
+function openInstallModal() {
+  const modal = byId("aclInstallModal");
+  const instructions = byId("aclInstallInstructions");
+  const action = byId("aclInstallAction");
+
+  if (!modal || !instructions || !action) return;
+
+  instructions.innerHTML = installInstructionsHtml();
+
+  const canPrompt =
+    !isStandaloneApp() &&
+    !isIosDevice() &&
+    Boolean(deferredInstallPrompt);
+
+  action.hidden = !canPrompt;
+  action.disabled = false;
+  action.textContent = "Install app";
+  modal.hidden = false;
+}
+
+function closeInstallModal() {
+  const modal = byId("aclInstallModal");
+  if (modal) modal.hidden = true;
+}
 
 function setMessage(id, message = "") { const el = byId(id); if (el) el.textContent = message; }
 function normalizeUsername(value) { return String(value || "").trim().toLowerCase(); }
@@ -43,11 +113,105 @@ byId("signInTab")?.addEventListener("click", () => showPanel("signin"));
 byId("registerTab")?.addEventListener("click", () => showPanel("register"));
 if (location.hash === "#register") showPanel("register");
 
+try {
+  const remembered = localStorage.getItem(REMEMBER_IDENTIFIER_KEY);
+  const rememberSetting = localStorage.getItem(REMEMBER_KEY);
+
+  if (remembered && byId("identifier")) {
+    byId("identifier").value = remembered;
+  }
+
+  if (byId("rememberMe")) {
+    byId("rememberMe").checked = rememberSetting !== "0";
+  }
+} catch {}
+
+byId("showLoginPassword")?.addEventListener("change", event => {
+  setPasswordVisibility(["loginPassword"], event.target.checked);
+});
+
+byId("showRegisterPassword")?.addEventListener("change", event => {
+  setPasswordVisibility(
+    ["registerPassword", "confirmPassword"],
+    event.target.checked
+  );
+});
+
+window.addEventListener("beforeinstallprompt", event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  closeInstallModal();
+
+  const installButton = byId("installAclApp");
+  if (installButton) {
+    installButton.disabled = true;
+    installButton.querySelector("strong").textContent = "ACL app installed";
+    installButton.querySelector("small").textContent = "Ready on this device";
+  }
+});
+
+byId("installAclApp")?.addEventListener("click", openInstallModal);
+byId("aclInstallClose")?.addEventListener("click", closeInstallModal);
+
+byId("aclInstallModal")?.addEventListener("click", event => {
+  if (event.target === byId("aclInstallModal")) closeInstallModal();
+});
+
+byId("aclInstallAction")?.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) return;
+
+  const action = byId("aclInstallAction");
+  action.disabled = true;
+
+  try {
+    await deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+  } catch {}
+
+  deferredInstallPrompt = null;
+  closeInstallModal();
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeInstallModal();
+});
+
+if (isStandaloneApp() && byId("installAclApp")) {
+  byId("installAclApp").disabled = true;
+  byId("installAclApp").querySelector("strong").textContent = "ACL app installed";
+  byId("installAclApp").querySelector("small").textContent = "Ready on this device";
+}
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register(`${ACL_CONFIG.siteBase}service-worker.js?v=7.19.0`, {
+      scope: ACL_CONFIG.siteBase,
+      updateViaCache: "none"
+    })
+    .catch(error => console.warn("ACL service worker:", error));
+}
+
 byId("signInForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   setMessage("signInError"); setMessage("signInSuccess");
   const identifier = byId("identifier").value.trim();
   const password = byId("loginPassword").value;
+  const rememberMe = byId("rememberMe")?.checked !== false;
+
+  try {
+    localStorage.setItem(REMEMBER_KEY, rememberMe ? "1" : "0");
+
+    if (rememberMe) {
+      localStorage.setItem(REMEMBER_IDENTIFIER_KEY, identifier);
+    } else {
+      localStorage.removeItem(REMEMBER_IDENTIFIER_KEY);
+    }
+  } catch {}
+
   const submit = event.submitter; if (submit) submit.disabled = true;
   try {
     const { data, error } = await supabaseClient.functions.invoke("username-login", { body: { identifier, password } });
