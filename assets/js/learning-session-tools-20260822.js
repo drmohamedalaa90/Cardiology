@@ -34,6 +34,7 @@ const notesClear = $("learningNotesClear");
 const notesDot = $("learningNotesDot");
 const backToModule = $("learningBackToModule");
 
+let explicitExitPaused=false;
 let activeQuestion = null;
 let timerInterval = null;
 let timerDeadline = 0;
@@ -229,6 +230,10 @@ function restoreOrStartTimer(detail) {
       } catch {}
     }
 
+    if(Number.isFinite(detail.resumeRemainingSeconds)&&detail.resumeRemainingSeconds>=0){
+      timerPausedRemaining=detail.resumeRemainingSeconds;
+      timerDeadline=Date.now()+timerPausedRemaining*1000;
+    }
     if (!timerDeadline && timerPausedRemaining === null) {
       timerDeadline =
         Date.now() + resolvedDefaultSeconds(detail) * 1000;
@@ -442,4 +447,17 @@ window.addEventListener('acl:quiz-results',()=>{saveCurrentNote();clearTimerInte
 
 function pauseBasicSoloTimer(){if(edition!=='basic'||params.get('challenge')||!activeQuestion||activeQuestion.answered)return;timerPausedRemaining=currentRemaining();persistTimer();clearTimerInterval();}
 window.addEventListener('pagehide',pauseBasicSoloTimer);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseBasicSoloTimer();else if(edition==='basic'&&!params.get('challenge')&&activeQuestion&&!activeQuestion.answered&&timerPausedRemaining!==null){timerDeadline=Date.now()+timerPausedRemaining*1000;timerPausedRemaining=null;persistTimer();startInterval();}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseBasicSoloTimer();else if(!explicitExitPaused&&edition==='basic'&&!params.get('challenge')&&activeQuestion&&!activeQuestion.answered&&timerPausedRemaining!==null){timerDeadline=Date.now()+timerPausedRemaining*1000;timerPausedRemaining=null;persistTimer();startInterval();}});
+
+
+window.addEventListener('acl:quiz-save-exit',event=>{
+ saveCurrentNote();
+ if(!activeQuestion)return;
+ const remaining=currentRemaining();
+ explicitExitPaused=true;timerPausedRemaining=remaining;persistTimer();clearTimerInterval();updateTimerVisual();
+ event.detail.remainingSeconds=remaining;
+});
+window.addEventListener('acl:quiz-save-exit-cancel',()=>{
+ explicitExitPaused=false;
+ if(activeQuestion&&!activeQuestion.answered){timerDeadline=Date.now()+currentRemaining()*1000;timerPausedRemaining=null;persistTimer();startInterval();}
+});
