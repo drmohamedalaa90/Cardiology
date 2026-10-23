@@ -44,7 +44,7 @@ if(edition==="basic"){
   document.getElementById("basicLevelClose")?.addEventListener("click",close);
   modal?.addEventListener("click",e=>{if(e.target===modal)close()});
   document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
-  document.getElementById("basicUniversalLogout")?.addEventListener("click",async()=>{try{await supabaseClient.auth.signOut()}catch{}location.replace("login.html")});
+  document.getElementById("basicUniversalLogout")?.addEventListener("click",async()=>{try{await supabaseClient.auth.signOut()}catch{}location.replace("acl-access.html?build=20261023-clean")});
   try{
     const {data:{session}}=await supabaseClient.auth.getSession();
     const u=session?.user;
@@ -114,7 +114,7 @@ async function aclBasicPresenceHeartbeat(){
     if(error) return;
     if(data?.allowed===false){
       try{await supabaseClient.auth.signOut()}catch{}
-      location.replace("login.html?held=1");
+      location.replace("acl-access.html?build=20261023-clean&held=1");
     }
   }catch{}
 }
