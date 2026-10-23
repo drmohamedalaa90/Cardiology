@@ -261,11 +261,10 @@ if (!session?.user) {
 
     if (
       !isAdmin &&
-      Number(moduleData.display_order || 0) > 1 &&
-      moduleData.basic_admin_released !== true
+      Number(moduleData.display_order || 0) !== 1
     ) {
       location.replace("basic-home.html?edition=basic&admin_hold=1");
-      throw new Error("Module is on admin hold");
+      throw new Error("Module is restricted by the ACL administrator");
     }
 
     module = moduleData;
