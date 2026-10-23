@@ -346,6 +346,7 @@ async function loadBasicNews(){
   });
 
   renderBasicNews();
+  startBasicNewsAutoplay();
 }
 
 document.getElementById("basicNewsAdminToggle")?.addEventListener("click",()=>{
