@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#082f57">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ACL">
+  <link rel="manifest" href="manifest.webmanifest?v=1">
+  <link rel="apple-touch-icon" href="assets/images/acl-icon-192.png">
+  <title>Alexandria Cardiology League (ACL) | Account Access</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/auth.css?v=7">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="acl-auth-page">
+  <header class="acl-auth-topbar">
+    <a class="acl-auth-brand" href="index.html" aria-label="Alexandria Cardiology League home">
+      <img src="assets/images/acl-header-mark.svg" alt="ACL" class="acl-auth-logo">
+      <span class="acl-brand-copy">
+        <strong>Alexandria Cardiology League</strong>
+        <small>ACL</small>
+      </span>
+    </a>
+
+    <div class="acl-auth-top-actions">
+      <a class="acl-auth-contact" href="mailto:drmohamedalaa90@gmail.com">Contact us</a>
+      <a class="acl-auth-home" href="index.html">Home</a>
+    </div>
+  </header>
+
+  <main class="auth-shell">
+    <section class="auth-card">
+      <aside class="auth-identity-panel">
+        <div class="auth-identity-inner">
+          <span class="auth-eyebrow">ALEXANDRIA CARDIOLOGY LEAGUE</span>
+          <h1>Learn cardiology.<br>Compete with purpose.</h1>
+          <div class="auth-edition-pills" aria-label="ACL editions">
+            <span>Basic Edition</span>
+            <span>Expert Edition</span>
+          </div>
+
+        </div>
+
+        <div class="auth-decor auth-decor-one"></div>
+        <div class="auth-decor auth-decor-two"></div>
+      </aside>
+
+      <section class="auth-form-panel">
+        <div class="auth-tabs" role="tablist" aria-label="Account access">
+          <button id="signInTab" class="auth-tab active" type="button">Sign in</button>
+          <button id="registerTab" class="auth-tab" type="button">Create account</button>
+        </div>
+
+        <form id="signInForm">
+          <div class="auth-form-heading">
+            <span class="auth-form-kicker">WELCOME BACK</span>
+            <h2>Sign in to ACL</h2>
+            <p>Use your username or verified email and password.</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="field full">
+              <label for="identifier">Username or email</label>
+              <input id="identifier" autocomplete="username" required>
+            </div>
+
+            <div class="field full">
+              <div class="field-label-row">
+                <label for="loginPassword">Password</label>
+                <a href="forgot-password.html">Forgot password?</a>
+              </div>
+              <input id="loginPassword" type="password" autocomplete="current-password" minlength="6" required>
+            </div>
+
+            <div class="auth-login-options full">
+              <label class="auth-check">
+                <input id="rememberMe" type="checkbox" checked>
+                <span>Remember me</span>
+              </label>
+
+              <label class="auth-check">
+                <input id="showLoginPassword" type="checkbox">
+                <span>Show password</span>
+              </label>
+            </div>
+          </div>
+
+          <button class="primary-btn auth-submit" type="submit">Sign in</button>
+
+          <button id="installAclApp" class="auth-install-btn" type="button">
+            <span class="auth-install-icon" aria-hidden="true">↓</span>
+            <span>
+              <strong>Install ACL app</strong>
+              <small>iPhone / Android</small>
+            </span>
+          </button>
+
+          <div id="signInError" class="message error"></div>
+          <div id="signInSuccess" class="message success"></div>
+        </form>
+
+        <form id="registerForm" hidden>
+          <div class="auth-form-heading">
+            <span class="auth-form-kicker">JOIN ACL</span>
+            <h2>Create your account</h2>
+            <p>Email confirmation is required once. Afterwards, sign in using username or email.</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="field full">
+              <label for="name">Full name</label>
+              <input id="name" autocomplete="name" required>
+            </div>
+
+            <div class="field">
+              <label for="username">Username</label>
+              <input id="username" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9._]+" required>
+              <small>Letters, numbers, dots and underscores only.</small>
+            </div>
+
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" type="email" autocomplete="email" required>
+            </div>
+
+            <div class="field full">
+              <label for="whatsapp">WhatsApp</label>
+              <input id="whatsapp" required placeholder="+201XXXXXXXXX">
+            </div>
+
+            <div class="field">
+              <label for="academicYear">Academic year</label>
+              <input id="academicYear" required>
+            </div>
+
+            <div class="field">
+              <label for="institution">Institution</label>
+              <input id="institution" required>
+            </div>
+
+            <div class="field">
+              <label for="registerPassword">Password</label>
+              <input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required>
+            </div>
+
+            <div class="field">
+              <label for="confirmPassword">Confirm password</label>
+              <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+            </div>
+
+            <div class="auth-login-options full">
+              <label class="auth-check">
+                <input id="showRegisterPassword" type="checkbox">
+                <span>Show passwords</span>
+              </label>
+            </div>
+          </div>
+
+          <button class="primary-btn auth-submit" type="submit">Create account</button>
+
+          <div id="registerError" class="message error"></div>
+          <div id="registerSuccess" class="message success"></div>
+        </form>
+      </section>
+    </section>
+
+    <p class="auth-footer-note">Alexandria Cardiology League</p>
+  </main>
+
+  <div id="aclInstallModal" class="auth-install-modal" hidden>
+    <section class="auth-install-dialog" role="dialog" aria-modal="true" aria-labelledby="aclInstallTitle">
+      <button id="aclInstallClose" class="auth-install-close" type="button" aria-label="Close">×</button>
+      <span class="auth-install-badge">ACL APP</span>
+      <h2 id="aclInstallTitle">Install Alexandria Cardiology League</h2>
+      <div id="aclInstallInstructions" class="auth-install-instructions"></div>
+      <button id="aclInstallAction" class="auth-install-action" type="button" hidden>Install app</button>
+    </section>
+  </div>
+
+  <script type="module" src="assets/js/auth.js?v=4"></script>
+</body>
+</html>
