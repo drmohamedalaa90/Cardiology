@@ -243,3 +243,7 @@
     max-height:190px;
   }
 }
+
+/* Home section order spacing */
+.basic-news-section + .basic-intro{margin-top:22px}
+@media(max-width:680px){.basic-news-section + .basic-intro{margin-top:14px}}
