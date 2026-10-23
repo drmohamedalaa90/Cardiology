@@ -155,6 +155,7 @@ function startInterval() {
             {
               detail: {
                 questionId: activeQuestion.id,
+                attemptId: activeQuestion.attemptId,
                 questionNumber: activeQuestion.number
               }
             }
@@ -191,6 +192,7 @@ function restoreOrStartTimer(detail) {
     userId: detail.userId || activeQuestion?.userId || '',
     id: questionId,
     number: questionNumber,
+    answered: Boolean(detail.answered),
     total: Number(detail.totalQuestions || 0) || null
   };
 
@@ -214,13 +216,13 @@ function restoreOrStartTimer(detail) {
         const storedDeadline = Number(stored?.deadline || 0);
         const storedPaused = stored?.pausedRemaining;
 
-        if (Number.isFinite(storedDeadline) && storedDeadline > 0) {
+        if (Number.isFinite(storedDeadline) && storedDeadline > Date.now()) {
           timerDeadline = storedDeadline;
         }
 
         if (storedPaused !== null && storedPaused !== undefined) {
           const n = Number(storedPaused);
-          if (Number.isFinite(n) && n >= 0) {
+          if (Number.isFinite(n) && (n > 0 || detail.answered)) {
             timerPausedRemaining = n;
           }
         }
@@ -437,3 +439,7 @@ if (questionCount) {
 window.addEventListener('pagehide',saveCurrentNote);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveCurrentNote();});
 window.addEventListener('acl:quiz-results',()=>{saveCurrentNote();clearTimerInterval();if(timerCard)timerCard.hidden=true;closeNotes();});
+
+function pauseBasicSoloTimer(){if(edition!=='basic'||params.get('challenge')||!activeQuestion||activeQuestion.answered)return;timerPausedRemaining=currentRemaining();persistTimer();clearTimerInterval();}
+window.addEventListener('pagehide',pauseBasicSoloTimer);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseBasicSoloTimer();else if(edition==='basic'&&!params.get('challenge')&&activeQuestion&&!activeQuestion.answered&&timerPausedRemaining!==null){timerDeadline=Date.now()+timerPausedRemaining*1000;timerPausedRemaining=null;persistTimer();startInterval();}});
