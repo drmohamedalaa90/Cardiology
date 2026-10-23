@@ -45,34 +45,15 @@ body.acl-auth-page{
   min-width:0;
 }
 
-.acl-brand-mark{
-  position:relative;
-  display:grid;
-  place-items:center;
+.acl-auth-logo{
   width:46px;
   height:46px;
   flex:0 0 46px;
-  border-radius:14px;
-  background:linear-gradient(145deg,#fff,#e9f5fb);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 7px 16px rgba(0,0,0,.16);
-}
-
-.acl-brand-mark::before{
-  content:"";
-  position:absolute;
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  background:linear-gradient(145deg,#e52f43,#b71e34);
-}
-
-.acl-pulse{
-  position:relative;
-  z-index:1;
-  color:#fff;
-  font-size:1.25rem;
-  font-weight:900;
-  transform:rotate(-6deg);
+  object-fit:contain;
+  border-radius:13px;
+  background:#fff;
+  padding:4px;
+  box-shadow:0 7px 16px rgba(0,0,0,.16);
 }
 
 .acl-brand-copy{
@@ -93,6 +74,31 @@ body.acl-auth-page{
   font-size:.62rem;
   font-weight:900;
   letter-spacing:.18em;
+}
+
+.acl-auth-top-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.acl-auth-contact{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:0 14px;
+  border-radius:999px;
+  color:#d4ecf7;
+  text-decoration:none;
+  font-size:.68rem;
+  font-weight:850;
+  transition:.18s ease;
+}
+
+.acl-auth-contact:hover{
+  background:rgba(255,255,255,.08);
+  color:#fff;
 }
 
 .acl-auth-home{
@@ -208,36 +214,6 @@ body.acl-auth-page{
   color:#fff;
   font-size:.61rem;
   font-weight:850;
-}
-
-.auth-identity-note{
-  margin-top:auto;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding-top:36px;
-}
-
-.auth-identity-note strong{
-  display:grid;
-  place-items:center;
-  width:48px;
-  height:48px;
-  flex:0 0 48px;
-  border-radius:15px;
-  background:linear-gradient(145deg,#ffbb39,#f29a00);
-  color:#082f57;
-  font-size:.75rem;
-  font-weight:950;
-  box-shadow:0 10px 24px rgba(0,0,0,.18);
-}
-
-.auth-identity-note span{
-  max-width:280px;
-  color:#d9e8f2;
-  font-size:.65rem;
-  line-height:1.45;
-  font-weight:700;
 }
 
 .auth-decor{
@@ -463,16 +439,12 @@ form[hidden]{
     padding:10px 14px;
   }
 
-  .acl-brand-mark{
+  .acl-auth-logo{
     width:38px;
     height:38px;
     flex-basis:38px;
     border-radius:11px;
-  }
-
-  .acl-brand-mark::before{
-    width:24px;
-    height:24px;
+    padding:3px;
   }
 
   .acl-brand-copy strong{
@@ -536,10 +508,6 @@ form[hidden]{
     min-height:28px;
     padding:0 8px;
     font-size:.53rem;
-  }
-
-  .auth-identity-note{
-    display:none;
   }
 
   .auth-decor-one{
@@ -644,4 +612,9 @@ form[hidden]{
   .field-label-row{
     align-items:flex-end;
   }
+}
+
+@media(max-width:520px){
+  .acl-auth-contact{min-height:36px;padding:0 8px;font-size:.56rem}
+  .acl-auth-top-actions{gap:3px}
 }
