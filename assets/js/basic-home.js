@@ -60,3 +60,299 @@ async function loadBasicHomeNotificationBadge(){
 }
 void loadBasicHomeNotificationBadge();
 window.addEventListener("focus",()=>void loadBasicHomeNotificationBadge());
+
+
+/* =========================================================
+   BASIC HOME — UPDATES & NEWS
+========================================================= */
+
+let basicNewsItems = [];
+let basicNewsAdmin = false;
+let basicNewsCurrentImage = "";
+
+function basicNewsSafeColor(value){
+  return /^#[0-9a-f]{6}$/i.test(String(value||""))
+    ? String(value)
+    : "#173d56";
+}
+
+function basicNewsSafeSize(value){
+  return ["small","normal","large","xlarge"].includes(String(value))
+    ? String(value)
+    : "normal";
+}
+
+function basicNewsSafeStyle(value){
+  return ["standard","highlight","important"].includes(String(value))
+    ? String(value)
+    : "standard";
+}
+
+function basicNewsSafeHref(value){
+  const raw=String(value||"").trim();
+  if(!raw)return "";
+  try{
+    const url=new URL(raw,location.origin);
+    if(!["http:","https:"].includes(url.protocol))return "";
+    return url.origin===location.origin
+      ? url.pathname+url.search+url.hash
+      : url.toString();
+  }catch{
+    return "";
+  }
+}
+
+function basicNewsKindLabel(kind){
+  const map={
+    announcement:"Announcement",
+    module_update:"Module update",
+    competition:"Official competition",
+    admin_message:"Admin message",
+    app_update:"App update"
+  };
+  return map[String(kind||"")]||"ACL update";
+}
+
+function basicNewsDate(value){
+  if(!value)return "";
+  try{
+    return new Date(value).toLocaleDateString("en-GB",{
+      day:"2-digit",
+      month:"short",
+      year:"numeric"
+    });
+  }catch{
+    return "";
+  }
+}
+
+function renderBasicNews(){
+  const host=document.getElementById("basicNewsGrid");
+  if(!host)return;
+
+  const rows=[...basicNewsItems].sort((a,b)=>{
+    const pin=Number(Boolean(b.is_pinned))-Number(Boolean(a.is_pinned));
+    if(pin)return pin;
+    return new Date(b.published_at||b.created_at||0)-new Date(a.published_at||a.created_at||0);
+  });
+
+  if(!rows.length){
+    host.innerHTML='<div class="basic-news-empty">No ACL updates have been published yet.</div>';
+    return;
+  }
+
+  host.innerHTML=rows.map(item=>{
+    const color=basicNewsSafeColor(item.text_color);
+    const size=basicNewsSafeSize(item.text_size);
+    const style=basicNewsSafeStyle(item.card_style);
+    const href=basicNewsSafeHref(item.link_url);
+    const image=basicNewsSafeHref(item.image_url);
+    const body=esc(item.body||"").replace(/\n/g,"<br>");
+    const adminEdit=basicNewsAdmin
+      ? `<button class="basic-news-edit" type="button" data-edit-news="${esc(item.id)}">Edit</button>`
+      : "";
+
+    return `
+      <article class="basic-news-card ${style} size-${size}" style="--news-text:${color}">
+        ${image?`<div class="basic-news-image"><img src="${esc(image)}" alt="" loading="lazy"></div>`:""}
+        <div class="basic-news-card-body">
+          <div class="basic-news-meta">
+            <span>${esc(basicNewsKindLabel(item.kind))}</span>
+            ${item.is_pinned?'<em>Pinned</em>':""}
+            <small>${esc(basicNewsDate(item.published_at||item.created_at))}</small>
+            ${adminEdit}
+          </div>
+          <h3>${esc(item.title||"ACL update")}</h3>
+          <p>${body}</p>
+          ${href?`<a href="${esc(href)}" target="_blank" rel="noopener">Learn more →</a>`:""}
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  host.querySelectorAll("[data-edit-news]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const item=basicNewsItems.find(row=>String(row.id)===String(button.dataset.editNews));
+      if(item) openBasicNewsEditor(item);
+    });
+  });
+}
+
+function resetBasicNewsEditor(){
+  const form=document.getElementById("basicNewsForm");
+  if(!form)return;
+  form.reset();
+  document.getElementById("basicNewsId").value="";
+  document.getElementById("basicNewsColor").value="#173d56";
+  document.getElementById("basicNewsSize").value="normal";
+  document.getElementById("basicNewsStyle").value="standard";
+  document.getElementById("basicNewsActive").checked=true;
+  document.getElementById("basicNewsPinned").checked=false;
+  document.getElementById("basicNewsEditorTitle").textContent="Create a new update";
+  document.getElementById("basicNewsSave").textContent="Publish update";
+  document.getElementById("basicNewsCancelEdit").hidden=true;
+  document.getElementById("basicNewsImageStatus").textContent="JPEG, PNG, WebP or GIF · max 8 MB";
+  basicNewsCurrentImage="";
+}
+
+function openBasicNewsEditor(item=null){
+  const panel=document.getElementById("basicNewsAdminPanel");
+  if(!panel)return;
+  panel.hidden=false;
+
+  if(!item){
+    resetBasicNewsEditor();
+    panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+    return;
+  }
+
+  document.getElementById("basicNewsId").value=item.id||"";
+  document.getElementById("basicNewsTitle").value=item.title||"";
+  document.getElementById("basicNewsKind").value=item.kind||"announcement";
+  document.getElementById("basicNewsBody").value=item.body||"";
+  document.getElementById("basicNewsColor").value=basicNewsSafeColor(item.text_color);
+  document.getElementById("basicNewsSize").value=basicNewsSafeSize(item.text_size);
+  document.getElementById("basicNewsStyle").value=basicNewsSafeStyle(item.card_style);
+  document.getElementById("basicNewsLink").value=item.link_url||"";
+  document.getElementById("basicNewsPinned").checked=Boolean(item.is_pinned);
+  document.getElementById("basicNewsActive").checked=item.is_active!==false;
+  document.getElementById("basicNewsEditorTitle").textContent="Edit update";
+  document.getElementById("basicNewsSave").textContent="Save changes";
+  document.getElementById("basicNewsCancelEdit").hidden=false;
+  basicNewsCurrentImage=item.image_url||"";
+  document.getElementById("basicNewsImageStatus").textContent=basicNewsCurrentImage
+    ? "Current image will remain unless you choose a new file."
+    : "JPEG, PNG, WebP or GIF · max 8 MB";
+
+  panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+async function loadBasicNews(){
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(!session?.user)return;
+
+  basicNewsAdmin=String(session.user.email||"").trim().toLowerCase()==="drmohamedalaa90@gmail.com";
+
+  const toggle=document.getElementById("basicNewsAdminToggle");
+  if(toggle)toggle.hidden=!basicNewsAdmin;
+
+  let query=supabaseClient
+    .from("acl_announcements")
+    .select("id,title,body,kind,edition,link_url,is_pinned,is_active,published_at,created_at,text_color,text_size,image_url,card_style")
+    .order("published_at",{ascending:false})
+    .limit(20);
+
+  if(!basicNewsAdmin){
+    query=query.eq("is_active",true);
+  }
+
+  const {data,error}=await query;
+  if(error){
+    console.error("BASIC NEWS:",error);
+    const host=document.getElementById("basicNewsGrid");
+    if(host)host.innerHTML='<div class="basic-news-empty">Updates are temporarily unavailable.</div>';
+    return;
+  }
+
+  basicNewsItems=(data||[]).filter(item=>{
+    const edition=String(item.edition||"all").toLowerCase();
+    return ["basic","all","both",""].includes(edition);
+  });
+
+  renderBasicNews();
+}
+
+document.getElementById("basicNewsAdminToggle")?.addEventListener("click",()=>{
+  const panel=document.getElementById("basicNewsAdminPanel");
+  if(!panel)return;
+  if(panel.hidden){
+    openBasicNewsEditor();
+  }else{
+    panel.hidden=true;
+  }
+});
+
+document.getElementById("basicNewsCancelEdit")?.addEventListener("click",()=>{
+  resetBasicNewsEditor();
+});
+
+document.getElementById("basicNewsForm")?.addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!basicNewsAdmin)return;
+
+  const save=document.getElementById("basicNewsSave");
+  const status=document.getElementById("basicNewsStatus");
+  save.disabled=true;
+  status.textContent="Saving…";
+
+  try{
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(!session?.user)throw new Error("Authentication required.");
+
+    let imageUrl=basicNewsCurrentImage;
+    const file=document.getElementById("basicNewsImage").files?.[0];
+
+    if(file){
+      if(file.size>8*1024*1024)throw new Error("Image must be smaller than 8 MB.");
+      const safeName=String(file.name||"news-image")
+        .replace(/[^a-z0-9._-]+/gi,"-")
+        .replace(/-+/g,"-");
+      const path=`${session.user.id}/${Date.now()}-${safeName}`;
+
+      const {error:uploadError}=await supabaseClient
+        .storage
+        .from("acl-news")
+        .upload(path,file,{cacheControl:"3600",upsert:false});
+
+      if(uploadError)throw uploadError;
+
+      const {data:publicData}=supabaseClient
+        .storage
+        .from("acl-news")
+        .getPublicUrl(path);
+
+      imageUrl=publicData?.publicUrl||"";
+    }
+
+    const id=document.getElementById("basicNewsId").value.trim();
+    const payload={
+      title:document.getElementById("basicNewsTitle").value.trim(),
+      body:document.getElementById("basicNewsBody").value.trim(),
+      kind:document.getElementById("basicNewsKind").value,
+      edition:"basic",
+      link_url:document.getElementById("basicNewsLink").value.trim()||null,
+      is_pinned:document.getElementById("basicNewsPinned").checked,
+      is_active:document.getElementById("basicNewsActive").checked,
+      text_color:document.getElementById("basicNewsColor").value,
+      text_size:document.getElementById("basicNewsSize").value,
+      image_url:imageUrl||null,
+      card_style:document.getElementById("basicNewsStyle").value,
+      published_at:new Date().toISOString()
+    };
+
+    let result;
+    if(id){
+      result=await supabaseClient
+        .from("acl_announcements")
+        .update(payload)
+        .eq("id",id);
+    }else{
+      result=await supabaseClient
+        .from("acl_announcements")
+        .insert({...payload,created_by:session.user.id});
+    }
+
+    if(result.error)throw result.error;
+
+    status.textContent=id?"Update saved.":"Update published.";
+    resetBasicNewsEditor();
+    await loadBasicNews();
+  }catch(error){
+    console.error("SAVE BASIC NEWS:",error);
+    status.textContent=error.message||"Could not save this update.";
+  }finally{
+    save.disabled=false;
+  }
+});
+
+void loadBasicNews();
