@@ -126,3 +126,34 @@ if(edition==="basic"){
   });
   window.addEventListener("pagehide",()=>clearInterval(aclBasicPresenceTimer),{once:true});
 }
+
+
+/* ACL Basic hard module access guard */
+async function aclBasicModuleAccessGuard(){
+  if(edition!=="basic") return;
+
+  const moduleId =
+    new URLSearchParams(location.search).get("module");
+
+  if(!moduleId) return;
+
+  try{
+    const {data:allowed,error}=await supabaseClient.rpc(
+      "acl_can_access_learning_area",
+      {
+        p_edition:"basic",
+        p_module_id:moduleId
+      }
+    );
+
+    if(error || allowed!==true){
+      location.replace("basic-home.html?edition=basic&admin_hold=1");
+    }
+  }catch{
+    location.replace("basic-home.html?edition=basic&admin_hold=1");
+  }
+}
+
+if(edition==="basic"){
+  void aclBasicModuleAccessGuard();
+}
