@@ -56,7 +56,7 @@ function setStage(text) {
 setStage("Starting learning engine…");
 
 const importPromise = import(
-  "./learning-mode.js?v=20261023-save-exit1"
+  "./learning-mode.js?v=20261023-quiz-time1"
 );
 
 const timeoutPromise = new Promise((_, reject) => {
@@ -94,3 +94,4 @@ window.addEventListener("unhandledrejection", (event) => {
     console.error("ACL LEARNING UNHANDLED REJECTION:", reason);
   }
 });
+
