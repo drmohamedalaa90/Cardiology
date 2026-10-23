@@ -167,7 +167,7 @@ export function aclUrl(path, edition = resolveAclEdition({ requireEdition: false
   return url.origin === location.origin ? `${url.pathname}${url.search}${url.hash}` : url.toString();
 }
 
-export async function requireSession(relativeLogin = "login.html") {
+export async function requireSession(relativeLogin = "acl-access.html?build=20261023-clean") {
   try {
     const { data, error } = await aclWithTimeout(
       supabaseClient.auth.getSession(),
@@ -300,7 +300,7 @@ function renderAdminLink(profile) {
   nav.insertBefore(link, signOutButton || null);
 }
 
-export async function protectAndRender(relativeLogin = "login.html") {
+export async function protectAndRender(relativeLogin = "acl-access.html?build=20261023-clean") {
   try {
     const session = await requireSession(relativeLogin);
     if (!session) return null;
@@ -333,6 +333,38 @@ export async function protectAndRender(relativeLogin = "login.html") {
       return null;
     }
 
+    const guardedEdition =
+      resolveAclEdition({
+        requireEdition: false,
+        updateUrl: false
+      });
+
+    if (guardedEdition) {
+      const guardedModule =
+        new URLSearchParams(location.search).get("module") || null;
+
+      const { data: accessAllowed, error: accessError } =
+        await supabaseClient.rpc(
+          "acl_can_access_learning_area",
+          {
+            p_edition: guardedEdition,
+            p_module_id: guardedModule
+          }
+        );
+
+      if (
+        accessError ||
+        accessAllowed !== true
+      ) {
+        location.replace(
+          guardedEdition === "basic"
+            ? root + "basic-home.html?edition=basic&admin_hold=1"
+            : root + "edition-select.html?locked=1"
+        );
+        return null;
+      }
+    }
+
     window.aclCurrentProfile = profile;
     renderUserChip(profile);
     renderAdminLink(profile);
@@ -362,7 +394,7 @@ export async function protectAndRender(relativeLogin = "login.html") {
 export async function signOut() {
   try { await supabaseClient.auth.signOut(); } catch (error) { console.warn(error); }
   try { sessionStorage.removeItem(EDITION_KEY); } catch {}
-  location.replace(root + "login.html");
+  location.replace(root + "acl-access.html?build=20261023-clean");
 }
 
 window.aclSignOut = signOut;
