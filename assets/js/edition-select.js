@@ -49,7 +49,7 @@ const {
 } = await supabaseClient.auth.getSession();
 
 if (!session?.user) {
-  location.replace("login.html");
+  location.replace("acl-access.html?build=20261023-clean");
 } else {
   const user = session.user;
 
@@ -216,7 +216,7 @@ $("editionLogout")
         sessionStorage.removeItem("aclSelectedEdition");
       } catch {}
 
-      location.replace("login.html");
+      location.replace("acl-access.html?build=20261023-clean");
     }
   );
 
