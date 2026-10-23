@@ -62,11 +62,11 @@ function safeRemove(storage, key) {
 }
 
 function timerStorageKey(questionId) {
-  return `acl:learning-timer:${edition}:${moduleKey}:${timerSession}:${questionId}`;
+  return `acl:learning-timer:${edition}:${moduleKey}:${activeQuestion?.attemptId||timerSession}:${questionId}`;
 }
 
 function noteStorageKey(questionId) {
-  return `acl:learning-note:${edition}:${moduleKey}:${questionId}`;
+  return edition==='basic'&&activeQuestion?.attemptId ? `acl:quiz-note:${activeQuestion.userId}:${activeQuestion.attemptId}:${questionId}` : `acl:learning-note:${edition}:${moduleKey}:${questionId}`;
 }
 
 function formatTime(totalSeconds) {
@@ -180,11 +180,15 @@ function persistTimer() {
 }
 
 function restoreOrStartTimer(detail) {
+  if(timerCard)timerCard.hidden=false;
   const questionId = String(detail.questionId || detail.questionNumber || "question");
   const questionNumber = Number(detail.questionNumber || 0) || null;
-  const sameQuestion = activeQuestion?.id === questionId;
+  const sameQuestion = activeQuestion?.id === questionId && (!detail.attemptId || activeQuestion?.attemptId===detail.attemptId);
 
+  if(activeQuestion)saveCurrentNote();
   activeQuestion = {
+    attemptId: detail.attemptId || activeQuestion?.attemptId || '',
+    userId: detail.userId || activeQuestion?.userId || '',
     id: questionId,
     number: questionNumber,
     total: Number(detail.totalQuestions || 0) || null
@@ -429,3 +433,7 @@ if (questionCount) {
     characterData: true
   });
 }
+
+window.addEventListener('pagehide',saveCurrentNote);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveCurrentNote();});
+window.addEventListener('acl:quiz-results',()=>{saveCurrentNote();clearTimerInterval();if(timerCard)timerCard.hidden=true;closeNotes();});
