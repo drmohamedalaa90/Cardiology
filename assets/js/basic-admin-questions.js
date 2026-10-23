@@ -215,6 +215,45 @@ function render() {
           </div>
 
           <h2>${esc(question.stem || "Question")}</h2>
+
+          <div class="baq-quick-controls" data-quick-controls="${question.id}">
+            <div class="baq-quick-difficulty" aria-label="Set difficulty">
+              <button type="button"
+                class="baq-diff-btn easy ${question.difficulty === "foundation" ? "active" : ""}"
+                data-quick-difficulty="${question.id}"
+                data-difficulty="foundation"
+                title="Mark Easy">
+                <i></i><span>Easy</span>
+              </button>
+
+              <button type="button"
+                class="baq-diff-btn intermediate ${question.difficulty === "intermediate" ? "active" : ""}"
+                data-quick-difficulty="${question.id}"
+                data-difficulty="intermediate"
+                title="Mark Intermediate">
+                <i></i><span>Intermediate</span>
+              </button>
+
+              <button type="button"
+                class="baq-diff-btn hard ${question.difficulty === "advanced" ? "active" : ""}"
+                data-quick-difficulty="${question.id}"
+                data-difficulty="advanced"
+                title="Mark Hard">
+                <i></i><span>Hard</span>
+              </button>
+            </div>
+
+            <div class="baq-quick-hint">
+              <span class="baq-corazon-mini">Dr. Corazón</span>
+              <input
+                type="text"
+                data-quick-hint="${question.id}"
+                value="${esc(question.dr_corazon_hint || "")}"
+                placeholder="Add indirect advice…">
+              <button type="button" data-save-hint="${question.id}">Save</button>
+            </div>
+          </div>
+
           <small class="baq-expand-hint">Click question to expand</small>
         </div>
 
@@ -239,6 +278,60 @@ function render() {
 
 function questionById(id) {
   return questions.find(question => String(question.id) === String(id));
+}
+
+async function quickSaveQuestionMeta(question, patch = {}, sourceButton = null) {
+  if (!question) return false;
+
+  const options = optionsMap(question);
+  const byKey = Object.fromEntries(options.map(option => [option.key, option]));
+  const correct =
+    options.find(option => option.isCorrect)?.key || "A";
+
+  if (sourceButton) sourceButton.disabled = true;
+
+  const { error } =
+    await supabaseClient.rpc("acl_admin_save_basic_question", {
+      p_question_id: question.id,
+      p_module_id: moduleId,
+      p_stem: question.stem || question.question_text || "",
+      p_option_a: byKey.A?.text || "",
+      p_option_b: byKey.B?.text || "",
+      p_option_c: byKey.C?.text || "",
+      p_option_d: byKey.D?.text || "",
+      p_correct_key: correct,
+      p_topic: question.topic || null,
+      p_reference_text: question.reference_text || null,
+      p_explanation: question.explanation || null,
+      p_dr_corazon_hint:
+        Object.prototype.hasOwnProperty.call(patch, "dr_corazon_hint")
+          ? (patch.dr_corazon_hint || null)
+          : (question.dr_corazon_hint || null),
+      p_difficulty:
+        patch.difficulty ||
+        question.difficulty ||
+        "foundation",
+      p_status: question.status || "published"
+    });
+
+  if (sourceButton) sourceButton.disabled = false;
+
+  if (error) {
+    console.error("QUICK QUESTION UPDATE:", error);
+    setPageStatus(error.message || "Could not update question.", "error");
+    return false;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, "difficulty")) {
+    question.difficulty = patch.difficulty;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, "dr_corazon_hint")) {
+    question.dr_corazon_hint = patch.dr_corazon_hint || null;
+  }
+
+  setPageStatus("Question updated.", "success");
+  return true;
 }
 
 function toggleQuestionDetails(id) {
@@ -266,6 +359,86 @@ function toggleQuestionDetails(id) {
 }
 
 function bindCardActions() {
+  document.querySelectorAll("[data-quick-difficulty]").forEach(button => {
+    button.addEventListener("click", async event => {
+      event.stopPropagation();
+
+      const question = questionById(button.dataset.quickDifficulty);
+      if (!question) return;
+
+      const nextDifficulty = button.dataset.difficulty;
+      if (question.difficulty === nextDifficulty) return;
+
+      const ok = await quickSaveQuestionMeta(
+        question,
+        { difficulty: nextDifficulty },
+        button
+      );
+
+      if (!ok) return;
+
+      const group = button.closest(".baq-quick-difficulty");
+      group?.querySelectorAll(".baq-diff-btn").forEach(item =>
+        item.classList.toggle("active", item === button)
+      );
+
+      const card = button.closest(".baq-card");
+      const badge = card?.querySelector(".baq-difficulty");
+
+      if (badge) {
+        badge.innerHTML =
+          '<i class="baq-dot ' +
+          esc(nextDifficulty) +
+          '"></i>' +
+          difficultyLabel(nextDifficulty);
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-save-hint]").forEach(button => {
+    button.addEventListener("click", async event => {
+      event.stopPropagation();
+
+      const question = questionById(button.dataset.saveHint);
+      const input = document.querySelector(
+        '[data-quick-hint="' + button.dataset.saveHint + '"]'
+      );
+
+      if (!question || !input) return;
+
+      const hint = input.value.trim();
+
+      const ok = await quickSaveQuestionMeta(
+        question,
+        { dr_corazon_hint: hint },
+        button
+      );
+
+      if (!ok) return;
+
+      button.textContent = "Saved";
+      setTimeout(() => {
+        button.textContent = "Save";
+      }, 1200);
+    });
+  });
+
+  document.querySelectorAll("[data-quick-hint]").forEach(input => {
+    input.addEventListener("click", event => event.stopPropagation());
+
+    input.addEventListener("keydown", event => {
+      event.stopPropagation();
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+
+        document.querySelector(
+          '[data-save-hint="' + input.dataset.quickHint + '"]'
+        )?.click();
+      }
+    });
+  });
+
   document.querySelectorAll("[data-edit]").forEach(button => {
     button.addEventListener("click", () => {
       const id = button.dataset.edit;
@@ -403,7 +576,7 @@ async function loadQuestions() {
 }
 
 $("baqList")?.addEventListener("click", event => {
-  if (event.target.closest("button,a,input,select,textarea,label,form")) {
+  if (event.target.closest("button,a,input,select,textarea,label,form,.baq-quick-controls")) {
     return;
   }
 
