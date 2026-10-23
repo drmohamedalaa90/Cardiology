@@ -132,60 +132,122 @@ function basicNewsDate(value){
   }
 }
 
-function renderBasicNews(){
-  const host=document.getElementById("basicNewsGrid");
-  if(!host)return;
+let basicNewsIndex = 0;
+let basicNewsAutoplaySeconds = 0;
+let basicNewsAutoplayTimer = null;
 
-  const rows=[...basicNewsItems].sort((a,b)=>{
+function sortedBasicNews(){
+  return [...basicNewsItems].sort((a,b)=>{
     const pin=Number(Boolean(b.is_pinned))-Number(Boolean(a.is_pinned));
     if(pin)return pin;
     return new Date(b.published_at||b.created_at||0)-new Date(a.published_at||a.created_at||0);
   });
+}
+
+function stopBasicNewsAutoplay(){
+  if(basicNewsAutoplayTimer){
+    clearInterval(basicNewsAutoplayTimer);
+    basicNewsAutoplayTimer=null;
+  }
+}
+
+function startBasicNewsAutoplay(){
+  stopBasicNewsAutoplay();
+  const rows=sortedBasicNews();
+  if(
+    basicNewsAutoplaySeconds>0 &&
+    rows.length>1 &&
+    !document.hidden
+  ){
+    basicNewsAutoplayTimer=setInterval(()=>{
+      basicNewsIndex=(basicNewsIndex+1)%rows.length;
+      renderBasicNews();
+    },basicNewsAutoplaySeconds*1000);
+  }
+}
+
+function setBasicNewsIndex(nextIndex,{restart=true}={}){
+  const rows=sortedBasicNews();
+  if(!rows.length)return;
+  basicNewsIndex=(Number(nextIndex)+rows.length)%rows.length;
+  renderBasicNews();
+  if(restart)startBasicNewsAutoplay();
+}
+
+function renderBasicNews(){
+  const host=document.getElementById("basicNewsGrid");
+  const dots=document.getElementById("basicNewsDots");
+  const prev=document.getElementById("basicNewsPrev");
+  const next=document.getElementById("basicNewsNext");
+  if(!host)return;
+
+  const rows=sortedBasicNews();
 
   if(!rows.length){
     host.innerHTML='<div class="basic-news-empty">No ACL updates have been published yet.</div>';
+    if(dots)dots.innerHTML="";
+    if(prev)prev.hidden=true;
+    if(next)next.hidden=true;
+    stopBasicNewsAutoplay();
     return;
   }
 
-  host.innerHTML=rows.map(item=>{
-    const titleColor=basicNewsSafeColor(item.title_color||item.text_color);
-    const bodyColor=basicNewsSafeColor(item.body_color||item.text_color);
-    const titleSize=basicNewsSafeSize(item.title_size||"normal");
-    const bodySize=basicNewsSafeSize(item.body_size||item.text_size);
-    const style=basicNewsSafeStyle(item.card_style);
-    const titleEffect=basicNewsSafeEffect(item.title_effect||"none");
-    const bodyEffect=basicNewsSafeEffect(item.body_effect||item.text_effect||"none");
-    const titleBold=item.title_bold!==false;
-    const bodyBold=item.body_bold===true;
-    const href=basicNewsSafeHref(item.link_url);
-    const image=basicNewsSafeHref(item.image_url);
-    const body=esc(item.body||"").replace(/\n/g,"<br>");
-    const adminEdit=basicNewsAdmin
-      ? `<button class="basic-news-edit" type="button" data-edit-news="${esc(item.id)}">Edit</button>`
+  if(basicNewsIndex>=rows.length)basicNewsIndex=0;
+  const item=rows[basicNewsIndex];
+
+  const titleColor=basicNewsSafeColor(item.title_color||item.text_color);
+  const bodyColor=basicNewsSafeColor(item.body_color||item.text_color);
+  const titleSize=basicNewsSafeSize(item.title_size||"normal");
+  const bodySize=basicNewsSafeSize(item.body_size||item.text_size);
+  const style=basicNewsSafeStyle(item.card_style);
+  const titleEffect=basicNewsSafeEffect(item.title_effect||"none");
+  const bodyEffect=basicNewsSafeEffect(item.body_effect||item.text_effect||"none");
+  const titleBold=item.title_bold!==false;
+  const bodyBold=item.body_bold===true;
+  const href=basicNewsSafeHref(item.link_url);
+  const image=basicNewsSafeHref(item.image_url);
+  const body=esc(item.body||"").replace(/\n/g,"<br>");
+  const adminEdit=basicNewsAdmin
+    ? `<button class="basic-news-edit" type="button" data-edit-news="${esc(item.id)}">Edit</button>`
+    : "";
+
+  host.innerHTML=`
+    <article class="basic-news-card ${style} title-size-${titleSize} body-size-${bodySize} title-effect-${titleEffect} body-effect-${bodyEffect}" style="--news-title:${titleColor};--news-body:${bodyColor};--news-title-weight:${titleBold?900:500};--news-body-weight:${bodyBold?800:400}">
+      ${image?`<div class="basic-news-image"><img src="${esc(image)}" alt="" loading="lazy"></div>`:""}
+      <div class="basic-news-card-body">
+        <div class="basic-news-meta">
+          <span>${esc(basicNewsKindLabel(item.kind))}</span>
+          ${item.is_pinned?'<em>Pinned</em>':""}
+          <small>${esc(basicNewsDate(item.published_at||item.created_at))}</small>
+          ${adminEdit}
+        </div>
+        <h3>${esc(item.title||"ACL update")}</h3>
+        <p>${body}</p>
+        ${href?`<a href="${esc(href)}" target="_blank" rel="noopener">Learn more →</a>`:""}
+      </div>
+    </article>
+  `;
+
+  const many=rows.length>1;
+  if(prev)prev.hidden=!many;
+  if(next)next.hidden=!many;
+
+  if(dots){
+    dots.innerHTML=many
+      ? rows.map((_,index)=>`<button type="button" class="${index===basicNewsIndex?"is-active":""}" data-news-dot="${index}" aria-label="Show update ${index+1}"></button>`).join("")
       : "";
 
-    return `
-      <article class="basic-news-card ${style} title-size-${titleSize} body-size-${bodySize} title-effect-${titleEffect} body-effect-${bodyEffect}" style="--news-title:${titleColor};--news-body:${bodyColor};--news-title-weight:${titleBold?900:500};--news-body-weight:${bodyBold?800:400}">
-        ${image?`<div class="basic-news-image"><img src="${esc(image)}" alt="" loading="lazy"></div>`:""}
-        <div class="basic-news-card-body">
-          <div class="basic-news-meta">
-            <span>${esc(basicNewsKindLabel(item.kind))}</span>
-            ${item.is_pinned?'<em>Pinned</em>':""}
-            <small>${esc(basicNewsDate(item.published_at||item.created_at))}</small>
-            ${adminEdit}
-          </div>
-          <h3>${esc(item.title||"ACL update")}</h3>
-          <p>${body}</p>
-          ${href?`<a href="${esc(href)}" target="_blank" rel="noopener">Learn more →</a>`:""}
-        </div>
-      </article>
-    `;
-  }).join("");
+    dots.querySelectorAll("[data-news-dot]").forEach(button=>{
+      button.addEventListener("click",()=>{
+        setBasicNewsIndex(Number(button.dataset.newsDot||0));
+      });
+    });
+  }
 
   host.querySelectorAll("[data-edit-news]").forEach(button=>{
     button.addEventListener("click",()=>{
-      const item=basicNewsItems.find(row=>String(row.id)===String(button.dataset.editNews));
-      if(item) openBasicNewsEditor(item);
+      const current=basicNewsItems.find(row=>String(row.id)===String(button.dataset.editNews));
+      if(current)openBasicNewsEditor(current);
     });
   });
 }
@@ -388,4 +450,161 @@ document.getElementById("basicNewsForm")?.addEventListener("submit",async event=
   }
 });
 
+
+const BASIC_HOME_DEFAULTS={
+  hero_eyebrow:"ACL • BASIC EDITION",
+  hero_title:"Build your cardiology foundation, one module at a time.",
+  hero_subtitle:"Complete each module with more than 70%. The next module also becomes available only after ACL admin release.",
+  path_label:"YOUR PATH",
+  path_suffix:"modules unlocked",
+  news_kicker:"ACL UPDATES",
+  news_title:"Updates & News",
+  news_subtitle:"Official announcements, module updates and important ACL news.",
+  news_autoplay_seconds:0
+};
+
+let basicHomeSettings={...BASIC_HOME_DEFAULTS};
+
+function applyBasicHomeSettings(settings={}){
+  basicHomeSettings={...BASIC_HOME_DEFAULTS,...settings};
+
+  const setText=(id,value)=>{
+    const el=document.getElementById(id);
+    if(el)el.textContent=String(value??"");
+  };
+
+  setText("basicHeroEyebrow",basicHomeSettings.hero_eyebrow);
+  setText("basicHeroTitle",basicHomeSettings.hero_title);
+  setText("basicHeroSubtitle",basicHomeSettings.hero_subtitle);
+  setText("basicPathLabel",basicHomeSettings.path_label);
+  setText("basicPathSuffix",basicHomeSettings.path_suffix);
+  setText("basicNewsKicker",basicHomeSettings.news_kicker);
+  setText("basicNewsHeading",basicHomeSettings.news_title);
+  setText("basicNewsSubtitle",basicHomeSettings.news_subtitle);
+
+  basicNewsAutoplaySeconds=[3,5].includes(Number(basicHomeSettings.news_autoplay_seconds))
+    ? Number(basicHomeSettings.news_autoplay_seconds)
+    : 0;
+
+  const fields={
+    basicHomeHeroEyebrow:basicHomeSettings.hero_eyebrow,
+    basicHomeHeroTitle:basicHomeSettings.hero_title,
+    basicHomeHeroSubtitle:basicHomeSettings.hero_subtitle,
+    basicHomePathLabel:basicHomeSettings.path_label,
+    basicHomePathSuffix:basicHomeSettings.path_suffix,
+    basicHomeNewsKicker:basicHomeSettings.news_kicker,
+    basicHomeNewsTitle:basicHomeSettings.news_title,
+    basicHomeNewsSubtitle:basicHomeSettings.news_subtitle
+  };
+
+  for(const [id,value] of Object.entries(fields)){
+    const input=document.getElementById(id);
+    if(input)input.value=String(value??"");
+  }
+
+  const autoplay=document.getElementById("basicHomeNewsAutoplay");
+  if(autoplay)autoplay.value=String(basicNewsAutoplaySeconds);
+
+  startBasicNewsAutoplay();
+}
+
+async function loadBasicHomeSettings(){
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(!session?.user)return;
+
+  const isAdminUser=
+    String(session.user.email||"").trim().toLowerCase()===
+    "drmohamedalaa90@gmail.com";
+
+  const toggle=document.getElementById("basicHomeTextAdminToggle");
+  if(toggle)toggle.hidden=!isAdminUser;
+
+  const {data,error}=await supabaseClient
+    .from("acl_basic_home_settings")
+    .select("*")
+    .eq("id","basic-home")
+    .maybeSingle();
+
+  if(error){
+    console.warn("BASIC HOME SETTINGS:",error);
+    applyBasicHomeSettings(BASIC_HOME_DEFAULTS);
+    return;
+  }
+
+  applyBasicHomeSettings(data||BASIC_HOME_DEFAULTS);
+}
+
+document.getElementById("basicHomeTextAdminToggle")?.addEventListener("click",()=>{
+  const panel=document.getElementById("basicHomeTextAdminPanel");
+  if(!panel)return;
+  panel.hidden=!panel.hidden;
+  if(!panel.hidden){
+    panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }
+});
+
+document.getElementById("basicHomeTextForm")?.addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const save=document.getElementById("basicHomeTextSave");
+  const status=document.getElementById("basicHomeTextStatus");
+  save.disabled=true;
+  status.textContent="Saving…";
+
+  try{
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(
+      !session?.user ||
+      String(session.user.email||"").trim().toLowerCase()!=="drmohamedalaa90@gmail.com"
+    ){
+      throw new Error("Admin access required.");
+    }
+
+    const payload={
+      id:"basic-home",
+      hero_eyebrow:document.getElementById("basicHomeHeroEyebrow").value.trim()||BASIC_HOME_DEFAULTS.hero_eyebrow,
+      hero_title:document.getElementById("basicHomeHeroTitle").value.trim()||BASIC_HOME_DEFAULTS.hero_title,
+      hero_subtitle:document.getElementById("basicHomeHeroSubtitle").value.trim()||BASIC_HOME_DEFAULTS.hero_subtitle,
+      path_label:document.getElementById("basicHomePathLabel").value.trim()||BASIC_HOME_DEFAULTS.path_label,
+      path_suffix:document.getElementById("basicHomePathSuffix").value.trim()||BASIC_HOME_DEFAULTS.path_suffix,
+      news_kicker:document.getElementById("basicHomeNewsKicker").value.trim()||BASIC_HOME_DEFAULTS.news_kicker,
+      news_title:document.getElementById("basicHomeNewsTitle").value.trim()||BASIC_HOME_DEFAULTS.news_title,
+      news_subtitle:document.getElementById("basicHomeNewsSubtitle").value.trim()||BASIC_HOME_DEFAULTS.news_subtitle,
+      news_autoplay_seconds:Number(document.getElementById("basicHomeNewsAutoplay").value||0),
+      updated_by:session.user.id,
+      updated_at:new Date().toISOString()
+    };
+
+    const {data,error}=await supabaseClient
+      .from("acl_basic_home_settings")
+      .upsert(payload,{onConflict:"id"})
+      .select()
+      .single();
+
+    if(error)throw error;
+
+    applyBasicHomeSettings(data);
+    status.textContent="Homepage updated.";
+  }catch(error){
+    console.error("SAVE BASIC HOME SETTINGS:",error);
+    status.textContent=error.message||"Could not update homepage.";
+  }finally{
+    save.disabled=false;
+  }
+});
+
+document.getElementById("basicNewsPrev")?.addEventListener("click",()=>{
+  setBasicNewsIndex(basicNewsIndex-1);
+});
+
+document.getElementById("basicNewsNext")?.addEventListener("click",()=>{
+  setBasicNewsIndex(basicNewsIndex+1);
+});
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden)stopBasicNewsAutoplay();
+  else startBasicNewsAutoplay();
+});
+
+void loadBasicHomeSettings();
 void loadBasicNews();
