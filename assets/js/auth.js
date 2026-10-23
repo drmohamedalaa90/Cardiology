@@ -51,14 +51,42 @@ byId("signInForm")?.addEventListener("submit", async (event) => {
   const submit = event.submitter; if (submit) submit.disabled = true;
   try {
     const { data, error } = await supabaseClient.functions.invoke("username-login", { body: { identifier, password } });
-    if (error) throw error;
-    if (!data?.session?.access_token || !data?.session?.refresh_token) throw new Error(data?.error || "Invalid username/email or password.");
-    const { error: sessionError } = await supabaseClient.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
-    if (sessionError) throw sessionError;
+
+    const serverMessage = String(data?.error || "").trim();
+
+    if (error) {
+      if (/suspend|hold/i.test(serverMessage)) {
+        throw new Error("This account is currently on hold. Please contact the ACL administrator.");
+      }
+      throw new Error("Wrong email or password.");
+    }
+
+    if (!data?.session?.access_token || !data?.session?.refresh_token) {
+      if (/suspend|hold/i.test(serverMessage)) {
+        throw new Error("This account is currently on hold. Please contact the ACL administrator.");
+      }
+      throw new Error("Wrong email or password.");
+    }
+
+    const { error: sessionError } = await supabaseClient.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token
+    });
+
+    if (sessionError) throw new Error("Wrong email or password.");
+
     openAclHome();
   } catch (error) {
-    setMessage("signInError", error.message || "Could not sign in.");
-  } finally { if (submit) submit.disabled = false; }
+    const raw = String(error?.message || "");
+    const message =
+      /suspend|hold/i.test(raw)
+        ? "This account is currently on hold. Please contact the ACL administrator."
+        : "Wrong email or password.";
+
+    setMessage("signInError", message);
+  } finally {
+    if (submit) submit.disabled = false;
+  }
 });
 
 byId("registerForm")?.addEventListener("submit", async (event) => {
