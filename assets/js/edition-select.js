@@ -2,17 +2,6 @@ import { supabaseClient } from "./supabase-client.js";
 
 const $ = id => document.getElementById(id);
 
-const expertLevelKeywords = [
-  "assistant lecturer",
-  "lecturer",
-  "resident",
-  "registrar",
-  "fellow",
-  "specialist",
-  "consultant",
-  "professor"
-];
-
 function initials(name = "ACL") {
   return String(name)
     .split(/\s+/)
@@ -23,25 +12,9 @@ function initials(name = "ACL") {
     .toUpperCase() || "ACL";
 }
 
-function hasExpertAccess(profile) {
-  const role =
-    String(profile?.role || "")
-      .trim()
-      .toLowerCase();
-
-  const academicYear =
-    String(profile?.academic_year || "")
-      .trim()
-      .toLowerCase();
-
-  if (role === "admin") {
-    return true;
-  }
-
-  return expertLevelKeywords.some(
-    keyword =>
-      academicYear.includes(keyword)
-  );
+function hasExpertAccess(user) {
+  return String(user?.email || "").trim().toLowerCase() ===
+    "drmohamedalaa90@gmail.com";
 }
 
 const {
@@ -107,7 +80,7 @@ if (!session?.user) {
   }
 
   const expertAllowed =
-    hasExpertAccess(profile);
+    hasExpertAccess(user);
 
   const expertCard =
     $("expertEditionCard");
