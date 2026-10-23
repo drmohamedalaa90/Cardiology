@@ -25,7 +25,7 @@ if(edition==="basic"){
     <a class="basic-universal-brand" href="basic-home.html?edition=basic"><img src="assets/images/acl-header-mark.svg" alt=""><span class="basic-universal-brand-copy"><strong>Cardiology League</strong><small>Basic Edition</small></span></a>
     <div class="basic-universal-actions">
       <button class="basic-expert-lock" id="basicExpertLocked" type="button"><span class="basic-lock-dot">◆</span><span>Expert Edition</span><small>Locked</small></button>
-      <div class="basic-universal-user"><span class="basic-universal-avatar" id="basicUniversalAvatar">ACL</span><strong id="basicUniversalName">Member</strong></div>
+      <a class="basic-universal-user" href="basic-profile.html?edition=basic" aria-label="Open your profile" title="Open your profile" style="color:inherit;text-decoration:none"><span class="basic-universal-avatar" id="basicUniversalAvatar">ACL</span><strong id="basicUniversalName">Member</strong></a>
       <button class="basic-universal-refresh" id="basicUniversalRefresh" type="button" aria-label="Refresh page" title="Refresh page"><span aria-hidden="true">↻</span></button>
       <a class="basic-universal-contact" href="mailto:drmohamedalaa90@gmail.com" aria-label="Email ACL" title="Email ACL"><span aria-hidden="true">✉</span></a>
       <button class="basic-universal-logout" id="basicUniversalLogout" type="button">Log out</button>
@@ -34,7 +34,6 @@ if(edition==="basic"){
   <nav class="basic-universal-bottom" aria-label="Basic Edition navigation">
     <a class="${active("basic-home.html")}" href="basic-home.html?edition=basic"><span>⌂</span><strong>Home</strong></a>
     <a class="${active("basic-modules.html")}" href="basic-modules.html?edition=basic"><span>▦</span><strong>Modules</strong></a>
-    <a class="${activeAny(["basic-profile.html","profile.html"])}" href="basic-profile.html?edition=basic"><span>♙</span><strong>Profile</strong></a>
     <a class="${activeAny(["basic-challenges.html","challenge.html"])}" href="basic-challenges.html?edition=basic"><span>⚔</span><strong>Challenges</strong></a>
     <a class="${activeAny(["basic-progress.html","progress.html"])}" href="basic-progress.html?edition=basic"><span>▤</span><strong>Progress</strong></a>
     <a class="${active("basic-notifications.html")}" href="basic-notifications.html?edition=basic"><span>♢</span><strong>Notifications</strong><em class="basic-nav-badge" id="basicNotificationBadge" hidden>0</em></a>
