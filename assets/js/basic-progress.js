@@ -61,7 +61,7 @@ const {
 } = await supabaseClient.auth.getSession();
 
 if (!session?.user) {
-  location.replace("login.html");
+  location.replace("acl-access.html?build=20261023-clean");
 } else {
   uid = session.user.id;
 
@@ -211,9 +211,23 @@ function render() {
   $("bpStarred").textContent =
     stars.length;
 
+  const startedModules =
+    modules.filter(module =>
+      attempts.some(
+        attempt =>
+          String(attempt.module_id) ===
+          String(module.id)
+      ) ||
+      stars.some(
+        star =>
+          String(star.module_id) ===
+          String(module.id)
+      )
+    );
+
   $("basicModuleProgress").innerHTML =
-    modules.length
-      ? modules.map(module => {
+    startedModules.length
+      ? startedModules.map(module => {
           const rows =
             attempts.filter(
               attempt =>
@@ -312,7 +326,7 @@ function render() {
             </article>
           `;
         }).join("")
-      : '<div class="basic-empty-state">No Basic Edition modules found.</div>';
+      : '<div class="basic-empty-state">No learning progress yet. Start a module and it will appear here.</div>';
 
   $("basicModuleProgress")
     .querySelectorAll("[data-review]")
