@@ -230,6 +230,7 @@ if (!session?.user) {
       supabaseClient
         .from("quiz_attempts")
         .select("id,quiz_id,status,accuracy_percent,percentage,question_count,correct_count,updated_at")
+        .is("challenge_id",null)
         .eq("user_id", session.user.id)
         .eq("module_id", moduleId)
         .order("updated_at", { ascending: false }),
