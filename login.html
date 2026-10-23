@@ -4,9 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#082f57">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ACL">
+  <link rel="manifest" href="manifest.webmanifest?v=1">
+  <link rel="apple-touch-icon" href="assets/images/acl-icon-192.png">
   <title>Alexandria Cardiology League (ACL) | Account Access</title>
   <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/auth.css?v=5">
+  <link rel="stylesheet" href="assets/css/auth.css?v=6">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
@@ -69,9 +74,29 @@
               </div>
               <input id="loginPassword" type="password" autocomplete="current-password" minlength="6" required>
             </div>
+
+            <div class="auth-login-options full">
+              <label class="auth-check">
+                <input id="rememberMe" type="checkbox" checked>
+                <span>Remember me</span>
+              </label>
+
+              <label class="auth-check">
+                <input id="showLoginPassword" type="checkbox">
+                <span>Show password</span>
+              </label>
+            </div>
           </div>
 
           <button class="primary-btn auth-submit" type="submit">Sign in</button>
+
+          <button id="installAclApp" class="auth-install-btn" type="button">
+            <span class="auth-install-icon" aria-hidden="true">↓</span>
+            <span>
+              <strong>Install ACL app</strong>
+              <small>iPhone / Android</small>
+            </span>
+          </button>
 
           <div id="signInError" class="message error"></div>
           <div id="signInSuccess" class="message success"></div>
@@ -125,6 +150,13 @@
               <label for="confirmPassword">Confirm password</label>
               <input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
             </div>
+
+            <div class="auth-login-options full">
+              <label class="auth-check">
+                <input id="showRegisterPassword" type="checkbox">
+                <span>Show passwords</span>
+              </label>
+            </div>
           </div>
 
           <button class="primary-btn auth-submit" type="submit">Create account</button>
@@ -135,9 +167,19 @@
       </section>
     </section>
 
-    <p class="auth-footer-note">Alexandria Cardiology League · Learning built for cardiology training</p>
+    <p class="auth-footer-note">Alexandria Cardiology League</p>
   </main>
 
-  <script type="module" src="assets/js/auth.js?v=2"></script>
+  <div id="aclInstallModal" class="auth-install-modal" hidden>
+    <section class="auth-install-dialog" role="dialog" aria-modal="true" aria-labelledby="aclInstallTitle">
+      <button id="aclInstallClose" class="auth-install-close" type="button" aria-label="Close">×</button>
+      <span class="auth-install-badge">ACL APP</span>
+      <h2 id="aclInstallTitle">Install Alexandria Cardiology League</h2>
+      <div id="aclInstallInstructions" class="auth-install-instructions"></div>
+      <button id="aclInstallAction" class="auth-install-action" type="button" hidden>Install app</button>
+    </section>
+  </div>
+
+  <script type="module" src="assets/js/auth.js?v=3"></script>
 </body>
 </html>
