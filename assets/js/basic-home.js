@@ -135,6 +135,7 @@ function basicNewsDate(value){
 let basicNewsIndex = 0;
 let basicNewsAutoplaySeconds = 0;
 let basicNewsAutoplayTimer = null;
+let basicNewsManuallyNavigated = false;
 
 function sortedBasicNews(){
   return [...basicNewsItems].sort((a,b)=>{
@@ -160,6 +161,7 @@ function startBasicNewsAutoplay(){
   stopBasicNewsAutoplay();
   const rows=sortedBasicNews();
   if(
+    !basicNewsManuallyNavigated &&
     basicNewsAutoplaySeconds>0 &&
     rows.length>1 &&
     !document.hidden
@@ -171,12 +173,13 @@ function startBasicNewsAutoplay(){
   }
 }
 
-function setBasicNewsIndex(nextIndex,{restart=true}={}){
+function setBasicNewsIndex(nextIndex){
   const rows=sortedBasicNews();
   if(!rows.length)return;
+  basicNewsManuallyNavigated=true;
+  stopBasicNewsAutoplay();
   basicNewsIndex=(Number(nextIndex)+rows.length)%rows.length;
   renderBasicNews();
-  if(restart)startBasicNewsAutoplay();
 }
 
 function renderBasicNews(){
