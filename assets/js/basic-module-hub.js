@@ -40,36 +40,31 @@ function guideScroll(target, block = "center") {
 }
 
 async function refreshActualQuestionCount() {
-  if (!quiz?.id) {
+  if (!moduleId || !quiz?.id) {
     actualQuestionCount = 0;
     return;
   }
 
-  const [
-    { count: publishedCount, error: publishedError },
-    { count: totalCount, error: totalError }
-  ] = await Promise.all([
-    supabaseClient
-      .from("questions")
-      .select("id", { count: "exact", head: true })
-      .eq("quiz_id", quiz.id)
-      .eq("status", "published"),
+  const { data, error } =
+    await supabaseClient.rpc(
+      "acl_get_basic_module_question_counts",
+      { p_module_id: moduleId }
+    );
 
-    supabaseClient
-      .from("questions")
-      .select("id", { count: "exact", head: true })
-      .eq("quiz_id", quiz.id)
-  ]);
-
-  if (publishedError || totalError) {
-    console.warn("BASIC QUESTION COUNT:", publishedError || totalError);
-    return;
+  if (error) {
+    console.warn("BASIC QUESTION COUNT:", error);
+    actualQuestionCount = Number(quiz?.question_count || 0);
+  } else {
+    actualQuestionCount = Number(data?.published || 0);
   }
 
-  actualQuestionCount = Number(publishedCount || 0);
+  const totalCount =
+    error
+      ? Number(quiz?.question_count || actualQuestionCount || 0)
+      : Number(data?.total || 0);
 
   if ($("bmAdminQuestionCount")) {
-    $("bmAdminQuestionCount").textContent = String(totalCount || 0);
+    $("bmAdminQuestionCount").textContent = String(totalCount);
   }
 
   document.querySelectorAll("[data-count]").forEach(button => {
@@ -89,7 +84,7 @@ async function refreshActualQuestionCount() {
       } else if (requested === 25) {
         note.textContent = "Choose 3 Life Savers";
       } else {
-        note.textContent = "All Life Savers";
+        note.textContent = "All available Life Savers";
       }
     }
   });
