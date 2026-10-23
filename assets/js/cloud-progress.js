@@ -1187,7 +1187,8 @@ async function enrichAttemptSafely(
 
 export async function getOpenAttempt(
   moduleId,
-  quizId = null
+  quizId = null,
+  challengeId = null
 ) {
   if (!moduleId) {
     throw new Error(
@@ -1222,6 +1223,7 @@ export async function getOpenAttempt(
       );
 
 
+  query = challengeId ? query.eq('challenge_id',challengeId) : query.is('challenge_id',null);
   if (
     quizId !==
       null &&
@@ -1283,6 +1285,7 @@ export async function getOpenAttempt(
 ========================================================= */
 
 export async function createAttempt({
+  challengeId = null,
   moduleId,
   moduleTitle,
   quizId = null,
@@ -1338,6 +1341,7 @@ export async function createAttempt({
 
 
   const row = {
+    challenge_id: challengeId,
     user_id:
       user.id,
 
@@ -1413,7 +1417,8 @@ export async function createAttempt({
       const existingAttempt =
         await getOpenAttempt(
           moduleId,
-          quizId
+          quizId,
+          challengeId
         );
 
 
