@@ -1,3 +1,4 @@
+import {practiceMarkup,bindPractice} from "./basic-quiz-results.js?v=3";
 import { supabaseClient } from "./supabase-client.js";
 
 const $ = id => document.getElementById(id);
@@ -157,27 +158,12 @@ if (!session?.user) {
                 </div>
               ` : ""}
 
-              <div class="basic-starred-options">
-                ${qOptions.map(option => `
-                  <div class="basic-starred-option ${option.is_correct ? "is-answer" : ""}">
-                    <span>${esc(option.option_key || "")}</span>
-                    <p>${esc(option.option_text || "")}</p>
-                    ${option.is_correct ? "<strong>Correct answer</strong>" : ""}
-                  </div>
-                `).join("")}
-              </div>
-
-              ${q.explanation ? `
-                <details class="basic-starred-explanation">
-                  <summary>Review explanation</summary>
-                  <p>${esc(q.explanation)}</p>
-                  ${q.reference_text ? `<small>${esc(q.reference_text)}</small>` : ""}
-                </details>
-              ` : ""}
+              ${practiceMarkup(star.question_id,qOptions)}
             </article>
           `;
         }).join("");
 
+      bindPractice($("bsList"),key=>({options:optionsByQuestion.get(key)||[],explanation:questionMap.get(key)?.explanation,reference:questionMap.get(key)?.reference_text}));
       $("bsList")
         .querySelectorAll("[data-unstar]")
         .forEach(button => {
