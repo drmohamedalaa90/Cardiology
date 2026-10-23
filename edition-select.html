@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#082f4d">
   <title>Choose Edition | Cardiology League</title>
-  <link rel="stylesheet" href="assets/css/edition-select.css?v=1">
+  <link rel="stylesheet" href="assets/css/edition-select.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <main class="edition-entry">
     <header class="edition-entry-header">
-      <a class="edition-entry-brand" href="edition-select.html" aria-label="Cardiology League">
+      <a class="edition-entry-brand" href="edition-select.html" aria-label="Alexandria Cardiology League">
         <img src="assets/images/acl-header-mark.svg" alt="">
         <span>
-          <strong>Cardiology League</strong>
-          <small>ALEXANDRIA CARDIOLOGY LEAGUE</small>
+          <strong>Alexandria Cardiology League <b>(ACL)</b></strong>
+          <small>LEARN · COMPETE · PROGRESS</small>
         </span>
       </a>
 
@@ -30,22 +30,27 @@
     </header>
 
     <section class="edition-hero">
-      <span class="edition-kicker">CHOOSE YOUR LEARNING PATH</span>
-      <h1>Which edition would you like to open?</h1>
-      <p>Choose the learning experience designed for your current level. You can return to this screen later from the edition menu.</p>
+      <div class="edition-hero-mark">
+        <img src="assets/images/acl-header-mark.svg" alt="">
+      </div>
+      <div class="edition-hero-copy">
+        <span class="edition-kicker">ALEXANDRIA CARDIOLOGY LEAGUE</span>
+        <h1>Choose your ACL learning pathway</h1>
+        <p>Two learning tracks, one cardiology journey. Open the edition designed for your current training level.</p>
+      </div>
     </section>
 
     <section class="edition-grid" aria-label="Available Cardiology League editions">
       <article class="edition-card edition-card-basic">
         <div class="edition-card-top">
-          <span class="edition-icon basic">B</span>
-          <span class="edition-status available">Available</span>
+          <span class="edition-icon basic"><small>ACL</small><b>B</b></span>
+          <span class="edition-status available">Available now</span>
         </div>
 
         <div class="edition-card-copy">
-          <span class="edition-label">BASIC EDITION</span>
-          <h2>Build your cardiology foundation.</h2>
-          <p>Undergraduate-focused modules, lectures, flashcards, quizzes, friend challenges and progressive unlocking.</p>
+          <span class="edition-label">ACL · BASIC EDITION</span>
+          <h2>Build a strong cardiology foundation.</h2>
+          <p>Structured undergraduate learning with lectures, focused quizzes and progressive module unlocking.</p>
         </div>
 
         <div class="edition-feature-row edition-audience-row">
@@ -64,14 +69,14 @@
 
       <article id="expertEditionCard" class="edition-card edition-card-expert is-locked" aria-describedby="expertAccessNote">
         <div class="edition-card-top">
-          <span class="edition-icon expert">E</span>
+          <span class="edition-icon expert"><small>ACL</small><b>E</b></span>
           <span id="expertStatus" class="edition-status locked">Locked</span>
         </div>
 
         <div class="edition-card-copy">
-          <span class="edition-label">EXPERT EDITION</span>
-          <h2>Advanced clinical decision-making.</h2>
-          <p>High-level guideline modules, evidence-based cases, expert question banks and advanced challenge tools.</p>
+          <span class="edition-label">ACL · EXPERT EDITION</span>
+          <h2>Advance your clinical decision-making.</h2>
+          <p>Guideline-driven reasoning, evidence-based cases and expert-level cardiology question banks.</p>
         </div>
 
         <div class="edition-feature-row edition-audience-row">
@@ -86,7 +91,7 @@
         </button>
 
         <p id="expertAccessNote" class="edition-lock-note">
-          This edition is not available for your current level.
+          Available for cardiology residents and specialists.
         </p>
       </article>
     </section>
