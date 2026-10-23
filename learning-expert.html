@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <script>try{if((new URLSearchParams(location.search).get('edition')||localStorage.getItem('aclSelectedEdition'))==='basic'){document.documentElement.classList.add('acl-basic-shell-mode','basic-quiz-booting');document.title='Basic Learning Mode | Cardiology League';}}catch{}</script>
-  <style>html.basic-quiz-booting{background:#f4f7fb}html.basic-quiz-booting body{visibility:hidden}html.basic-quiz-booting::after{content:'Opening Basic Learning Mode…';position:fixed;inset:0;display:grid;place-items:center;color:#123b63;font:600 16px system-ui}html.acl-basic-shell-mode #aclSharedShell{display:none!important}.basic-save-exit-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}.basic-save-exit-bar span{font-size:13px;color:#52647b}.basic-save-exit-bar button{min-height:44px}.basic-exit-saving #quizArea,.basic-exit-saving #submitAnswer,.basic-exit-saving #nextQuestion{pointer-events:none;opacity:.65}</style>
+  <style>html.basic-quiz-booting{background:#f4f7fb}html.basic-quiz-booting body{visibility:hidden}html.basic-quiz-booting::after{content:'Opening Basic Learning Mode…';position:fixed;inset:0;display:grid;place-items:center;color:#123b63;font:600 16px system-ui}html.acl-basic-shell-mode #aclSharedShell{display:none!important}.basic-save-exit-bar{width:100%;margin:0}.basic-save-exit-bar[hidden]{display:none!important}body.acl-basic-learning-quiz .learning-floating-tools{display:flex!important;flex-direction:column!important;align-items:stretch!important}body.acl-basic-learning-quiz .basic-save-exit-button{pointer-events:auto;display:block;width:100%;min-height:36px;padding:7px 8px;border:1px solid #e8b14a;border-radius:11px;background:#ffbc32;color:#123653;box-shadow:0 4px 12px rgba(7,42,77,.1);font:750 11px/1.25 system-ui;cursor:pointer}body.acl-basic-learning-quiz .basic-save-exit-button:hover{background:#ffca5d}body.acl-basic-learning-quiz .basic-save-exit-button:disabled{opacity:.65;cursor:wait}body.acl-basic-learning-quiz .basic-save-exit-button:focus-visible{outline:3px solid #176b9b;outline-offset:2px}@media(max-width:760px){body.acl-basic-learning-quiz .learning-floating-tools{width:112px!important}body.acl-basic-learning-quiz .learning-floating-notes-button{width:100%!important}}.basic-exit-saving #quizArea,.basic-exit-saving #submitAnswer,.basic-exit-saving #nextQuestion{pointer-events:none;opacity:.65}</style>
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#061c3d">
@@ -95,7 +95,7 @@
   </div>
   <script type="module" src="assets/js/acl-shared-shell.js?v=20260822-bootstrapfix"></script>
   <script type="module" src="assets/js/learning-session-tools-20260822.js?v=10"></script>
-  <script type="module" src="assets/js/learning-bootstrap-20260822.js?v=17"></script>
+  <script type="module" src="assets/js/learning-bootstrap-20260822.js?v=18"></script>
   <script type="module" src="assets/js/basic-universal-shell.js?v=20261023-save-exit"></script></body>
 </html>
 
