@@ -148,7 +148,7 @@ async function signOut() {
     console.warn(e);
   }
 
-  location.replace("login.html");
+  location.replace("acl-access.html?build=20261023-clean");
 }
 
 document
@@ -207,7 +207,7 @@ async function loadProfileIntoShell() {
     if (sessionError) throw sessionError;
 
     if (!session?.user) {
-      location.replace("login.html");
+      location.replace("acl-access.html?build=20261023-clean");
       return null;
     }
 
@@ -273,7 +273,7 @@ async function loadProfileIntoShell() {
     return session;
   } catch (e) {
     console.warn("ACL shell profile", e);
-    location.replace("login.html");
+    location.replace("acl-access.html?build=20261023-clean");
     return null;
   }
 }
