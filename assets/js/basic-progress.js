@@ -588,3 +588,50 @@ modal
       }
     }
   );
+
+$("bpResetProgress")?.addEventListener("click", async () => {
+  const first = confirm(
+    "Reset all Basic Edition progress?\n\nThis will permanently remove your Basic quiz attempts, answers and starred questions."
+  );
+
+  if (!first) return;
+
+  const second = confirm(
+    "Final confirmation: this cannot be undone.\n\nYour account, friends and challenge history will remain. Reset your Basic progress now?"
+  );
+
+  if (!second) return;
+
+  const button = $("bpResetProgress");
+  const status = $("bpResetStatus");
+
+  button.disabled = true;
+  status.textContent = "Resetting your Basic progress…";
+  status.className = "basic-reset-status";
+
+  const { data, error } =
+    await supabaseClient.rpc("acl_reset_my_basic_progress");
+
+  if (error) {
+    console.error("RESET BASIC PROGRESS:", error);
+    status.textContent = error.message || "Could not reset progress.";
+    status.className = "basic-reset-status error";
+    button.disabled = false;
+    return;
+  }
+
+  attempts = [];
+  stars = [];
+  render();
+
+  status.textContent = "Your Basic Edition progress has been reset.";
+  status.className = "basic-reset-status success";
+  button.disabled = false;
+
+  try {
+    sessionStorage.removeItem("aclLearningAttempt");
+    sessionStorage.removeItem("aclLearningSession");
+    localStorage.removeItem("aclLearningAttempt");
+    localStorage.removeItem("aclLearningSession");
+  } catch {}
+});
