@@ -272,3 +272,12 @@
 .basic-module-edit-label{display:block;font-size:.65rem;margin-bottom:4px}
 .basic-module-manager [data-delete]{color:#aa2635;border-color:#e7c4c9;background:#fff5f6}
 @media(max-width:760px){.basic-module-edit-row{grid-template-columns:24px minmax(0,1fr) 38px 38px}.basic-module-edit-row label{grid-column:2/5}.basic-module-edit-row small{grid-column:2}.basic-module-edit-row [type=submit]{grid-column:2}.basic-module-manager [data-add]{align-items:stretch;flex-direction:column}}
+
+.basic-module-metrics{margin-top:16px}
+.basic-metric-label{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#6b8193;font-size:.68rem}
+.basic-metric-label strong{color:#0d5e82;font-size:.72rem;white-space:nowrap}
+.basic-module-metrics .basic-progress{height:7px;margin-top:6px}
+.basic-module-metrics .coverage span{background:linear-gradient(90deg,#0d82b4,#28a9cc)}
+.basic-metric-label.accuracy-label{margin-top:12px}
+.basic-metric-label.accuracy-label strong{color:#16855a}
+.basic-module-metrics .accuracy span{background:linear-gradient(90deg,#16855a,#3abd7b)}
