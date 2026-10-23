@@ -42,3 +42,30 @@
 .basic-news-check{display:flex;align-items:center;gap:7px;align-self:end;min-height:38px}.basic-news-check input{width:15px;height:15px;accent-color:#14809a}.basic-news-form-actions{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding-top:2px}.basic-news-form-actions button{min-height:40px;padding:0 15px;border:0;border-radius:11px;background:#072b49;color:#fff;font-size:.62rem;font-weight:900;cursor:pointer}.basic-news-form-actions button:disabled{opacity:.55;cursor:wait}.basic-news-form-actions span{color:#687f8e;font-size:.56rem;font-weight:800}
 @media(max-width:900px){.basic-news-grid{grid-template-columns:1fr}.basic-news-form{grid-template-columns:repeat(2,minmax(0,1fr))}.basic-news-field.body,.basic-news-field.image,.basic-news-field.link,.basic-news-form-actions{grid-column:1/-1}}
 @media(max-width:680px){.basic-news-section{margin-top:14px;padding:14px;border-radius:17px}.basic-news-head{align-items:flex-start;flex-direction:column;gap:9px}.basic-news-admin-toggle{width:100%}.basic-news-card{grid-template-columns:1fr}.basic-news-image,.basic-news-image img{min-height:170px;max-height:210px}.basic-news-form{grid-template-columns:1fr}.basic-news-field,.basic-news-field.body,.basic-news-field.image,.basic-news-field.link,.basic-news-form-actions{grid-column:1}.basic-news-form-actions{align-items:stretch;flex-direction:column}.basic-news-form-actions button{width:100%}}
+
+
+/* News text effects */
+.basic-news-card.effect-zoom h3,
+.basic-news-card.effect-zoom p{transform-origin:left center;animation:aclNewsZoom 2.6s ease-in-out infinite}
+.basic-news-card.effect-pulse h3,
+.basic-news-card.effect-pulse p{transform-origin:left center;animation:aclNewsPulse 2.1s ease-in-out infinite}
+.basic-news-card.effect-fade h3,
+.basic-news-card.effect-fade p{animation:aclNewsFade 2.8s ease-in-out infinite}
+.basic-news-card.effect-slide h3,
+.basic-news-card.effect-slide p{animation:aclNewsSlide 3s ease-in-out infinite}
+.basic-news-card.effect-glow h3,
+.basic-news-card.effect-glow p{animation:aclNewsGlow 2.3s ease-in-out infinite}
+
+@keyframes aclNewsZoom{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+@keyframes aclNewsPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.025);opacity:.78}}
+@keyframes aclNewsFade{0%,100%{opacity:1}50%{opacity:.48}}
+@keyframes aclNewsSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(7px)}}
+@keyframes aclNewsGlow{0%,100%{text-shadow:0 0 0 transparent}50%{text-shadow:0 0 12px currentColor}}
+
+@media(prefers-reduced-motion:reduce){
+  .basic-news-card.effect-zoom h3,.basic-news-card.effect-zoom p,
+  .basic-news-card.effect-pulse h3,.basic-news-card.effect-pulse p,
+  .basic-news-card.effect-fade h3,.basic-news-card.effect-fade p,
+  .basic-news-card.effect-slide h3,.basic-news-card.effect-slide p,
+  .basic-news-card.effect-glow h3,.basic-news-card.effect-glow p{animation:none!important}
+}
