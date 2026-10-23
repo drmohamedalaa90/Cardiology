@@ -1,5 +1,5 @@
 import {basicAttemptProblem} from "./basic-attempt-integrity.js?v=1";
-import {showBasicQuizResults} from "./basic-quiz-results.js?v=2";
+import {showBasicQuizResults} from "./basic-quiz-results.js?v=3";
 import {
   supabaseClient
 } from "./supabase-client.js";
@@ -2177,6 +2177,39 @@ function appState() {
 
 
 /* Basic solo quizzes: history-aware selection and crash recovery. */
+let basicExplicitExit=false;
+let basicAnswerBusy=false;
+let basicResumeTimer=null;
+window.addEventListener('pageshow',event=>{if(event.persisted&&basicQuizMode&&!challengeId)location.reload();});
+function installBasicSaveExit(){
+ if(!basicQuizMode||challengeId||document.getElementById('basicSaveExit'))return;
+ const bar=document.createElement('div');bar.className='basic-save-exit-bar';
+ bar.innerHTML='<button type="button" class="primary-btn" id="basicSaveExit">Save progress &amp; exit</button><span>Use this button to continue this quiz later.</span>';
+ document.querySelector('.learning-session-header')?.after(bar);
+ bar.querySelector('button').onclick=async()=>{
+  if(!attempt||basicExplicitExit||reviewMode||finishing||basicCompletionPending)return;
+  if(basicAnswerBusy||advancingQuestion){setStatus('Please wait for your answer to finish saving.');return;}
+  const button=bar.querySelector('button');button.disabled=true;
+  basicExplicitExit=true;
+  const detail={};window.dispatchEvent(new CustomEvent('acl:quiz-save-exit',{detail}));
+  document.body.classList.add('basic-exit-saving');
+  try{
+   if(!Number.isFinite(detail.remainingSeconds)&&!answerFor(currentQuestion()))throw new Error('Timer is still loading. Please try again.');
+   await basicSaveQueue;
+   const state=JSON.parse(JSON.stringify(appState()));
+   const life={...state.lifelinesState,basicResume:{allowed:true,questionId:String(currentQuestion().id),remainingSeconds:detail.remainingSeconds??0}};
+   state.lifelinesState=life;
+   attempt=await saveAttempt(attempt.id,state,life);
+   try{localStorage.removeItem(basicCheckpointKey());}catch{}
+   location.href=`basic-module.html?edition=basic&module=${encodeURIComponent(quiz.module_id)}`;
+  }catch(error){
+   basicExplicitExit=false;button.disabled=false;document.body.classList.remove('basic-exit-saving');
+   window.dispatchEvent(new CustomEvent('acl:quiz-save-exit-cancel'));
+   setStatus(error.message||'Could not save. Please try again.',true);
+  }
+ };
+ window.addEventListener('acl:quiz-results',()=>{bar.hidden=true;});
+}
 let basicSaveQueue = Promise.resolve();
 let basicCompletionPending = false;
 let basicIntegrityEnded=false;
@@ -2199,7 +2232,7 @@ async function endCorruptedBasicQuiz(reason){
 }
 function basicCheckpointKey(){return `acl-basic-progress-v1:${currentLearningUserId}:${quiz?.module_id}:${quiz?.id}`;}
 function writeBasicCheckpoint(done=false){
-  if(basicIntegrityEnded||!basicQuizMode||challengeId||!attempt||reviewMode||(!done&&basicCompletionPending))return null;
+  if(basicExplicitExit||basicIntegrityEnded||!basicQuizMode||challengeId||!attempt||reviewMode||(!done&&basicCompletionPending))return null;
   const state=JSON.parse(JSON.stringify(appState()));
   const snapshot={attemptId:attempt.id,savedAt:new Date().toISOString(),done,state};
   try{localStorage.setItem(basicCheckpointKey(),JSON.stringify(snapshot));}catch(e){console.warn('Local progress unavailable:',e);}
@@ -2210,7 +2243,7 @@ async function selectBasicFreshQuestions(count){
   const bank=quiz.questions||[];
   const history=[];
   for(let offset=0;;offset+=500){
-    const {data,error}=await supabaseClient.from('quiz_attempts').select('id,answers,created_at,updated_at').neq('status','invalidated').eq('user_id',currentLearningUserId).eq('module_id',quiz.module_id).order('created_at',{ascending:true}).order('id',{ascending:true}).range(offset,offset+499);
+    const {data,error}=await supabaseClient.from('quiz_attempts').select('id,answers,created_at,updated_at').neq('status','invalidated').neq('status','abandoned').eq('user_id',currentLearningUserId).eq('module_id',quiz.module_id).order('created_at',{ascending:true}).order('id',{ascending:true}).range(offset,offset+499);
     if(error)throw error;
     history.push(...(data||[]));
     if((data||[]).length<500)break;
@@ -2237,7 +2270,7 @@ async function selectBasicFreshQuestions(count){
 }
 function persist(done=false){
   if(!basicQuizMode||challengeId)return persistNow(done);
-  if(basicIntegrityEnded||!attempt||reviewMode||(!done&&basicCompletionPending))return basicSaveQueue;
+  if(basicExplicitExit||basicIntegrityEnded||!attempt||reviewMode||(!done&&basicCompletionPending))return basicSaveQueue;
   const state=writeBasicCheckpoint(done);
   if(done)basicCompletionPending=true;
   basicSaveQueue=basicSaveQueue.catch(()=>{}).then(()=>basicIntegrityEnded?undefined:persistNow(done,state));
@@ -4875,6 +4908,9 @@ function bindPreQuizReviewActions() {
     );
 }
 function render() {
+  document.documentElement.classList.remove("basic-quiz-booting");
+  installBasicSaveExit();
+  const exitBar=document.querySelector('.basic-save-exit-bar');if(exitBar)exitBar.hidden=basicCompletionPending||attempt?.status==='completed';
   document.body.classList.add(
     "acl-expert-learning-mode"
   );
@@ -4996,6 +5032,7 @@ function render() {
       "acl:learning-question-changed",
       {
         detail: {
+          resumeRemainingSeconds: basicResumeTimer?.questionId===String(question.id)?basicResumeTimer.remainingSeconds:undefined,
           attemptId: attempt?.id || '',
           userId: currentLearningUserId,
           questionId:
@@ -5027,6 +5064,7 @@ function render() {
       }
     )
   );
+  basicResumeTimer=null;
 
   if (!quizArea) {
     return;
@@ -5367,6 +5405,7 @@ return `
 async function submit(
   confidence = null
 ) {
+  if(basicExplicitExit||basicAnswerBusy)return;
   const question =
     currentQuestion();
 
@@ -5449,6 +5488,7 @@ async function submit(
     submitButton.disabled =
       true;
   }
+  basicAnswerBusy=true;
 
   try {
     const {
@@ -5591,6 +5631,7 @@ window.requestAnimationFrame(
       `;
     }
   } finally {
+    basicAnswerBusy=false;
     if (submitButton) {
       submitButton.disabled =
         false;
@@ -5600,7 +5641,7 @@ window.requestAnimationFrame(
 
 
 async function submitTimedOutQuestion(detail={}) {
-  if (!basicQuizMode || reviewMode || finishing) {
+  if (basicExplicitExit || basicAnswerBusy || !basicQuizMode || reviewMode || finishing) {
     return;
   }
 
@@ -5612,6 +5653,7 @@ async function submitTimedOutQuestion(detail={}) {
     return;
   }
 
+  basicAnswerBusy=true;
   try {
     const correctIds = await secureCorrectOptionIds(question);
     const correctSet = new Set(correctIds.map(String));
@@ -5673,7 +5715,7 @@ async function submitTimedOutQuestion(detail={}) {
     }
   } catch (error) {
     console.error("BASIC QUESTION TIMEOUT ERROR:", error);
-  }
+  }finally{basicAnswerBusy=false;}
 }
 
 
@@ -7241,7 +7283,7 @@ $("submitAnswer")
 
 let advancingQuestion=false;
 $("nextQuestion")?.addEventListener('click',async()=>{
-  if(advancingQuestion||(!reviewMode&&!answerFor(currentQuestion())))return;
+  if(basicExplicitExit||advancingQuestion||(!reviewMode&&!answerFor(currentQuestion())))return;
   advancingQuestion=true;
   const button=$("nextQuestion");if(button)button.disabled=true;
   try{
@@ -7431,7 +7473,7 @@ if (challengeId) {
 
     if (quizDescription) {
       quizDescription.textContent =
-        quiz.description ||
+        basicQuizMode ? "" : quiz.description ||
         "Immediate feedback, Scientific Lifelines, explanations and flashcards.";
     }
 
@@ -7532,7 +7574,18 @@ if (challengeId) {
         attempt=challengeAttempt;
       }
     }
-    if (basicQuizMode && !challengeId && attempt) {
+    if(basicQuizMode&&!challengeId&&attempt&&!attempt.lifelines?.basicResume?.allowed){
+      const checkpoint=readBasicCheckpoint();
+      if(checkpoint?.attemptId===attempt.id&&checkpoint.done&&checkpoint.state&&!basicAttemptProblem({...attempt,question_ids:checkpoint.state.questionIds,question_count:checkpoint.state.questionIds.length,current_question_index:checkpoint.state.currentIndex,answers:checkpoint.state.answers,status:'completed'},new Set(pool.map(q=>String(q.id))))){
+        await completeAttempt(attempt.id,checkpoint.state,checkpoint.state.lifelinesState);
+      }else{
+        const {error}=await supabaseClient.from('quiz_attempts').update({status:'abandoned'}).eq('id',attempt.id).eq('user_id',currentLearningUserId);
+        if(error)throw error;
+      }
+      try{localStorage.removeItem(basicCheckpointKey());localStorage.removeItem(questionSetRecoveryKey());}catch{}
+      attempt=null;
+    }
+    if (basicQuizMode && !challengeId && attempt && !attempt.lifelines?.basicResume?.allowed) {
       const checkpoint=readBasicCheckpoint();
       if(checkpoint?.attemptId===attempt.id && checkpoint.state &&
          (checkpoint.state.answers?.length||0)>=(attempt.answers?.length||0) &&
@@ -7624,9 +7677,16 @@ if (challengeId) {
         {}
       );
 
-      setStatus(
-        "Unfinished learning attempt restored"
-      );
+      if(basicQuizMode&&!challengeId){
+        const resume=attempt.lifelines?.basicResume;
+        if(resume?.allowed&&String(resume.questionId)===String(currentQuestion()?.id)&&Number.isFinite(resume.remainingSeconds)&&resume.remainingSeconds>=0){
+          basicResumeTimer={questionId:resume.questionId,remainingSeconds:resume.remainingSeconds};
+        }else throw new Error('Saved question timer is unavailable. Start a new quiz.');
+        // Consume permission before starting: an unplanned exit cannot resume again.
+        lifelinesState.basicResume={allowed:false};
+        attempt=await saveAttempt(attempt.id,appState(),lifelinesState);
+      }
+      setStatus("Saved quiz restored");
     } else {
       if(basicQuizMode){index=0;answers=[];pendingSelectedIds=[];preQuizReviewSeen=false;basicIntegrityEnded=false;}
       if(basicQuizMode&&!challengeId){
@@ -7690,6 +7750,7 @@ if (challengeId) {
     render();
     if(basicIntegrityRestarted)setStatus('Previous quiz ended because its progress was inconsistent. A new quiz has started.');
   } catch (error) {
+    document.documentElement.classList.remove("basic-quiz-booting");
     console.error(
       "LEARNING MODE ERROR:",
       error
@@ -7718,3 +7779,4 @@ async function renderBasicQuizResults(){
  await loadStarredQuestions();
  return showBasicQuizResults({questions,answers,moduleId:quiz.module_id,title:quiz.module_title,attemptId:attempt.id,userId:currentLearningUserId,starred:starredQuestionIds,challengeId,lifelines:ensureLifelinesState(),mascot:GOOD_JOB_MASCOT,retrySame:()=>startNewAttempt({sameQuestions:true}),retryDifferent:()=>startNewAttempt()});
 }
+
