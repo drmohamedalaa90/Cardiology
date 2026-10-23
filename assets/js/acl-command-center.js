@@ -11,6 +11,34 @@ function edition(){
   return (q||saved||"expert").toLowerCase()==="basic"?"basic":"expert";
 }
 const activeEdition=edition();
+
+(async()=>{
+  try{
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(!session?.user){
+      location.replace("acl-access.html?build=20261023-clean");
+      return;
+    }
+
+    const {data:allowed,error}=await supabaseClient.rpc(
+      "acl_can_access_learning_area",
+      {p_edition:activeEdition,p_module_id:null}
+    );
+
+    if(error || allowed!==true){
+      try{
+        sessionStorage.removeItem("aclEditionEntryGranted");
+        localStorage.setItem("aclSelectedEdition","basic");
+        sessionStorage.setItem("aclSelectedEdition","basic");
+      }catch{}
+
+      location.replace("edition-select.html?locked=1");
+    }
+  }catch{
+    location.replace("edition-select.html?locked=1");
+  }
+})();
+
 document.getElementById("aclHeaderEdition").textContent=activeEdition==="basic"?"THE BASIC EDITION":"THE EXPERT EDITION";
 document.getElementById("aclWelcomeEyebrow").textContent=activeEdition==="basic"?"ACL BASIC EDITION":"ACL EXPERT EDITION";
 document.querySelectorAll("[data-edition-link]").forEach(a=>a.classList.toggle("is-selected",a.dataset.editionLink===activeEdition));
@@ -36,7 +64,7 @@ document.querySelectorAll("[data-collapse-target]").forEach(btn=>btn.addEventLis
   const ch=btn.querySelector(".acl-chevron"); if(ch)ch.textContent=open?"⌄":"›";
 }));
 
-async function signOut(){try{await supabaseClient.auth.signOut()}catch(e){console.warn(e)}location.replace("login.html")}
+async function signOut(){try{await supabaseClient.auth.signOut()}catch(e){console.warn(e)}location.replace("acl-access.html?build=20261023-clean")}
 document.getElementById("aclHeaderLogout")?.addEventListener("click",signOut);
 document.getElementById("aclDrawerLogout")?.addEventListener("click",signOut);
 
