@@ -41,6 +41,7 @@ if(edition==="basic"){
   </nav>
   <div class="basic-level-modal" id="basicLevelModal" hidden><section class="basic-level-dialog" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitle"><div class="basic-level-icon">◆</div><h2 id="basicLevelTitle">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelClose">Continue Basic Edition</button></section></div>`;
   document.body.insertBefore(shell,document.body.firstChild);
+  window.dispatchEvent(new CustomEvent('acl:basic-shell-ready'));
   const modal=document.getElementById("basicLevelModal");
   const close=()=>{if(modal)modal.hidden=true};
   document.getElementById("basicExpertLocked")?.addEventListener("click",()=>{if(modal)modal.hidden=false});
@@ -177,3 +178,4 @@ if(edition==="basic"){
   void aclLoadNotificationBadge();
   window.addEventListener("focus",()=>void aclLoadNotificationBadge());
 }
+
