@@ -1,4 +1,5 @@
-import {showBasicQuizResults} from "./basic-quiz-results.js?v=1";
+import {basicAttemptProblem} from "./basic-attempt-integrity.js?v=1";
+import {showBasicQuizResults} from "./basic-quiz-results.js?v=2";
 import {
   supabaseClient
 } from "./supabase-client.js";
@@ -2178,9 +2179,27 @@ function appState() {
 /* Basic solo quizzes: history-aware selection and crash recovery. */
 let basicSaveQueue = Promise.resolve();
 let basicCompletionPending = false;
+let basicIntegrityEnded=false;
+let basicIntegrityRestarted=false;
+async function invalidateBasicAttempt(record,reason){
+ basicIntegrityEnded=true;
+ window.dispatchEvent(new CustomEvent('acl:quiz-results'));
+ await basicSaveQueue.catch(()=>{});
+ const {error}=await supabaseClient.from('quiz_attempts').update({status:'invalidated',lifelines:{...(record.lifelines||{}),integrityReason:reason}}).eq('id',record.id).eq('user_id',currentLearningUserId);
+ if(error)throw error;
+ try{localStorage.removeItem(basicCheckpointKey());localStorage.removeItem(questionSetRecoveryKey());}catch{}
+ basicIntegrityRestarted=true;
+}
+async function endCorruptedBasicQuiz(reason){
+ await invalidateBasicAttempt(attempt,reason);
+ for(const id of ['submitAnswer','nextQuestion']){const el=$(id);if(el)el.hidden=true;}
+ const feedback=$('answerFeedbackHost');if(feedback)feedback.innerHTML='';
+ $('quizArea').innerHTML='<section class="basic-quiz-result"><h2>This quiz has ended</h2><p>Saved progress was inconsistent. Start a new quiz to continue.</p><button class="primary-btn" id="restartAfterIntegrity">Start a new quiz</button></section>';
+ $('restartAfterIntegrity').onclick=()=>{const url=new URL(location.href);url.searchParams.delete('new');location.replace(url.href);};
+}
 function basicCheckpointKey(){return `acl-basic-progress-v1:${currentLearningUserId}:${quiz?.module_id}:${quiz?.id}`;}
 function writeBasicCheckpoint(done=false){
-  if(!basicQuizMode||challengeId||!attempt||reviewMode||(!done&&basicCompletionPending))return null;
+  if(basicIntegrityEnded||!basicQuizMode||challengeId||!attempt||reviewMode||(!done&&basicCompletionPending))return null;
   const state=JSON.parse(JSON.stringify(appState()));
   const snapshot={attemptId:attempt.id,savedAt:new Date().toISOString(),done,state};
   try{localStorage.setItem(basicCheckpointKey(),JSON.stringify(snapshot));}catch(e){console.warn('Local progress unavailable:',e);}
@@ -2191,7 +2210,7 @@ async function selectBasicFreshQuestions(count){
   const bank=quiz.questions||[];
   const history=[];
   for(let offset=0;;offset+=500){
-    const {data,error}=await supabaseClient.from('quiz_attempts').select('id,answers,created_at,updated_at').eq('user_id',currentLearningUserId).eq('module_id',quiz.module_id).order('created_at',{ascending:true}).order('id',{ascending:true}).range(offset,offset+499);
+    const {data,error}=await supabaseClient.from('quiz_attempts').select('id,answers,created_at,updated_at').neq('status','invalidated').eq('user_id',currentLearningUserId).eq('module_id',quiz.module_id).order('created_at',{ascending:true}).order('id',{ascending:true}).range(offset,offset+499);
     if(error)throw error;
     history.push(...(data||[]));
     if((data||[]).length<500)break;
@@ -2218,10 +2237,10 @@ async function selectBasicFreshQuestions(count){
 }
 function persist(done=false){
   if(!basicQuizMode||challengeId)return persistNow(done);
-  if(!attempt||reviewMode||(!done&&basicCompletionPending))return basicSaveQueue;
+  if(basicIntegrityEnded||!attempt||reviewMode||(!done&&basicCompletionPending))return basicSaveQueue;
   const state=writeBasicCheckpoint(done);
   if(done)basicCompletionPending=true;
-  basicSaveQueue=basicSaveQueue.catch(()=>{}).then(()=>persistNow(done,state));
+  basicSaveQueue=basicSaveQueue.catch(()=>{}).then(()=>basicIntegrityEnded?undefined:persistNow(done,state));
   return basicSaveQueue;
 }
 window.addEventListener('pagehide',()=>{writeBasicCheckpoint();});
@@ -5580,12 +5599,14 @@ window.requestAnimationFrame(
 }
 
 
-async function submitTimedOutQuestion() {
+async function submitTimedOutQuestion(detail={}) {
   if (!basicQuizMode || reviewMode || finishing) {
     return;
   }
 
   const question = currentQuestion();
+  if((detail.questionId&&String(detail.questionId)!==String(question?.id))||(detail.attemptId&&String(detail.attemptId)!==String(attempt?.id)))return;
+  if(basicIntegrityEnded)return;
 
   if (!question || answerFor(question)) {
     return;
@@ -5657,8 +5678,8 @@ async function submitTimedOutQuestion() {
 
 window.addEventListener(
   "acl:learning-time-expired",
-  () => {
-    void submitTimedOutQuestion();
+  event => {
+    void submitTimedOutQuestion(event.detail||{});
   }
 );
 
@@ -6650,7 +6671,7 @@ async function saveChallengeResult() {
 async function finish() {
   if(basicQuizMode&&!reviewMode){
     const missing=questions.findIndex(q=>!answerFor(q));
-    if(missing>=0){index=missing;finishing=false;basicCompletionPending=false;render();setStatus('Answer this question before finishing the quiz.');return;}
+    if(missing>=0){await endCorruptedBasicQuiz('incomplete-completion');finishing=false;return;}
   }
   if (
     finishing
@@ -7500,7 +7521,7 @@ if (challengeId) {
       if(lastError)throw lastError;
       const ids=last?.question_ids||[],answered=new Set((last?.answers||[]).map(a=>String(a.questionId)));
       const missed=ids.findIndex(id=>!answered.has(String(id)));
-      if(missed>=0){const {data:reopened,error}=await supabaseClient.from('quiz_attempts').update({status:'in_progress',completed_at:null,current_question_index:missed}).eq('id',last.id).eq('user_id',currentLearningUserId).select('*').single();if(error)throw error;attempt=reopened;}
+      if(missed>=0)await invalidateBasicAttempt(last,'incomplete-completion');
     }
     if(basicQuizMode && challengeId){
       attempt=null;
@@ -7515,13 +7536,20 @@ if (challengeId) {
       if(checkpoint?.attemptId===attempt.id && checkpoint.state &&
          (checkpoint.state.answers?.length||0)>=(attempt.answers?.length||0) &&
          Date.parse(checkpoint.savedAt)>=(Date.parse(attempt.updated_at)||0)){
-        if(checkpoint.done){
+        const localRecord={...attempt,question_ids:checkpoint.state.questionIds,question_count:checkpoint.state.questionIds?.length,current_question_index:checkpoint.state.currentIndex,answers:checkpoint.state.answers,status:checkpoint.done?'completed':'in_progress'};
+        const problem=basicAttemptProblem(localRecord,new Set(pool.map(q=>String(q.id))));
+        if(problem){await invalidateBasicAttempt(attempt,problem);attempt=null;}
+        else if(checkpoint.done){
           await completeAttempt(attempt.id,checkpoint.state,checkpoint.state.lifelinesState);
           attempt=null;
         }else{
           attempt={...attempt,question_ids:checkpoint.state.questionIds,current_question_index:checkpoint.state.currentIndex,answers:checkpoint.state.answers,lifelines:checkpoint.state.lifelinesState,preQuizReviewSeen:checkpoint.state.preQuizReviewSeen};
         }
       }
+    }
+    if(basicQuizMode&&attempt){
+      const problem=basicAttemptProblem(attempt,new Set(pool.map(q=>String(q.id))));
+      if(problem){await invalidateBasicAttempt(attempt,problem);attempt=null;}
     }
     if (attempt) {
       if(basicQuizMode&&!challengeId)await selectBasicFreshQuestions(0);
@@ -7563,7 +7591,6 @@ if (challengeId) {
           ? attempt.answers
           : [];
 
-      if(basicQuizMode){const missing=questions.findIndex(q=>!answerFor(q));if(missing>=0&&missing<index)index=missing;}
       if (!challengeId && !basicQuizMode) {
         questions =
           redistributeRemainingQuestions(
@@ -7600,6 +7627,7 @@ if (challengeId) {
         "Unfinished learning attempt restored"
       );
     } else {
+      if(basicQuizMode){index=0;answers=[];pendingSelectedIds=[];preQuizReviewSeen=false;basicIntegrityEnded=false;}
       if(basicQuizMode&&!challengeId){
         questions=await selectBasicFreshQuestions(requestedQuestionCount);
         if(!questions.length)throw new Error('No eligible questions are available.');
@@ -7659,6 +7687,7 @@ if (challengeId) {
     }
 
     render();
+    if(basicIntegrityRestarted)setStatus('Previous quiz ended because its progress was inconsistent. A new quiz has started.');
   } catch (error) {
     console.error(
       "LEARNING MODE ERROR:",
@@ -7686,5 +7715,5 @@ if (challengeId) {
 
 async function renderBasicQuizResults(){
  await loadStarredQuestions();
- return showBasicQuizResults({questions,answers,moduleId:quiz.module_id,title:quiz.module_title,attemptId:attempt.id,userId:currentLearningUserId,starred:starredQuestionIds,challengeId,retrySame:()=>startNewAttempt({sameQuestions:true}),retryDifferent:()=>startNewAttempt()});
+ return showBasicQuizResults({questions,answers,moduleId:quiz.module_id,title:quiz.module_title,attemptId:attempt.id,userId:currentLearningUserId,starred:starredQuestionIds,challengeId,lifelines:ensureLifelinesState(),mascot:GOOD_JOB_MASCOT,retrySame:()=>startNewAttempt({sameQuestions:true}),retryDifferent:()=>startNewAttempt()});
 }
