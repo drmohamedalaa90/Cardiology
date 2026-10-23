@@ -8,6 +8,11 @@ function exportNotes(c,notes){
   }
   for(let start=0;start<lines.length;start+=36){const page=lines.slice(start,start+36);canvas.height=Math.max(400,150+page.length*40);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#072b49';ctx.font='26px sans-serif';page.forEach((line,i)=>ctx.fillText(line,70,80+i*40));const a=document.createElement('a');a.download=`quiz-notes-${c.attemptId}-${1+start/36}.png`;a.href=canvas.toDataURL('image/png');a.click();}
 }
+export function formatQuizTime(value){
+ if(value===null||value===undefined||!Number.isFinite(Number(value)))return 'Not recorded';
+ const total=Math.max(0,Math.round(Number(value))),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;
+ return (hours?hours+'h ':'')+(minutes||hours?minutes+'m ':'')+seconds+'s';
+}
 export async function showBasicQuizResults(c){
   window.dispatchEvent(new CustomEvent('acl:quiz-results'));
   const host=document.getElementById('quizArea'),answers=new Map(c.answers.map(a=>[String(a.questionId),a]));
@@ -20,7 +25,7 @@ export async function showBasicQuizResults(c){
   const lifeNames={filter:'50:50',swap:'Swap question',time:'Extra time',expert:'Dr. Corazón',vault:'Knowledge Vault',flashcard:'Flashcard'};
   const action=(id,icon,label)=>`<button class="basic-result-action" data-br="${id}"><span class="basic-action-icon" aria-hidden="true">${icon}</span><span>${label}</span><b aria-hidden="true">›</b></button>`;
   host.innerHTML=`<section class="basic-quiz-result"><div class="basic-result-intro"><div><span class="basic-result-kicker">QUIZ COMPLETED</span><h2>${correct} / ${c.questions.length} correct</h2><button class="basic-result-review" data-br="all">Review answers →</button></div><figure class="basic-result-corazon"><img src="${esc(c.mascot||'assets/images/dr-corazon-good-job.webp')}" alt="Dr. Corazón"><figcaption><strong>Dr. Corazón</strong><span>${correct===c.questions.length?'Excellent work!':'Keep practising.'}</span></figcaption></figure></div>
-  <div class="basic-result-boxes"><article class="basic-correct-box"><span>✓ Correct answers</span><strong>${correct}<small> / ${c.questions.length}</small></strong><p>${c.questions.length?Math.round(correct/c.questions.length*100):0}% correct · ${c.questions.length-correct} incorrect</p></article><article class="basic-lifelines-box"><span>✦ Lifelines used</span><strong>${usage.length}</strong><p>${usage.length?usage.map(u=>esc(lifeNames[u.type||u.lifeline]||u.type||'Life Saver')+(u.questionNumber?' · Q'+Number(u.questionNumber):'')).join('<br>'):'No lifelines used'}</p></article></div>
+  <div class="basic-result-boxes"><article class="basic-correct-box"><span>✓ Correct answers</span><strong>${correct}<small> / ${c.questions.length}</small></strong><p>${c.questions.length?Math.round(correct/c.questions.length*100):0}% correct · ${c.questions.length-correct} incorrect</p></article><article class="basic-time-box"><span>◷ Time taken</span><strong>${esc(formatQuizTime(c.durationSeconds))}</strong><p>Active time in this quiz</p></article><article class="basic-lifelines-box"><span>✦ Lifelines used</span><strong>${usage.length}</strong><p>${usage.length?usage.map(u=>esc(lifeNames[u.type||u.lifeline]||u.type||'Life Saver')+(u.questionNumber?' · Q'+Number(u.questionNumber):'')).join('<br>'):'No lifelines used'}</p></article></div>
   <div class="basic-result-actions">${!c.challengeId?action('same','↻','Retry the same quiz')+action('different','⇄','Retry a different quiz'):'<a class="basic-result-action" href="basic-challenges.html?edition=basic"><span class="basic-action-icon">⚔</span><span>View challenge</span><b>›</b></a>'}${action('wrong','★','Review my wrong and starred questions')}${action('notes','✎','Review notes taken')}<a class="basic-result-action" href="basic-flashcards.html?edition=basic&module=${encodeURIComponent(c.moduleId)}"><span class="basic-action-icon" aria-hidden="true">▤</span><span>Go to flashcards</span><b aria-hidden="true">›</b></a><a class="basic-result-action" data-lecture aria-disabled="true"><span class="basic-action-icon" aria-hidden="true">▶</span><span data-lecture-label>Review the lecture on YouTube</span><b aria-hidden="true">›</b></a></div><section id="basicQuizReviewDetail" aria-live="polite"></section></section>`;
   const detail=host.querySelector('#basicQuizReviewDetail');
   function practiceReview(){
@@ -63,3 +68,4 @@ export function bindPractice(root,getQuestion){
   };
  });
 }
+
