@@ -46,30 +46,103 @@
   <main class="basic-shell">
     <section class="basic-intro">
       <div>
-        <span class="basic-eyebrow">ACL • BASIC EDITION</span>
-        <h1>Build your cardiology foundation, one module at a time.</h1>
-        <p>Complete each module with more than 70%. The next module also becomes available only after ACL admin release.</p>
+        <span class="basic-eyebrow" id="basicHeroEyebrow">ACL • BASIC EDITION</span>
+        <h1 id="basicHeroTitle">Build your cardiology foundation, one module at a time.</h1>
+        <p id="basicHeroSubtitle">Complete each module with more than 70%. The next module also becomes available only after ACL admin release.</p>
       </div>
       <div class="basic-path-summary">
-        <span>YOUR PATH</span>
+        <span id="basicPathLabel">YOUR PATH</span>
         <strong><span id="basicUnlockedCount">—</span> / <span id="basicTotalCount">—</span></strong>
-        <small>modules unlocked</small>
+        <small id="basicPathSuffix">modules unlocked</small>
       </div>
     </section>
 
     <section class="basic-news-section" id="basicNewsSection">
       <div class="basic-news-head">
         <div>
-          <span class="basic-section-kicker">ACL UPDATES</span>
-          <h2>Updates &amp; News</h2>
-          <p>Official announcements, module updates and important ACL news.</p>
+          <span class="basic-section-kicker" id="basicNewsKicker">ACL UPDATES</span>
+          <h2 id="basicNewsHeading">Updates &amp; News</h2>
+          <p id="basicNewsSubtitle">Official announcements, module updates and important ACL news.</p>
         </div>
-        <button id="basicNewsAdminToggle" class="basic-news-admin-toggle" type="button" hidden>Manage news</button>
+        <div class="basic-news-admin-actions">
+          <button id="basicHomeTextAdminToggle" class="basic-news-admin-toggle" type="button" hidden>Edit homepage text</button>
+          <button id="basicNewsAdminToggle" class="basic-news-admin-toggle" type="button" hidden>Manage news</button>
+        </div>
       </div>
 
-      <div id="basicNewsGrid" class="basic-news-grid" aria-live="polite">
-        <div class="basic-news-empty">Loading ACL updates…</div>
+      <div class="basic-news-carousel">
+        <button id="basicNewsPrev" class="basic-news-arrow prev" type="button" aria-label="Previous update" hidden>‹</button>
+        <div id="basicNewsGrid" class="basic-news-grid" aria-live="polite">
+          <div class="basic-news-empty">Loading ACL updates…</div>
+        </div>
+        <button id="basicNewsNext" class="basic-news-arrow next" type="button" aria-label="Next update" hidden>›</button>
       </div>
+      <div id="basicNewsDots" class="basic-news-dots" aria-label="News slides"></div>
+
+      <section id="basicHomeTextAdminPanel" class="basic-news-admin-panel basic-home-text-panel" hidden>
+        <div class="basic-news-editor-head">
+          <div>
+            <span>ADMIN HOMEPAGE EDITOR</span>
+            <strong>Edit Basic Edition homepage text &amp; news rotation</strong>
+          </div>
+        </div>
+
+        <form id="basicHomeTextForm" class="basic-home-text-form">
+          <label class="basic-news-field">
+            <span>Hero eyebrow</span>
+            <input id="basicHomeHeroEyebrow" maxlength="80">
+          </label>
+
+          <label class="basic-news-field wide">
+            <span>Hero title</span>
+            <input id="basicHomeHeroTitle" maxlength="180">
+          </label>
+
+          <label class="basic-news-field wide">
+            <span>Hero subtitle</span>
+            <textarea id="basicHomeHeroSubtitle" rows="3"></textarea>
+          </label>
+
+          <label class="basic-news-field">
+            <span>Path label</span>
+            <input id="basicHomePathLabel" maxlength="60">
+          </label>
+
+          <label class="basic-news-field">
+            <span>Path suffix</span>
+            <input id="basicHomePathSuffix" maxlength="80">
+          </label>
+
+          <label class="basic-news-field">
+            <span>News kicker</span>
+            <input id="basicHomeNewsKicker" maxlength="80">
+          </label>
+
+          <label class="basic-news-field">
+            <span>News title</span>
+            <input id="basicHomeNewsTitle" maxlength="120">
+          </label>
+
+          <label class="basic-news-field wide">
+            <span>News subtitle</span>
+            <textarea id="basicHomeNewsSubtitle" rows="2"></textarea>
+          </label>
+
+          <label class="basic-news-field">
+            <span>Automatic news rotation</span>
+            <select id="basicHomeNewsAutoplay">
+              <option value="0">No automatic toggle</option>
+              <option value="3">Every 3 seconds</option>
+              <option value="5">Every 5 seconds</option>
+            </select>
+          </label>
+
+          <div class="basic-news-form-actions">
+            <button id="basicHomeTextSave" type="submit">Save homepage</button>
+            <span id="basicHomeTextStatus" aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
 
       <section id="basicNewsAdminPanel" class="basic-news-admin-panel" hidden>
         <div class="basic-news-editor-head">
@@ -244,6 +317,6 @@
   </nav>
 
   <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>
-  <script type="module" src="assets/js/basic-home.js?v=11"></script>
+  <script type="module" src="assets/js/basic-home.js?v=12"></script>
 </body>
 </html>
