@@ -101,3 +101,10 @@ html,body,button,input,select,textarea{
 }
 
 .basic-challenge-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.basic-challenge-form label{display:grid;gap:8px;font-size:.8rem;font-weight:700;color:#123b54}.basic-challenge-form select{width:100%;min-height:45px;padding:10px;border:1px solid #ccdee8;border-radius:11px;background:#f7fbfd;font:inherit;color:#173d56}.basic-challenge-note,.basic-challenge-form [role=status]{grid-column:1/-1;margin:0;font-size:.8rem;color:#637e90}.basic-challenge-row .basic-primary-btn{white-space:nowrap}.basic-challenge-meta{display:block;font-size:.7rem;color:#71889a;margin-top:6px}@media(max-width:600px){.basic-challenge-form{grid-template-columns:1fr}}
+
+.basic-starred-hero{display:grid;grid-template-columns:160px minmax(0,1fr) auto;gap:24px;align-items:center}
+.basic-star-title{position:relative;width:160px;height:160px;flex-shrink:0}
+.basic-star-title svg{width:100%;height:100%;fill:#fff3bd;stroke:#e3b14c;stroke-width:2;filter:drop-shadow(0 6px 8px rgba(180,128,20,.12))}
+.basic-star-title>span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:96px;color:#805b12;text-align:center;font-size:.92rem;font-weight:800;line-height:1.2}
+.basic-starred-hero h1{font-size:clamp(1.25rem,2.7vw,2.05rem);line-height:1.2}
+@media(max-width:600px){.basic-starred-hero{grid-template-columns:110px minmax(0,1fr);gap:12px}.basic-star-title{width:110px;height:110px}.basic-star-title>span{width:68px;font-size:.64rem}.basic-starred-hero #bsBack{grid-column:1/-1;justify-self:end}.basic-starred-hero h1{font-size:1.2rem}}
