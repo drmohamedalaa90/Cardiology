@@ -1,5 +1,5 @@
 /* ACL service worker v7.3.0 — network-first app shell */
-const VERSION='acl-v7.20-20261023-auth-about';
+const VERSION='acl-v7.21-20261023-global-admin-lock';
 const CACHE_NAME=VERSION;
 const BASE='/Cardiology/';
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(Promise.resolve());});
