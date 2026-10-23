@@ -1,3 +1,4 @@
+import {showBasicQuizResults} from "./basic-quiz-results.js?v=1";
 import {
   supabaseClient
 } from "./supabase-client.js";
@@ -4976,6 +4977,8 @@ function render() {
       "acl:learning-question-changed",
       {
         detail: {
+          attemptId: attempt?.id || '',
+          userId: currentLearningUserId,
           questionId:
             String(
               question.id
@@ -5578,7 +5581,7 @@ window.requestAnimationFrame(
 
 
 async function submitTimedOutQuestion() {
-  if (!basicQuizMode || reviewMode || saving || finishing) {
+  if (!basicQuizMode || reviewMode || finishing) {
     return;
   }
 
@@ -6645,6 +6648,10 @@ async function saveChallengeResult() {
 }
 
 async function finish() {
+  if(basicQuizMode&&!reviewMode){
+    const missing=questions.findIndex(q=>!answerFor(q));
+    if(missing>=0){index=missing;finishing=false;basicCompletionPending=false;render();setStatus('Answer this question before finishing the quiz.');return;}
+  }
   if (
     finishing
   ) {
@@ -6670,6 +6677,7 @@ if (
 ) {
   await saveChallengeResult();
 }
+  if(basicQuizMode){await renderBasicQuizResults();finishing=false;return;}
   const score =
     appState().score;
 
@@ -7082,7 +7090,7 @@ quizArea.innerHTML = `
    NEW ATTEMPT
 ========================================================= */
 
-  async function startNewAttempt() {
+  async function startNewAttempt({sameQuestions=false}={}) {
     if(basicQuizMode&&challengeId){location.href='basic-challenges.html?edition=basic';return;}
     try {
       setStatus(
@@ -7092,7 +7100,7 @@ quizArea.innerHTML = `
       if(basicQuizMode&&!challengeId){
         await basicSaveQueue;
         if(attempt?.status!=='completed')throw new Error('Please reconnect and save this quiz before starting another.');
-        questions=await selectBasicFreshQuestions(requestedStandaloneQuestionCount || questions.length);
+        if(!sameQuestions)questions=await selectBasicFreshQuestions(requestedStandaloneQuestionCount || questions.length);
         if(!questions.length)throw new Error('No eligible questions are available.');
       }
       basicCompletionPending=false;
@@ -7209,57 +7217,19 @@ $("submitAnswer")
   );
 
 
-$("nextQuestion")
-  ?.addEventListener(
-    "click",
-    async () => {
-      pendingSelectedIds =
-        [];
-
-      const isLastQuestion =
-        index ===
-        questions.length - 1;
-
-      if (
-        isLastQuestion &&
-        !reviewMode
-      ) {
-        await finish();
-
-        return;
-      }
-
-      /*
-       * During normal quiz mode, move to the next question.
-       * During review mode, allow navigation until the final
-       * reviewed question.
-       */
-
-      if (
-        isLastQuestion &&
-        reviewMode
-      ) {
-        await finish();
-
-        return;
-      }
-
-      index +=
-        1;
-
-      if (!reviewMode) {
-        await persist(
-          false
-        );
-      }
-
-      render();
-
-      focusLearningContent(
-        ".expert-question-layout"
-      );
-    }
-  );
+let advancingQuestion=false;
+$("nextQuestion")?.addEventListener('click',async()=>{
+  if(advancingQuestion||(!reviewMode&&!answerFor(currentQuestion())))return;
+  advancingQuestion=true;
+  const button=$("nextQuestion");if(button)button.disabled=true;
+  try{
+    pendingSelectedIds=[];
+    if(index>=questions.length-1){await finish();return;}
+    index+=1;
+    if(!reviewMode)await persist(false);
+    render();focusLearningContent('.expert-question-layout');
+  }finally{advancingQuestion=false;if(button)button.disabled=false;}
+});
 
 $("closeLearningFlashcard")
   ?.addEventListener(
@@ -7424,9 +7394,11 @@ if (challengeId) {
       $("quizDescription");
 
     if (moduleTitle) {
-      moduleTitle.textContent =
-        quiz.module_title ||
-        "Learning module";
+      moduleTitle.textContent = quiz.module_title || 'Learning module';
+      if(basicQuizMode){
+        const header=document.querySelector('.learning-session-header');
+        if(header)header.classList.add('basic-compact-quiz-header');
+      }
     }
 
     if (quizTitle) {
@@ -7523,6 +7495,13 @@ if (challengeId) {
             quiz.id
           );
 
+    if(basicQuizMode&&!challengeId&&!attempt){
+      const {data:last,error:lastError}=await supabaseClient.from('quiz_attempts').select('*').eq('user_id',currentLearningUserId).eq('quiz_id',quiz.id).is('challenge_id',null).eq('status','completed').order('updated_at',{ascending:false}).limit(1).maybeSingle();
+      if(lastError)throw lastError;
+      const ids=last?.question_ids||[],answered=new Set((last?.answers||[]).map(a=>String(a.questionId)));
+      const missed=ids.findIndex(id=>!answered.has(String(id)));
+      if(missed>=0){const {data:reopened,error}=await supabaseClient.from('quiz_attempts').update({status:'in_progress',completed_at:null,current_question_index:missed}).eq('id',last.id).eq('user_id',currentLearningUserId).select('*').single();if(error)throw error;attempt=reopened;}
+    }
     if(basicQuizMode && challengeId){
       attempt=null;
       if(activeChallengeParticipant?.attempt_id){
@@ -7584,6 +7563,7 @@ if (challengeId) {
           ? attempt.answers
           : [];
 
+      if(basicQuizMode){const missing=questions.findIndex(q=>!answerFor(q));if(missing>=0&&missing<index)index=missing;}
       if (!challengeId && !basicQuizMode) {
         questions =
           redistributeRemainingQuestions(
@@ -7703,3 +7683,8 @@ if (challengeId) {
     }
   }
 })();
+
+async function renderBasicQuizResults(){
+ await loadStarredQuestions();
+ return showBasicQuizResults({questions,answers,moduleId:quiz.module_id,title:quiz.module_title,attemptId:attempt.id,userId:currentLearningUserId,starred:starredQuestionIds,challengeId,retrySame:()=>startNewAttempt({sameQuestions:true}),retryDifferent:()=>startNewAttempt()});
+}
