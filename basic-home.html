@@ -16,7 +16,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/basic-home.css?v=4">
+  <link rel="stylesheet" href="assets/css/basic-home.css?v=5">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="basic-home-page">
@@ -57,6 +57,106 @@
       </div>
     </section>
 
+    <section class="basic-news-section" id="basicNewsSection">
+      <div class="basic-news-head">
+        <div>
+          <span class="basic-section-kicker">ACL UPDATES</span>
+          <h2>Updates &amp; News</h2>
+          <p>Official announcements, module updates and important ACL news.</p>
+        </div>
+        <button id="basicNewsAdminToggle" class="basic-news-admin-toggle" type="button" hidden>Manage news</button>
+      </div>
+
+      <div id="basicNewsGrid" class="basic-news-grid" aria-live="polite">
+        <div class="basic-news-empty">Loading ACL updates…</div>
+      </div>
+
+      <section id="basicNewsAdminPanel" class="basic-news-admin-panel" hidden>
+        <div class="basic-news-editor-head">
+          <div>
+            <span>ADMIN EDITOR</span>
+            <strong id="basicNewsEditorTitle">Create a new update</strong>
+          </div>
+          <button id="basicNewsCancelEdit" type="button" hidden>Cancel edit</button>
+        </div>
+
+        <form id="basicNewsForm" class="basic-news-form">
+          <input id="basicNewsId" type="hidden">
+
+          <label class="basic-news-field title">
+            <span>Title</span>
+            <input id="basicNewsTitle" maxlength="120" required placeholder="e.g. Mitral Valve module is now available">
+          </label>
+
+          <label class="basic-news-field category">
+            <span>Category</span>
+            <select id="basicNewsKind">
+              <option value="announcement">Announcement</option>
+              <option value="module_update">Module update</option>
+              <option value="competition">Official competition</option>
+              <option value="admin_message">Admin message</option>
+              <option value="app_update">App update</option>
+            </select>
+          </label>
+
+          <label class="basic-news-field body">
+            <span>Text</span>
+            <textarea id="basicNewsBody" rows="4" required placeholder="Write the update here…"></textarea>
+          </label>
+
+          <label class="basic-news-field color">
+            <span>Text colour</span>
+            <input id="basicNewsColor" type="color" value="#173d56">
+          </label>
+
+          <label class="basic-news-field size">
+            <span>Text size</span>
+            <select id="basicNewsSize">
+              <option value="small">Small</option>
+              <option value="normal" selected>Normal</option>
+              <option value="large">Large</option>
+              <option value="xlarge">Extra large</option>
+            </select>
+          </label>
+
+          <label class="basic-news-field style">
+            <span>Card style</span>
+            <select id="basicNewsStyle">
+              <option value="standard">Standard</option>
+              <option value="highlight">Highlight</option>
+              <option value="important">Important</option>
+            </select>
+          </label>
+
+          <label class="basic-news-field link">
+            <span>Optional link</span>
+            <input id="basicNewsLink" type="url" placeholder="https://...">
+          </label>
+
+          <label class="basic-news-field image">
+            <span>Image</span>
+            <input id="basicNewsImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+            <small id="basicNewsImageStatus">JPEG, PNG, WebP or GIF · max 8 MB</small>
+          </label>
+
+          <label class="basic-news-check">
+            <input id="basicNewsPinned" type="checkbox">
+            <span>Pin this update</span>
+          </label>
+
+          <label class="basic-news-check">
+            <input id="basicNewsActive" type="checkbox" checked>
+            <span>Visible to members</span>
+          </label>
+
+          <div class="basic-news-form-actions">
+            <button id="basicNewsSave" type="submit">Publish update</button>
+            <span id="basicNewsStatus" aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+    </section>
+
     <section class="basic-section">
       <div class="basic-section-head">
         <div>
@@ -92,6 +192,6 @@
     <a href="basic-notifications.html?edition=basic"><span aria-hidden="true">♢</span><strong>Notifications</strong><em class="basic-nav-badge" id="basicHomeNotificationBadge" hidden>0</em></a>
   </nav>
 
-  <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>\n  <script type="module" src="assets/js/basic-home.js?v=8"></script>
+  <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>\n  <script type="module" src="assets/js/basic-home.js?v=9"></script>
 </body>
 </html>
