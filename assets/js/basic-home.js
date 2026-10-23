@@ -5,12 +5,12 @@ function safeArray(v){if(Array.isArray(v))return v;if(typeof v==="string"&&v.tri
 function accuracyOf(a){if(!a||a.status!=="completed")return null;const answers=safeArray(a.answers);if(answers.length){const c=answers.filter(x=>x?.correct===true).length;return Math.round(c/answers.length*100)}const score=Number(a.score),total=Number(a.question_count);return Number.isFinite(score)&&Number.isFinite(total)&&total>0&&score>=0&&score<=total?Math.round(score/total*100):null}
 function bestAttemptByModule(attempts){
  const map=new Map();
- for(const a of attempts){if(a.status==="invalidated")continue;
+ for(const a of attempts){if(a.status==="invalidated"||a.status==="abandoned"||(a.status==="in_progress"&&!a.challenge_id&&!a.lifelines?.basicResume?.allowed))continue;
   const id=String(a.module_id||"");if(!id)continue;
   const cur=map.get(id)||{bestAccuracy:null,latest:null,inProgress:null,questionResults:new Map()};
   const acc=accuracyOf(a);if(acc!==null&&(cur.bestAccuracy===null||acc>cur.bestAccuracy))cur.bestAccuracy=acc;
   if(!cur.latest)cur.latest=a;
-  if(!cur.inProgress&&a.status==="in_progress"&&!a.challenge_id)cur.inProgress=a;
+  if(!cur.inProgress&&a.status==="in_progress"&&!a.challenge_id&&a.lifelines?.basicResume?.allowed)cur.inProgress=a;
   for(const answer of safeArray(a.answers)){
    const qid=String(answer.questionId||answer.question_id||"");if(!qid)continue;
    const time=Date.parse(answer.answeredAt||a.updated_at||a.created_at)||0;
@@ -25,7 +25,7 @@ function bestAttemptByModule(attempts){
 async function loadModuleAttemptHistory(userId){
  const rows=[];
  for(let offset=0;;offset+=500){
-  const {data,error}=await supabaseClient.from("quiz_attempts").select("id,module_id,status,score,question_count,answers,updated_at,created_at,challenge_id").eq("user_id",userId).order("updated_at",{ascending:false}).order("id").range(offset,offset+499);
+  const {data,error}=await supabaseClient.from("quiz_attempts").select("id,module_id,status,score,question_count,answers,updated_at,created_at,challenge_id,lifelines").eq("user_id",userId).order("updated_at",{ascending:false}).order("id").range(offset,offset+499);
   if(error)return {data:rows,error};rows.push(...(data||[]));if((data||[]).length<500)return {data:rows,error:null};
  }
 }
@@ -699,3 +699,4 @@ basicNewsSwipeHost?.addEventListener("touchend",event=>{
 
   startBasicNewsAutoplay();
 },{passive:true});
+
