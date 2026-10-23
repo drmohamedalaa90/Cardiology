@@ -109,7 +109,7 @@ function setupAdminEditor(session) {
   if (!isAdmin || !adminTools) return;
 
   adminTools.hidden = false;
-  enableQuestionPaste($('bmAdminStem'),['A','B','C','D'].map(key=>$('bmOption'+key)));
+  enableQuestionPaste($('bmAdminStem'),['A','B','C','D'].map(key=>$('bmOption'+key)),['bmAdminTopic','bmAdminHint','bmAdminExplanation'].map(id=>$(id)));
 
   if ($("bmAdminManage")) {
     $("bmAdminManage").href =
@@ -480,14 +480,17 @@ $("bmStartSolo")?.addEventListener("click", () => {
 
 
 
-function enableQuestionPaste(stem,choices){
+function enableQuestionPaste(stem,choices,extra=[]){
  if(!stem)return;
  stem.addEventListener('paste',event=>{
-  const lines=(event.clipboardData?.getData('text/plain')||'').replace(/\r/g,'').split('\n').map(line=>line.trim()).filter(Boolean);
-  if(lines.length!==5)return;
+  const raw=(event.clipboardData?.getData('text/plain')||'').replace(/\r/g,'').trim();
+  let lines=raw.split('\n').map(line=>line.trim());
+  if(![5,8].includes(lines.length))lines=lines.filter(Boolean);
+  if(![5,8].includes(lines.length)||(lines.length===8&&extra.some(field=>!field)))return;
   event.preventDefault();
   stem.value=lines[0].replace(/^(?:Q(?:uestion)?\s*\d*[:.)-]|\d+[.)])\s*/i,'');
   choices.forEach((field,i)=>{if(field)field.value=lines[i+1].replace(/^(?:[A-Da-d][).:\-]|[•●])\s*/,'');});
-  [stem,...choices].forEach(field=>field?.dispatchEvent(new Event('input',{bubbles:true})));
+  if(lines.length===8)extra.forEach((field,i)=>{field.value=lines[i+5];});
+  [stem,...choices,...(lines.length===8?extra:[])].forEach(field=>field?.dispatchEvent(new Event('input',{bubbles:true})));
  });
 }
