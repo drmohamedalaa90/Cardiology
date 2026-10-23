@@ -229,7 +229,7 @@ if (!session?.user) {
 
       supabaseClient
         .from("quiz_attempts")
-        .select("id,quiz_id,status,accuracy_percent,percentage,question_count,correct_count,updated_at")
+        .select("id,quiz_id,status,accuracy_percent,percentage,question_count,correct_count,updated_at,lifelines,challenge_id")
         .is("challenge_id",null)
         .eq("user_id", session.user.id)
         .eq("module_id", moduleId)
@@ -275,9 +275,7 @@ if (!session?.user) {
     $("bmTitle").textContent = module.title;
 
     $("bmDescription").textContent =
-      module.short_description ||
-      module.description ||
-      "Review the lecture or flashcards, then test yourself.";
+      String(module.short_description || module.description || "Review the lecture or flashcards, then test yourself.").replace(/50[\s‐‑–—-]*question\s+Basic\s+Edition\s+bank[.!]?/gi, "").trim();
 
     const completedAttempts =
       (attempts || []).filter(attempt => attempt.status === "completed");
@@ -339,7 +337,7 @@ if (!session?.user) {
     }
 
     await refreshActualQuestionCount();
-    const unfinished=(attempts||[]).find(item=>item.status==='in_progress'&&String(item.quiz_id)===String(quiz?.id));
+    const unfinished=(attempts||[]).find(item=>item.status==='in_progress'&&!item.challenge_id&&item.lifelines?.basicResume?.allowed&&String(item.quiz_id)===String(quiz?.id));
     if(unfinished){
       const button=$("bmOpenQuiz");
       button.disabled=false;
@@ -477,3 +475,4 @@ $("bmStartSolo")?.addEventListener("click", () => {
 
   location.href = url.toString();
 });
+
