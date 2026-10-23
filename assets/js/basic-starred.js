@@ -47,7 +47,7 @@ if (!session?.user) {
     $("bsCount").textContent = rows.length;
 
     const moduleIds =
-      [...new Set(rows.map(row => row.module_id).filter(Boolean))];
+      [...new Set([moduleId,...rows.map(row => row.module_id)].filter(Boolean))];
 
     const questionIds =
       [...new Set(rows.map(row => row.question_id).filter(Boolean))];
@@ -104,7 +104,7 @@ if (!session?.user) {
         moduleMap.get(moduleId);
 
       $("bsTitle").textContent =
-        (module?.title || "Module") + " · Starred questions";
+        module?.title || "Your saved questions";
 
       $("bsSubtitle").textContent =
         "Questions you starred from this module.";
