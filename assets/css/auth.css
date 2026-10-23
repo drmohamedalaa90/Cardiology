@@ -618,3 +618,201 @@ form[hidden]{
   .acl-auth-contact{min-height:36px;padding:0 8px;font-size:.56rem}
   .acl-auth-top-actions{gap:3px}
 }
+
+.auth-login-options{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-top:-2px;
+}
+
+.auth-check{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  color:#536f82;
+  font-size:.61rem;
+  font-weight:800;
+  cursor:pointer;
+  user-select:none;
+}
+
+.auth-check input{
+  width:16px;
+  height:16px;
+  min-height:0;
+  margin:0;
+  padding:0;
+  accent-color:#0b6f91;
+  box-shadow:none;
+  cursor:pointer;
+}
+
+.auth-install-btn{
+  width:100%;
+  min-height:52px;
+  margin-top:10px;
+  padding:8px 13px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  border:1px solid #c8dce7;
+  border-radius:12px;
+  background:#f5fafc;
+  color:#174a68;
+  font:inherit;
+  cursor:pointer;
+  transition:.18s ease;
+}
+
+.auth-install-btn:hover{
+  border-color:#9fc6d8;
+  background:#edf7fa;
+  transform:translateY(-1px);
+}
+
+.auth-install-btn:disabled{
+  opacity:.62;
+  cursor:default;
+  transform:none;
+}
+
+.auth-install-btn>span:last-child{
+  display:grid;
+  gap:1px;
+  text-align:left;
+}
+
+.auth-install-btn strong{
+  font-size:.66rem;
+  font-weight:900;
+}
+
+.auth-install-btn small{
+  color:#718b9b;
+  font-size:.52rem;
+  font-weight:750;
+}
+
+.auth-install-icon{
+  display:grid;
+  place-items:center;
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  border-radius:9px;
+  background:#e2f2f7;
+  color:#0d6e8a;
+  font-size:.82rem;
+  font-weight:900;
+}
+
+.auth-install-modal[hidden]{
+  display:none!important;
+}
+
+.auth-install-modal{
+  position:fixed;
+  inset:0;
+  z-index:200;
+  display:grid;
+  place-items:center;
+  padding:18px;
+  background:rgba(3,25,44,.58);
+  backdrop-filter:blur(7px);
+}
+
+.auth-install-dialog{
+  position:relative;
+  width:min(450px,100%);
+  padding:25px;
+  border:1px solid #d7e5ec;
+  border-radius:20px;
+  background:#fff;
+  color:#173d57;
+  box-shadow:0 25px 70px rgba(2,30,52,.24);
+}
+
+.auth-install-close{
+  position:absolute;
+  top:12px;
+  right:12px;
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  border:0;
+  border-radius:9px;
+  background:#eef4f7;
+  color:#526c7d;
+  font:inherit;
+  font-size:1rem;
+  cursor:pointer;
+}
+
+.auth-install-badge{
+  display:inline-flex;
+  min-height:25px;
+  align-items:center;
+  padding:0 8px;
+  border-radius:999px;
+  background:#eaf6f8;
+  color:#13718c;
+  font-size:.52rem;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+
+.auth-install-dialog h2{
+  margin:10px 38px 13px 0;
+  color:#082f57;
+  font-size:1.15rem;
+  line-height:1.2;
+}
+
+.auth-install-instructions{
+  color:#5e7889;
+  font-size:.67rem;
+  line-height:1.55;
+}
+
+.auth-install-instructions p{
+  margin:0;
+}
+
+.auth-install-instructions ol{
+  margin:0;
+  padding-left:20px;
+}
+
+.auth-install-instructions li+li{
+  margin-top:7px;
+}
+
+.auth-install-action{
+  width:100%;
+  min-height:43px;
+  margin-top:18px;
+  border:0;
+  border-radius:11px;
+  background:linear-gradient(100deg,#0b497d,#0b6f91);
+  color:#fff;
+  font:inherit;
+  font-size:.65rem;
+  font-weight:900;
+  cursor:pointer;
+}
+
+@media(max-width:650px){
+  .auth-login-options{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .auth-install-btn{
+    min-height:48px;
+  }
+}
