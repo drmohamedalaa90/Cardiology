@@ -1434,6 +1434,10 @@ async function loadActiveChallenge() {
 
   activeChallenge =
     challenge;
+  if(basicQuizMode){
+    requestedBasicLifelines.clear();
+    for(const type of challenge.play_config?.lifelines||[])if(['filter','time'].includes(type))requestedBasicLifelines.add(type);
+  }
 
 
   const {
@@ -2434,7 +2438,7 @@ function lifelineAllowance() {
   }
 
   if (basicQuizMode) {
-    return requestedBasicLifelines.size;
+    return challengeId?Number(activeChallenge?.play_config?.lifeline_limit||0):requestedBasicLifelines.size;
   }
 
   const totalQuestions =
@@ -2702,7 +2706,7 @@ function markLifelineUsed(
       lifeline
     ) ||
     (
-      basicQuizMode &&
+      basicQuizMode && !challengeId &&
       usageForLifeline(lifeline).length > 0
     ) ||
     lifelineCapacityReached()
@@ -3215,7 +3219,7 @@ function compactLifelineButtonHtml(
     );
 
   const usedAnywhere =
-    basicQuizMode &&
+    basicQuizMode && !challengeId &&
     usageForLifeline(definition.id).length > 0;
 
   const noUsesRemaining =
@@ -3648,7 +3652,14 @@ async function activateQuestionSwap(question) {
    LIFELINE ACTIVATION
 ========================================================= */
 
-async function activateLifeline(
+let lifelineActivationBusy=false;
+async function activateLifeline(question,lifeline){
+ if(lifelineActivationBusy)return;
+ lifelineActivationBusy=true;
+ try{return await performLifelineActivation(question,lifeline);}
+ finally{lifelineActivationBusy=false;}
+}
+async function performLifelineActivation(
   question,
   lifeline
 ) {
@@ -5059,7 +5070,7 @@ function render() {
             questions.length,
           timeLimitSeconds:
             basicQuizMode
-              ? 120
+              ? (challengeId?Number(activeChallenge?.play_config?.question_seconds||120):120)
               : Math.max(
                   1,
                   Number(
@@ -6662,7 +6673,7 @@ async function saveChallengeResult() {
     );
 
   const durationSeconds =
-    Math.max(
+    basicQuizMode?Math.round(basicTimeTaken()):Math.max(
       0,
       rawDurationSeconds -
       Number(
