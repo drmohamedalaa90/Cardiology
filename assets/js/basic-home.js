@@ -140,6 +140,11 @@ function sortedBasicNews(){
   return [...basicNewsItems].sort((a,b)=>{
     const pin=Number(Boolean(b.is_pinned))-Number(Boolean(a.is_pinned));
     if(pin)return pin;
+
+    const aOrder=Number.isFinite(Number(a.display_order))?Number(a.display_order):100;
+    const bOrder=Number.isFinite(Number(b.display_order))?Number(b.display_order):100;
+    if(aOrder!==bOrder)return aOrder-bOrder;
+
     return new Date(b.published_at||b.created_at||0)-new Date(a.published_at||a.created_at||0);
   });
 }
@@ -218,6 +223,7 @@ function renderBasicNews(){
         <div class="basic-news-meta">
           <span>${esc(basicNewsKindLabel(item.kind))}</span>
           ${item.is_pinned?'<em>Pinned</em>':""}
+          ${basicNewsAdmin&&item.is_active===false?'<em class="basic-news-hidden-badge">Hidden</em>':""}
           <small>${esc(basicNewsDate(item.published_at||item.created_at))}</small>
           ${adminEdit}
         </div>
@@ -266,6 +272,7 @@ function resetBasicNewsEditor(){
   document.getElementById("basicNewsBodyBold").checked=false;
   document.getElementById("basicNewsBodyEffect").value="none";
   document.getElementById("basicNewsStyle").value="standard";
+  document.getElementById("basicNewsOrder").value="100";
   document.getElementById("basicNewsActive").checked=true;
   document.getElementById("basicNewsPinned").checked=false;
   document.getElementById("basicNewsEditorTitle").textContent="Create a new update";
@@ -299,6 +306,7 @@ function openBasicNewsEditor(item=null){
   document.getElementById("basicNewsBodyBold").checked=item.body_bold===true;
   document.getElementById("basicNewsBodyEffect").value=basicNewsSafeEffect(item.body_effect||item.text_effect||"none");
   document.getElementById("basicNewsStyle").value=basicNewsSafeStyle(item.card_style);
+  document.getElementById("basicNewsOrder").value=String(Number.isFinite(Number(item.display_order))?Number(item.display_order):100);
   document.getElementById("basicNewsLink").value=item.link_url||"";
   document.getElementById("basicNewsPinned").checked=Boolean(item.is_pinned);
   document.getElementById("basicNewsActive").checked=item.is_active!==false;
@@ -324,7 +332,7 @@ async function loadBasicNews(){
 
   let query=supabaseClient
     .from("acl_announcements")
-    .select("id,title,body,kind,edition,link_url,is_pinned,is_active,published_at,created_at,text_color,text_size,image_url,card_style,text_effect,title_color,title_size,title_bold,title_effect,body_color,body_size,body_bold,body_effect")
+    .select("id,title,body,kind,edition,link_url,is_pinned,is_active,published_at,created_at,text_color,text_size,image_url,card_style,text_effect,title_color,title_size,title_bold,title_effect,body_color,body_size,body_bold,body_effect,display_order")
     .order("published_at",{ascending:false})
     .limit(20);
 
@@ -410,6 +418,7 @@ document.getElementById("basicNewsForm")?.addEventListener("submit",async event=
       link_url:document.getElementById("basicNewsLink").value.trim()||null,
       is_pinned:document.getElementById("basicNewsPinned").checked,
       is_active:document.getElementById("basicNewsActive").checked,
+      display_order:Math.max(1,Number(document.getElementById("basicNewsOrder").value||100)),
       title_color:document.getElementById("basicNewsTitleColor").value,
       title_size:document.getElementById("basicNewsTitleSize").value,
       title_bold:document.getElementById("basicNewsTitleBold").checked,
@@ -612,3 +621,38 @@ void loadBasicNews();
 
 
 document.getElementById("basicRefreshPage")?.addEventListener("click",()=>location.reload());
+
+
+/* Mobile swipe navigation for Updates & News */
+let basicNewsSwipeStartX=null;
+let basicNewsSwipeStartY=null;
+
+const basicNewsSwipeHost=document.getElementById("basicNewsGrid");
+
+basicNewsSwipeHost?.addEventListener("touchstart",event=>{
+  const touch=event.touches?.[0];
+  if(!touch)return;
+  basicNewsSwipeStartX=touch.clientX;
+  basicNewsSwipeStartY=touch.clientY;
+  stopBasicNewsAutoplay();
+},{passive:true});
+
+basicNewsSwipeHost?.addEventListener("touchend",event=>{
+  const touch=event.changedTouches?.[0];
+  if(!touch||basicNewsSwipeStartX===null||basicNewsSwipeStartY===null){
+    startBasicNewsAutoplay();
+    return;
+  }
+
+  const dx=touch.clientX-basicNewsSwipeStartX;
+  const dy=touch.clientY-basicNewsSwipeStartY;
+  basicNewsSwipeStartX=null;
+  basicNewsSwipeStartY=null;
+
+  if(Math.abs(dx)>=45 && Math.abs(dx)>Math.abs(dy)*1.15){
+    setBasicNewsIndex(basicNewsIndex+(dx<0?1:-1));
+    return;
+  }
+
+  startBasicNewsAutoplay();
+},{passive:true});
