@@ -553,3 +553,6 @@ body.acl-basic-learning-quiz .star-question-icon{
 
 /* Basic question difficulty */
 body.acl-basic-learning-quiz .question-topic-labels{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.question-difficulty{display:inline-flex;align-items:center;gap:5px;min-height:24px;padding:0 8px;border:1px solid #dde7ec;border-radius:999px;background:#fff;color:#536d7e;font-size:.56rem;font-weight:850}.question-difficulty i{display:block;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.04)}.question-difficulty-foundation i{background:#32b568}.question-difficulty-intermediate i{background:#f39a2d}.question-difficulty-advanced i{background:#df3f48}@media(max-width:600px){.question-difficulty{min-height:20px;padding:0 6px;font-size:.5rem}.question-difficulty i{width:8px;height:8px}}
+
+.basic-universal-contact{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 10px;border-radius:11px;color:#c9e5ef;text-decoration:none;font-size:.64rem;font-weight:850;white-space:nowrap}.basic-universal-contact:hover{background:rgba(255,255,255,.08);color:#fff}
+@media(max-width:720px){.basic-universal-contact{min-height:34px;padding:0 7px;font-size:.55rem}}
