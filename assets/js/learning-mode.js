@@ -7243,9 +7243,7 @@ document.addEventListener(
   console.log("ACL LEARNING STARTUP: restoring session");
 
   const profile =
-    await protectLearningSession(
-      "login.html"
-    );
+    await protectLearningSession("acl-access.html?build=20261023-clean");
 
   if (!profile) {
     return;
@@ -7256,6 +7254,29 @@ document.addEventListener(
       profile.id ||
       ""
     );
+
+  const {
+    data: learningAccessAllowed,
+    error: learningAccessError
+  } = await supabaseClient.rpc(
+    "acl_can_access_learning_area",
+    {
+      p_edition: selectedLearningEdition,
+      p_module_id: requestedModuleId || null
+    }
+  );
+
+  if (
+    learningAccessError ||
+    learningAccessAllowed !== true
+  ) {
+    location.replace(
+      selectedLearningEdition === "basic"
+        ? "basic-home.html?edition=basic&admin_hold=1"
+        : "edition-select.html?locked=1"
+    );
+    return;
+  }
 
   await loadStarredQuestions();
 
