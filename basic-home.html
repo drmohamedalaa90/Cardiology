@@ -16,7 +16,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/basic-home.css?v=6">
+  <link rel="stylesheet" href="assets/css/basic-home.css?v=7">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="basic-home-page">
@@ -104,32 +104,71 @@
             <textarea id="basicNewsBody" rows="4" required placeholder="Write the update here…"></textarea>
           </label>
 
-          <label class="basic-news-field color">
-            <span>Text colour</span>
-            <input id="basicNewsColor" type="color" value="#173d56">
-          </label>
+                    <fieldset class="basic-news-style-editor title-editor">
+            <legend>Title styling</legend>
+            <label class="basic-news-field">
+              <span>Colour</span>
+              <input id="basicNewsTitleColor" type="color" value="#173d56">
+            </label>
+            <label class="basic-news-field">
+              <span>Size</span>
+              <select id="basicNewsTitleSize">
+                <option value="small">Small</option>
+                <option value="normal" selected>Normal</option>
+                <option value="large">Large</option>
+                <option value="xlarge">Extra large</option>
+              </select>
+            </label>
+            <label class="basic-news-field">
+              <span>Effect / motion</span>
+              <select id="basicNewsTitleEffect">
+                <option value="none" selected>None</option>
+                <option value="zoom">Zoom in / out</option>
+                <option value="pulse">Pulse</option>
+                <option value="fade">Fade in / out</option>
+                <option value="slide">Slide gently</option>
+                <option value="bounce">Bounce</option>
+                <option value="glow">Glow</option>
+              </select>
+            </label>
+            <label class="basic-news-check compact">
+              <input id="basicNewsTitleBold" type="checkbox" checked>
+              <span>Bold title</span>
+            </label>
+          </fieldset>
 
-          <label class="basic-news-field size">
-            <span>Text size</span>
-            <select id="basicNewsSize">
-              <option value="small">Small</option>
-              <option value="normal" selected>Normal</option>
-              <option value="large">Large</option>
-              <option value="xlarge">Extra large</option>
-            </select>
-          </label>
-
-          <label class="basic-news-field effect">
-            <span>Text effect</span>
-            <select id="basicNewsEffect">
-              <option value="none" selected>None</option>
-              <option value="zoom">Zoom in / out</option>
-              <option value="pulse">Pulse</option>
-              <option value="fade">Fade in / out</option>
-              <option value="slide">Slide gently</option>
-              <option value="glow">Glow</option>
-            </select>
-          </label>
+          <fieldset class="basic-news-style-editor body-editor">
+            <legend>Body text styling</legend>
+            <label class="basic-news-field">
+              <span>Colour</span>
+              <input id="basicNewsBodyColor" type="color" value="#173d56">
+            </label>
+            <label class="basic-news-field">
+              <span>Size</span>
+              <select id="basicNewsBodySize">
+                <option value="small">Small</option>
+                <option value="normal" selected>Normal</option>
+                <option value="large">Large</option>
+                <option value="xlarge">Extra large</option>
+              </select>
+            </label>
+            <label class="basic-news-field">
+              <span>Effect / motion</span>
+              <select id="basicNewsBodyEffect">
+                <option value="none" selected>None</option>
+                <option value="zoom">Zoom in / out</option>
+                <option value="pulse">Pulse</option>
+                <option value="fade">Fade in / out</option>
+                <option value="slide">Slide gently</option>
+                <option value="bounce">Bounce</option>
+                <option value="glow">Glow</option>
+              </select>
+            </label>
+            <label class="basic-news-check compact">
+              <input id="basicNewsBodyBold" type="checkbox">
+              <span>Bold body text</span>
+            </label>
+          </fieldset>
 
           <label class="basic-news-field style">
             <span>Card style</span>
@@ -205,6 +244,6 @@
   </nav>
 
   <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>
-  <script type="module" src="assets/js/basic-home.js?v=10"></script>
+  <script type="module" src="assets/js/basic-home.js?v=11"></script>
 </body>
 </html>
