@@ -16,6 +16,7 @@
   </section>
 
   <section id="bmAdminTools" class="basic-admin-tools" hidden>
+    <details id="bmAdminEditorPanel"><summary style="cursor:pointer;font-size:1.15rem;font-weight:750;padding:12px 0;color:#0c4268">Question editor <small style="font-weight:400">— expand to add or manage questions</small></summary>
     <header class="basic-admin-tools-head">
       <div>
         <span class="basic-module-kicker">ADMIN CONTENT EDITOR</span>
@@ -30,8 +31,8 @@
 
     <form id="bmAdminForm" class="basic-admin-form" hidden>
       <label class="basic-admin-field basic-admin-question">
-        <span>Question</span>
-        <textarea id="bmAdminStem" rows="4" required placeholder="Write the question stem…"></textarea>
+        <span>Question</span><small>Paste 5 lines here: question, choice A, choice B, choice C, choice D. Then select the correct answer.</small>
+        <textarea id="bmAdminStem" rows="4" required placeholder="Write the question, or paste 5 lines: question then choices A–D"></textarea>
       </label>
 
       <div class="basic-admin-choices">
@@ -93,6 +94,7 @@
         <button id="bmAdminSave" class="basic-start-quiz" type="submit">Save question</button>
       </div>
     </form>
+    </details>
   </section>
 
   <section class="basic-module-path">
@@ -144,4 +146,4 @@
     </div>
   </section>
 </main>
-<script type="module" src="assets/js/basic-module-hub.js?v=12"></script><script type="module" src="assets/js/basic-universal-shell.js?v=20261023-simple"></script></body></html>
+<script type="module" src="assets/js/basic-module-hub.js?v=13"></script><script type="module" src="assets/js/basic-universal-shell.js?v=20261023-simple"></script></body></html>
