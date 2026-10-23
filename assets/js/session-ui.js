@@ -159,7 +159,7 @@ export function aclUrl(path, edition = resolveAclEdition({ requireEdition: false
   return url.origin === location.origin ? `${url.pathname}${url.search}${url.hash}` : url.toString();
 }
 
-export async function requireSession(relativeLogin = "login.html") {
+export async function requireSession(relativeLogin = "acl-access.html?build=20261023-clean") {
   try {
     const { data, error } = await aclWithTimeout(
       supabaseClient.auth.getSession(),
@@ -277,7 +277,7 @@ function renderAdminLink(profile) {
   nav.insertBefore(link, signOutButton || null);
 }
 
-export async function protectAndRender(relativeLogin = "login.html") {
+export async function protectAndRender(relativeLogin = "acl-access.html?build=20261023-clean") {
   const session = await requireSession(relativeLogin);
   if (!session) return null;
   let profile = await loadProfile();
@@ -303,7 +303,7 @@ export async function protectAndRender(relativeLogin = "login.html") {
 export async function signOut() {
   try { await supabaseClient.auth.signOut(); } catch (error) { console.warn(error); }
   try { sessionStorage.removeItem(EDITION_KEY); } catch {}
-  location.replace(root + "login.html");
+  location.replace(root + "acl-access.html?build=20261023-clean");
 }
 
 window.aclSignOut = signOut;
