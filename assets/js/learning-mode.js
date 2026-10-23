@@ -1,5 +1,5 @@
 import {basicAttemptProblem} from "./basic-attempt-integrity.js?v=1";
-import {showBasicQuizResults} from "./basic-quiz-results.js?v=3";
+import {showBasicQuizResults} from "./basic-quiz-results.js?v=4";
 import {
   supabaseClient
 } from "./supabase-client.js";
@@ -2140,6 +2140,7 @@ function maximumPossibleScore() {
 
 function appState() {
   return {
+    ...(basicQuizMode?{activeTimeSeconds:basicTimeTaken(),durationSeconds:basicTimeTaken()}:{}),
     questionIds:
       questions.map(
         (question) =>
@@ -2177,6 +2178,14 @@ function appState() {
 
 
 /* Basic solo quizzes: history-aware selection and crash recovery. */
+let basicClockReady=false;
+let basicElapsedSeconds=0;
+let basicActiveSince=null;
+function basicTimeTaken(){return Math.max(0,basicElapsedSeconds+(basicActiveSince===null?0:(performance.now()-basicActiveSince)/1000));}
+function pauseBasicClock(){basicElapsedSeconds=basicTimeTaken();basicActiveSince=null;}
+function resumeBasicClock(){if(basicClockReady&&basicQuizMode&&attempt?.status==='in_progress'&&!document.hidden&&!basicExplicitExit&&!basicCompletionPending&&!basicIntegrityEnded&&basicActiveSince===null)basicActiveSince=performance.now();if(basicClockReady&&basicQuizMode)ensureLifelinesState().basicTimingVersion=1;}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseBasicClock();else resumeBasicClock();});
+window.addEventListener('pagehide',pauseBasicClock);
 let basicExplicitExit=false;
 let basicAnswerBusy=false;
 let basicResumeTimer=null;
@@ -2190,6 +2199,7 @@ function installBasicSaveExit(){
   if(!attempt||basicExplicitExit||reviewMode||finishing||basicCompletionPending)return;
   if(basicAnswerBusy||advancingQuestion){setStatus('Please wait for your answer to finish saving.');return;}
   const button=bar.querySelector('button');button.disabled=true;
+  pauseBasicClock();
   basicExplicitExit=true;
   const detail={};window.dispatchEvent(new CustomEvent('acl:quiz-save-exit',{detail}));
   document.body.classList.add('basic-exit-saving');
@@ -2205,6 +2215,7 @@ function installBasicSaveExit(){
   }catch(error){
    basicExplicitExit=false;button.disabled=false;document.body.classList.remove('basic-exit-saving');
    window.dispatchEvent(new CustomEvent('acl:quiz-save-exit-cancel'));
+   resumeBasicClock();
    setStatus(error.message||'Could not save. Please try again.',true);
   }
  };
@@ -2215,6 +2226,7 @@ let basicCompletionPending = false;
 let basicIntegrityEnded=false;
 let basicIntegrityRestarted=false;
 async function invalidateBasicAttempt(record,reason){
+ pauseBasicClock();
  basicIntegrityEnded=true;
  window.dispatchEvent(new CustomEvent('acl:quiz-results'));
  await basicSaveQueue.catch(()=>{});
@@ -5027,6 +5039,8 @@ function render() {
   /* Keep the floating Learning Mode timer / notes synchronized with
      the actual current question without coupling the UI helper to
      private engine state. */
+  basicClockReady=true;
+  resumeBasicClock();
   window.dispatchEvent(
     new CustomEvent(
       "acl:learning-question-changed",
@@ -6724,6 +6738,7 @@ async function finish() {
 
   finishing =
     true;
+  if(basicQuizMode)pauseBasicClock();
 
   if (!reviewMode) {
     await persist(
@@ -7168,6 +7183,7 @@ quizArea.innerHTML = `
         if(!questions.length)throw new Error('No eligible questions are available.');
       }
       basicCompletionPending=false;
+      basicClockReady=false;basicElapsedSeconds=0;basicActiveSince=null;
       answers =
         [];
   
@@ -7606,6 +7622,7 @@ if (challengeId) {
       if(problem){await invalidateBasicAttempt(attempt,problem);attempt=null;}
     }
     if (attempt) {
+      if(basicQuizMode){basicElapsedSeconds=Math.max(0,Number(attempt.active_time_seconds??attempt.duration_seconds??attempt.lifelines?._aclMeta?.activeTimeSeconds??0)||0);basicActiveSince=null;}
       if(basicQuizMode&&!challengeId)await selectBasicFreshQuestions(0);
       const savedQuestionIds =
         attempt.question_ids ||
@@ -7688,7 +7705,7 @@ if (challengeId) {
       }
       setStatus("Saved quiz restored");
     } else {
-      if(basicQuizMode){index=0;answers=[];pendingSelectedIds=[];preQuizReviewSeen=false;basicIntegrityEnded=false;}
+      if(basicQuizMode){basicClockReady=false;basicElapsedSeconds=0;basicActiveSince=null;index=0;answers=[];pendingSelectedIds=[];preQuizReviewSeen=false;basicIntegrityEnded=false;}
       if(basicQuizMode&&!challengeId){
         questions=await selectBasicFreshQuestions(requestedQuestionCount);
         if(!questions.length)throw new Error('No eligible questions are available.');
@@ -7777,6 +7794,7 @@ if (challengeId) {
 
 async function renderBasicQuizResults(){
  await loadStarredQuestions();
- return showBasicQuizResults({questions,answers,moduleId:quiz.module_id,title:quiz.module_title,attemptId:attempt.id,userId:currentLearningUserId,starred:starredQuestionIds,challengeId,lifelines:ensureLifelinesState(),mascot:GOOD_JOB_MASCOT,retrySame:()=>startNewAttempt({sameQuestions:true}),retryDifferent:()=>startNewAttempt()});
+ return showBasicQuizResults({durationSeconds:Math.round(basicTimeTaken()),questions,answers,moduleId:quiz.module_id,title:quiz.module_title,attemptId:attempt.id,userId:currentLearningUserId,starred:starredQuestionIds,challengeId,lifelines:ensureLifelinesState(),mascot:GOOD_JOB_MASCOT,retrySame:()=>startNewAttempt({sameQuestions:true}),retryDifferent:()=>startNewAttempt()});
 }
+
 
