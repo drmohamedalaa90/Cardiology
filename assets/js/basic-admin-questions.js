@@ -132,7 +132,7 @@ function editorHtml(question) {
     <form class="baq-editor" data-editor="${question.id}" hidden>
       <label class="baq-field">
         <span>Question</span>
-        <small>Paste 5 lines: question, then choices A–D. Select the correct answer below.</small>
+        <small>Paste 8 lines: question, choices A–D, topic, Dr. Corazón’s indirect advice, explanation. Select the correct answer below.</small>
         <textarea data-field="stem" rows="4" required>${esc(question.stem || "")}</textarea>
       </label>
 
@@ -146,10 +146,25 @@ function editorHtml(question) {
         `).join("")}
       </div>
 
-      <div class="baq-grid">
-        <label class="baq-field">
+      <label class="baq-field">
           <span>Topic</span>
           <input data-field="topic" type="text" value="${esc(question.topic || "")}">
+        </label>
+
+      <label class="baq-field">
+          <span>Dr. Corazón advice</span>
+          <input data-field="hint" type="text" value="${esc(question.dr_corazon_hint || "")}" placeholder="Indirect clue only">
+        </label>
+
+      <label class="baq-field">
+        <span>Explanation</span>
+        <textarea data-field="explanation" rows="3">${esc(question.explanation || "")}</textarea>
+      </label>
+
+      <div class="baq-grid">
+        <label class="baq-field">
+          <span>Reference</span>
+          <input data-field="reference" type="text" value="${esc(question.reference_text || "")}">
         </label>
 
         <label class="baq-field">
@@ -161,23 +176,6 @@ function editorHtml(question) {
           </select>
         </label>
       </div>
-
-      <div class="baq-grid">
-        <label class="baq-field">
-          <span>Reference</span>
-          <input data-field="reference" type="text" value="${esc(question.reference_text || "")}">
-        </label>
-
-        <label class="baq-field">
-          <span>Dr. Corazón advice</span>
-          <input data-field="hint" type="text" value="${esc(question.dr_corazon_hint || "")}" placeholder="Indirect clue only">
-        </label>
-      </div>
-
-      <label class="baq-field">
-        <span>Explanation</span>
-        <textarea data-field="explanation" rows="3">${esc(question.explanation || "")}</textarea>
-      </label>
 
       <div class="baq-editor-footer">
         <button class="baq-btn" type="button" data-cancel="${question.id}">Cancel</button>
@@ -470,7 +468,7 @@ function bindCardActions() {
   });
 
   document.querySelectorAll(".baq-editor").forEach(form => {
-    enableQuestionPaste(form.querySelector('[data-field="stem"]'),['A','B','C','D'].map(key=>form.querySelector(`[data-option="${key}"]`)));
+    enableQuestionPaste(form.querySelector('[data-field="stem"]'),['A','B','C','D'].map(key=>form.querySelector(`[data-option="${key}"]`)),['topic','hint','explanation'].map(key=>form.querySelector(`[data-field="${key}"]`)));
     form.addEventListener("submit", async event => {
       event.preventDefault();
       const id = form.dataset.editor;
@@ -656,14 +654,17 @@ if (!session?.user) {
   }
 }
 
-function enableQuestionPaste(stem,choices){
+function enableQuestionPaste(stem,choices,extra=[]){
  if(!stem)return;
  stem.addEventListener('paste',event=>{
-  const lines=(event.clipboardData?.getData('text/plain')||'').replace(/\r/g,'').split('\n').map(line=>line.trim()).filter(Boolean);
-  if(lines.length!==5)return;
+  const raw=(event.clipboardData?.getData('text/plain')||'').replace(/\r/g,'').trim();
+  let lines=raw.split('\n').map(line=>line.trim());
+  if(![5,8].includes(lines.length))lines=lines.filter(Boolean);
+  if(![5,8].includes(lines.length)||(lines.length===8&&extra.some(field=>!field)))return;
   event.preventDefault();
   stem.value=lines[0].replace(/^(?:Q(?:uestion)?\s*\d*[:.)-]|\d+[.)])\s*/i,'');
   choices.forEach((field,i)=>{if(field)field.value=lines[i+1].replace(/^(?:[A-Da-d][).:\-]|[•●])\s*/,'');});
-  [stem,...choices].forEach(field=>field?.dispatchEvent(new Event('input',{bubbles:true})));
+  if(lines.length===8)extra.forEach((field,i)=>{field.value=lines[i+5];});
+  [stem,...choices,...(lines.length===8?extra:[])].forEach(field=>field?.dispatchEvent(new Event('input',{bubbles:true})));
  });
 }
