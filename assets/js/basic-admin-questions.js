@@ -208,10 +208,10 @@ function render() {
               <i class="baq-dot ${esc(question.difficulty || "foundation")}"></i>
               ${difficultyLabel(question.difficulty)}
             </span>
-            <span class="baq-topic">${esc(question.topic || "No topic")}</span>
+
             <span class="baq-state ${question.status === "archived" ? "hidden" : ""}">
               ${question.status === "archived" ? "Hidden" : "Visible"}
-            </span>
+            </span><label class="baq-inline-topic">Topic <input data-quick-topic="${question.id}" value="${esc(question.topic || '')}" placeholder="Add topic" maxlength="160"></label><button class="baq-btn" type="button" data-save-topic="${question.id}">Save topic</button>
           </div>
 
           <h2>${esc(question.stem || "Question")}</h2>
@@ -300,7 +300,7 @@ async function quickSaveQuestionMeta(question, patch = {}, sourceButton = null) 
       p_option_c: byKey.C?.text || "",
       p_option_d: byKey.D?.text || "",
       p_correct_key: correct,
-      p_topic: question.topic || null,
+      p_topic: Object.prototype.hasOwnProperty.call(patch,"topic") ? (patch.topic || null) : (question.topic || null),
       p_reference_text: question.reference_text || null,
       p_explanation: question.explanation || null,
       p_dr_corazon_hint:
@@ -330,6 +330,7 @@ async function quickSaveQuestionMeta(question, patch = {}, sourceButton = null) 
     question.dr_corazon_hint = patch.dr_corazon_hint || null;
   }
 
+  if(Object.prototype.hasOwnProperty.call(patch,"topic")) question.topic=patch.topic||null;
   setPageStatus("Question updated.", "success");
   return true;
 }
@@ -359,6 +360,16 @@ function toggleQuestionDetails(id) {
 }
 
 function bindCardActions() {
+  document.querySelectorAll('[data-quick-topic],[data-save-topic]').forEach(el=>{
+    el.addEventListener('click',event=>event.stopPropagation());
+    el.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Enter'&&el.matches('input')){event.preventDefault();document.querySelector(`[data-save-topic="${el.dataset.quickTopic}"]`)?.click();}});
+  });
+  document.querySelectorAll('[data-save-topic]').forEach(button=>button.addEventListener('click',async()=>{
+    const question=questionById(button.dataset.saveTopic),input=document.querySelector(`[data-quick-topic="${button.dataset.saveTopic}"]`);
+    if(!question||!input)return;
+    const ok=await quickSaveQuestionMeta(question,{topic:input.value.trim()},button);
+    if(ok){button.textContent='Saved';const editor=document.querySelector(`[data-editor="${question.id}"] [data-field="topic"]`);if(editor)editor.value=question.topic||'';populateTopicFilter();setTimeout(()=>button.textContent='Save topic',1200);}
+  }));
   document.querySelectorAll("[data-quick-difficulty]").forEach(button => {
     button.addEventListener("click", async event => {
       event.stopPropagation();
