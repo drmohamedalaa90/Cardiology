@@ -10,7 +10,7 @@ import {
   createAttempt,
   saveAttempt,
   completeAttempt
-} from "./cloud-progress.js?v=20260822-bootstrapfix";
+} from "./cloud-progress.js?v=20261023-challenges";
 
 
 import {
@@ -1365,6 +1365,7 @@ async function loadActiveChallenge() {
         maximum_participants,
         starts_at,
         ends_at,
+        play_config,
         status
       `)
       .eq(
@@ -1504,6 +1505,9 @@ async function loadActiveChallenge() {
     );
   }
 
+  if(basicQuizMode && participant.invitation_status!=='joined'){
+    throw new Error('Accept this invitation from the Challenges page before playing.');
+  }
   activeChallengeParticipant =
     participant;
 
@@ -1531,13 +1535,8 @@ function applyChallengeQuestionSet() {
 
   const questionMap =
     new Map(
-      questions.map(
-        (question) => [
-          String(
-            question.id
-          ),
-          question
-        ]
+      questionPool.map(
+        (question) => [String(question.id),question]
       )
     );
 
@@ -1556,12 +1555,10 @@ function applyChallengeQuestionSet() {
         Boolean
       );
 
-  if (
-    fixedQuestions.length
-  ) {
-    questions =
-      fixedQuestions;
+  if (fixedQuestions.length!==activeChallenge.question_ids.length){
+    throw new Error('Some challenge questions are no longer available. Please create another challenge.');
   }
+  questions=fixedQuestions;
 }
 
 function normalizePreQuizReviewPoint(
@@ -7086,6 +7083,7 @@ quizArea.innerHTML = `
 ========================================================= */
 
   async function startNewAttempt() {
+    if(basicQuizMode&&challengeId){location.href='basic-challenges.html?edition=basic';return;}
     try {
       setStatus(
         "Preparing new attempt…"
@@ -7128,6 +7126,7 @@ quizArea.innerHTML = `
   
       attempt =
         await createAttempt({
+          challengeId: basicQuizMode ? challengeId : null,
           moduleId:
             quiz.module_id,
   
@@ -7524,6 +7523,14 @@ if (challengeId) {
             quiz.id
           );
 
+    if(basicQuizMode && challengeId){
+      attempt=null;
+      if(activeChallengeParticipant?.attempt_id){
+        const {data:challengeAttempt,error}=await supabaseClient.from('quiz_attempts').select('*').eq('id',activeChallengeParticipant.attempt_id).eq('user_id',currentLearningUserId).eq('status','in_progress').maybeSingle();
+        if(error)throw error;
+        attempt=challengeAttempt;
+      }
+    }
     if (basicQuizMode && !challengeId && attempt) {
       const checkpoint=readBasicCheckpoint();
       if(checkpoint?.attemptId===attempt.id && checkpoint.state &&
@@ -7544,12 +7551,8 @@ if (challengeId) {
         attempt.questionIds ||
         [];
 
-      const restoredQuestions =
-        restoredAttemptQuestions({
-          attemptRecord: attempt,
-          pool,
-          savedQuestionIds
-        });
+      const restoredQuestions = challengeId ? questions :
+        restoredAttemptQuestions({attemptRecord:attempt,pool,savedQuestionIds});
 
       if (
         restoredQuestions.length
@@ -7639,6 +7642,7 @@ if (challengeId) {
 
       attempt =
         await createAttempt({
+          challengeId: basicQuizMode ? challengeId : null,
           moduleId:
             quiz.module_id,
 
@@ -7664,6 +7668,11 @@ if (challengeId) {
             lifelinesState
         });
 
+      if(basicQuizMode && challengeId){
+        const {error:linkError}=await supabaseClient.from('module_challenge_participants').update({attempt_id:attempt.id}).eq('id',activeChallengeParticipant.id).eq('user_id',currentLearningUserId);
+        if(linkError)throw linkError;
+        activeChallengeParticipant.attempt_id=attempt.id;
+      }
       setStatus(
         "New learning attempt saved"
       );
