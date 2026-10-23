@@ -26,6 +26,7 @@ if(edition==="basic"){
     <div class="basic-universal-actions">
       <button class="basic-expert-lock" id="basicExpertLocked" type="button"><span class="basic-lock-dot">◆</span><span>Expert Edition</span><small>Locked</small></button>
       <div class="basic-universal-user"><span class="basic-universal-avatar" id="basicUniversalAvatar">ACL</span><strong id="basicUniversalName">Member</strong></div>
+      <a class="basic-universal-contact" href="mailto:drmohamedalaa90@gmail.com">Contact us</a>
       <button class="basic-universal-logout" id="basicUniversalLogout" type="button">Log out</button>
     </div>
   </header>
