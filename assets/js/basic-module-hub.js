@@ -109,6 +109,7 @@ function setupAdminEditor(session) {
   if (!isAdmin || !adminTools) return;
 
   adminTools.hidden = false;
+  enableQuestionPaste($('bmAdminStem'),['A','B','C','D'].map(key=>$('bmOption'+key)));
 
   if ($("bmAdminManage")) {
     $("bmAdminManage").href =
@@ -120,6 +121,7 @@ function setupAdminEditor(session) {
     if (!form) return;
 
     form.hidden = !form.hidden;
+    $("bmAdminToggle").setAttribute("aria-expanded",String(!form.hidden));
 
     $("bmAdminToggle").textContent =
       form.hidden ? "+ Add question" : "Close editor";
@@ -476,3 +478,16 @@ $("bmStartSolo")?.addEventListener("click", () => {
   location.href = url.toString();
 });
 
+
+
+function enableQuestionPaste(stem,choices){
+ if(!stem)return;
+ stem.addEventListener('paste',event=>{
+  const lines=(event.clipboardData?.getData('text/plain')||'').replace(/\r/g,'').split('\n').map(line=>line.trim()).filter(Boolean);
+  if(lines.length!==5)return;
+  event.preventDefault();
+  stem.value=lines[0].replace(/^(?:Q(?:uestion)?\s*\d*[:.)-]|\d+[.)])\s*/i,'');
+  choices.forEach((field,i)=>{if(field)field.value=lines[i+1].replace(/^(?:[A-Da-d][).:\-]|[•●])\s*/,'');});
+  [stem,...choices].forEach(field=>field?.dispatchEvent(new Event('input',{bubbles:true})));
+ });
+}
