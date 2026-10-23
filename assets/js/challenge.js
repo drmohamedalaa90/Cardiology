@@ -687,7 +687,8 @@ async function loadModules() {
         edition,
         status,
         launch_path,
-        display_order
+        display_order,
+        basic_admin_released
       `)
       .eq(
         "edition",
@@ -718,9 +719,17 @@ async function loadModules() {
   }
 
 
+  const isAdminUser =
+    String(state.user?.email || "").toLowerCase() ===
+    "drmohamedalaa90@gmail.com";
+
   const modules =
-    data ||
-    [];
+    (data || []).filter(module =>
+      selectedEdition !== "basic" ||
+      isAdminUser ||
+      Number(module.display_order || 0) === 1 ||
+      module.basic_admin_released === true
+    );
 
 
   if (!modules.length) {
