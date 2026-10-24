@@ -949,7 +949,7 @@ form[hidden]{
   background:linear-gradient(135deg,#fff 0%,#f2f9fb 100%);
   box-shadow:0 8px 20px rgba(8,47,87,.07);
 }
-.auth-founder-mark{
+.auth-about-signature .auth-founder-mark{
   display:grid;
   place-items:center;
   width:42px;
