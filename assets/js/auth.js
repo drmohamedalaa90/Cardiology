@@ -304,10 +304,29 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
     }
   } catch (error) {
     const rawMessage = String(error?.message || "");
-    const message = /database error saving new user|duplicate key|already registered/i.test(rawMessage)
-      ? "This username, email or WhatsApp number is already linked to an ACL account. Please sign in or use different details."
-      : rawMessage || "Could not create account.";
-    setMessage("registerError", message);
+    const errorCode = String(error?.code || error?.status || "");
+    if(/email address.+invalid|email_address_invalid/i.test(rawMessage+" "+errorCode)){
+      showRegistrationStep(0,true);
+      const emailField=byId("email"),feedback=byId("regEmailFeedback");
+      emailField.classList.add("is-invalid");
+      feedback.classList.add("is-error");
+      feedback.textContent="This address looks correctly written, but the email service could not verify it. Please check it carefully or use another email address.";
+      setMessage("registerError");
+      window.setTimeout(()=>emailField.focus({preventScroll:true}),350);
+    }else if(/rate limit|over_email_send_rate_limit|429/i.test(rawMessage+" "+errorCode)){
+      showRegistrationStep(0,true);
+      const emailField=byId("email"),feedback=byId("regEmailFeedback");
+      emailField.classList.add("is-invalid");
+      feedback.classList.add("is-error");
+      feedback.textContent="Too many confirmation emails were requested. Please wait a few minutes, then try again once.";
+      setMessage("registerError");
+      window.setTimeout(()=>emailField.focus({preventScroll:true}),350);
+    }else{
+      const message = /database error saving new user|duplicate key|already registered/i.test(rawMessage)
+        ? "This username, email or WhatsApp number is already linked to an ACL account. Please sign in or use different details."
+        : rawMessage || "Could not create account.";
+      setMessage("registerError", message);
+    }
   } finally { if (submit) submit.disabled = false; }
 });
 
@@ -364,6 +383,7 @@ byId('regBack')?.addEventListener('click',()=>showRegistrationStep(Math.max(0,re
 document.querySelectorAll('[data-reg-step]').forEach(b=>b.addEventListener('click',()=>{const target=Number(b.dataset.regStep);if(target<=registrationStep){showRegistrationStep(target);return;}for(let i=0;i<target;i++)if(!validateRegistrationStep(i))return;showRegistrationStep(target);}));
 byId('professionalRole')?.addEventListener('change',updateRegistrationYear);
 byId('registerForm')?.addEventListener('input',e=>{e.target.setCustomValidity?.('');
+ if(e.target.id==='email'){e.target.classList.remove('is-invalid');const emailFeedback=byId('regEmailFeedback');emailFeedback.textContent='';emailFeedback.classList.remove('is-error');}
  if(e.target.id==='username'){
    const feedback=byId('regUsernameFeedback'),hasSpace=/\s/.test(e.target.value),valid=validUsername(normalizeUsername(e.target.value));
    e.target.classList.toggle('is-invalid',hasSpace||(!valid&&e.target.value.length>0));
