@@ -191,7 +191,7 @@ if (isStandaloneApp() && byId("installAclApp")) {
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register(`${ACL_CONFIG.siteBase}service-worker.js?v=7.19.0`, {
+    .register(`${ACL_CONFIG.siteBase}service-worker.js?v=7.20.0`, {
       scope: ACL_CONFIG.siteBase,
       updateViaCache: "none"
     })
@@ -289,9 +289,16 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
     });
     if (error) throw error;
     if (!data.session) {
-      setMessage("registerSuccess", "Account created. Open the confirmation email, confirm your address, then return to sign in.");
       event.target.reset();updateRegistrationYear();showRegistrationStep(0);
-      if(['undergraduate','intern','gp','internal_medicine'].includes(professionalRole)){try{sessionStorage.setItem('aclWelcomeName',fullName);}catch{}location.href='basic-welcome.html?pending=1';}
+      showPanel("signin");
+      if(byId("identifier"))byId("identifier").value=email;
+      setMessage("signInSuccess", "Account created. Please confirm your email address before signing in. The welcome page will open after confirmation.");
+      window.scrollTo({top:0,behavior:"smooth"});
+    } else if (!data.user?.email_confirmed_at) {
+      await supabaseClient.auth.signOut();
+      showPanel("signin");
+      if(byId("identifier"))byId("identifier").value=email;
+      setMessage("signInSuccess", "Please confirm your email address before signing in.");
     } else {
       openAclHome();
     }

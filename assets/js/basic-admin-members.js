@@ -98,7 +98,7 @@ function memberDetails(m){
     '<section class="bam-detail-card"><h3>Progress</h3><p><strong>'+Number(p.modules_attempted||0)+'</strong> modules attempted · <strong>'+Number(p.completed_attempts||0)+'</strong> completed attempts</p><p><strong>'+Number(p.questions_answered||0)+'</strong> questions answered · overall accuracy <strong>'+accuracyText(p.overall_accuracy)+'</strong></p><div class="bam-list">'+moduleResultList(p)+'</div></section>'+
     '<section class="bam-detail-card"><h3>Friends</h3><p><strong>'+Number(f.accepted_count||0)+'</strong> accepted friend(s)</p><div class="bam-list">'+friendList(f)+'</div></section>'+
     '<section class="bam-detail-card"><h3>Challenges</h3><p><strong>'+Number(c.taken||0)+'</strong> joined · <strong>'+Number(c.completed||0)+'</strong> completed</p><div class="bam-list">'+challengeList(c)+'</div></section>'+
-    '</div><div class="bam-member-actions"><button type="button" class="bam-hold-btn '+(m.account_status==="suspended"?"restore":"hold")+'" data-member-status="'+m.id+'">'+(m.account_status==="suspended"?"Restore membership":"Hold membership")+'</button></div>';
+    '</div><div class="bam-member-actions"><button type="button" class="bam-hold-btn '+(m.account_status==="suspended"?"restore":"hold")+'" data-member-status="'+m.id+'">'+(m.account_status==="suspended"?"Restore membership":"Hold membership")+'</button><button type="button" class="bam-delete-btn" data-delete-member="'+m.id+'">Remove experimental account</button></div>';
 }
 function renderMembers(){
   const rows=memberFilter();
@@ -132,6 +132,17 @@ function renderMembers(){
       const {error}=await supabaseClient.rpc("acl_admin_set_basic_member_status",{p_user_id:m.id,p_suspended:suspend});
       if(error){alert(error.message||"Could not update membership.");button.disabled=false;return;}
       m.account_status=suspend?"suspended":"active"; renderMembers(); renderStats();
+    });
+  });
+  document.querySelectorAll("[data-delete-member]").forEach(button=>{
+    button.addEventListener("click",async e=>{
+      e.stopPropagation();
+      const m=members.find(x=>String(x.id)===String(button.dataset.deleteMember));if(!m)return;
+      if(!confirm("Permanently remove the experimental account for "+m.name+" ("+(m.email||"no email")+")? This deletes the login and all associated learning data."))return;
+      button.disabled=true;button.textContent="Removing…";
+      const {data,error}=await supabaseClient.rpc("acl_admin_delete_experimental_member",{p_user_id:m.id});
+      if(error||data!==true){alert(error?.message||"Could not remove the account.");button.disabled=false;button.textContent="Remove experimental account";return;}
+      members=members.filter(x=>String(x.id)!==String(m.id));renderMembers();renderStats();
     });
   });
 }
