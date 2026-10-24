@@ -708,6 +708,7 @@ function basicLaunchRemaining(now=Date.now()){
 if($("basicLaunchCountdown")){
  let launchInterval=null;
  const updateLaunch=()=>{
+  if(window.aclOfficialBannerActive)return;
   const remaining=basicLaunchRemaining();
   for(const key of ["days","hours","minutes","seconds"]){const el=$("basicLaunch"+key[0].toUpperCase()+key.slice(1));if(el)el.textContent=String(remaining[key]).padStart(2,"0");}
   if(remaining.done){$("basicLaunchTitle").textContent="Experimental phase is live";$("basicLaunchUnits").hidden=true;if(launchInterval)clearInterval(launchInterval);}
