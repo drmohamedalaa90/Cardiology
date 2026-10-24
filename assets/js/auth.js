@@ -312,12 +312,13 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
 });
 
 let registrationStep=0;
-function showRegistrationStep(step){
+function showRegistrationStep(step,scrollToTop=false){
  registrationStep=step;
  document.querySelectorAll('[data-reg-panel]').forEach(el=>el.hidden=Number(el.dataset.regPanel)!==step);
  document.querySelectorAll('[data-reg-step]').forEach(el=>{const n=Number(el.dataset.regStep);el.classList.toggle('is-current',n===step);el.classList.toggle('is-done',n<step);el.setAttribute('aria-current',n===step?'step':'false');});
  byId('regBack').hidden=step===0;byId('regNext').hidden=step===1;byId('regSubmit').hidden=step!==1;
  byId('regStepCaption').textContent=['Your contact details and a password to secure your account.','Tell us where you are in your medical journey.'][step];
+ if(scrollToTop)requestAnimationFrame(()=>byId('registerForm')?.scrollIntoView({behavior:'smooth',block:'start'}));
 }
 function updateRegistrationYear(){
  const role=byId('professionalRole').value,year=byId('academicYear'),count=role==='undergraduate'?5:role==='intern'?2:0;
@@ -327,6 +328,27 @@ function updateRegistrationYear(){
 }
 function validateRegistrationStep(step){
  const panel=document.querySelector('[data-reg-panel="'+step+'"]');
+ if(step===0){
+   const username=byId('username');
+   const usernameFeedback=byId('regUsernameFeedback');
+   const usernameValue=username.value;
+   if(/\s/.test(usernameValue)){
+     showRegistrationStep(0,true);
+     username.classList.add('is-invalid');
+     usernameFeedback.textContent='Spaces are not allowed in the username. Use a dot or underscore instead.';
+     usernameFeedback.classList.add('is-error');
+     username.focus();
+     return false;
+   }
+   if(!validUsername(normalizeUsername(usernameValue))){
+     showRegistrationStep(0,true);
+     username.classList.add('is-invalid');
+     usernameFeedback.textContent='Use 3–30 letters, numbers, dots or underscores.';
+     usernameFeedback.classList.add('is-error');
+     username.focus();
+     return false;
+   }
+ }
  for(const field of panel.querySelectorAll('input,select')){if(field.disabled)continue;field.setCustomValidity('');if(!field.checkValidity()){showRegistrationStep(step);field.reportValidity();return false;}}
  if(step===0){
  const number=normalizeWhatsapp(byId('countryCode').value,byId('whatsapp').value);
@@ -337,9 +359,15 @@ function validateRegistrationStep(step){
  return true;
 }
 function validateRegistration(){for(let i=0;i<2;i++)if(!validateRegistrationStep(i))return false;return true;}
-byId('regNext')?.addEventListener('click',()=>{if(validateRegistrationStep(registrationStep)){showRegistrationStep(registrationStep+1);document.querySelector('[data-reg-panel="'+registrationStep+'"] input,[data-reg-panel="'+registrationStep+'"] select')?.focus();}});
+byId('regNext')?.addEventListener('click',()=>{if(validateRegistrationStep(registrationStep)){showRegistrationStep(registrationStep+1,true);window.setTimeout(()=>document.querySelector('[data-reg-panel="'+registrationStep+'"] input,[data-reg-panel="'+registrationStep+'"] select')?.focus({preventScroll:true}),350);}});
 byId('regBack')?.addEventListener('click',()=>showRegistrationStep(Math.max(0,registrationStep-1)));
 document.querySelectorAll('[data-reg-step]').forEach(b=>b.addEventListener('click',()=>{const target=Number(b.dataset.regStep);if(target<=registrationStep){showRegistrationStep(target);return;}for(let i=0;i<target;i++)if(!validateRegistrationStep(i))return;showRegistrationStep(target);}));
 byId('professionalRole')?.addEventListener('change',updateRegistrationYear);
-byId('registerForm')?.addEventListener('input',e=>{e.target.setCustomValidity?.('');if(['countryCode','whatsapp'].includes(e.target.id)){byId('whatsapp').setCustomValidity('');const n=normalizeWhatsapp(byId('countryCode').value,byId('whatsapp').value);byId('regPhonePreview').textContent=n?'WhatsApp: '+n:'';}if(['registerPassword','confirmPassword'].includes(e.target.id)){byId('confirmPassword').setCustomValidity('');byId('regPasswordMatch').textContent=byId('confirmPassword').value?(byId('confirmPassword').value===byId('registerPassword').value?'Passwords match ✓':'Passwords do not match yet'):'';}});
+byId('registerForm')?.addEventListener('input',e=>{e.target.setCustomValidity?.('');
+ if(e.target.id==='username'){
+   const feedback=byId('regUsernameFeedback'),hasSpace=/\s/.test(e.target.value),valid=validUsername(normalizeUsername(e.target.value));
+   e.target.classList.toggle('is-invalid',hasSpace||(!valid&&e.target.value.length>0));
+   feedback.classList.toggle('is-error',hasSpace||(!valid&&e.target.value.length>0));
+   feedback.textContent=hasSpace?'Spaces are not allowed in the username. Use a dot or underscore instead.':(!valid&&e.target.value.length>0?'Use 3–30 letters, numbers, dots or underscores.':'3–30 letters, numbers, dots or underscores. No spaces.');
+ }if(['countryCode','whatsapp'].includes(e.target.id)){byId('whatsapp').setCustomValidity('');const n=normalizeWhatsapp(byId('countryCode').value,byId('whatsapp').value);byId('regPhonePreview').textContent=n?'WhatsApp: '+n:'';}if(['registerPassword','confirmPassword'].includes(e.target.id)){byId('confirmPassword').setCustomValidity('');const match=byId('confirmPassword').value===byId('registerPassword').value;const matchMessage=byId('regPasswordMatch');matchMessage.textContent=byId('confirmPassword').value?(match?'Passwords match ✓':'Passwords do not match yet'):'';matchMessage.classList.toggle('is-error',Boolean(byId('confirmPassword').value&&!match));byId('confirmPassword').classList.toggle('is-invalid',Boolean(byId('confirmPassword').value&&!match));}});
 if(byId('regNext')){updateRegistrationYear();showRegistrationStep(0);}
