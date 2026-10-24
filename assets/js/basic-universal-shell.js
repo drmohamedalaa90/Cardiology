@@ -39,6 +39,7 @@ if(edition==="basic"){
     <a class="${active("basic-notifications.html")}" href="basic-notifications.html?edition=basic"><span>♢</span><strong>Notifications</strong><em class="basic-nav-badge" id="basicNotificationBadge" hidden>0</em></a>
   </nav>
   <div class="basic-level-modal" id="basicLevelModal" hidden><section class="basic-level-dialog" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitle"><div class="basic-level-icon">◆</div><h2 id="basicLevelTitle">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelClose">Continue Basic Edition</button></section></div>`;
+  if(document.getElementById("aclFixedNavigation"))shell.querySelector(".basic-universal-bottom")?.remove();
   document.body.insertBefore(shell,document.body.firstChild);
   window.dispatchEvent(new CustomEvent('acl:basic-shell-ready'));
   const modal=document.getElementById("basicLevelModal");
