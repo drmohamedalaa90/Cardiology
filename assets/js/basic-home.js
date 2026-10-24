@@ -293,8 +293,8 @@ function renderBasicNews(){
     : "";
 
   host.innerHTML=`
-    <article class="basic-news-card ${style} title-size-${titleSize} body-size-${bodySize} title-effect-${titleEffect} body-effect-${bodyEffect}" style="--news-title:${titleColor};--news-body:${bodyColor};--news-title-weight:${titleBold?900:500};--news-body-weight:${bodyBold?800:400}">
-      ${image?`<div class="basic-news-image"><img src="${esc(image)}" alt="" loading="lazy"></div>`:""}
+    <article class="basic-news-card ${image?"has-news-loading":""} ${style} title-size-${titleSize} body-size-${bodySize} title-effect-${titleEffect} body-effect-${bodyEffect}" style="--news-title:${titleColor};--news-body:${bodyColor};--news-title-weight:${titleBold?900:500};--news-body-weight:${bodyBold?800:400}">
+      ${image?`<div class="basic-news-image"><span class="basic-news-image-loader" aria-hidden="true"></span><img src="${esc(image)}" alt="" loading="eager" fetchpriority="high" decoding="async"></div>`:""}
       <div class="basic-news-card-body">
         <div class="basic-news-meta">
           <span class="basic-news-live"><i></i> Latest</span>
@@ -310,6 +310,36 @@ function renderBasicNews(){
       </div>
     </article>
   `;
+
+  if(image){
+    const card=host.querySelector(".basic-news-card");
+    const newsImage=host.querySelector(".basic-news-image img");
+    let revealTimer=0;
+    const revealNews=()=>{
+      window.clearTimeout(revealTimer);
+      if(!card||!card.isConnected)return;
+      card.classList.remove("has-news-loading");
+      card.classList.add("has-news-ready");
+    };
+    if(newsImage){
+      if(newsImage.complete){
+        if(newsImage.naturalWidth)newsImage.decode?.().catch(()=>{}).finally(revealNews);
+        else revealNews();
+      }else{
+        newsImage.addEventListener("load",()=>{
+          newsImage.decode?.().catch(()=>{}).finally(revealNews);
+        },{once:true});
+        newsImage.addEventListener("error",revealNews,{once:true});
+        revealTimer=window.setTimeout(revealNews,5000);
+      }
+    }else revealNews();
+
+    rows.forEach((row,index)=>{
+      if(index===basicNewsIndex)return;
+      const nextImage=basicNewsSafeHref(row.image_url);
+      if(nextImage){const preload=new Image();preload.decoding="async";preload.src=nextImage;}
+    });
+  }
 
   const many=rows.length>1;
   if(prev)prev.hidden=!many;
