@@ -277,8 +277,12 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
   if (password !== confirmation) return setMessage("registerError", "Passwords do not match.");
   const submit = event.submitter; if (submit) submit.disabled = true;
   try {
-    const { data: taken } = await supabaseClient.from("profiles").select("id").ilike("username", username).maybeSingle();
-    if (taken) throw new Error("This username is already taken.");
+    const { data: available, error: availabilityError } = await supabaseClient.rpc("acl_registration_available", {
+      p_username: username,
+      p_phone: whatsapp
+    });
+    if (availabilityError) throw new Error("Could not check your registration details. Please try again.");
+    if (available !== true) throw new Error("This username or WhatsApp number is already linked to an ACL account. Please sign in or use different details.");
     const { data, error } = await supabaseClient.auth.signUp({
       email, password,
       options: { emailRedirectTo: `${window.location.origin}${ACL_CONFIG.siteBase}confirm.html`, data: { full_name: fullName, username, whatsapp, academic_year: academicYear, institution, professional_role:professionalRole, study_year:studyYear||null, whatsapp_country_code:byId("countryCode").value.trim() } }
@@ -292,7 +296,11 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
       openAclHome();
     }
   } catch (error) {
-    setMessage("registerError", error.message || "Could not create account.");
+    const rawMessage = String(error?.message || "");
+    const message = /database error saving new user|duplicate key|already registered/i.test(rawMessage)
+      ? "This username, email or WhatsApp number is already linked to an ACL account. Please sign in or use different details."
+      : rawMessage || "Could not create account.";
+    setMessage("registerError", message);
   } finally { if (submit) submit.disabled = false; }
 });
 
