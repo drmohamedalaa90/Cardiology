@@ -18,6 +18,18 @@
   </script>
   <link rel="stylesheet" href="assets/css/basic-home.css?v=14">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+.basic-launch-countdown{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:26px;margin:0 0 24px;padding:28px 30px;border:1px solid #194968;border-radius:22px;background:linear-gradient(110deg,#082e4d,#0c4964);color:#fff;box-shadow:0 10px 30px #082e4d12}
+.basic-launch-countdown .basic-launch-kicker{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#91d7e5}
+.basic-launch-countdown h2{margin:8px 0;font-size:clamp(1.25rem,2.5vw,1.75rem);font-weight:700;letter-spacing:-.025em;color:#fff}
+.basic-launch-countdown time{font-size:12px;color:#d3e6ee}
+.basic-launch-units{display:grid;grid-template-columns:repeat(4,68px);gap:10px}
+.basic-launch-units>div{text-align:center;border:1px solid #ffffff21;border-radius:12px;background:#ffffff0c;padding:13px 6px 10px}
+.basic-launch-units strong{display:block;font-size:29px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.basic-launch-units span{display:block;margin-top:7px;font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:#b9d7e3}
+.basic-launch-units[hidden]{display:none}
+@media(max-width:680px){.basic-launch-countdown{grid-template-columns:1fr;gap:20px;padding:22px 20px;border-radius:18px}.basic-launch-units{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.basic-launch-units strong{font-size:27px}}
+</style>
 </head>
 <body class="basic-home-page">
   <header class="basic-topbar">
@@ -45,6 +57,10 @@
   </header>
 
   <main class="basic-shell">
+    <section id="basicLaunchCountdown" class="basic-launch-countdown" aria-labelledby="basicLaunchTitle">
+ <div><span class="basic-launch-kicker">PLATFORM LAUNCH</span><h2 id="basicLaunchTitle">Experimental phase</h2><time datetime="2026-10-26T22:00:00+03:00">Monday, 26 October · 10:00 PM Cairo time</time></div>
+ <div id="basicLaunchUnits" class="basic-launch-units" role="timer" aria-label="Time until the experimental phase begins" aria-live="off"><div><strong id="basicLaunchDays">--</strong><span>Days</span></div><div><strong id="basicLaunchHours">--</strong><span>Hours</span></div><div><strong id="basicLaunchMinutes">--</strong><span>Minutes</span></div><div><strong id="basicLaunchSeconds">--</strong><span>Seconds</span></div></div>
+</section>
     <section class="basic-news-section" id="basicNewsSection">
       <div class="basic-news-head">
         <div>
@@ -325,7 +341,7 @@
   </nav>
 
   <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>
-  <script type="module" src="assets/js/basic-home.js?v=16"></script>
+  <script type="module" src="assets/js/basic-home.js?v=17"></script>
   <script type="module" src="assets/js/basic-module-manager.js?v=1"></script>
 </body>
 </html>

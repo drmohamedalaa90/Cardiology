@@ -49,20 +49,20 @@ function renderStats(){
 }
 function renderModules(){
   $("bamModuleAccess").innerHTML = modules.length ? modules.map(m=>{
-    const fixed=Number(m.display_order)===1;
+    const schedule=m.opens_at?new Date(m.opens_at).toLocaleString("en-GB",{timeZone:"Africa/Cairo",dateStyle:"medium",timeStyle:"short"})+" Cairo":"";
     return '<article class="bam-module-row">'+
       '<span class="bam-module-number">'+String(m.display_order).padStart(2,"0")+'</span>'+
       '<div class="bam-module-copy"><strong>'+esc(m.title)+'</strong><small>'+
-      (fixed?"Always released":m.released?"Released by admin · prerequisite score still applies":"Admin Hold · unavailable to students regardless of score")+
+      (m.released?(schedule?"Scheduled: "+esc(schedule):"Released · access requirements still apply"):"On hold · stays closed after its scheduled opening")+
       '</small></div>'+
-      '<button type="button" class="bam-release-btn '+(fixed?"fixed":m.released?"hold":"release")+'" data-module="'+esc(m.id)+'" '+(fixed?"disabled":"")+'>'+
-      (fixed?"Always released":m.released?"Put on hold":"Release module")+'</button></article>';
+      '<button type="button" class="bam-release-btn '+(m.released?"hold":"release")+'" data-module="'+esc(m.id)+'">'+
+      (m.released?"Put on hold":"Release module")+'</button></article>';
   }).join("") : '<div class="bam-empty">No Basic modules found.</div>';
 
   document.querySelectorAll("[data-module]").forEach(button=>{
     button.addEventListener("click",async()=>{
       const m=modules.find(x=>String(x.id)===String(button.dataset.module));
-      if(!m || Number(m.display_order)===1) return;
+      if(!m) return;
       const next=!m.released;
       const action=next?"release":"put on hold";
       if(!confirm('Are you sure you want to '+action+' "'+m.title+'"?')) return;

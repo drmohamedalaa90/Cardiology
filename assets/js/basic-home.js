@@ -39,7 +39,7 @@ function renderAvailable(modules,progress){
  host.innerHTML=modules.map((m,i)=>{
   const state=progress.get(String(m.id)),total=Math.max(0,Number(m.question_count)||0),attempted=Math.min(total,state?.attempted||0),correct=Math.min(attempted,state?.correct||0);
   const coverage=total?Math.round(attempted/total*100):0,accuracy=attempted?Math.round(correct/attempted*100):0;
-  const complete=total>0&&attempted>=total,label=complete?"All attempted":attempted?"In progress":"Ready",action=state?.inProgress?"Continue":attempted?"Open":"Start";
+  const complete=total>0&&attempted>=total,label=m.basic_admin_released===false?"Admin hold":complete?"All attempted":attempted?"In progress":"Ready",action=state?.inProgress?"Continue":attempted?"Open":"Start";
   return `<article class="basic-module-card"><div class="basic-module-top"><span class="basic-module-number">${String(m.display_order??i+1).padStart(2,"0")}</span><span class="basic-module-state">${esc(label)}</span></div><h3>${esc(m.title||"Basic module")}</h3><p>${total} questions · Foundation level</p>
   <div class="basic-module-metrics" title="Unique questions; correct count uses your latest answer.">
    <div class="basic-metric-label"><span>Attempted / total</span><strong>${attempted} / ${total} · ${coverage}%</strong></div>
@@ -49,8 +49,8 @@ function renderAvailable(modules,progress){
   </div><div class="basic-module-footer"><div class="basic-score"><span>Questions remaining</span><strong>${total-attempted}</strong></div><a class="basic-module-action" href="${esc(moduleHref(m))}">${action} →</a></div></article>`;
  }).join("");
 }
-function renderLocked(rows){const host=$("basicLockedModules");if(!rows.length){host.innerHTML='<div class="basic-empty">All Basic Edition modules are unlocked. Excellent progress.</div>';return}host.innerHTML=rows.map(({module,previous,previousBest,adminHeld},i)=>`<article class="basic-locked-card"><span class="basic-lock-icon" aria-hidden="true">🔒</span><div class="basic-locked-copy"><strong>${esc(module.title||"Basic module")}</strong><small>${adminHeld?"Locked by the ACL administrator. This module will be released when it is ready.":`Pass ${esc(previous?.title||"the previous module")} with more than ${PASS_MARK}%. ${previousBest===null?"No completed result yet.":`Current best: ${previousBest}%.`}`}</small></div></article>`).join("")}
-async function boot(){try{localStorage.setItem("aclSelectedEdition","basic");sessionStorage.setItem("aclSelectedEdition","basic")}catch{}const {data:{session},error}=await supabaseClient.auth.getSession();if(error)throw error;if(!session?.user){location.replace("login.html");return}const user=session.user;const {data:presence}=await supabaseClient.rpc("acl_touch_basic_presence");if(presence?.allowed===false){try{await supabaseClient.auth.signOut()}catch{}location.replace("login.html?held=1");return}const adminLink=$("basicAdminMembers");if(adminLink)adminLink.hidden=String(user.email||"").toLowerCase()!=="drmohamedalaa90@gmail.com";const [pr,mr,ar]=await Promise.all([supabaseClient.from("profiles").select("*").eq("id",user.id).maybeSingle(),supabaseClient.from("modules").select("id,title,slug,display_order,status,launch_path,question_count,edition,basic_admin_released").eq("edition","basic").eq("status","published").order("display_order",{ascending:true}).order("title",{ascending:true}),loadModuleAttemptHistory(user.id)]);if(mr.error)throw mr.error;if(ar.error)throw ar.error;const p=pr.error?null:pr.data,name=chooseName(p,user),photo=choosePhoto(p,user);$("basicUserName").textContent=name;const av=$("basicAvatar");if(photo){
+function renderLocked(rows){const host=$("basicLockedModules");if(!rows.length){host.innerHTML='<div class="basic-empty">All Basic Edition modules are unlocked. Excellent progress.</div>';return}host.innerHTML=rows.map(({module,previous,previousBest,adminHeld,reason},i)=>`<article class="basic-locked-card"><span class="basic-lock-icon" aria-hidden="true">🔒</span><div class="basic-locked-copy"><strong>${esc(module.title||"Basic module")}</strong><small>${reason?esc(reason):adminHeld?"Locked by the ACL administrator. This module will be released when it is ready.":`Pass ${esc(previous?.title||"the previous module")} with more than ${PASS_MARK}%. ${previousBest===null?"No completed result yet.":`Current best: ${previousBest}%.`}`}</small></div></article>`).join("")}
+async function boot(){try{localStorage.setItem("aclSelectedEdition","basic");sessionStorage.setItem("aclSelectedEdition","basic")}catch{}const {data:{session},error}=await supabaseClient.auth.getSession();if(error)throw error;if(!session?.user){location.replace("login.html");return}const user=session.user;const {data:presence}=await supabaseClient.rpc("acl_touch_basic_presence");if(presence?.allowed===false){try{await supabaseClient.auth.signOut()}catch{}location.replace("login.html?held=1");return}const adminLink=$("basicAdminMembers");if(adminLink)adminLink.hidden=String(user.email||"").toLowerCase()!=="drmohamedalaa90@gmail.com";const [pr,mr,ar]=await Promise.all([supabaseClient.from("profiles").select("*").eq("id",user.id).maybeSingle(),supabaseClient.from("modules").select("id,title,slug,display_order,status,launch_path,question_count,edition,basic_admin_released,opens_at,closes_at").eq("edition","basic").eq("status","published").order("display_order",{ascending:true}).order("title",{ascending:true}),loadModuleAttemptHistory(user.id)]);if(mr.error)throw mr.error;if(ar.error)throw ar.error;const p=pr.error?null:pr.data,name=chooseName(p,user),photo=choosePhoto(p,user);$("basicUserName").textContent=name;const av=$("basicAvatar");if(photo){
   const img=document.createElement("img");
   img.alt="";
   img.decoding="async";
@@ -62,20 +62,17 @@ async function boot(){try{localStorage.setItem("aclSelectedEdition","basic");ses
 }else av.textContent=initials(name);const modules=Array.isArray(mr.data)?mr.data:[],all=Array.isArray(ar.data)?ar.data:[],ids=new Set(modules.map(m=>String(m.id))),attempts=all.filter(a=>ids.has(String(a.module_id))),progress=bestAttemptByModule(attempts),available=[],locked=[],isAdmin=String(user.email||"").toLowerCase()==="drmohamedalaa90@gmail.com";if(isAdmin){
   modules.forEach(m=>available.push(m));
 }else{
-  modules.forEach((m,i)=>{
-    if(i===0 || Number(m.display_order||0)===1){
-      available.push(m);
-      return;
-    }
-    const prev=modules[Math.max(0,i-1)];
-    const best=prev ? (progress.get(String(prev.id))?.bestAccuracy??null) : null;
-    locked.push({
-      module:m,
-      previous:prev,
-      previousBest:best,
-      adminHeld:true
-    });
-  });
+  await Promise.all(modules.map(async(m)=>{
+    const {data:allowed,error}=await supabaseClient.rpc("acl_can_access_learning_area",{p_edition:"basic",p_module_id:m.id});
+    if(error)throw error;
+    if(allowed===true){available.push(m);return;}
+    const held=m.basic_admin_released!==true;
+    const upcoming=m.opens_at&&new Date(m.opens_at)>new Date();
+    const reason=held?"On hold by administrator":upcoming?"Opens "+new Date(m.opens_at).toLocaleString("en-GB",{timeZone:"Africa/Cairo",dateStyle:"medium",timeStyle:"short"})+" Cairo":"Complete the module access requirements";
+    locked.push({module:m,reason,adminHeld:held});
+  }));
+  available.sort((a,b)=>Number(a.display_order)-Number(b.display_order));
+  locked.sort((a,b)=>Number(a.module.display_order)-Number(b.module.display_order));
 };await Promise.all(available.map(async m=>{try{const {data,error}=await supabaseClient.rpc("acl_get_basic_module_question_counts",{p_module_id:m.id});if(!error&&data&&Number.isFinite(Number(data.published)))m.question_count=Math.max(0,Number(data.published));}catch{}}));$("basicUnlockedCount").textContent=available.length;$("basicTotalCount").textContent=modules.length;$("basicAvailableSummary").textContent=`${available.length} ${available.length===1?"module":"modules"} available now`;renderAvailable(available,progress);renderLocked(locked)}
 $("basicLogout")?.addEventListener("click",async()=>{try{await supabaseClient.auth.signOut()}catch{}location.replace("login.html")});
 boot().catch(e=>{console.error("ACL BASIC HOME ERROR:",e);$("basicAvailableModules").innerHTML='<div class="basic-empty">The Basic Edition could not be loaded. Please refresh the page.</div>';$("basicLockedModules").innerHTML='<div class="basic-empty">Learning path unavailable.</div>'});
@@ -700,3 +697,20 @@ basicNewsSwipeHost?.addEventListener("touchend",event=>{
   startBasicNewsAutoplay();
 },{passive:true});
 
+
+/* Display only: the launch countdown never changes module release permissions. */
+function basicLaunchRemaining(now=Date.now()){
+ const seconds=Math.max(0,Math.ceil((Date.parse("2026-10-26T22:00:00+03:00")-now)/1000));
+ return {days:Math.floor(seconds/86400),hours:Math.floor(seconds%86400/3600),minutes:Math.floor(seconds%3600/60),seconds:seconds%60,done:seconds===0};
+}
+if($("basicLaunchCountdown")){
+ let launchInterval=null;
+ const updateLaunch=()=>{
+  const remaining=basicLaunchRemaining();
+  for(const key of ["days","hours","minutes","seconds"]){const el=$("basicLaunch"+key[0].toUpperCase()+key.slice(1));if(el)el.textContent=String(remaining[key]).padStart(2,"0");}
+  if(remaining.done){$("basicLaunchTitle").textContent="Experimental phase is live";$("basicLaunchUnits").hidden=true;if(launchInterval)clearInterval(launchInterval);}
+ };
+ updateLaunch();
+ if(!basicLaunchRemaining().done)launchInterval=setInterval(updateLaunch,1000);
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)updateLaunch();});
+}
