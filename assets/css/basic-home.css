@@ -341,3 +341,18 @@
   .basic-news-grid .basic-news-card{grid-template-rows:190px minmax(0,1fr)!important}
   .basic-news-image,.basic-news-image img{height:190px!important;min-height:190px!important;max-height:190px!important}
 }
+
+
+/* Reveal each news story with its photograph and warm the following slides. */
+.basic-news-card.has-news-loading .basic-news-card-body{opacity:0;visibility:hidden}
+.basic-news-card.has-news-ready .basic-news-card-body{animation:aclNewsContentReady .18s ease-out both}
+.basic-news-image{position:relative;isolation:isolate}
+.basic-news-image-loader{position:absolute;inset:0;z-index:1;background:linear-gradient(105deg,#e7eff3 20%,#f7fafb 42%,#e7eff3 64%);background-size:220% 100%;animation:aclNewsImageLoading 1.15s linear infinite}
+.basic-news-image img{position:relative;z-index:2}
+.basic-news-card.has-news-loading .basic-news-image img{opacity:0}
+.basic-news-card.has-news-ready .basic-news-image-loader{display:none}
+.basic-news-card.has-news-ready .basic-news-image img{animation:aclNewsImageReady .2s ease-out both}
+@keyframes aclNewsImageLoading{to{background-position:-220% 0}}
+@keyframes aclNewsImageReady{from{opacity:0}to{opacity:1}}
+@keyframes aclNewsContentReady{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.basic-news-image-loader{animation:none}.basic-news-card.has-news-ready .basic-news-image img,.basic-news-card.has-news-ready .basic-news-card-body{animation:none}}
