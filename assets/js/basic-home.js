@@ -4,6 +4,19 @@ function aclDestinationLabel(value){try{const u=new URL(value,location.href);ret
 
 const PASS_MARK=70;const $=id=>document.getElementById(id);
 function esc(v=""){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+function basicNewsRichText(value,{singleLine=false}={}){
+  let html=esc(value||"");
+  const formats=[
+    [/\\[b\\]([\\s\\S]*?)\\[\\/b\\]/gi,"<strong>$1</strong>"],
+    [/\\[accent\\]([\\s\\S]*?)\\[\\/accent\\]/gi,'<span class="news-inline-accent">$1</span>'],
+    [/\\[red\\]([\\s\\S]*?)\\[\\/red\\]/gi,'<span class="news-inline-red">$1</span>'],
+    [/\\[mark\\]([\\s\\S]*?)\\[\\/mark\\]/gi,'<mark class="news-inline-mark">$1</mark>'],
+    [/\\[large\\]([\\s\\S]*?)\\[\\/large\\]/gi,'<span class="news-inline-large">$1</span>']
+  ];
+  for(let pass=0;pass<3;pass++)for(const [pattern,replacement] of formats)html=html.replace(pattern,replacement);
+  return singleLine?html.replace(/\\r?\\n/g," "):html.replace(/\\r?\\n/g,"<br>");
+}
 function safeArray(v){if(Array.isArray(v))return v;if(typeof v==="string"&&v.trim()){try{const p=JSON.parse(v);return Array.isArray(p)?p:[]}catch{}}return[]}
 function accuracyOf(a){if(!a||a.status!=="completed")return null;const answers=safeArray(a.answers);if(answers.length){const c=answers.filter(x=>x?.correct===true).length;return Math.round(c/answers.length*100)}const score=Number(a.score),total=Number(a.question_count);return Number.isFinite(score)&&Number.isFinite(total)&&total>0&&score>=0&&score<=total?Math.round(score/total*100):null}
 function bestAttemptByModule(attempts){
@@ -272,7 +285,8 @@ function renderBasicNews(){
   const bodyBold=item.body_bold===true;
   const href=basicNewsSafeHref(item.link_url);
   const image=basicNewsSafeHref(item.image_url);
-  const body=esc(item.body||"").replace(/\n/g,"<br>");
+  const title=basicNewsRichText(item.title||"ACL update",{singleLine:true});
+  const body=basicNewsRichText(item.body||"");
   const adminEdit=basicNewsAdmin
     ? `<button class="basic-news-edit" type="button" data-edit-news="${esc(item.id)}">Edit</button>`
     : "";
@@ -282,13 +296,14 @@ function renderBasicNews(){
       ${image?`<div class="basic-news-image"><img src="${esc(image)}" alt="" loading="lazy"></div>`:""}
       <div class="basic-news-card-body">
         <div class="basic-news-meta">
+          <span class="basic-news-live"><i></i> Latest</span>
           <span>${esc(basicNewsKindLabel(item.kind))}</span>
           ${item.is_pinned?'<em>Pinned</em>':""}
           ${basicNewsAdmin&&item.is_active===false?'<em class="basic-news-hidden-badge">Hidden</em>':""}
           <small>${esc(basicNewsDate(item.published_at||item.created_at))}</small>
           ${adminEdit}
         </div>
-        <h3>${esc(item.title||"ACL update")}</h3>
+        <h3>${title}</h3>
         <p>${body}</p>
         ${href?`<a href="${esc(href)}" target="_blank" rel="noopener">Go to ${esc(aclDestinationLabel(item.link_url))} →</a>`:""}
       </div>
@@ -434,6 +449,26 @@ document.getElementById("basicNewsAdminToggle")?.addEventListener("click",()=>{
 document.getElementById("basicNewsCancelEdit")?.addEventListener("click",()=>{
   resetBasicNewsEditor();
 });
+
+const basicNewsFormatTags={bold:["[b]","[/b]"],accent:["[accent]","[/accent]"],red:["[red]","[/red]"],mark:["[mark]","[/mark]"],large:["[large]","[/large]"]};
+function applyBasicNewsInlineFormat(toolbar,format){
+  const field=document.getElementById(toolbar?.dataset.newsEditorTarget||"");
+  if(!field)return;
+  const start=Number(field.selectionStart||0),end=Number(field.selectionEnd||0);
+  if(format==="clear"){
+    const strip=value=>String(value||"").replace(/\\[\\/?(?:b|accent|red|mark|large)\\]/gi,"");
+    if(start!==end)field.setRangeText(strip(field.value.slice(start,end)),start,end,"select");
+    else{field.value=strip(field.value);field.setSelectionRange(0,field.value.length);}
+  }else{
+    const [open,close]=basicNewsFormatTags[format]||[];
+    if(!open)return;
+    const selected=field.value.slice(start,end)||"selected words";
+    field.setRangeText(open+selected+close,start,end,"select");
+    field.setSelectionRange(start+open.length,start+open.length+selected.length);
+  }
+  field.focus();field.dispatchEvent(new Event("input",{bubbles:true}));
+}
+document.querySelectorAll(".basic-news-inline-tools [data-news-format]").forEach(button=>button.addEventListener("click",()=>applyBasicNewsInlineFormat(button.closest(".basic-news-inline-tools"),button.dataset.newsFormat)));
 
 document.getElementById("basicNewsForm")?.addEventListener("submit",async event=>{
   event.preventDefault();
