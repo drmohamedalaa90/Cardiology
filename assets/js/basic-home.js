@@ -8,14 +8,15 @@ function esc(v=""){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt
 function basicNewsRichText(value,{singleLine=false}={}){
   let html=esc(value||"");
   const formats=[
-    [/\\[b\\]([\\s\\S]*?)\\[\\/b\\]/gi,"<strong>$1</strong>"],
-    [/\\[accent\\]([\\s\\S]*?)\\[\\/accent\\]/gi,'<span class="news-inline-accent">$1</span>'],
-    [/\\[red\\]([\\s\\S]*?)\\[\\/red\\]/gi,'<span class="news-inline-red">$1</span>'],
-    [/\\[mark\\]([\\s\\S]*?)\\[\\/mark\\]/gi,'<mark class="news-inline-mark">$1</mark>'],
-    [/\\[large\\]([\\s\\S]*?)\\[\\/large\\]/gi,'<span class="news-inline-large">$1</span>']
+    [/\[b\]([\s\S]*?)\[\/b\]/gi,"<strong>$1</strong>"],
+    [/\[accent\]([\s\S]*?)\[\/accent\]/gi,'<span class="news-inline-accent">$1</span>'],
+    [/\[red\]([\s\S]*?)\[\/red\]/gi,'<span class="news-inline-red">$1</span>'],
+    [/\[mark\]([\s\S]*?)\[\/mark\]/gi,'<mark class="news-inline-mark">$1</mark>'],
+    [/\[large\]([\s\S]*?)\[\/large\]/gi,'<span class="news-inline-large">$1</span>']
   ];
   for(let pass=0;pass<3;pass++)for(const [pattern,replacement] of formats)html=html.replace(pattern,replacement);
-  return singleLine?html.replace(/\\r?\\n/g," "):html.replace(/\\r?\\n/g,"<br>");
+  if(singleLine)return html.replace(/\r?\n/g," ");
+  return html.replace(/\r?\n/g,'<span class="news-line-break" aria-hidden="true"></span>');
 }
 function safeArray(v){if(Array.isArray(v))return v;if(typeof v==="string"&&v.trim()){try{const p=JSON.parse(v);return Array.isArray(p)?p:[]}catch{}}return[]}
 function accuracyOf(a){if(!a||a.status!=="completed")return null;const answers=safeArray(a.answers);if(answers.length){const c=answers.filter(x=>x?.correct===true).length;return Math.round(c/answers.length*100)}const score=Number(a.score),total=Number(a.question_count);return Number.isFinite(score)&&Number.isFinite(total)&&total>0&&score>=0&&score<=total?Math.round(score/total*100):null}
