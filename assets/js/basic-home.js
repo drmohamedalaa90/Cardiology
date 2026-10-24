@@ -39,15 +39,17 @@ function renderAvailable(modules,progress){
  host.innerHTML=modules.map((m,i)=>{
   const state=progress.get(String(m.id)),total=Math.max(0,Number(m.question_count)||0),attempted=Math.min(total,state?.attempted||0),correct=Math.min(attempted,state?.correct||0);
   const coverage=total?Math.round(attempted/total*100):0,accuracy=attempted?Math.round(correct/attempted*100):0;
-  const complete=total>0&&attempted>=total,label=m.basic_admin_released===false?"Admin hold":complete?"All attempted":attempted?"In progress":"Ready",action=state?.inProgress?"Continue":attempted?"Open":"Start";
+  const waitingForLaunch=String(m.id)==="basic-valvular-heart-disease"&&!basicLaunchRemaining().done;
+  const complete=total>0&&attempted>=total,label=m.basic_admin_released===false?"Admin hold":waitingForLaunch?"Opening soon":complete?"All attempted":attempted?"In progress":"Ready",action=state?.inProgress?"Continue":attempted?"Open":"Start";
   return `<article class="basic-module-card"><div class="basic-module-top"><span class="basic-module-number">${String(m.display_order??i+1).padStart(2,"0")}</span><span class="basic-module-state">${esc(label)}</span></div><h3>${esc(m.title||"Basic module")}</h3><p>${total} questions · Foundation level</p>
   <div class="basic-module-metrics" title="Unique questions; correct count uses your latest answer.">
    <div class="basic-metric-label"><span>Attempted / total</span><strong>${attempted} / ${total} · ${coverage}%</strong></div>
    <div class="basic-progress coverage" role="progressbar" aria-label="Questions attempted" aria-valuemin="0" aria-valuemax="${Math.max(1,total)}" aria-valuenow="${attempted}"><span style="width:${coverage}%"></span></div>
    <div class="basic-metric-label accuracy-label"><span>Correct / attempted</span><strong>${correct} / ${attempted} · ${accuracy}%</strong></div>
    <div class="basic-progress accuracy" role="progressbar" aria-label="Correct answers among attempted questions" aria-valuemin="0" aria-valuemax="${Math.max(1,attempted)}" aria-valuenow="${correct}"><span style="width:${accuracy}%"></span></div>
-  </div><div class="basic-module-footer"><div class="basic-score"><span>Questions remaining</span><strong>${total-attempted}</strong></div><a class="basic-module-action" href="${esc(moduleHref(m))}">${action} →</a></div></article>`;
+  </div><div class="basic-module-footer"><div class="basic-score"><span>Questions remaining</span><strong>${total-attempted}</strong></div>${waitingForLaunch?'<div class="basic-module-launch-clock" data-module-launch-clock role="timer" aria-live="off" aria-label="Opens Monday 26 October at 10 PM Cairo time"><small>Launches in</small><div data-module-launch-units></div></div>':`<a class="basic-module-action" href="${esc(moduleHref(m))}">${action} →</a>`}</div></article>`;
  }).join("");
+ updateBasicModuleCountdowns();
 }
 function renderLocked(rows){const host=$("basicLockedModules");if(!rows.length){host.innerHTML='<div class="basic-empty">All Basic Edition modules are unlocked. Excellent progress.</div>';return}host.innerHTML=rows.map(({module,previous,previousBest,adminHeld,reason},i)=>`<article class="basic-locked-card"><span class="basic-lock-icon" aria-hidden="true">🔒</span><div class="basic-locked-copy"><strong>${esc(module.title||"Basic module")}</strong><small>${reason?esc(reason):adminHeld?"Locked by the ACL administrator. This module will be released when it is ready.":`Pass ${esc(previous?.title||"the previous module")} with more than ${PASS_MARK}%. ${previousBest===null?"No completed result yet.":`Current best: ${previousBest}%.`}`}</small></div></article>`).join("")}
 async function boot(){try{localStorage.setItem("aclSelectedEdition","basic");sessionStorage.setItem("aclSelectedEdition","basic")}catch{}const {data:{session},error}=await supabaseClient.auth.getSession();if(error)throw error;if(!session?.user){location.replace("login.html");return}const user=session.user;const {data:presence}=await supabaseClient.rpc("acl_touch_basic_presence");if(presence?.allowed===false){try{await supabaseClient.auth.signOut()}catch{}location.replace("login.html?held=1");return}const adminLink=$("basicAdminMembers");if(adminLink)adminLink.hidden=String(user.email||"").toLowerCase()!=="drmohamedalaa90@gmail.com";const [pr,mr,ar]=await Promise.all([supabaseClient.from("profiles").select("*").eq("id",user.id).maybeSingle(),supabaseClient.from("modules").select("id,title,slug,display_order,status,launch_path,question_count,edition,basic_admin_released,opens_at,closes_at").eq("edition","basic").eq("status","published").order("display_order",{ascending:true}).order("title",{ascending:true}),loadModuleAttemptHistory(user.id)]);if(mr.error)throw mr.error;if(ar.error)throw ar.error;const p=pr.error?null:pr.data,name=chooseName(p,user),photo=choosePhoto(p,user);$("basicUserName").textContent=name;const av=$("basicAvatar");if(photo){
@@ -714,3 +716,20 @@ if($("basicLaunchCountdown")){
  if(!basicLaunchRemaining().done)launchInterval=setInterval(updateLaunch,1000);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)updateLaunch();});
 }
+
+let basicModuleLaunchInterval=null;
+function updateBasicModuleCountdowns(){
+ const clocks=[...document.querySelectorAll("[data-module-launch-clock]")];
+ if(!clocks.length){if(basicModuleLaunchInterval){clearInterval(basicModuleLaunchInterval);basicModuleLaunchInterval=null;}return;}
+ const remaining=basicLaunchRemaining();
+ if(remaining.done){
+  if(basicModuleLaunchInterval){clearInterval(basicModuleLaunchInterval);basicModuleLaunchInterval=null;}
+  clocks.forEach(clock=>clock.innerHTML="<small>Checking availability…</small>");
+  void boot().catch(error=>{console.error("Launch availability:",error);clocks.forEach(clock=>clock.innerHTML="<small>Refresh to check availability</small>");});
+  return;
+ }
+ const markup=[["days","Days"],["hours","Hrs"],["minutes","Min"],["seconds","Sec"]].map(([key,label])=>`<span><strong>${String(remaining[key]).padStart(2,"0")}</strong><em>${label}</em></span>`).join("");
+ clocks.forEach(clock=>{clock.querySelector("[data-module-launch-units]").innerHTML=markup;});
+ if(!basicModuleLaunchInterval)basicModuleLaunchInterval=setInterval(updateBasicModuleCountdowns,1000);
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)updateBasicModuleCountdowns();});
