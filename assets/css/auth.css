@@ -989,3 +989,9 @@ form[hidden]{
   .auth-founder-mark{width:38px;height:38px;flex-basis:38px}
   .auth-founder-role{font-size:.57rem!important}
 }
+
+
+/* Clear, immediate registration feedback. */
+#whatsapp::placeholder{color:#9aabb7;opacity:.38}
+.reg-feedback.is-error{color:#c6283d!important;font-weight:800}
+.field input.is-invalid{border-color:#cf3349!important;background:#fff8f9!important;box-shadow:0 0 0 3px rgba(207,51,73,.10)!important}
