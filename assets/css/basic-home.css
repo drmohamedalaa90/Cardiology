@@ -290,3 +290,11 @@
 .basic-module-manager .module-hold-action{background:#fff3ed;color:#a44d2a;border-color:#ebc2b1}
 @media(max-width:1000px) and (min-width:761px){.basic-module-edit-row{grid-template-columns:24px minmax(160px,1fr) 88px auto auto}.basic-module-edit-row [data-move="-1"]{grid-column:4}.basic-module-edit-row [data-delete]{grid-column:2}}
 @media(max-width:760px){.basic-module-release-state{grid-column:2;grid-row:auto}.basic-module-edit-row [data-release]{grid-column:3/5}.basic-module-edit-row [data-delete]{grid-column:2}}
+
+.basic-module-launch-clock{min-width:190px;padding:10px 12px;border:1px solid #942c3d;border-radius:12px;background:linear-gradient(110deg,#650f22,#971e32);color:#fff;text-align:center}
+.basic-module-launch-clock>small{display:block;margin-bottom:7px;font-size:9px;font-weight:650;letter-spacing:.05em;color:#ffd4cb}
+.basic-module-launch-clock [data-module-launch-units]{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.basic-module-launch-clock [data-module-launch-units]>span{display:block;min-width:0;padding:5px 3px;border:1px solid #ffffff21;border-radius:6px;background:#ffffff0c}
+.basic-module-launch-clock strong{display:block;font-size:18px;font-weight:750;line-height:1.1;font-variant-numeric:tabular-nums}
+.basic-module-launch-clock em{display:block;margin-top:4px;color:#ffdcd6;font-size:8px;font-style:normal;text-transform:uppercase}
+@media(max-width:380px){.basic-module-card .basic-module-footer{flex-wrap:wrap;gap:12px}.basic-module-launch-clock{min-width:0;flex:1 1 100%}}
