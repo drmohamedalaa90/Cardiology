@@ -59,7 +59,7 @@ begin
  if p_action like 'admin_%' and not is_admin then raise exception 'Admin access required'; end if;
  if p_action='list' then
   select coalesce(jsonb_agg(jsonb_build_object('id',x.id,'title',x.title,'question_count',x.question_count,'question_seconds',x.question_seconds,'opens_at',x.opens_at,'closes_at',x.closes_at,'status',x.status,'attempt_id',x.attempt_id,'attempt_status',x.attempt_status) order by x.opens_at),'[]') into result from (
-   select c.*,a.id attempt_id,a.status attempt_status from private.acl_official_competitions c left join private.acl_official_attempts a on a.competition_id=c.id and a.user_id=me where is_admin or c.status in('published','closed')
+   select comp.*,att.id attempt_id,att.status attempt_status from private.acl_official_competitions comp left join private.acl_official_attempts att on att.competition_id=comp.id and att.user_id=me where is_admin or comp.status in('published','closed')
   )x;
   return jsonb_build_object('admin',is_admin,'competitions',result,'server_now',clock_timestamp());
  end if;
@@ -112,8 +112,8 @@ begin
   update private.acl_official_attempts set status='completed',current_index=cardinality(question_ids),finished_at=least(c.closes_at,deadline+make_interval(secs=>((cardinality(question_ids)-current_index-1)*c.question_seconds)))
   where competition_id=cid and status='active' and (c.status='closed' or clock_timestamp()>=least(c.closes_at,deadline+make_interval(secs=>((cardinality(question_ids)-current_index-1)*c.question_seconds))));
   select coalesce(jsonb_agg(to_jsonb(x) order by x.score desc,x.duration_seconds),'[]') into result from (
-   select coalesce(p.display_name,p.full_name,p.username,'Member') name,a.status,a.warning_count,a.penalty,a.current_index answered_count,(select count(*) from jsonb_array_elements(a.answers) x where (x->>'correct')::boolean)-a.penalty score,extract(epoch from coalesce(a.finished_at,now())-a.started_at)::int duration_seconds
-   from private.acl_official_attempts a left join public.profiles p on p.id=a.user_id where a.competition_id=cid
+   select coalesce(p.display_name,p.full_name,p.username,'Member') name,att.status,att.warning_count,att.penalty,att.current_index answered_count,(select count(*) from jsonb_array_elements(att.answers) x where (x->>'correct')::boolean)-att.penalty score,extract(epoch from coalesce(att.finished_at,now())-att.started_at)::int duration_seconds
+   from private.acl_official_attempts att left join public.profiles p on p.id=att.user_id where att.competition_id=cid
   )x;return result;
  end if;
  select * into a from private.acl_official_attempts where competition_id=cid and user_id=me for update;
