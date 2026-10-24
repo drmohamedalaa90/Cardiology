@@ -20,3 +20,5 @@
 @keyframes registrationEnter{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:480px){.reg-stepper button{font-size:9px;gap:5px}.reg-stepper b{width:25px;height:25px}.reg-phone{grid-template-columns:105px minmax(0,1fr)}.reg-navigation .primary-btn{min-width:140px}}
 @media(prefers-reduced-motion:reduce){#registerForm .reg-panel{animation:none}}
+
+#registerForm .reg-stepper button{font-size:12px}#registerForm .reg-stepper{gap:12px}#registerForm .reg-stepper span{max-width:120px}@media(max-width:480px){#registerForm .reg-stepper button{font-size:11px}}

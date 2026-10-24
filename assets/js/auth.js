@@ -287,6 +287,7 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
     if (!data.session) {
       setMessage("registerSuccess", "Account created. Open the confirmation email, confirm your address, then return to sign in.");
       event.target.reset();updateRegistrationYear();showRegistrationStep(0);
+      if(['undergraduate','intern','gp','internal_medicine'].includes(professionalRole)){try{sessionStorage.setItem('aclWelcomeName',fullName);}catch{}location.href='basic-welcome.html?pending=1';}
     } else {
       openAclHome();
     }
@@ -300,8 +301,8 @@ function showRegistrationStep(step){
  registrationStep=step;
  document.querySelectorAll('[data-reg-panel]').forEach(el=>el.hidden=Number(el.dataset.regPanel)!==step);
  document.querySelectorAll('[data-reg-step]').forEach(el=>{const n=Number(el.dataset.regStep);el.classList.toggle('is-current',n===step);el.classList.toggle('is-done',n<step);el.setAttribute('aria-current',n===step?'step':'false');});
- byId('regBack').hidden=step===0;byId('regNext').hidden=step===2;byId('regSubmit').hidden=step!==2;
- byId('regStepCaption').textContent=['Let’s start with your details.','Where are you in your medical journey?','Choose a password to protect your account.'][step];
+ byId('regBack').hidden=step===0;byId('regNext').hidden=step===1;byId('regSubmit').hidden=step!==1;
+ byId('regStepCaption').textContent=['Your contact details and a password to secure your account.','Tell us where you are in your medical journey.'][step];
 }
 function updateRegistrationYear(){
  const role=byId('professionalRole').value,year=byId('academicYear'),count=role==='undergraduate'?5:role==='intern'?2:0;
@@ -317,10 +318,10 @@ function validateRegistrationStep(step){
  if(!number){showRegistrationStep(0);byId('whatsapp').setCustomValidity('Enter a valid WhatsApp number for the selected country code.');byId('whatsapp').reportValidity();return false;}
  if(byId('name').value.trim().length<2){byId('name').setCustomValidity('Enter your full name.');byId('name').reportValidity();return false;}
  }
- if(step===2&&byId('registerPassword').value!==byId('confirmPassword').value){showRegistrationStep(2);byId('confirmPassword').setCustomValidity('Passwords do not match.');byId('confirmPassword').reportValidity();return false;}
+ if(step===0&&byId('registerPassword').value!==byId('confirmPassword').value){showRegistrationStep(0);byId('confirmPassword').setCustomValidity('Passwords do not match.');byId('confirmPassword').reportValidity();return false;}
  return true;
 }
-function validateRegistration(){for(let i=0;i<3;i++)if(!validateRegistrationStep(i))return false;return true;}
+function validateRegistration(){for(let i=0;i<2;i++)if(!validateRegistrationStep(i))return false;return true;}
 byId('regNext')?.addEventListener('click',()=>{if(validateRegistrationStep(registrationStep)){showRegistrationStep(registrationStep+1);document.querySelector('[data-reg-panel="'+registrationStep+'"] input,[data-reg-panel="'+registrationStep+'"] select')?.focus();}});
 byId('regBack')?.addEventListener('click',()=>showRegistrationStep(Math.max(0,registrationStep-1)));
 document.querySelectorAll('[data-reg-step]').forEach(b=>b.addEventListener('click',()=>{const target=Number(b.dataset.regStep);if(target<=registrationStep){showRegistrationStep(target);return;}for(let i=0;i<target;i++)if(!validateRegistrationStep(i))return;showRegistrationStep(target);}));
