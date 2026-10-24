@@ -210,23 +210,11 @@ function render() {
   $("bpStarred").textContent =
     stars.length;
 
-  const startedModules =
-    modules.filter(module =>
-      attempts.some(
-        attempt =>
-          String(attempt.module_id) ===
-          String(module.id)
-      ) ||
-      stars.some(
-        star =>
-          String(star.module_id) ===
-          String(module.id)
-      )
-    );
+  const startedModules = modules;
 
   $("basicModuleProgress").innerHTML =
     startedModules.length
-      ? startedModules.map(module => {
+      ? startedModules.map((module, stopIndex) => {
           const rows =
             attempts.filter(
               attempt =>
@@ -281,7 +269,7 @@ function render() {
               : "Not started";
 
           return `
-            <article class="basic-progress-row">
+            <article class="basic-progress-row journey-stop ${rows.length?completedRows.length?'journey-done':'journey-current':'journey-ahead'}"><div class="journey-marker" aria-label="Stop ${stopIndex+1}"><span>${completedRows.length?'✓':String(stopIndex+1).padStart(2,'0')}</span></div><span class="journey-stop-label">STOP ${String(stopIndex+1).padStart(2,'0')} · ${rows.length?completedRows.length?'QUIZZES COMPLETED':'IN PROGRESS':'AHEAD OF YOU'}</span>
               <div class="basic-progress-module">
                 <strong>${esc(module.title)}</strong>
                 <small>${esc(statusText)}</small>
@@ -291,7 +279,7 @@ function render() {
               </div>
 
               <div class="basic-progress-metric">
-                <span>Best</span>
+                <span>Best quiz</span>
                 <strong>${best === null ? "—" : best + "%"}</strong>
               </div>
 
@@ -322,7 +310,7 @@ function render() {
                   Review starred
                 </a>
               </div>
-              <details open class="basic-quiz-history" style="grid-column:1/-1;width:100%;margin-top:12px"><summary style="cursor:pointer;font-weight:700">Quiz history · ${completedRows.length} completed</summary><div style="display:grid;gap:8px;margin-top:12px">${completedRows.length?completedRows.map((row,i)=>{
+              <a class="journey-module-link" href="basic-module.html?edition=basic&module=${encodeURIComponent(module.id)}">${rows.length?'Continue learning':'View module'} →</a><details class="basic-quiz-history" style="grid-column:1/-1;width:100%;margin-top:12px"><summary style="cursor:pointer;font-weight:700">Quiz history · ${completedRows.length} completed</summary><div style="display:grid;gap:8px;margin-top:12px">${completedRows.length?completedRows.map((row,i)=>{
                 const meta=row.lifelines?._aclMeta||{};
                 const seconds=row.lifelines?.basicTimingVersion===1?(meta.activeTimeSeconds??meta.durationSeconds):null;
                 const date=row.completed_at||row.updated_at;

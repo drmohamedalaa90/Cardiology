@@ -8,16 +8,16 @@
   <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
   <link rel="stylesheet" href="assets/css/basic-pages.css?v=6">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="assets/css/basic-navigation.css?v=1"></head>
+<link rel="stylesheet" href="assets/css/basic-navigation.css?v=1"><link rel="stylesheet" href="assets/css/basic-progress-journey.css?v=1"></head>
 <body><script src="assets/js/basic-navigation.js?v=1"></script>
-  <main class="basic-page">
+  <main class="basic-page progress-journey">
     <section class="basic-page-hero">
       <div>
-        <span class="basic-page-kicker">YOUR LEARNING HISTORY</span>
-        <h1>Progress</h1>
-        <p>Track every Basic module, review mistakes and revisit starred questions.</p>
+        <span class="basic-page-kicker">YOUR LEARNING JOURNEY</span>
+        <h1>Every step counts.</h1>
+        
       </div>
-      <a class="basic-secondary-btn" href="basic-home.html?edition=basic">Modules</a>
+      <a class="basic-secondary-btn" href="basic-modules.html?edition=basic">Explore modules</a>
     </section>
 
     <section class="basic-summary-grid basic-summary-grid-five">
@@ -28,7 +28,7 @@
       <article class="basic-summary-tile basic-starred-summary"><span>Starred questions</span><strong id="bpStarred">0</strong><a href="basic-starred.html?edition=basic">Review all →</a></article>
     </section>
 
-    <section class="basic-module-progress-list" id="basicModuleProgress">
+    <div class="journey-heading"><h2>Your path</h2><span><i></i> In progress <i class="done"></i> Quizzes completed <i class="ahead"></i> Not started</span></div><section class="basic-module-progress-list" id="basicModuleProgress">
       <div class="basic-empty-state">Loading Basic Edition progress…</div>
     </section>
 
@@ -53,7 +53,7 @@
     </section>
   </div>
 
-  <script type="module" src="assets/js/basic-progress.js?v=5"></script>
+  <script type="module" src="assets/js/basic-progress.js?v=6"></script>
   <script type="module" src="assets/js/basic-universal-shell.js?v=20261024-fixed-nav"></script>
 </body>
 </html>
