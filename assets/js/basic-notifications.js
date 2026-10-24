@@ -67,84 +67,23 @@ function render(){
   $("bnUnreadCount").textContent=String(items.filter(x=>x.is_unread).length);
 
   host.innerHTML=rows.length?rows.map(item=>{
-    const href=destination(item);
-    const bodyText=String(item.body||"");
-    const expanded=expandedKeys.has(String(item.key));
-    const needsMore=bodyText.length>145||bodyText.includes("\n");
-
-    return `
-      <article
-        class="basic-notification-card ${item.is_unread?"is-unread":""} ${href?"is-clickable":""}"
-        data-key="${esc(item.key)}"
-        data-href="${esc(href)}"
-        ${href?'role="link" tabindex="0"':''}>
-        <div class="basic-notification-icon ${kindFor(item)}">${iconFor(kindFor(item))}</div>
-        <div class="basic-notification-copy">
-          <div class="basic-notification-title-row">
-            <strong>${esc(item.title||"ACL notification")}</strong>
-            <span>${esc(when(item.event_at))}</span>
-          </div>
-          <p class="">${esc(bodyText)}</p>
-
-        </div>
-        ${item.is_unread?'<span class="basic-unread-dot" aria-label="Unread"></span>':""}
-      </article>
-    `;
-  }).join(""):'<div class="basic-empty-state">No notifications in this category yet.</div>';
-
-  async function openNotificationCard(card){
-    const item=items.find(x=>x.key===card.dataset.key);
-    if(!item)return;
-
-    markLocal(item.key);
-    if(item.is_unread&&!item.local_only){
-      try{
-        const {error}=await supabaseClient.rpc(
-          "acl_mark_notification_read",
-          {p_notification_key:item.key}
-        );
-        if(!error)item.is_unread=false;
-      }catch{}
-    }
-
-    const href=safeHref(card.dataset.href);
-    if(href){
-      if(/^https?:\/\//i.test(href) && !href.startsWith(location.origin)){
-        window.open(href,"_blank","noopener");
-      }else{
-        location.href=href;
-      }
-      return;
-    }
-
-    render();
-  }
-
-  host.querySelectorAll("[data-expand-notification]").forEach(button=>{
-    button.addEventListener("click",event=>{
-      event.stopPropagation();
-      const key=String(button.dataset.expandNotification||"");
-      if(!key)return;
-      if(expandedKeys.has(key))expandedKeys.delete(key);
-      else expandedKeys.add(key);
-      render();
-    });
+    const href=destination(item),expanded=expandedKeys.has(String(item.key));
+    const label=item.kind==='competition'?'Open competition':item.kind==='friend_request'||item.kind==='friend_accept'?'Open friends':item.kind==='challenge'?'Open challenge':'Open page';
+    return `<details class="basic-notification-card bn-expandable ${item.is_unread?'is-unread':''}" data-key="${esc(item.key)}" ${expanded?'open':''}>
+      <summary><div class="basic-notification-icon ${kindFor(item)}">${iconFor(kindFor(item))}</div><div class="basic-notification-copy"><div class="basic-notification-title-row"><strong>${esc(item.title||'ACL notification')}</strong><span>${esc(when(item.event_at))}</span></div></div>${item.is_unread?'<span class="basic-unread-dot" aria-label="Unread"></span>':''}<span class="bn-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="bn-expanded-content"><p>${esc(item.body||'')}</p><a class="bn-destination" href="${esc(href)}">${label} →</a></div>
+    </details>`;
+  }).join(''):'<div class="basic-empty-state">No notifications in this category yet.</div>';
+  for(const card of host.querySelectorAll('details[data-key]'))card.addEventListener('toggle',()=>{
+    const item=items.find(i=>String(i.key)===card.dataset.key);if(!item)return;
+    if(!card.open){expandedKeys.delete(String(item.key));return;}
+    expandedKeys.add(String(item.key));
+    if(!item.is_unread)return;
+    markLocal(item.key);item.is_unread=false;card.classList.remove('is-unread');card.querySelector('.basic-unread-dot')?.remove();
+    $('bnUnreadCount').textContent=String(items.filter(i=>i.is_unread).length);
+    if(!item.local_only)void supabaseClient.rpc('acl_mark_notification_read',{p_notification_key:item.key});
   });
 
-  host.querySelectorAll(".basic-notification-card").forEach(card=>{
-    card.addEventListener("click",event=>{
-      if(event.target.closest("button,a,input,select,textarea,label"))return;
-      void openNotificationCard(card);
-    });
-
-    card.addEventListener("keydown",event=>{
-      if(!card.dataset.href)return;
-      if(event.key==="Enter"||event.key===" "){
-        event.preventDefault();
-        void openNotificationCard(card);
-      }
-    });
-  });
 }
 
 async function load(){
