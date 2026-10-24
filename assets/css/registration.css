@@ -1,0 +1,22 @@
+
+#registerForm .reg-stepper{display:flex;align-items:center;gap:9px;margin:22px 0 28px}
+.reg-stepper button{display:flex;align-items:center;gap:7px;border:0;padding:0;background:none;color:#94a5b3;cursor:pointer;font:600 11px system-ui;text-align:left}
+.reg-stepper b{display:grid;place-items:center;width:29px;height:29px;flex-shrink:0;border-radius:50%;border:1px solid #dce5ec;background:#f5f8fb;font-size:12px}
+.reg-stepper i{flex:1;height:1px;background:#dce6ed;min-width:8px}
+.reg-stepper .is-current{color:#0e6687}.reg-stepper .is-current b{color:#fff;background:#0e6687;border-color:#0e6687;box-shadow:0 0 0 4px #0e66870e}
+.reg-stepper .is-done{color:#218665}.reg-stepper .is-done b{background:#e6f5ee;color:#218665;border-color:#c6e6d8}
+#registerForm .reg-panel{animation:registrationEnter .2s ease-out}
+#registerForm [hidden]{display:none!important}
+#registerForm .field input,#registerForm .field select{box-sizing:border-box;min-height:48px;width:100%;padding:12px 14px;border:1px solid #d4e2eb;border-radius:12px;background:#f9fcfe;color:#163d58;font:400 14px system-ui;transition:border-color .15s,box-shadow .15s}
+#registerForm .field input:focus,#registerForm .field select:focus{outline:0;border-color:#468da7;box-shadow:0 0 0 4px #0e66870b;background:white}
+#registerForm .field label{font-size:12px;font-weight:650}
+.reg-phone{display:grid;grid-template-columns:128px minmax(0,1fr);gap:10px}
+#registerForm .reg-sub-label{display:block;margin-bottom:6px;font-size:10px;font-weight:500;color:#8295a4}
+.reg-phone input{direction:ltr}
+#registerForm .reg-feedback{color:#218665;min-height:0}
+.reg-navigation{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:26px}
+.reg-navigation .primary-btn{margin-left:auto;min-width:165px;border-radius:12px;min-height:46px}
+.reg-back{border:0;background:none;color:#6d8798;font:600 13px system-ui;padding:12px 0;cursor:pointer}
+@keyframes registrationEnter{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:480px){.reg-stepper button{font-size:9px;gap:5px}.reg-stepper b{width:25px;height:25px}.reg-phone{grid-template-columns:105px minmax(0,1fr)}.reg-navigation .primary-btn{min-width:140px}}
+@media(prefers-reduced-motion:reduce){#registerForm .reg-panel{animation:none}}
