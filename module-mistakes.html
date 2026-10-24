@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#061c3d">
+  <title>My Mistakes | ACL</title>
+  <link rel="stylesheet" href="assets/css/main.css?v=5.0.1">
+  <link rel="stylesheet" href="assets/css/acl-command-center.css?v=20260822b">
+  <link rel="stylesheet" href="assets/css/acl-shared-shell.css?v=2.0.0">
+  <link rel="stylesheet" href="assets/css/module-mistakes-v1.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="canonical" href="https://drmohamedalaa90.github.io/Cardiology/module-mistakes.html">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Alexandria Cardiology League">
+  <meta property="og:title" content="My Mistakes | ACL | Cardiology League">
+  <meta property="og:description" content="Learn cardiology with Alexandria Cardiology League through structured modules, flashcards, interactive quizzes and challenges.">
+  <meta property="og:url" content="https://drmohamedalaa90.github.io/Cardiology/module-mistakes.html">
+  <meta property="og:image" content="https://drmohamedalaa90.github.io/Cardiology/assets/images/acl-share-preview-20261024.png">
+  <meta property="og:image:url" content="https://drmohamedalaa90.github.io/Cardiology/assets/images/acl-share-preview-20261024.png">
+  <meta property="og:image:secure_url" content="https://drmohamedalaa90.github.io/Cardiology/assets/images/acl-share-preview-20261024.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Alexandria Cardiology League — Learn. Practise. Challenge.">
+  <meta itemprop="image" content="https://drmohamedalaa90.github.io/Cardiology/assets/images/acl-share-preview-20261024.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="My Mistakes | ACL | Cardiology League">
+  <meta name="twitter:description" content="Learn cardiology with Alexandria Cardiology League through structured modules, flashcards, interactive quizzes and challenges.">
+  <meta name="twitter:image" content="https://drmohamedalaa90.github.io/Cardiology/assets/images/acl-share-preview-20261024.png">
+  <meta name="twitter:image:alt" content="Alexandria Cardiology League — Learn. Practise. Challenge.">
+</head>
+<body>
+  <main class="container module-mistakes-page">
+    <section class="card module-mistakes-hero">
+      <div>
+        <span class="module-mistakes-kicker">TARGETED REVIEW</span>
+        <h1 id="mistakesTitle">My Mistakes</h1>
+        <p id="mistakesSubtitle" class="muted">Review wrong answers from this module.</p>
+      </div>
+      <a id="mistakesBackLink" class="secondary-btn" href="modules.html?edition=expert">← Module</a>
+    </section>
+
+    <section class="module-mistakes-toolbar card">
+      <div>
+        <strong id="mistakesCount">Loading…</strong>
+        <span class="muted" id="mistakesPriority"></span>
+      </div>
+      <label>
+        <span>Filter</span>
+        <select id="mistakesFilter">
+          <option value="all">All mistakes</option>
+          <option value="high-confidence">Wrong + high confidence</option>
+          <option value="repeated">Repeated mistakes</option>
+        </select>
+      </label>
+    </section>
+
+    <section id="mistakesGrid" class="module-mistakes-grid">
+      <div class="card muted">Loading mistakes…</div>
+    </section>
+  </main>
+
+  <script type="module" src="assets/js/acl-shared-shell.js?v=20260822-bootstrapfix"></script>
+  <script type="module" src="assets/js/module-mistakes-v1.js?v=1"></script>
+</body>
+</html>
