@@ -298,3 +298,13 @@
 .basic-module-launch-clock strong{display:block;font-size:18px;font-weight:750;line-height:1.1;font-variant-numeric:tabular-nums}
 .basic-module-launch-clock em{display:block;margin-top:4px;color:#ffdcd6;font-size:8px;font-style:normal;text-transform:uppercase}
 @media(max-width:380px){.basic-module-card .basic-module-footer{flex-wrap:wrap;gap:12px}.basic-module-launch-clock{min-width:0;flex:1 1 100%}}
+
+/* Compact resource availability uses the existing subtitle line. */
+.basic-module-resource-line{display:flex;align-items:center;gap:9px;flex-wrap:nowrap;min-height:17px;font-size:10px;line-height:17px;white-space:nowrap;color:#7b91a0}
+.basic-resource-count{margin-right:auto;color:#6b8193;font-size:11px}
+.basic-resource-status{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:650}
+.basic-resource-status>span{font-size:14px;line-height:1}
+.basic-resource-status.is-ready{color:#187e63}
+.basic-resource-status.is-pending{color:#8b9aa6}
+.basic-locked-copy .basic-module-resource-line{justify-content:flex-start;margin-top:4px}
+@media(max-width:380px){.basic-module-resource-line{gap:6px}.basic-resource-count,.basic-resource-status{font-size:9px}}
