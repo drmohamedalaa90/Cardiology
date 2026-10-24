@@ -33,6 +33,11 @@ if (!session?.user) {
       .eq("id", user.id)
       .maybeSingle();
 
+  const stage=String(user.user_metadata?.professional_role||'');
+  const background=String(profile?.academic_year||'').toLowerCase();
+  const basicRecommended=['undergraduate','intern','gp','internal_medicine'].includes(stage)||/^(undergraduate|intern|gp|internal medicine)(\\b| ·)/.test(background);
+  let welcomed=false;try{welcomed=sessionStorage.getItem('aclBasicWelcomed:'+user.id)==='1';}catch{}
+  if(basicRecommended&&!hasExpertAccess(user)&&!welcomed){location.replace('basic-welcome.html');}
   const name =
     profile?.display_name ||
     profile?.full_name ||
