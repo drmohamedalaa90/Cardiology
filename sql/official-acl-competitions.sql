@@ -52,7 +52,7 @@ end $$;
 revoke all on function private.acl_official_state(uuid) from public,anon,authenticated;
 
 create function private.acl_official_api(p_action text,p_args jsonb) returns jsonb language plpgsql security definer set search_path=public,private,pg_temp as $$
-declare me uuid:=auth.uid(); is_admin boolean; c private.acl_official_competitions%rowtype; a private.acl_official_attempts%rowtype; q private.acl_official_questions%rowtype; cid uuid; qid uuid; selected int; ids uuid[]; result jsonb; inserted int; pos int; new_opens timestamptz; new_closes timestamptz;
+declare me uuid:=auth.uid(); is_admin boolean; c private.acl_official_competitions%rowtype; a private.acl_official_attempts%rowtype; q private.acl_official_questions%rowtype; cid uuid; qid uuid; selected int; ids uuid[]; result jsonb; inserted int; pos int; new_opens timestamptz; new_closes timestamptz; captured timestamptz;
 begin
  if me is null or not public.acl_is_active_user() then raise exception 'Sign in with an active account'; end if;
  is_admin=public.acl_is_basic_question_admin();
@@ -131,13 +131,14 @@ begin
  if p_action='event' then
   perform private.acl_official_state(a.id);
   select * into a from private.acl_official_attempts where id=a.id;
-  if a.status<>'active' then return private.acl_official_state(a.id);end if;
-  insert into private.acl_official_events(attempt_id,event_id) values(a.id,(p_args->>'event_id')::uuid) on conflict do nothing;
+  captured=coalesce((p_args->>'captured_at')::timestamptz,clock_timestamp());
+  if a.status='omitted' or captured<a.started_at-interval '5 seconds' or captured>clock_timestamp()+interval '5 seconds' or (a.finished_at is not null and captured>a.finished_at) then return private.acl_official_state(a.id);end if;
+  insert into private.acl_official_events(attempt_id,event_id,created_at) values(a.id,(p_args->>'event_id')::uuid,captured) on conflict do nothing;
   get diagnostics inserted=row_count;
   if inserted=1 then
    a.warning_count=a.warning_count+1;
    a.penalty=a.penalty+case when a.warning_count=2 then 1 when a.warning_count>=3 then 3 else 0 end;
-   if a.warning_count>=3 then a.status='omitted';a.finished_at=clock_timestamp();end if;
+   if a.warning_count>=3 then a.status='omitted';a.finished_at=coalesce(a.finished_at,least(captured,clock_timestamp()));end if;
    update private.acl_official_attempts set warning_count=a.warning_count,penalty=a.penalty,status=a.status,finished_at=a.finished_at where id=a.id;
   end if;
   return private.acl_official_state(a.id);
