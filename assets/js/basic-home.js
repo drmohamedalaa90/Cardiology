@@ -1,4 +1,7 @@
 import { supabaseClient } from "./supabase-client.js";
+const ACL_DESTINATIONS=[['basic-home.html?edition=basic','Home'],['basic-modules.html?edition=basic','Modules'],['basic-progress.html?edition=basic','My progress'],['basic-profile.html?edition=basic','Friends & profile'],['basic-challenges.html?edition=basic','Challenges'],['basic-challenges.html?edition=basic#officialCompetitionsTitle','Official ACL competitions'],['basic-starred.html?edition=basic','Starred questions'],['basic-notifications.html?edition=basic','Notifications']];
+function aclDestinationLabel(value){try{const u=new URL(value,location.href);return u.searchParams.get('acl_link_label')||ACL_DESTINATIONS.find(([p])=>new URL(p,location.href).pathname===u.pathname)?.[1]||(u.pathname.endsWith('basic-official-competition.html')?'competition':u.pathname.endsWith('basic-module.html')?'module':'announcement');}catch{return 'announcement';}}
+
 const PASS_MARK=70;const $=id=>document.getElementById(id);
 function esc(v=""){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function safeArray(v){if(Array.isArray(v))return v;if(typeof v==="string"&&v.trim()){try{const p=JSON.parse(v);return Array.isArray(p)?p:[]}catch{}}return[]}
@@ -271,7 +274,7 @@ function renderBasicNews(){
         </div>
         <h3>${esc(item.title||"ACL update")}</h3>
         <p>${body}</p>
-        ${href?`<a href="${esc(href)}" target="_blank" rel="noopener">Learn more →</a>`:""}
+        ${href?`<a href="${esc(href)}" target="_blank" rel="noopener">Go to ${esc(aclDestinationLabel(item.link_url))} →</a>`:""}
       </div>
     </article>
   `;
@@ -350,6 +353,7 @@ function openBasicNewsEditor(item=null){
   document.getElementById("basicNewsStyle").value=basicNewsSafeStyle(item.card_style);
   document.getElementById("basicNewsOrder").value=String(Number.isFinite(Number(item.display_order))?Number(item.display_order):100);
   document.getElementById("basicNewsLink").value=item.link_url||"";
+{const u=item.link_url?new URL(item.link_url,location.href):null;if(u)u.searchParams.delete('acl_link_label');const path=u?u.pathname.split('/').pop()+u.search+u.hash:'';const s=document.getElementById('basicNewsDestination');if(s){s.value=[...s.options].some(o=>o.value===path)?path:'custom';document.getElementById('basicNewsLinkLabel').value=item.link_url?aclDestinationLabel(item.link_url):'';}}
   document.getElementById("basicNewsPinned").checked=Boolean(item.is_pinned);
   document.getElementById("basicNewsActive").checked=item.is_active!==false;
   document.getElementById("basicNewsEditorTitle").textContent="Edit update";
@@ -395,8 +399,10 @@ async function loadBasicNews(){
     return ["basic","all","both",""].includes(edition);
   });
 
-  renderBasicNews();
-  startBasicNewsAutoplay();
+  await aclLoadDestinationOptions();
+  renderBasicNews();startBasicNewsAutoplay();
+  const editId=new URLSearchParams(location.search).get('edit_update');
+  if(basicNewsAdmin&&editId){const edit=basicNewsItems.find(i=>String(i.id)===editId);if(edit)openBasicNewsEditor(edit);}
 }
 
 document.getElementById("basicNewsAdminToggle")?.addEventListener("click",()=>{
@@ -457,7 +463,7 @@ document.getElementById("basicNewsForm")?.addEventListener("submit",async event=
       body:document.getElementById("basicNewsBody").value.trim(),
       kind:document.getElementById("basicNewsKind").value,
       edition:"basic",
-      link_url:document.getElementById("basicNewsLink").value.trim()||null,
+      link_url:aclSaveNewsDestination(),
       is_pinned:document.getElementById("basicNewsPinned").checked,
       is_active:document.getElementById("basicNewsActive").checked,
       display_order:Math.max(1,Number(document.getElementById("basicNewsOrder").value||100)),
@@ -734,3 +740,18 @@ function updateBasicModuleCountdowns(){
  if(!basicModuleLaunchInterval)basicModuleLaunchInterval=setInterval(updateBasicModuleCountdowns,1000);
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)updateBasicModuleCountdowns();});
+
+async function aclLoadDestinationOptions(){
+ const s=document.getElementById('basicNewsDestination');if(!s)return;let rows=[...ACL_DESTINATIONS];
+ try{const {data}=await supabaseClient.from('modules').select('id,title').eq('edition','basic').order('display_order');rows.push(...(data||[]).map(m=>['basic-module.html?edition=basic&module='+encodeURIComponent(m.id),m.title]));const {data:o}=await supabaseClient.rpc('acl_official_api',{p_action:'list',p_args:{}});rows.push(...(o?.competitions||[]).map(c=>['basic-official-competition.html?edition=basic&id='+encodeURIComponent(c.id),c.title]));}catch{}
+ s.innerHTML='<option value="">No destination button</option>'+rows.map(([u,n])=>`<option value="${esc(u)}">${esc(n)}</option>`).join('')+'<option value="custom">Custom link</option>';
+ s.onchange=()=>{if(s.value!=='custom'){document.getElementById('basicNewsLink').value=s.value;document.getElementById('basicNewsLinkLabel').value=s.selectedOptions[0]?.textContent||'';}};
+}
+function aclSaveNewsDestination(){
+ const choice=document.getElementById('basicNewsDestination').value;
+ const raw=(choice==='custom'?document.getElementById('basicNewsLink').value:choice).trim();if(!raw)return null;
+ const u=new URL(raw,location.href);if(!['https:','http:'].includes(u.protocol))throw new Error('Choose a valid destination.');
+ const label=document.getElementById('basicNewsLinkLabel').value.trim().replace(/^Go to\s+/i,'');
+ if(label)u.searchParams.set('acl_link_label',label);else u.searchParams.delete('acl_link_label');
+ return u.origin===location.origin?u.pathname+u.search+u.hash:u.href;
+}

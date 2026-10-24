@@ -14,6 +14,10 @@ const safeHref=(value="")=>{
     return "";
   }
 };
+const ACL_DESTINATIONS=[['basic-home.html?edition=basic','Home'],['basic-modules.html?edition=basic','Modules'],['basic-progress.html?edition=basic','My progress'],['basic-profile.html?edition=basic','Friends & profile'],['basic-challenges.html?edition=basic','Challenges'],['basic-challenges.html?edition=basic#officialCompetitionsTitle','Official ACL competitions'],['basic-starred.html?edition=basic','Starred questions'],['basic-notifications.html?edition=basic','Notifications']];
+function aclDestinationLabel(value){try{const u=new URL(value,location.href);return u.searchParams.get('acl_link_label')||ACL_DESTINATIONS.find(([p])=>new URL(p,location.href).pathname===u.pathname)?.[1]||(u.pathname.endsWith('basic-official-competition.html')?'competition':u.pathname.endsWith('basic-module.html')?'module':'announcement');}catch{return 'announcement';}}
+
+let notificationAdmin=false;
 let items=[];
 let filter="all";
 const expandedKeys=new Set();
@@ -31,7 +35,7 @@ const paths={
 const kindFor=item=>paths[item.kind]?item.kind:'announcement';
 const iconFor=kind=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[kind]||paths.announcement}"/></svg>`;
 const detailUrl=item=>'basic-notifications.html?edition=basic&notification='+encodeURIComponent(item.key);
-const destination=item=>safeHref(item.link_url)||(item.kind==='friend_request'||item.kind==='friend_accept'?'basic-profile.html?edition=basic':item.kind==='challenge'?'basic-challenges.html?edition=basic':detailUrl(item));
+const destination=item=>safeHref(item.link_url)||(item.kind==='friend_request'||item.kind==='friend_accept'?'basic-profile.html?edition=basic':item.kind==='challenge'?'basic-challenges.html?edition=basic':'');
 let localReadKey='acl-notification-reads-v1';
 function localReads(){try{return JSON.parse(localStorage.getItem(localReadKey)||'[]');}catch{return [];}}
 function markLocal(key){try{localStorage.setItem(localReadKey,JSON.stringify([...new Set([...localReads(),key])].slice(-1000)));}catch{}}
@@ -68,10 +72,10 @@ function render(){
 
   host.innerHTML=rows.length?rows.map(item=>{
     const href=destination(item),expanded=expandedKeys.has(String(item.key));
-    const label=item.kind==='competition'?'Open competition':item.kind==='friend_request'||item.kind==='friend_accept'?'Open friends':item.kind==='challenge'?'Open challenge':'Open page';
+    const label='Go to '+(item.link_url?aclDestinationLabel(item.link_url):item.kind==='competition'?'competitions':item.kind==='friend_request'||item.kind==='friend_accept'?'friends':item.kind==='challenge'?'challenges':'announcement');
     return `<details class="basic-notification-card bn-expandable ${item.is_unread?'is-unread':''}" data-key="${esc(item.key)}" ${expanded?'open':''}>
       <summary><div class="basic-notification-icon ${kindFor(item)}">${iconFor(kindFor(item))}</div><div class="basic-notification-copy"><div class="basic-notification-title-row"><strong>${esc(item.title||'ACL notification')}</strong><span>${esc(when(item.event_at))}</span></div></div>${item.is_unread?'<span class="basic-unread-dot" aria-label="Unread"></span>':''}<span class="bn-chevron" aria-hidden="true">⌄</span></summary>
-      <div class="bn-expanded-content"><p>${esc(item.body||'')}</p><a class="bn-destination" href="${esc(href)}">${label} →</a></div>
+      <div class="bn-expanded-content"><p>${esc(item.body||'')}</p>${href?`<a class="bn-destination" href="${esc(href)}">${esc(label)} →</a>`:''}${notificationAdmin&&String(item.key).startsWith('announcement:')?` <a class="bn-edit-destination" href="basic-home.html?edition=basic&edit_update=${encodeURIComponent(String(item.key).slice(13))}">Edit destination</a>`:''}</div>
     </details>`;
   }).join(''):'<div class="basic-empty-state">No notifications in this category yet.</div>';
   for(const card of host.querySelectorAll('details[data-key]'))card.addEventListener('toggle',()=>{
@@ -98,6 +102,7 @@ async function load(){
  supabaseClient.rpc('acl_basic_challenge_api',{p_action:'history',p_args:{}})
  ]);
  const official=extra[0].status==='fulfilled'?extra[0].value.data:null;
+ notificationAdmin=official?.admin===true;
  for(const c of official?.competitions||[])if(c.status!=='draft')items.push({key:'official:'+c.id,kind:'competition',title:c.title,body:'Official ACL competition · '+new Date(c.opens_at).toLocaleString('en-GB',{timeZone:'Africa/Cairo'})+' (Cairo)',event_at:c.created_at||c.opens_at,link_url:'basic-official-competition.html?edition=basic&id='+encodeURIComponent(c.id),is_unread:true,local_only:true});
  const history=extra[1].status==='fulfilled'?extra[1].value.data:null;
  for(const c of Array.isArray(history)?history:[])if(c.creator_id!==session.user.id)items.push({key:'challenge:'+c.id,kind:'challenge',title:(c.opponent_name||'A friend')+' challenged you',body:c.module_title+' · '+Number(c.play_config?.question_count||0)+' questions',event_at:c.created_at,link_url:'basic-challenges.html?edition=basic#basicChallengeHistory',is_unread:true,local_only:true});
