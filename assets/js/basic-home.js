@@ -726,6 +726,7 @@ document.getElementById("basicRefreshPage")?.addEventListener("click",()=>locati
 /* Mobile swipe navigation for Updates & News */
 let basicNewsSwipeStartX=null;
 let basicNewsSwipeStartY=null;
+let basicNewsScrollLastY=null;
 
 const basicNewsSwipeHost=document.getElementById("basicNewsGrid");
 
@@ -734,8 +735,23 @@ basicNewsSwipeHost?.addEventListener("touchstart",event=>{
   if(!touch)return;
   basicNewsSwipeStartX=touch.clientX;
   basicNewsSwipeStartY=touch.clientY;
+  basicNewsScrollLastY=touch.clientY;
   stopBasicNewsAutoplay();
 },{passive:true});
+
+basicNewsSwipeHost?.addEventListener("touchmove",event=>{
+  const touch=event.touches?.[0];
+  const scroller=event.target.closest?.(".basic-news-card-body");
+  if(!touch||!scroller||basicNewsScrollLastY===null)return;
+  const delta=basicNewsScrollLastY-touch.clientY;
+  basicNewsScrollLastY=touch.clientY;
+  const atTop=scroller.scrollTop<=1;
+  const atBottom=scroller.scrollTop+scroller.clientHeight>=scroller.scrollHeight-1;
+  if((delta>0&&atBottom)||(delta<0&&atTop)){
+    window.scrollBy(0,delta);
+    event.preventDefault();
+  }
+},{passive:false});
 
 basicNewsSwipeHost?.addEventListener("touchend",event=>{
   const touch=event.changedTouches?.[0];
@@ -748,6 +764,7 @@ basicNewsSwipeHost?.addEventListener("touchend",event=>{
   const dy=touch.clientY-basicNewsSwipeStartY;
   basicNewsSwipeStartX=null;
   basicNewsSwipeStartY=null;
+  basicNewsScrollLastY=null;
 
   if(Math.abs(dx)>=45 && Math.abs(dx)>Math.abs(dy)*1.15){
     setBasicNewsIndex(basicNewsIndex+(dx<0?1:-1));
