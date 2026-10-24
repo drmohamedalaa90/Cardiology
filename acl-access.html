@@ -28,7 +28,7 @@
 
 
   <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/auth.css?v=10">
+  <link rel="stylesheet" href="assets/css/auth.css?v=11">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="assets/css/registration.css?v=2">  <link rel="canonical" href="https://drmohamedalaa90.github.io/Cardiology/acl-access.html?build=20261023-clean">
   <meta name="robots" content="index,follow,max-image-preview:large">
@@ -152,7 +152,7 @@
           <div class="reg-panel" data-reg-panel="0">
           <div class="form-grid">
             <div class="field full"><label for="name">Full name</label><input id="name" autocomplete="name" placeholder="Your full name" maxlength="120" required></div>
-            <div class="field full"><label for="username">Username</label><input id="username" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9._]+" placeholder="Choose your username" required><small>3–30 letters, numbers, dots or underscores.</small></div>
+            <div class="field full"><label for="username">Username</label><input id="username" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9._]+" placeholder="Choose your username" required><small id="regUsernameFeedback" class="reg-feedback">3–30 letters, numbers, dots or underscores. No spaces.</small></div>
             <div class="field full"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com" required></div>
             <div class="field full"><label for="whatsapp">WhatsApp number</label><div class="reg-phone"><div><label class="reg-sub-label" for="countryCode">Country code</label><input id="countryCode" type="tel" list="regCountryCodes" autocomplete="tel-country-code" value="+20" pattern="\+[1-9][0-9]{0,3}" required aria-describedby="regPhoneHelp"><datalist id="regCountryCodes"><option value="+20">Egypt</option><option value="+966">Saudi Arabia</option><option value="+971">United Arab Emirates</option><option value="+965">Kuwait</option><option value="+974">Qatar</option><option value="+973">Bahrain</option><option value="+968">Oman</option><option value="+962">Jordan</option><option value="+961">Lebanon</option><option value="+964">Iraq</option><option value="+249">Sudan</option><option value="+218">Libya</option><option value="+212">Morocco</option><option value="+213">Algeria</option><option value="+216">Tunisia</option><option value="+44">United Kingdom</option><option value="+1">USA / Canada</option><option value="+49">Germany</option><option value="+39">Italy</option><option value="+33">France</option><option value="+91">India</option><option value="+92">Pakistan</option></datalist></div><div><label class="reg-sub-label" for="whatsapp">Number</label><input id="whatsapp" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="10 1234 5678" required maxlength="24"></div></div><small id="regPhoneHelp">Choose or type your country code, then enter your number.</small><small id="regPhonePreview" class="reg-feedback" aria-live="polite"></small></div>
           
@@ -207,6 +207,6 @@
     </section>
   </div>
 
-  <script type="module" src="assets/js/auth.js?v=9"></script>
+  <script type="module" src="assets/js/auth.js?v=10"></script>
 </body>
 </html>
