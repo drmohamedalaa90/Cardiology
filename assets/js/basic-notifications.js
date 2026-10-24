@@ -18,6 +18,9 @@ const ACL_DESTINATIONS=[['basic-home.html?edition=basic','Home'],['basic-modules
 function aclDestinationLabel(value){try{const u=new URL(value,location.href);return u.searchParams.get('acl_link_label')||ACL_DESTINATIONS.find(([p])=>new URL(p,location.href).pathname===u.pathname)?.[1]||(u.pathname.endsWith('basic-official-competition.html')?'competition':u.pathname.endsWith('basic-module.html')?'module':'announcement');}catch{return 'announcement';}}
 
 let notificationAdmin=false;
+let notificationControls=[];
+async function manageNotifications(action,args={}){const {data,error}=await supabaseClient.rpc("acl_notification_manage",{p_action:action,p_args:args});if(error)throw error;notificationControls=data.controls||[];return data;}
+function applyNotificationControls(){const hidden=new Set(notificationControls.filter(c=>c.hidden).map(c=>c.key));const cutoff=Math.max(0,...notificationControls.map(c=>Date.parse(c.cutoff)||0));const order=new Map(notificationControls.filter(c=>c.position!=null).map(c=>[c.key,c.position]));items=items.filter(i=>!hidden.has(i.key)&&(Date.parse(i.event_at)||0)>cutoff);items.sort((a,b)=>(order.get(a.key)??2147483647)-(order.get(b.key)??2147483647)||Date.parse(b.event_at)-Date.parse(a.event_at));}
 let items=[];
 let filter="all";
 const expandedKeys=new Set();
@@ -74,10 +77,19 @@ function render(){
     const href=destination(item),expanded=expandedKeys.has(String(item.key));
     const label='Go to '+(item.link_url?aclDestinationLabel(item.link_url):item.kind==='competition'?'competitions':item.kind==='friend_request'||item.kind==='friend_accept'?'friends':item.kind==='challenge'?'challenges':'announcement');
     return `<details class="basic-notification-card bn-expandable ${item.is_unread?'is-unread':''}" data-key="${esc(item.key)}" ${expanded?'open':''}>
-      <summary><div class="basic-notification-icon ${kindFor(item)}">${iconFor(kindFor(item))}</div><div class="basic-notification-copy"><div class="basic-notification-title-row"><strong>${esc(item.title||'ACL notification')}</strong><span>${esc(when(item.event_at))}</span></div></div>${item.is_unread?'<span class="basic-unread-dot" aria-label="Unread"></span>':''}<span class="bn-chevron" aria-hidden="true">⌄</span></summary>
-      <div class="bn-expanded-content"><p>${esc(item.body||'')}</p>${href?`<a class="bn-destination" href="${esc(href)}">${esc(label)} →</a>`:''}${notificationAdmin&&String(item.key).startsWith('announcement:')?` <a class="bn-edit-destination" href="basic-home.html?edition=basic&edit_update=${encodeURIComponent(String(item.key).slice(13))}">Edit destination</a>`:''}</div>
+      <summary><div class="basic-notification-icon ${kindFor(item)}">${iconFor(kindFor(item))}</div><div class="basic-notification-copy"><div class="basic-notification-title-row"><strong>${esc(item.title||'ACL notification')}</strong><span>${esc(when(item.event_at))}</span></div></div>${item.is_unread?'<span class="basic-unread-dot" aria-label="Unread"></span>':''}<button type="button" class="bn-remove" data-dismiss="${esc(item.key)}" aria-label="Remove notification" title="Remove notification">×</button><span class="bn-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="bn-expanded-content"><p>${esc(item.body||'')}</p>${href?`<a class="bn-destination" href="${esc(href)}">${esc(label)} →</a>`:''}${notificationAdmin&&String(item.key).startsWith('announcement:')?` <a class="bn-edit-destination" href="basic-home.html?edition=basic&edit_update=${encodeURIComponent(String(item.key).slice(13))}">Edit destination</a>`:''}${notificationAdmin?'<div class="bn-admin-controls"><button type="button" data-move="-1">↑ Move up</button><button type="button" data-move="1">↓ Move down</button><button type="button" data-global-remove>Remove for everyone</button></div>':''}</div>
     </details>`;
   }).join(''):'<div class="basic-empty-state">No notifications in this category yet.</div>';
+  for(const button of host.querySelectorAll('[data-dismiss],[data-global-remove],[data-move]'))button.addEventListener('click',async event=>{
+ event.preventDefault();event.stopPropagation();const key=button.closest('[data-key]').dataset.key;button.disabled=true;
+ try{
+ if(button.hasAttribute('data-move')){const keys=items.map(i=>i.key),index=keys.indexOf(key),next=index+Number(button.dataset.move);if(next<0||next>=keys.length)return;[keys[index],keys[next]]=[keys[next],keys[index]];await manageNotifications('admin_reorder',{keys});}
+ else{const global=button.hasAttribute('data-global-remove');if(global&&!confirm('Remove this notification for everyone?'))return;await manageNotifications(global?'admin_remove':'dismiss',{key});}
+ applyNotificationControls();render();
+ }catch(e){alert(e.message||'Could not update notifications.');}finally{button.disabled=false;}
+ });
+ $('bnAdminClear').hidden=!notificationAdmin;
   for(const card of host.querySelectorAll('details[data-key]'))card.addEventListener('toggle',()=>{
     const item=items.find(i=>String(i.key)===card.dataset.key);if(!item)return;
     if(!card.open){expandedKeys.delete(String(item.key));return;}
@@ -107,7 +119,7 @@ async function load(){
  const history=extra[1].status==='fulfilled'?extra[1].value.data:null;
  for(const c of Array.isArray(history)?history:[])if(c.creator_id!==session.user.id)items.push({key:'challenge:'+c.id,kind:'challenge',title:(c.opponent_name||'A friend')+' challenged you',body:c.module_title+' · '+Number(c.play_config?.question_count||0)+' questions',event_at:c.created_at,link_url:'basic-challenges.html?edition=basic#basicChallengeHistory',is_unread:true,local_only:true});
  const read=new Set(localReads());items.forEach(i=>{if(i.local_only&&read.has(i.key))i.is_unread=false;});
- items.sort((a,b)=>Date.parse(b.event_at)-Date.parse(a.event_at));
+ const preferences=await manageNotifications('state');notificationAdmin=preferences.admin===true;applyNotificationControls();
  $('bnUnreadCount').textContent=String(items.filter(i=>i.is_unread).length);
  const selected=new URLSearchParams(location.search).get('notification');
  if(selected){const item=items.find(i=>i.key===selected);if(item){markLocal(item.key);$('bnList').innerHTML=`<article class="bn-detail"><a href="basic-notifications.html?edition=basic">← All notifications</a><div class="basic-notification-icon ${kindFor(item)}">${iconFor(kindFor(item))}</div><h2>${esc(item.title)}</h2><p>${esc(item.body)}</p></article>`;return;}}
@@ -135,4 +147,9 @@ $("bnMarkAll")?.addEventListener("click",async()=>{
 load().catch(error=>{
   console.error("BASIC NOTIFICATIONS:",error);
   $("bnList").innerHTML='<div class="basic-empty-state">Could not load notifications.</div>';
+});
+
+for(const [id,action] of [['bnClearAll','clear'],['bnAdminClear','admin_clear']])$(id)?.addEventListener('click',async()=>{
+ if(!confirm(action==='admin_clear'?'Remove all current notifications for everyone?':'Clear all your current notifications?'))return;
+ const button=$(id);button.disabled=true;try{await manageNotifications(action);applyNotificationControls();render();}catch(e){alert(e.message||'Could not clear notifications.');}finally{button.disabled=false;}
 });

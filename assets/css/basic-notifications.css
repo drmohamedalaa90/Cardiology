@@ -10,3 +10,5 @@
 .bn-expanded-content p{white-space:pre-wrap;line-height:1.75;color:#476075;font-size:14px;margin:0 0 16px}
 .bn-destination{display:inline-flex;align-items:center;min-height:40px;padding:9px 15px;background:#072b49;color:#fff!important;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700}
 @media(max-width:600px){.bn-expandable>summary{gap:13px;padding:18px 14px}.bn-expanded-content{padding:0 18px 20px 83px}}
+
+.bn-toolbar{display:flex;gap:8px;flex-wrap:wrap}.bn-remove{display:grid;place-items:center;flex-shrink:0;width:30px;height:30px;border:0;border-radius:50%;background:transparent;color:#7d92a2;font:22px system-ui;cursor:pointer}.bn-remove:hover{background:#e2eaf0;color:#a62a49}.bn-admin-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid #dae4eb}.bn-admin-controls button{padding:7px 10px;border:1px solid #d1dfe8;border-radius:8px;background:#fff;color:#55758a;font:600 11px system-ui;cursor:pointer}.bn-admin-controls button[data-global-remove]{color:#a62a49}
