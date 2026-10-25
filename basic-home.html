@@ -16,7 +16,8 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/basic-home.css?v=20">
+  <link rel="stylesheet" href="assets/css/basic-home.css?v=21">
+  <link rel="stylesheet" href="assets/css/basic-special-courses.css?v=1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 .basic-launch-countdown{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:26px;margin:0 0 24px;padding:28px 30px;border:1px solid #942c3d;border-radius:22px;background:linear-gradient(110deg,#650f22,#971e32);color:#fff;box-shadow:0 10px 30px #650f2224}
@@ -91,9 +92,28 @@
         </div>
         <div class="basic-news-admin-actions">
           <button id="basicHomeTextAdminToggle" class="basic-news-admin-toggle" type="button" hidden>Edit homepage text</button>
+          <div id="basicNewsDisplayControls" class="basic-news-display-controls" hidden>
+            <label class="basic-news-visibility-control" for="basicNewsEnabled">
+              <span>News</span>
+              <input id="basicNewsEnabled" type="checkbox" role="switch" checked>
+              <i aria-hidden="true"></i>
+              <strong id="basicNewsEnabledLabel">On</strong>
+            </label>
+            <label class="basic-news-speed-control" for="basicNewsQuickAutoplay">
+              <span>Change every</span>
+              <select id="basicNewsQuickAutoplay" aria-label="News rotation time">
+                <option value="5">5 sec</option>
+                <option value="7">7 sec</option>
+                <option value="10">10 sec</option>
+              </select>
+            </label>
+            <small id="basicNewsDisplayStatus" aria-live="polite"></small>
+          </div>
           <button id="basicNewsAdminToggle" class="basic-news-admin-toggle" type="button" hidden>Manage news</button>
         </div>
       </div>
+
+      <div id="basicNewsDisabledNotice" class="basic-news-disabled-notice" hidden>News is currently hidden from candidates.</div>
 
       <div class="basic-news-carousel">
         <button id="basicNewsPrev" class="basic-news-arrow prev" type="button" aria-label="Previous update" hidden>‹</button>
@@ -156,9 +176,9 @@
           <label class="basic-news-field">
             <span>Automatic news rotation</span>
             <select id="basicHomeNewsAutoplay">
-              <option value="0">No automatic toggle</option>
-              <option value="3">Every 3 seconds</option>
               <option value="5">Every 5 seconds</option>
+              <option value="7">Every 7 seconds</option>
+              <option value="10">Every 10 seconds</option>
             </select>
           </label>
 
@@ -331,6 +351,16 @@
       </div>
     </section>
 
+    <section class="special-courses-section" id="specialCoursesSection">
+      <div class="special-course-head">
+        <div><span class="special-course-kicker">ACL SPECIAL COURSES</span><h2>Special Course Modules</h2></div>
+        <p>Exclusive course content and assessments</p>
+      </div>
+      <div id="basicSpecialCourses" class="special-course-grid" aria-live="polite">
+        <div class="special-course-empty">Loading special courses…</div>
+      </div>
+    </section>
+
     <section class="basic-section">
       <div class="basic-section-head">
         <div>
@@ -360,8 +390,11 @@
 
   
 
+  <div id="specialPasscodeModal" class="special-passcode-modal" hidden><section class="special-passcode-dialog" role="dialog" aria-modal="true" aria-labelledby="specialPasscodeTitle"><h2 id="specialPasscodeTitle">Special course</h2><p>Enter the course passcode to unlock this module.</p><form id="specialPasscodeForm"><input id="specialPasscodeModule" type="hidden"><input id="specialPasscodeInput" type="password" autocomplete="one-time-code" placeholder="Course passcode" required><div id="specialPasscodeStatus" class="special-passcode-status" aria-live="polite"></div><div class="special-passcode-actions"><button id="specialPasscodeCancel" class="special-passcode-cancel" type="button">Cancel</button><button id="specialPasscodeSubmit" class="special-passcode-submit" type="submit">Unlock course</button></div></form></section></div>
+
   <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>
-  <script type="module" src="assets/js/basic-home.js?v=25"></script>
+  <script type="module" src="assets/js/basic-home.js?v=27"></script>
+  <script type="module" src="assets/js/basic-special-courses.js?v=1"></script>
   <script type="module" src="assets/js/basic-module-manager.js?v=2"></script>
 <script type="module" src="assets/js/official-list.js?v=1"></script></body>
 </html>
