@@ -1,3 +1,11 @@
+const ACL_AUTH_BUILD="20261025-registration-1";
+window.addEventListener("pageshow",event=>{
+  const previous=sessionStorage.getItem("acl_auth_build");
+  sessionStorage.setItem("acl_auth_build",ACL_AUTH_BUILD);
+  if(event.persisted&&previous!==ACL_AUTH_BUILD){
+    window.location.reload();
+  }
+});
 import { supabaseClient } from "./supabase-client.js";
 import { ACL_CONFIG } from "./config.js";
 
