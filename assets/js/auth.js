@@ -12,7 +12,7 @@ import { ACL_CONFIG } from "./config.js";
 const byId = (id) => document.getElementById(id);
 const REMEMBER_KEY = "aclRememberMe";
 const REMEMBER_IDENTIFIER_KEY = "aclRememberIdentifier";
-let deferredInstallPrompt = null;
+let deferredInstallPrompt = window.aclDeferredInstallPrompt || null;
 
 function isIosDevice() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
@@ -24,6 +24,10 @@ function isStandaloneApp() {
     window.navigator.standalone === true;
 }
 
+function isWindowsDevice() {
+  return /windows/i.test(navigator.userAgent);
+}
+
 function setPasswordVisibility(inputIds, visible) {
   inputIds.forEach(id => {
     const input = byId(id);
@@ -33,7 +37,7 @@ function setPasswordVisibility(inputIds, visible) {
 
 function installInstructionsHtml() {
   if (isStandaloneApp()) {
-    return "<p>ACL is already installed on this device.</p>";
+    return "<p>Cardiology League is already installed on this device.</p>";
   }
 
   if (isIosDevice()) {
@@ -42,17 +46,27 @@ function installInstructionsHtml() {
         <li>Open this page in <strong>Safari</strong>.</li>
         <li>Tap the <strong>Share</strong> button.</li>
         <li>Choose <strong>Add to Home Screen</strong>.</li>
-        <li>Tap <strong>Add</strong> to install ACL.</li>
+        <li>Tap <strong>Add</strong> to install Cardiology League.</li>
       </ol>
     `;
   }
 
   if (deferredInstallPrompt) {
-    return "<p>Install ACL on this device for faster full-screen access from your home screen.</p>";
+    return "<p>Install Cardiology League for full-screen access from this device.</p>";
+  }
+
+  if (isWindowsDevice()) {
+    return `
+      <ol>
+        <li>Open this page in <strong>Microsoft Edge</strong> or <strong>Google Chrome</strong>.</li>
+        <li>Open the browser menu and choose <strong>Apps</strong> or <strong>Save and share</strong>.</li>
+        <li>Choose <strong>Install Cardiology League</strong>.</li>
+      </ol>
+    `;
   }
 
   return `
-    <p>Open this page in Chrome or another supported browser, then use the browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+    <p>Open this page in Chrome or another supported browser, then use the browser menu and choose <strong>Install Cardiology League</strong> or <strong>Add to Home screen</strong>.</p>
   `;
 }
 
@@ -161,6 +175,7 @@ byId("showRegisterPassword")?.addEventListener("change", event => {
 window.addEventListener("beforeinstallprompt", event => {
   event.preventDefault();
   deferredInstallPrompt = event;
+  window.aclDeferredInstallPrompt = event;
 });
 
 window.addEventListener("appinstalled", () => {
@@ -170,7 +185,7 @@ window.addEventListener("appinstalled", () => {
   const installButton = byId("installAclApp");
   if (installButton) {
     installButton.disabled = true;
-    installButton.querySelector("strong").textContent = "ACL app installed";
+    installButton.querySelector("strong").textContent = "Cardiology League installed";
     installButton.querySelector("small").textContent = "Ready on this device";
   }
 });
@@ -203,13 +218,13 @@ document.addEventListener("keydown", event => {
 
 if (isStandaloneApp() && byId("installAclApp")) {
   byId("installAclApp").disabled = true;
-  byId("installAclApp").querySelector("strong").textContent = "ACL app installed";
+  byId("installAclApp").querySelector("strong").textContent = "Cardiology League installed";
   byId("installAclApp").querySelector("small").textContent = "Ready on this device";
 }
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register(`${ACL_CONFIG.siteBase}service-worker.js?v=7.20.0`, {
+    .register(`${ACL_CONFIG.siteBase}service-worker.js?v=8.0.0`, {
       scope: ACL_CONFIG.siteBase,
       updateViaCache: "none"
     })
