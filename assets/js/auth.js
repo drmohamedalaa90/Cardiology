@@ -82,6 +82,16 @@ function closeInstallModal() {
 }
 
 function setMessage(id, message = "") { const el = byId(id); if (el) el.textContent = message; }
+function showRegistrationConfirmation(email = "") {
+  const form = byId("signInForm");
+  if (!form) return;
+  form.classList.add("registration-confirmed");
+  if (byId("identifier") && email) byId("identifier").value = email;
+  setMessage(
+    "signInSuccess",
+    "Account created successfully. Confirm your email address to activate your account. Check your inbox and spam folder, then return here to sign in."
+  );
+}
 function normalizeUsername(value) { return String(value || "").trim().toLowerCase(); }
 function validUsername(value) { return /^[a-z0-9._]{3,30}$/.test(value); }
 function normalizeWhatsapp(code,value){
@@ -299,8 +309,7 @@ byId("registerForm")?.addEventListener("submit", async (event) => {
     if (!data.session) {
       event.target.reset();updateRegistrationYear();showRegistrationStep(0);
       showPanel("signin");
-      if(byId("identifier"))byId("identifier").value=email;
-      setMessage("signInSuccess", "Account created. Please confirm your email address before signing in. The welcome page will open after confirmation.");
+      showRegistrationConfirmation(email);
       window.scrollTo({top:0,behavior:"smooth"});
     } else if (!data.user?.email_confirmed_at) {
       await supabaseClient.auth.signOut();
