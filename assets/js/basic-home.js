@@ -85,7 +85,7 @@ function renderAvailable(modules,progress){
  updateBasicModuleCountdowns();
 }
 function renderLocked(rows){const host=$("basicLockedModules");if(!rows.length){host.innerHTML='<div class="basic-empty">All Basic Edition modules are unlocked. Excellent progress.</div>';return}host.innerHTML=rows.map(({module,previous,previousBest,adminHeld,reason},i)=>`<article class="basic-locked-card"><span class="basic-lock-icon" aria-hidden="true">🔒</span><div class="basic-locked-copy"><strong>${esc(module.title||"Basic module")}</strong><div class="basic-module-resource-line">${moduleResourceMarkup(module)}</div><small>${reason?esc(reason):adminHeld?"Locked by the ACL administrator. This module will be released when it is ready.":`Pass ${esc(previous?.title||"the previous module")} with more than ${PASS_MARK}%. ${previousBest===null?"No completed result yet.":`Current best: ${previousBest}%.`}`}</small></div></article>`).join("")}
-async function boot(){try{localStorage.setItem("aclSelectedEdition","basic");sessionStorage.setItem("aclSelectedEdition","basic")}catch{}const {data:{session},error}=await supabaseClient.auth.getSession();if(error)throw error;if(!session?.user){location.replace("login.html");return}const user=session.user;const {data:presence}=await supabaseClient.rpc("acl_touch_basic_presence");if(presence?.allowed===false){try{await supabaseClient.auth.signOut()}catch{}location.replace("login.html?held=1");return}const adminLink=$("basicAdminMembers");if(adminLink)adminLink.hidden=String(user.email||"").toLowerCase()!=="drmohamedalaa90@gmail.com";const [pr,mr,ar]=await Promise.all([supabaseClient.from("profiles").select("*").eq("id",user.id).maybeSingle(),supabaseClient.from("modules").select("id,title,slug,display_order,status,launch_path,question_count,edition,basic_admin_released,opens_at,closes_at").eq("edition","basic").eq("status","published").order("display_order",{ascending:true}).order("title",{ascending:true}),loadModuleAttemptHistory(user.id)]);if(mr.error)throw mr.error;if(ar.error)throw ar.error;const p=pr.error?null:pr.data,name=chooseName(p,user),photo=choosePhoto(p,user);$("basicUserName").textContent=name;const av=$("basicAvatar");if(photo){
+async function boot(){try{localStorage.setItem("aclSelectedEdition","basic");sessionStorage.setItem("aclSelectedEdition","basic")}catch{}const {data:{session},error}=await supabaseClient.auth.getSession();if(error)throw error;if(!session?.user){location.replace("login.html");return}const user=session.user;const {data:presence}=await supabaseClient.rpc("acl_touch_basic_presence");if(presence?.allowed===false){try{await supabaseClient.auth.signOut()}catch{}location.replace("login.html?held=1");return}const adminLink=$("basicAdminMembers");if(adminLink)adminLink.hidden=String(user.email||"").toLowerCase()!=="drmohamedalaa90@gmail.com";const [pr,mr,ar]=await Promise.all([supabaseClient.from("profiles").select("*").eq("id",user.id).maybeSingle(),supabaseClient.from("modules").select("id,title,slug,display_order,status,launch_path,question_count,edition,basic_admin_released,opens_at,closes_at").eq("edition","basic").eq("is_special_course",false).eq("status","published").order("display_order",{ascending:true}).order("title",{ascending:true}),loadModuleAttemptHistory(user.id)]);if(mr.error)throw mr.error;if(ar.error)throw ar.error;const p=pr.error?null:pr.data,name=chooseName(p,user),photo=choosePhoto(p,user);$("basicUserName").textContent=name;const av=$("basicAvatar");if(photo){
   const img=document.createElement("img");
   img.alt="";
   img.decoding="async";
@@ -600,7 +600,8 @@ const BASIC_HOME_DEFAULTS={
   news_kicker:"ACL UPDATES",
   news_title:"Updates & News",
   news_subtitle:"Official announcements, module updates and important ACL news.",
-  news_autoplay_seconds:0
+  news_enabled:true,
+  news_autoplay_seconds:5
 };
 
 let basicHomeSettings={...BASIC_HOME_DEFAULTS};
@@ -622,9 +623,18 @@ function applyBasicHomeSettings(settings={}){
   setText("basicNewsHeading",basicHomeSettings.news_title);
   setText("basicNewsSubtitle",basicHomeSettings.news_subtitle);
 
-  basicNewsAutoplaySeconds=[3,5].includes(Number(basicHomeSettings.news_autoplay_seconds))
+  const newsEnabled=basicHomeSettings.news_enabled!==false;
+  basicNewsAutoplaySeconds=[5,7,10].includes(Number(basicHomeSettings.news_autoplay_seconds))
     ? Number(basicHomeSettings.news_autoplay_seconds)
-    : 0;
+    : 5;
+
+  const newsSection=document.getElementById("basicNewsSection");
+  const disabledNotice=document.getElementById("basicNewsDisabledNotice");
+  if(newsSection){
+    newsSection.hidden=!newsEnabled&&!basicNewsAdmin;
+    newsSection.classList.toggle("news-disabled",!newsEnabled&&basicNewsAdmin);
+  }
+  if(disabledNotice)disabledNotice.hidden=newsEnabled||!basicNewsAdmin;
 
   const fields={
     basicHomeHeroEyebrow:basicHomeSettings.hero_eyebrow,
@@ -644,8 +654,15 @@ function applyBasicHomeSettings(settings={}){
 
   const autoplay=document.getElementById("basicHomeNewsAutoplay");
   if(autoplay)autoplay.value=String(basicNewsAutoplaySeconds);
+  const quickAutoplay=document.getElementById("basicNewsQuickAutoplay");
+  if(quickAutoplay)quickAutoplay.value=String(basicNewsAutoplaySeconds);
+  const enabled=document.getElementById("basicNewsEnabled");
+  if(enabled)enabled.checked=newsEnabled;
+  const enabledLabel=document.getElementById("basicNewsEnabledLabel");
+  if(enabledLabel)enabledLabel.textContent=newsEnabled?"On":"Off";
 
-  startBasicNewsAutoplay();
+  if(newsEnabled)startBasicNewsAutoplay();
+  else stopBasicNewsAutoplay();
 }
 
 async function loadBasicHomeSettings(){
@@ -658,6 +675,9 @@ async function loadBasicHomeSettings(){
 
   const toggle=document.getElementById("basicHomeTextAdminToggle");
   if(toggle)toggle.hidden=!isAdminUser;
+  basicNewsAdmin=isAdminUser;
+  const displayControls=document.getElementById("basicNewsDisplayControls");
+  if(displayControls)displayControls.hidden=!isAdminUser;
 
   const {data,error}=await supabaseClient
     .from("acl_basic_home_settings")
@@ -710,7 +730,8 @@ document.getElementById("basicHomeTextForm")?.addEventListener("submit",async ev
       news_kicker:document.getElementById("basicHomeNewsKicker").value.trim()||BASIC_HOME_DEFAULTS.news_kicker,
       news_title:document.getElementById("basicHomeNewsTitle").value.trim()||BASIC_HOME_DEFAULTS.news_title,
       news_subtitle:document.getElementById("basicHomeNewsSubtitle").value.trim()||BASIC_HOME_DEFAULTS.news_subtitle,
-      news_autoplay_seconds:Number(document.getElementById("basicHomeNewsAutoplay").value||0),
+      news_enabled:document.getElementById("basicNewsEnabled").checked,
+      news_autoplay_seconds:Number(document.getElementById("basicHomeNewsAutoplay").value||5),
       updated_by:session.user.id,
       updated_at:new Date().toISOString()
     };
@@ -731,6 +752,39 @@ document.getElementById("basicHomeTextForm")?.addEventListener("submit",async ev
   }finally{
     save.disabled=false;
   }
+});
+
+async function saveBasicNewsDisplaySettings(){
+  const controls=document.getElementById("basicNewsDisplayControls");
+  const status=document.getElementById("basicNewsDisplayStatus");
+  const enabled=document.getElementById("basicNewsEnabled")?.checked!==false;
+  const seconds=Number(document.getElementById("basicNewsQuickAutoplay")?.value||5);
+  if(!controls||!status)return;
+  controls.classList.remove("has-error");
+  controls.classList.add("is-saving");
+  status.textContent="Saving…";
+  try{
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(!session?.user||String(session.user.email||"").trim().toLowerCase()!=="drmohamedalaa90@gmail.com")throw new Error("Admin access required.");
+    const {data,error}=await supabaseClient.from("acl_basic_home_settings").update({news_enabled:enabled,news_autoplay_seconds:seconds,updated_by:session.user.id,updated_at:new Date().toISOString()}).eq("id","basic-home").select().single();
+    if(error)throw error;
+    applyBasicHomeSettings(data);
+    status.textContent="Saved";
+    window.setTimeout(()=>{controls.classList.remove("is-saving");status.textContent=""},900);
+  }catch(error){
+    console.error("SAVE NEWS DISPLAY SETTINGS:",error);
+    controls.classList.remove("is-saving");
+    controls.classList.add("has-error");
+    status.textContent="Could not save";
+    applyBasicHomeSettings(basicHomeSettings);
+  }
+}
+
+document.getElementById("basicNewsEnabled")?.addEventListener("change",()=>void saveBasicNewsDisplaySettings());
+document.getElementById("basicNewsQuickAutoplay")?.addEventListener("change",()=>void saveBasicNewsDisplaySettings());
+document.getElementById("basicHomeNewsAutoplay")?.addEventListener("change",event=>{
+  const quick=document.getElementById("basicNewsQuickAutoplay");
+  if(quick)quick.value=event.currentTarget.value;
 });
 
 document.getElementById("basicNewsPrev")?.addEventListener("click",()=>{
