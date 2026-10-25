@@ -158,7 +158,11 @@ function bnRefreshDeviceControls(){
  else if(permission==='denied')bnSetPushStatus('Blocked in browser settings. Allow notifications there, then reload.','error');
  else if(permission==='unsupported')bnSetPushStatus(bnStandalone()?'Notifications are unavailable in this browser.':'Install the app first, then enable notifications here.','muted');
  else bnSetPushStatus(bnStandalone()?'Off — switch on to allow ACL alerts':'Install the app for the best notification experience','muted');
- if(install){install.hidden=bnStandalone();install.textContent=bnInstallPrompt?'Install Cardiology League':(/iPhone|iPad|iPod/i.test(navigator.userAgent)?'Show iPhone install steps':'Install Cardiology League');}
+ const installed=bnStandalone(),actions=document.querySelector('.bn-install-actions'),guide=$('bnInstallGuide'),intro=document.querySelector('.bn-device-heading p');
+ if(actions)actions.hidden=installed;
+ if(installed&&guide)guide.hidden=true;
+ if(intro)intro.textContent=installed?'The Cardiology League app is installed on this device. Choose whether it may show notifications.':'Install the ACL app and choose whether this device may show notifications.';
+ if(install){install.hidden=installed;install.textContent=bnInstallPrompt?'Install Cardiology League':(/iPhone|iPad|iPod/i.test(navigator.userAgent)?'Show iPhone install steps':'Install Cardiology League');}
 }
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();bnInstallPrompt=event;bnRefreshDeviceControls();});
 window.addEventListener('appinstalled',()=>{bnInstallPrompt=null;bnRefreshDeviceControls();});

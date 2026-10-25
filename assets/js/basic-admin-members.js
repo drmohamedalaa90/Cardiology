@@ -35,7 +35,7 @@ function memberFilter(){
   return members.filter(m=>{
     if(status!=="all" && m.account_status!==status) return false;
     if(q){
-      const hay=[m.name,m.email,m.username,m.academic_year,m.institution].join(" ").toLowerCase();
+      const hay=[m.name,m.email,m.username,m.phone_e164,m.academic_year,m.institution].join(" ").toLowerCase();
       if(!hay.includes(q)) return false;
     }
     return true;
@@ -106,8 +106,8 @@ function renderMembers(){
     '<article class="bam-member" data-member-card="'+m.id+'">'+
       '<div class="bam-member-headrow" data-expand-member="'+m.id+'">'+
         '<span class="bam-avatar">'+(m.avatar_url?'<img src="'+esc(m.avatar_url)+'" alt="">':esc(initials(m.name)))+'</span>'+
-        '<div class="bam-member-main"><strong>'+esc(m.name||"Member")+'</strong><small>'+esc(m.email||"")+(m.academic_year?' · '+esc(m.academic_year):'')+'</small></div>'+
-        '<div class="bam-metric"><span>Last active</span><strong title="'+esc(fmtDate(m.last_seen_at||m.basic_last_opened_at))+'">'+esc(relativeTime(m.last_seen_at||m.basic_last_opened_at))+'</strong></div>'+
+        '<div class="bam-member-main"><strong>'+esc(m.name||"Member")+'</strong><small>'+esc(m.email||"")+(m.academic_year?' · '+esc(m.academic_year):'')+'</small><div class="bam-member-contact">'+(m.username?'<span>@'+esc(m.username)+'</span>':'<span class="is-empty">No username</span>')+(m.phone_e164?'<a href="https://wa.me/'+esc(String(m.phone_e164).replace(/\D/g,''))+'" target="_blank" rel="noopener">WhatsApp '+esc(m.phone_e164)+'</a>':'<span class="is-empty">No WhatsApp</span>')+'</div></div>'+
+        '<div class="bam-metric bam-access-metric"><span>Access</span><strong class="bam-access '+(m.access_mode==='installed'?'installed':'web')+'">'+(m.access_mode==='installed'?'Installed app':'Web page')+'</strong>'+(m.has_installed&&m.access_mode!=='installed'?'<small>Installed before</small>':'')+'</div>'+        '<div class="bam-metric"><span>Last active</span><strong title="'+esc(fmtDate(m.last_seen_at||m.basic_last_opened_at))+'">'+esc(relativeTime(m.last_seen_at||m.basic_last_opened_at))+'</strong></div>'+
         '<div class="bam-metric"><span>Accuracy</span><strong>'+accuracyText(m.progress?.overall_accuracy)+'</strong></div>'+
         '<div class="bam-metric"><span>Friends</span><strong>'+Number(m.friends?.accepted_count||0)+'</strong></div>'+
         '<div class="bam-metric"><span>Challenges</span><strong>'+Number(m.challenges?.taken||0)+'</strong></div>'+
@@ -147,13 +147,16 @@ function renderMembers(){
   });
 }
 async function load(){
-  const [{data:memberData,error:memberError},{data:moduleData,error:moduleError}]=await Promise.all([
+  const [{data:memberData,error:memberError},{data:moduleData,error:moduleError},{data:deviceData,error:deviceError}]=await Promise.all([
     supabaseClient.rpc("acl_admin_get_basic_members"),
-    supabaseClient.rpc("acl_admin_get_basic_module_access")
+    supabaseClient.rpc("acl_admin_get_basic_module_access"),
+    supabaseClient.rpc("acl_admin_get_basic_member_contact_devices")
   ]);
   if(memberError) throw memberError;
   if(moduleError) throw moduleError;
-  members=Array.isArray(memberData)?memberData:[];
+  if(deviceError) throw deviceError;
+  const deviceMap=new Map((Array.isArray(deviceData)?deviceData:[]).map(row=>[String(row.id),row]));
+  members=(Array.isArray(memberData)?memberData:[]).map(member=>({...member,...(deviceMap.get(String(member.id))||{})}));
   modules=Array.isArray(moduleData)?moduleData:[];
   renderStats(); renderModules(); renderMembers();
 }

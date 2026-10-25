@@ -115,7 +115,7 @@ async function aclBasicPresenceHeartbeat(){
   try{
     const {data:{session}}=await supabaseClient.auth.getSession();
     if(!session?.user) return;
-    const {data,error}=await supabaseClient.rpc("acl_touch_basic_presence");
+    const {data,error}=await supabaseClient.rpc("acl_touch_basic_presence",{p_access_mode:(window.matchMedia?.("(display-mode: standalone)").matches||window.navigator.standalone===true)?"installed":"web"});
     if(error) return;
     if(data?.allowed===false){
       try{await supabaseClient.auth.signOut()}catch{}
