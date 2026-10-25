@@ -159,6 +159,13 @@ async function load(){
 }
 $("bamSearch")?.addEventListener("input",renderMembers);
 $("bamStatusFilter")?.addEventListener("change",renderMembers);
+document.querySelectorAll("[data-bam-status-link]").forEach(link=>{
+  link.addEventListener("click",()=>{
+    const filter=$("bamStatusFilter");
+    if(filter)filter.value=link.dataset.bamStatusLink||"all";
+    renderMembers();
+  });
+});
 
 const {data:{session}}=await supabaseClient.auth.getSession();
 if(!session?.user){location.replace("login.html");}
