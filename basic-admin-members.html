@@ -7,6 +7,7 @@
   <title>Basic Members Admin | Cardiology League</title>
   <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
   <link rel="stylesheet" href="assets/css/basic-admin-members.css?v=3">
+  <link rel="stylesheet" href="assets/css/basic-special-courses.css?v=1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="assets/css/basic-navigation.css?v=1">  <link rel="canonical" href="https://drmohamedalaa90.github.io/Cardiology/basic-admin-members.html">
   <meta name="robots" content="index,follow,max-image-preview:large">
@@ -43,6 +44,7 @@
 
     <nav class="bam-section-nav" aria-label="Admin sections">
       <a href="#admin-overview" class="is-active">Overview</a>
+      <a href="#special-courses-admin">Special courses</a>
       <a href="#module-access">Module access</a>
       <a href="#registered-members">Basic members</a>
       <a href="basic-home.html?edition=basic#basicNewsSection">Homepage &amp; news</a>
@@ -56,6 +58,30 @@
       <a href="#registered-members" data-bam-status-link="active"><span>Active</span><strong id="bamActiveCount">—</strong><small>View active →</small></a>
       <a href="#registered-members" data-bam-status-link="suspended"><span>On hold</span><strong id="bamHeldCount">—</strong><small>View held →</small></a>
       <a href="#module-access"><span>Modules released</span><strong id="bamReleasedCount">—</strong><small>Manage access →</small></a>
+    </section>
+
+    <section class="bam-panel bam-special-panel" id="special-courses-admin">
+      <header class="bam-panel-head">
+        <div><span class="bam-section-kicker">SPECIAL COURSE MODULES</span><h2>Courses, passcodes &amp; access</h2><p>Create course modules, control release and manage enrolled members.</p></div>
+        <div class="bam-special-toolbar"><button id="bamAddSpecialCourse" class="bam-special-new" type="button">+ New special course</button></div>
+      </header>
+      <section id="specialAdminEditor" class="special-admin-editor" hidden>
+        <div class="basic-news-editor-head"><div><span>COURSE EDITOR</span><strong id="specialAdminTitleText">Create special course</strong></div></div>
+        <form id="specialAdminForm" class="special-admin-form">
+          <input id="specialAdminId" type="hidden">
+          <label><span>Course title</span><input id="specialAdminTitle" maxlength="140" required placeholder="e.g. ECG Demystified"></label>
+          <label><span>Display order</span><input id="specialAdminOrder" type="number" min="1" value="1"></label>
+          <label class="wide"><span>Short description</span><textarea id="specialAdminDescription" rows="2" placeholder="What candidates will learn"></textarea></label>
+          <label><span>Cover photo</span><input id="specialAdminCover" type="file" accept="image/jpeg,image/png,image/webp"></label>
+          <label><span>Logo</span><input id="specialAdminLogo" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml"></label>
+          <label><span>New passcode</span><input id="specialAdminPasscode" autocomplete="new-password" placeholder="Leave blank to keep current"></label>
+          <label class="special-admin-check"><input id="specialAdminKeepMembers" type="checkbox" checked><span>Keep current members when changing passcode</span></label>
+          <label class="special-admin-check"><input id="specialAdminRemovePasscode" type="checkbox"><span>Remove passcode protection</span></label>
+          <label class="special-admin-check"><input id="specialAdminReleased" type="checkbox"><span>Release course to candidates</span></label>
+          <div class="special-admin-form-actions"><button id="specialAdminSave" class="special-save" type="submit">Save course</button><button id="specialAdminCancel" class="special-cancel" type="button">Cancel</button><button id="specialAdminDelete" class="special-delete" type="button" hidden>Delete course</button><span id="specialAdminStatus" class="special-admin-status" aria-live="polite"></span></div>
+        </form>
+      </section>
+      <div id="bamSpecialCourseList" class="bam-special-admin-list"><div class="bam-empty">Loading special courses…</div></div>
     </section>
 
     <section class="bam-panel" id="module-access">
@@ -94,6 +120,7 @@
   </main>
 
   <script type="module" src="assets/js/basic-admin-members.js?v=4"></script>
+  <script type="module" src="assets/js/basic-special-courses.js?v=1"></script>
   <script type="module" src="assets/js/basic-universal-shell.js?v=20261024-fixed-nav"></script>
 </body>
 </html>
