@@ -144,6 +144,45 @@ $("bnMarkAll")?.addEventListener("click",async()=>{
   render();
 });
 
+
+/* Device notification permission and install help */
+let bnInstallPrompt=null;
+const bnStandalone=()=>window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true;
+function bnSetPushStatus(message,tone=''){const el=$('bnPushStatus');if(!el)return;el.textContent=message;el.dataset.tone=tone;}
+function bnRefreshDeviceControls(){
+ const toggle=$('bnPushToggle'),install=$('bnInstallApp');
+ const permission=('Notification'in window)?Notification.permission:'unsupported';
+ const saved=localStorage.getItem('aclDeviceNotifications')==='on';
+ if(toggle){toggle.checked=permission==='granted'&&saved;toggle.disabled=permission==='denied'||permission==='unsupported';}
+ if(permission==='granted')bnSetPushStatus(saved?'On for this device':'Allowed — switch on to receive ACL alerts','ok');
+ else if(permission==='denied')bnSetPushStatus('Blocked in browser settings. Allow notifications there, then reload.','error');
+ else if(permission==='unsupported')bnSetPushStatus(bnStandalone()?'Notifications are unavailable in this browser.':'Install the app first, then enable notifications here.','muted');
+ else bnSetPushStatus(bnStandalone()?'Off — switch on to allow ACL alerts':'Install the app for the best notification experience','muted');
+ if(install){install.hidden=bnStandalone();install.textContent=bnInstallPrompt?'Install Cardiology League':(/iPhone|iPad|iPod/i.test(navigator.userAgent)?'Show iPhone install steps':'Install Cardiology League');}
+}
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();bnInstallPrompt=event;bnRefreshDeviceControls();});
+window.addEventListener('appinstalled',()=>{bnInstallPrompt=null;bnRefreshDeviceControls();});
+$('bnPushToggle')?.addEventListener('change',async event=>{
+ const toggle=event.currentTarget;
+ if(!toggle.checked){localStorage.setItem('aclDeviceNotifications','off');bnRefreshDeviceControls();return;}
+ if(!('Notification'in window)){toggle.checked=false;bnRefreshDeviceControls();$('bnInstallGuide').hidden=false;return;}
+ try{
+   const permission=await Notification.requestPermission();
+   if(permission==='granted'){
+     localStorage.setItem('aclDeviceNotifications','on');
+     if('serviceWorker'in navigator)await navigator.serviceWorker.register('service-worker.js',{scope:'/Cardiology/'});
+   }else localStorage.setItem('aclDeviceNotifications','off');
+ }catch{localStorage.setItem('aclDeviceNotifications','off');}
+ bnRefreshDeviceControls();
+});
+const bnHelp=$('bnInstallHelp'),bnGuide=$('bnInstallGuide');
+bnHelp?.addEventListener('click',()=>{const open=bnGuide.hidden;bnGuide.hidden=!open;bnHelp.setAttribute('aria-expanded',String(open));bnHelp.textContent=open?'Hide install steps':'How to install';});
+$('bnInstallApp')?.addEventListener('click',async()=>{
+ if(bnInstallPrompt){bnInstallPrompt.prompt();await bnInstallPrompt.userChoice;bnInstallPrompt=null;bnRefreshDeviceControls();return;}
+ if(bnGuide){bnGuide.hidden=false;bnHelp?.setAttribute('aria-expanded','true');bnHelp.textContent='Hide install steps';bnGuide.scrollIntoView({behavior:'smooth',block:'nearest'});}
+});
+bnRefreshDeviceControls();
+
 load().catch(error=>{
   console.error("BASIC NOTIFICATIONS:",error);
   $("bnList").innerHTML='<div class="basic-empty-state">Could not load notifications.</div>';
