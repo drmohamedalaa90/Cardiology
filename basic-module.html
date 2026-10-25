@@ -136,8 +136,15 @@
       <div class="basic-path-copy"><span class="basic-module-kicker">STEP 3</span><h2>Go to the quiz</h2><p>Take a quiz yourself or challenge a friend.</p></div>
       <button id="bmOpenQuiz" class="basic-path-action primary" type="button">Choose quiz mode →</button>
     </article>
+    <article class="basic-path-card forum">
+      <div class="basic-path-icon">?</div><div class="basic-path-copy"><span class="basic-module-kicker">DISCUSS</span><h2>Module Q&amp;A forum</h2><p>Ask colleagues, share answers and find replies verified by ACL.</p></div><a class="basic-path-action forum-action" href="#bmForum">Open the forum →</a>
+    </article>
   </section>
-
+  <section id="bmForum" class="bm-forum" aria-labelledby="bmForumTitle">
+    <header class="bm-forum-head"><div><span class="basic-module-kicker">MODULE COMMUNITY</span><h2 id="bmForumTitle">Questions &amp; answers</h2><p>Discuss this module with colleagues. Verified replies carry the ACL correct-answer mark.</p></div><strong id="bmForumCount">—</strong></header>
+    <form id="bmForumQuestionForm" class="bm-forum-compose"><textarea id="bmForumQuestion" rows="3" maxlength="2000" required placeholder="Ask a question about this module…"></textarea><div><label><input id="bmForumQuestionAnonymous" type="checkbox"> Ask anonymously</label><button type="submit">Post question</button></div><small id="bmForumStatus" aria-live="polite"></small></form>
+    <div id="bmForumList" class="bm-forum-list" aria-live="polite"><div class="bm-forum-empty">Loading module discussions…</div></div>
+  </section>
   <section id="bmQuizSetup" class="basic-quiz-setup" hidden>
     <header><div><span class="basic-module-kicker">QUIZ MODE</span><h2>How do you want to play?</h2></div><button id="bmCloseSetup" type="button" aria-label="Close">×</button></header>
     <div class="basic-mode-grid">
@@ -167,4 +174,4 @@
     </div>
   </section>
 </main>
-<script type="module" src="assets/js/basic-module-hub.js?v=15"></script><script type="module" src="assets/js/basic-universal-shell.js?v=20261024-fixed-nav"></script></body></html>
+<link rel="stylesheet" href="assets/css/basic-module-forum.css?v=1"><script type="module" src="assets/js/basic-module-hub.js?v=15"></script><script type="module" src="assets/js/basic-module-forum.js?v=1"></script><script type="module" src="assets/js/basic-universal-shell.js?v=20261025-access-mode"></script></body></html>
