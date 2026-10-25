@@ -600,7 +600,8 @@ const BASIC_HOME_DEFAULTS={
   news_kicker:"ACL UPDATES",
   news_title:"Updates & News",
   news_subtitle:"Official announcements, module updates and important ACL news.",
-  news_autoplay_seconds:0
+  news_enabled:true,
+  news_autoplay_seconds:5
 };
 
 let basicHomeSettings={...BASIC_HOME_DEFAULTS};
@@ -622,9 +623,18 @@ function applyBasicHomeSettings(settings={}){
   setText("basicNewsHeading",basicHomeSettings.news_title);
   setText("basicNewsSubtitle",basicHomeSettings.news_subtitle);
 
-  basicNewsAutoplaySeconds=[3,5].includes(Number(basicHomeSettings.news_autoplay_seconds))
+  const newsEnabled=basicHomeSettings.news_enabled!==false;
+  basicNewsAutoplaySeconds=[5,7,10].includes(Number(basicHomeSettings.news_autoplay_seconds))
     ? Number(basicHomeSettings.news_autoplay_seconds)
-    : 0;
+    : 5;
+
+  const newsSection=document.getElementById("basicNewsSection");
+  const disabledNotice=document.getElementById("basicNewsDisabledNotice");
+  if(newsSection){
+    newsSection.hidden=!newsEnabled&&!basicNewsAdmin;
+    newsSection.classList.toggle("news-disabled",!newsEnabled&&basicNewsAdmin);
+  }
+  if(disabledNotice)disabledNotice.hidden=newsEnabled||!basicNewsAdmin;
 
   const fields={
     basicHomeHeroEyebrow:basicHomeSettings.hero_eyebrow,
@@ -644,8 +654,15 @@ function applyBasicHomeSettings(settings={}){
 
   const autoplay=document.getElementById("basicHomeNewsAutoplay");
   if(autoplay)autoplay.value=String(basicNewsAutoplaySeconds);
+  const quickAutoplay=document.getElementById("basicNewsQuickAutoplay");
+  if(quickAutoplay)quickAutoplay.value=String(basicNewsAutoplaySeconds);
+  const enabled=document.getElementById("basicNewsEnabled");
+  if(enabled)enabled.checked=newsEnabled;
+  const enabledLabel=document.getElementById("basicNewsEnabledLabel");
+  if(enabledLabel)enabledLabel.textContent=newsEnabled?"On":"Off";
 
-  startBasicNewsAutoplay();
+  if(newsEnabled)startBasicNewsAutoplay();
+  else stopBasicNewsAutoplay();
 }
 
 async function loadBasicHomeSettings(){
@@ -658,6 +675,9 @@ async function loadBasicHomeSettings(){
 
   const toggle=document.getElementById("basicHomeTextAdminToggle");
   if(toggle)toggle.hidden=!isAdminUser;
+  basicNewsAdmin=isAdminUser;
+  const displayControls=document.getElementById("basicNewsDisplayControls");
+  if(displayControls)displayControls.hidden=!isAdminUser;
 
   const {data,error}=await supabaseClient
     .from("acl_basic_home_settings")
@@ -710,7 +730,8 @@ document.getElementById("basicHomeTextForm")?.addEventListener("submit",async ev
       news_kicker:document.getElementById("basicHomeNewsKicker").value.trim()||BASIC_HOME_DEFAULTS.news_kicker,
       news_title:document.getElementById("basicHomeNewsTitle").value.trim()||BASIC_HOME_DEFAULTS.news_title,
       news_subtitle:document.getElementById("basicHomeNewsSubtitle").value.trim()||BASIC_HOME_DEFAULTS.news_subtitle,
-      news_autoplay_seconds:Number(document.getElementById("basicHomeNewsAutoplay").value||0),
+      news_enabled:document.getElementById("basicNewsEnabled").checked,
+      news_autoplay_seconds:Number(document.getElementById("basicHomeNewsAutoplay").value||5),
       updated_by:session.user.id,
       updated_at:new Date().toISOString()
     };
@@ -731,6 +752,39 @@ document.getElementById("basicHomeTextForm")?.addEventListener("submit",async ev
   }finally{
     save.disabled=false;
   }
+});
+
+async function saveBasicNewsDisplaySettings(){
+  const controls=document.getElementById("basicNewsDisplayControls");
+  const status=document.getElementById("basicNewsDisplayStatus");
+  const enabled=document.getElementById("basicNewsEnabled")?.checked!==false;
+  const seconds=Number(document.getElementById("basicNewsQuickAutoplay")?.value||5);
+  if(!controls||!status)return;
+  controls.classList.remove("has-error");
+  controls.classList.add("is-saving");
+  status.textContent="Saving…";
+  try{
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(!session?.user||String(session.user.email||"").trim().toLowerCase()!=="drmohamedalaa90@gmail.com")throw new Error("Admin access required.");
+    const {data,error}=await supabaseClient.from("acl_basic_home_settings").update({news_enabled:enabled,news_autoplay_seconds:seconds,updated_by:session.user.id,updated_at:new Date().toISOString()}).eq("id","basic-home").select().single();
+    if(error)throw error;
+    applyBasicHomeSettings(data);
+    status.textContent="Saved";
+    window.setTimeout(()=>{controls.classList.remove("is-saving");status.textContent=""},900);
+  }catch(error){
+    console.error("SAVE NEWS DISPLAY SETTINGS:",error);
+    controls.classList.remove("is-saving");
+    controls.classList.add("has-error");
+    status.textContent="Could not save";
+    applyBasicHomeSettings(basicHomeSettings);
+  }
+}
+
+document.getElementById("basicNewsEnabled")?.addEventListener("change",()=>void saveBasicNewsDisplaySettings());
+document.getElementById("basicNewsQuickAutoplay")?.addEventListener("change",()=>void saveBasicNewsDisplaySettings());
+document.getElementById("basicHomeNewsAutoplay")?.addEventListener("change",event=>{
+  const quick=document.getElementById("basicNewsQuickAutoplay");
+  if(quick)quick.value=event.currentTarget.value;
 });
 
 document.getElementById("basicNewsPrev")?.addEventListener("click",()=>{
