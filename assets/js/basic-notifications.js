@@ -147,7 +147,7 @@ $("bnMarkAll")?.addEventListener("click",async()=>{
 
 /* Device notification permission and install help */
 let bnInstallPrompt=null;
-const bnStandalone=()=>window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true;
+const bnStandalone=()=>document.documentElement.classList.contains('acl-installed-app')||window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true;
 function bnSetPushStatus(message,tone=''){const el=$('bnPushStatus');if(!el)return;el.textContent=message;el.dataset.tone=tone;}
 function bnRefreshDeviceControls(){
  const toggle=$('bnPushToggle'),install=$('bnInstallApp');
