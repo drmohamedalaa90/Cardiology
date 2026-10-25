@@ -91,9 +91,28 @@
         </div>
         <div class="basic-news-admin-actions">
           <button id="basicHomeTextAdminToggle" class="basic-news-admin-toggle" type="button" hidden>Edit homepage text</button>
+          <div id="basicNewsDisplayControls" class="basic-news-display-controls" hidden>
+            <label class="basic-news-visibility-control" for="basicNewsEnabled">
+              <span>News</span>
+              <input id="basicNewsEnabled" type="checkbox" role="switch" checked>
+              <i aria-hidden="true"></i>
+              <strong id="basicNewsEnabledLabel">On</strong>
+            </label>
+            <label class="basic-news-speed-control" for="basicNewsQuickAutoplay">
+              <span>Change every</span>
+              <select id="basicNewsQuickAutoplay" aria-label="News rotation time">
+                <option value="5">5 sec</option>
+                <option value="7">7 sec</option>
+                <option value="10">10 sec</option>
+              </select>
+            </label>
+            <small id="basicNewsDisplayStatus" aria-live="polite"></small>
+          </div>
           <button id="basicNewsAdminToggle" class="basic-news-admin-toggle" type="button" hidden>Manage news</button>
         </div>
       </div>
+
+      <div id="basicNewsDisabledNotice" class="basic-news-disabled-notice" hidden>News is currently hidden from candidates.</div>
 
       <div class="basic-news-carousel">
         <button id="basicNewsPrev" class="basic-news-arrow prev" type="button" aria-label="Previous update" hidden>‹</button>
@@ -156,9 +175,9 @@
           <label class="basic-news-field">
             <span>Automatic news rotation</span>
             <select id="basicHomeNewsAutoplay">
-              <option value="0">No automatic toggle</option>
-              <option value="3">Every 3 seconds</option>
               <option value="5">Every 5 seconds</option>
+              <option value="7">Every 7 seconds</option>
+              <option value="10">Every 10 seconds</option>
             </select>
           </label>
 
