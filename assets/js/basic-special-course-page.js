@@ -8,6 +8,8 @@ let editingItem = null;
 let editingSession = null;
 let activeSessionId = null;
 let hallState = { capacity: 200, occupied: 0, members: [] };
+let selectedHallMember = null;
+let arrivalShown = false;
 
 async function api(action, args = {}) {
   const { data, error } = await supabaseClient.rpc("acl_special_course_content_api", { p_action: action, p_args: { module_id: courseId, ...args } });
@@ -19,6 +21,17 @@ async function hallApi() {
   const { data, error } = await supabaseClient.rpc("acl_special_course_hall", { p_module_id: courseId });
   if (error) throw error;
   return data;
+}
+
+async function hallAction(action, args = {}) {
+  const { data, error } = await supabaseClient.rpc("acl_special_course_hall_action", { p_action: action, p_module_id: courseId, p_args: args });
+  if (error) throw error;
+  return data;
+}
+
+async function refreshHall() {
+  hallState = await hallApi();
+  renderHall();
 }
 
 const typeInfo = {
@@ -80,21 +93,67 @@ function renderHall() {
   const members = new Map((hallState.members || []).map(member => [Number(member.seat_number), member]));
   const capacity = Number(hallState.capacity || 200);
   $("scpHallOccupied").textContent = String(hallState.occupied || members.size);
+  $("scpResetAsked").hidden = !hallState.admin;
   $("scpVisitorsHall").innerHTML = Array.from({ length: capacity }, (_, index) => {
     const seat = index + 1;
     const member = members.get(seat);
     const label = member ? `Seat ${seat}, occupied by ${member.name}` : `Seat ${seat}, available`;
-    return `<button class="scp-chair ${member ? "is-occupied" : ""} ${member?.is_you ? "is-you" : ""}" type="button" data-seat="${seat}" ${member ? "" : "disabled"} aria-label="${esc(label)}">
-      ${member ? '<span class="scp-person"><i></i><b></b></span>' : ""}<span class="scp-chair-back"></span><span class="scp-chair-seat"></span><small>${String(seat).padStart(3,"0")}</small>
+    const attendance = new Set(member?.attendance || []);
+    return `<button class="scp-chair ${member ? "is-occupied" : ""} ${member?.is_you ? "is-you" : ""} ${member?.asked ? "is-asked" : ""} ${member?.gender === "female" ? "is-female" : "is-male"}" type="button" data-seat="${seat}" ${member ? "" : "disabled"} aria-label="${esc(label)}">
+      ${member ? '<span class="scp-person"><i></i><b></b><em></em></span>' : ""}<span class="scp-chair-back"></span><span class="scp-chair-seat"></span><small>${String(seat).padStart(3,"0")}</small><span class="scp-attendance-dots">${[1,2,3,4].map(slot=>`<i class="${attendance.has(slot)?"done":""}"></i>`).join("")}</span>
     </button>`;
   }).join("");
   $("scpVisitorsHall").querySelectorAll(".is-occupied").forEach(button => button.addEventListener("click", () => {
     const member = members.get(Number(button.dataset.seat));
     if (!member) return;
+    selectedHallMember = member;
     $("scpSeatNumber").textContent = `SEAT ${String(member.seat_number).padStart(3,"0")}${member.is_you ? " · YOUR SEAT" : ""}`;
     $("scpSeatName").textContent = member.name;
+    $("scpSeatStars").textContent = `${"★".repeat(Math.min(Number(member.stars||0),10))}${Number(member.stars||0)>10?` +${Number(member.stars)-10}`:""}  ${member.stars || 0} star${Number(member.stars)===1?"":"s"}`;
+    $("scpSeatCard").classList.toggle("is-female", member.gender === "female");
+    $("scpSeatAdminActions").hidden = !hallState.admin;
+    $("scpCallMember").textContent = member.asked ? "Called already" : "Call this seat";
     $("scpSeatCard").hidden = false;
   }));
+  showArrivalSeat();
+}
+
+function showArrivalSeat() {
+  if (arrivalShown) return;
+  const params = new URLSearchParams(location.search);
+  const seat = Number(params.get("seat") || hallState.your_seat || 0);
+  if (!seat || params.get("welcome") !== "1") return;
+  arrivalShown = true;
+  $("scpHallSection").open = true;
+  const chair = $("scpVisitorsHall").querySelector(`[data-seat="${seat}"]`);
+  if (!chair) return;
+  chair.classList.add("is-arrival");
+  chair.scrollIntoView({ behavior: "smooth", block: "center" });
+  setTimeout(() => chair.classList.remove("is-arrival"), 5000);
+  history.replaceState(null,"",location.pathname+`?edition=basic&course=${encodeURIComponent(courseId)}`);
+}
+
+function renderAttendance(session) {
+  const panel = $("scpAttendancePanel");
+  const slot = Number(session.session_number);
+  if (slot < 1 || slot > 4) { panel.hidden = true; panel.innerHTML = ""; return; }
+  const attendees = (hallState.members || []).filter(member => (member.attendance || []).includes(slot));
+  const me = (hallState.members || []).find(member => member.is_you);
+  const checked = (me?.attendance || []).includes(slot);
+  panel.hidden = false;
+  if (state.admin) {
+    panel.innerHTML = `<div class="scp-attendance-admin-head"><div><span>ROOM ${slot} ATTENDANCE</span><strong>${attendees.length} checked in</strong></div></div><div class="scp-attendance-list">${attendees.length?attendees.map(member=>`<span><b>${String(member.seat_number).padStart(3,"0")}</b>${esc(member.name)}</span>`).join(""):"<p>No members have checked in yet.</p>"}</div>`;
+  } else if (me) {
+    panel.innerHTML = checked ? `<div class="scp-checkin-success">✓ Attendance recorded for Room ${slot}</div>` : `<button id="scpCheckIn" class="scp-checkin-button" type="button">Check in to Room ${slot}</button>`;
+    $("scpCheckIn")?.addEventListener("click", async event => {
+      event.currentTarget.disabled = true;
+      event.currentTarget.textContent = "Recording attendance…";
+      try { await hallAction("check_in", { attendance_slot: slot, session_id: session.id }); await refreshHall(); renderAttendance(session); }
+      catch (error) { event.currentTarget.disabled = false; event.currentTarget.textContent = error.message || "Could not check in"; }
+    });
+  } else {
+    panel.innerHTML = '<div class="scp-checkin-success">Your theater seat is required before attendance can be recorded.</div>';
+  }
 }
 
 function openRoom(id) {
@@ -104,6 +163,7 @@ function openRoom(id) {
   $("scpDoorNumber").textContent = String(session.session_number).padStart(2,"0");
   $("scpRoomEyebrow").textContent = `SESSION ${String(session.session_number).padStart(2,"0")}`;
   $("scpRoomTitle").textContent = session.title;
+  renderAttendance(session);
   const items = sessionItems(id).filter(item => state.admin || item.is_active);
   $("scpRoomItems").innerHTML = items.length ? items.map((item, index) => {
     const info = typeInfo[item.item_type] || ["•", "Course item", "Open"];
@@ -246,6 +306,10 @@ document.addEventListener("keydown", event => { if (event.key === "Escape" && !$
 $("scpSeatClose")?.addEventListener("click", () => { $("scpSeatCard").hidden = true; });
 $("scpSeatCard")?.addEventListener("click", event => { if (event.target === $("scpSeatCard")) $("scpSeatCard").hidden = true; });
 document.addEventListener("keydown", event => { if (event.key === "Escape") $("scpSeatCard").hidden = true; });
+$("scpCallMember")?.addEventListener("click", async () => { if (!selectedHallMember) return; await hallAction("call_member",{seat_number:selectedHallMember.seat_number}); $("scpSeatCard").hidden=true; await refreshHall(); });
+$("scpAwardStar")?.addEventListener("click", async () => { if (!selectedHallMember) return; await hallAction("award_star",{seat_number:selectedHallMember.seat_number}); await refreshHall(); const updated=(hallState.members||[]).find(m=>m.seat_number===selectedHallMember.seat_number); if(updated){selectedHallMember=updated;$("scpSeatStars").textContent=`${"★".repeat(Math.min(Number(updated.stars||0),10))}${Number(updated.stars||0)>10?` +${Number(updated.stars)-10}`:""}  ${updated.stars||0} star${Number(updated.stars)===1?"":"s"}`;} });
+$("scpRemoveStar")?.addEventListener("click", async () => { if (!selectedHallMember) return; await hallAction("remove_star",{seat_number:selectedHallMember.seat_number}); await refreshHall(); const updated=(hallState.members||[]).find(m=>m.seat_number===selectedHallMember.seat_number); if(updated){selectedHallMember=updated;$("scpSeatStars").textContent=`${"★".repeat(Math.min(Number(updated.stars||0),10))}  ${updated.stars||0} star${Number(updated.stars)===1?"":"s"}`;} });
+$("scpResetAsked")?.addEventListener("click", async event => { event.preventDefault();event.stopPropagation();await hallAction("reset_asked");await refreshHall(); });
 $("scpPrintCertificate")?.addEventListener("click", () => window.print());
 
 async function load() {
