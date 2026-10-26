@@ -7,9 +7,16 @@ let state = null;
 let editingItem = null;
 let editingSession = null;
 let activeSessionId = null;
+let hallState = { capacity: 200, occupied: 0, members: [] };
 
 async function api(action, args = {}) {
   const { data, error } = await supabaseClient.rpc("acl_special_course_content_api", { p_action: action, p_args: { module_id: courseId, ...args } });
+  if (error) throw error;
+  return data;
+}
+
+async function hallApi() {
+  const { data, error } = await supabaseClient.rpc("acl_special_course_hall", { p_module_id: courseId });
   if (error) throw error;
   return data;
 }
@@ -65,7 +72,29 @@ function render() {
   }));
 
   populateSessionSelect();
+  renderHall();
   renderCertificate(state.certificate || {});
+}
+
+function renderHall() {
+  const members = new Map((hallState.members || []).map(member => [Number(member.seat_number), member]));
+  const capacity = Number(hallState.capacity || 200);
+  $("scpHallOccupied").textContent = String(hallState.occupied || members.size);
+  $("scpVisitorsHall").innerHTML = Array.from({ length: capacity }, (_, index) => {
+    const seat = index + 1;
+    const member = members.get(seat);
+    const label = member ? `Seat ${seat}, occupied by ${member.name}` : `Seat ${seat}, available`;
+    return `<button class="scp-chair ${member ? "is-occupied" : ""} ${member?.is_you ? "is-you" : ""}" type="button" data-seat="${seat}" ${member ? "" : "disabled"} aria-label="${esc(label)}">
+      ${member ? '<span class="scp-person"><i></i><b></b></span>' : ""}<span class="scp-chair-back"></span><span class="scp-chair-seat"></span><small>${String(seat).padStart(3,"0")}</small>
+    </button>`;
+  }).join("");
+  $("scpVisitorsHall").querySelectorAll(".is-occupied").forEach(button => button.addEventListener("click", () => {
+    const member = members.get(Number(button.dataset.seat));
+    if (!member) return;
+    $("scpSeatNumber").textContent = `SEAT ${String(member.seat_number).padStart(3,"0")}${member.is_you ? " · YOUR SEAT" : ""}`;
+    $("scpSeatName").textContent = member.name;
+    $("scpSeatCard").hidden = false;
+  }));
 }
 
 function openRoom(id) {
@@ -214,11 +243,14 @@ $("scpCertificateForm")?.addEventListener("submit", async event => {
 $("scpRoomClose")?.addEventListener("click", closeRoom);
 $("scpRoomModal")?.addEventListener("click", event => { if (event.target === $("scpRoomModal")) closeRoom(); });
 document.addEventListener("keydown", event => { if (event.key === "Escape" && !$("scpRoomModal").hidden) closeRoom(); });
+$("scpSeatClose")?.addEventListener("click", () => { $("scpSeatCard").hidden = true; });
+$("scpSeatCard")?.addEventListener("click", event => { if (event.target === $("scpSeatCard")) $("scpSeatCard").hidden = true; });
+document.addEventListener("keydown", event => { if (event.key === "Escape") $("scpSeatCard").hidden = true; });
 $("scpPrintCertificate")?.addEventListener("click", () => window.print());
 
 async function load() {
   if (!courseId) throw new Error("Course link is incomplete.");
-  state = await api("get");
+  [state, hallState] = await Promise.all([api("get"), hallApi()]);
   render();
 }
 
