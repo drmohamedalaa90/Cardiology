@@ -601,6 +601,7 @@ const BASIC_HOME_DEFAULTS={
   news_title:"Updates & News",
   news_subtitle:"Official announcements, module updates and important ACL news.",
   news_enabled:true,
+  league_enabled:true,
   news_autoplay_seconds:5
 };
 
@@ -635,6 +636,16 @@ function applyBasicHomeSettings(settings={}){
     newsSection.classList.toggle("news-disabled",!newsEnabled&&basicNewsAdmin);
   }
   if(disabledNotice)disabledNotice.hidden=newsEnabled||!basicNewsAdmin;
+
+  const leagueEnabled=basicHomeSettings.league_enabled!==false;
+  const leagueSection=document.getElementById("basicLeagueDashboard");
+  const leagueTable=document.getElementById("basicLeagueTable");
+  const leagueNotice=document.getElementById("basicLeagueHiddenNotice");
+  if(leagueSection){leagueSection.hidden=!leagueEnabled&&!basicNewsAdmin;leagueSection.classList.toggle("league-disabled",!leagueEnabled&&basicNewsAdmin);}
+  if(leagueTable)leagueTable.hidden=!leagueEnabled&&basicNewsAdmin;
+  if(leagueNotice)leagueNotice.hidden=leagueEnabled||!basicNewsAdmin;
+  const leagueToggle=document.getElementById("basicLeagueEnabled");if(leagueToggle)leagueToggle.checked=leagueEnabled;
+  const leagueLabel=document.getElementById("basicLeagueEnabledLabel");if(leagueLabel)leagueLabel.textContent=leagueEnabled?"On":"Off";
 
   const fields={
     basicHomeHeroEyebrow:basicHomeSettings.hero_eyebrow,
@@ -678,6 +689,8 @@ async function loadBasicHomeSettings(){
   basicNewsAdmin=isAdminUser;
   const displayControls=document.getElementById("basicNewsDisplayControls");
   if(displayControls)displayControls.hidden=!isAdminUser;
+  const leagueControl=document.getElementById("basicLeagueVisibilityControl");
+  if(leagueControl)leagueControl.hidden=!isAdminUser;
 
   const {data,error}=await supabaseClient
     .from("acl_basic_home_settings")
@@ -731,6 +744,7 @@ document.getElementById("basicHomeTextForm")?.addEventListener("submit",async ev
       news_title:document.getElementById("basicHomeNewsTitle").value.trim()||BASIC_HOME_DEFAULTS.news_title,
       news_subtitle:document.getElementById("basicHomeNewsSubtitle").value.trim()||BASIC_HOME_DEFAULTS.news_subtitle,
       news_enabled:document.getElementById("basicNewsEnabled").checked,
+      league_enabled:document.getElementById("basicLeagueEnabled")?.checked!==false,
       news_autoplay_seconds:Number(document.getElementById("basicHomeNewsAutoplay").value||5),
       updated_by:session.user.id,
       updated_at:new Date().toISOString()
@@ -780,6 +794,13 @@ async function saveBasicNewsDisplaySettings(){
   }
 }
 
+async function saveBasicLeagueVisibility(){
+ const toggle=document.getElementById("basicLeagueEnabled");if(!toggle)return;
+ try{const {data:{session}}=await supabaseClient.auth.getSession();if(!session?.user||String(session.user.email||"").trim().toLowerCase()!=="drmohamedalaa90@gmail.com")throw new Error("Admin access required.");
+  const {data,error}=await supabaseClient.from("acl_basic_home_settings").update({league_enabled:toggle.checked,updated_by:session.user.id,updated_at:new Date().toISOString()}).eq("id","basic-home").select().single();if(error)throw error;applyBasicHomeSettings(data);
+ }catch(error){console.error("SAVE LEAGUE VISIBILITY",error);applyBasicHomeSettings(basicHomeSettings);}
+}
+document.getElementById("basicLeagueEnabled")?.addEventListener("change",()=>void saveBasicLeagueVisibility());
 document.getElementById("basicNewsEnabled")?.addEventListener("change",()=>void saveBasicNewsDisplaySettings());
 document.getElementById("basicNewsQuickAutoplay")?.addEventListener("change",()=>void saveBasicNewsDisplaySettings());
 document.getElementById("basicHomeNewsAutoplay")?.addEventListener("change",event=>{
@@ -910,12 +931,11 @@ function aclSaveNewsDestination(){
 }
 
 async function loadBasicLeagueLeaders(){
- const podium=$("basicLeaguePodium"),list=$("basicLeagueTop10");if(!podium||!list)return;
+ const list=$("basicLeagueTop10");if(!list)return;
  try{const {data,error}=await supabaseClient.rpc("acl_basic_league_top10");if(error)throw error;const leaders=Array.isArray(data?.leaders)?data.leaders:[];
   const avatar=row=>row.avatar_url?`<span class="basic-league-avatar"><img src="${esc(row.avatar_url)}" alt=""></span>`:`<span class="basic-league-avatar">${esc(initials(row.name))}</span>`;
-  podium.innerHTML=leaders.slice(0,3).length?leaders.slice(0,3).map(row=>`<article class="basic-league-winner rank-${row.rank}"><span class="basic-league-rank">${row.rank===1?'★ CHAMPION':`#${row.rank}`}</span>${avatar(row)}<strong>${esc(row.name)}</strong><b>${Number(row.points||0)} pts</b><small>${Number(row.modules_passed||0)} passed · ${Number(row.avg_accuracy||0)}%</small></article>`).join(""):'<div class="basic-league-loading">The league begins when candidates complete their first module quiz.</div>';
-  list.innerHTML=leaders.slice(3,10).map(row=>`<article class="basic-league-row"><span>#${row.rank}</span><strong>${esc(row.name)}</strong><b>${Number(row.points||0)} pts</b><small>${Number(row.modules_passed||0)} passed · ${Number(row.avg_accuracy||0)}%</small></article>`).join("");
+  list.innerHTML=leaders.length?leaders.slice(0,10).map(row=>`<article class="basic-league-row rank-${row.rank} ${Number(row.rank)<=3?'top-three':''}"><span class="basic-league-position">${Number(row.rank)}</span><div class="basic-league-player">${avatar(row)}<strong>${esc(row.name)}</strong></div><span class="basic-league-stat" title="Modules played">${Number(row.modules_attempted||0)}</span><span class="basic-league-stat" title="Modules passed">${Number(row.modules_passed||0)}</span><span class="basic-league-stat">${Number(row.avg_accuracy||0)}%</span><b class="basic-league-points">${Number(row.points||0)}</b></article>`).join(""):'<div class="basic-league-loading">The league begins when candidates complete their first module quiz.</div>';
   const next=Date.parse(data?.next_update_at||"");if(Number.isFinite(next)){const delay=Math.max(1000,next-Date.now()+1500);setTimeout(()=>void loadBasicLeagueLeaders(),Math.min(delay,2147483647));}
- }catch(error){podium.innerHTML='<div class="basic-league-loading">League standings are temporarily unavailable.</div>';list.innerHTML="";console.warn("ACL LEAGUE",error)}
+ }catch(error){list.innerHTML='<div class="basic-league-loading">League standings are temporarily unavailable.</div>';console.warn("ACL LEAGUE",error)}
 }
 void loadBasicLeagueLeaders();

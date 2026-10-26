@@ -28,7 +28,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="assets/css/basic-home.css?v=21">
+  <link rel="stylesheet" href="assets/css/basic-home.css?v=22">
   <link rel="stylesheet" href="assets/css/basic-special-courses.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -349,10 +349,16 @@
       </section>
     </section>
 
-    <section id="basicLeagueDashboard" class="basic-league-dashboard" aria-labelledby="basicLeagueTitle">
-      <div class="basic-league-head"><div><span>ACL LEAGUE</span><h2 id="basicLeagueTitle">Top 10 League Leaders</h2><p>Best results from the regular learning modules</p></div><div class="basic-league-trophy">★</div></div>
-      <div id="basicLeaguePodium" class="basic-league-podium"><div class="basic-league-loading">Calculating the league table…</div></div>
-      <div id="basicLeagueTop10" class="basic-league-top10"></div>
+    <section id="basicLeagueDashboard" class="basic-league-dashboard" aria-labelledby="basicLeagueTitle" hidden>
+      <div class="basic-league-head">
+        <div><span>ACL LEAGUE TABLE</span><h2 id="basicLeagueTitle">Top 10 League Leaders</h2><p>Regular modules · first attempt only · updated daily at 12:00 AM</p></div>
+        <div class="basic-league-head-actions"><label id="basicLeagueVisibilityControl" class="basic-league-visibility" hidden><span>Show league</span><input id="basicLeagueEnabled" type="checkbox" role="switch" checked><i aria-hidden="true"></i><b id="basicLeagueEnabledLabel">On</b></label><div class="basic-league-trophy">🏆</div></div>
+      </div>
+      <div id="basicLeagueHiddenNotice" class="basic-league-hidden-notice" hidden>The league table is hidden from candidates.</div>
+      <div id="basicLeagueTable" class="basic-league-table">
+        <div class="basic-league-table-head"><span>POS</span><span>CANDIDATE</span><span title="Modules played">P</span><span title="Modules passed">W</span><span title="Average accuracy">ACC</span><span>PTS</span></div>
+        <div id="basicLeagueTop10" class="basic-league-top10"><div class="basic-league-loading">Calculating the league table…</div></div>
+      </div>
     </section>
 
     <section class="basic-intro">
@@ -410,7 +416,7 @@
   <div id="specialPasscodeModal" class="special-passcode-modal" hidden><section class="special-passcode-dialog" role="dialog" aria-modal="true" aria-labelledby="specialPasscodeTitle"><h2 id="specialPasscodeTitle">Special course</h2><p>Enter the course passcode to unlock this module.</p><form id="specialPasscodeForm"><input id="specialPasscodeModule" type="hidden"><fieldset class="special-gender"><legend>First, choose your character</legend><label><input type="radio" name="specialGender" value="male" required><span class="special-gender-person male">●</span><b>Male</b></label><label><input type="radio" name="specialGender" value="female" required><span class="special-gender-person female">●</span><b>Female</b></label></fieldset><input id="specialPasscodeInput" type="password" autocomplete="one-time-code" placeholder="Course passcode" required><div id="specialPasscodeStatus" class="special-passcode-status" aria-live="polite"></div><div class="special-passcode-actions"><button id="specialPasscodeCancel" class="special-passcode-cancel" type="button">Cancel</button><button id="specialPasscodeSubmit" class="special-passcode-submit" type="submit">Enter course</button></div></form><div id="specialSeatReveal" class="special-seat-reveal" hidden><span>YOUR THEATER SEAT</span><strong id="specialSeatNumber">001</strong><p>Securing your seat… entering in <b id="specialSeatCountdown">5</b> seconds</p></div></section></div>
 
   <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>
-  <script type="module" src="assets/js/basic-home.js?v=29"></script>
+  <script type="module" src="assets/js/basic-home.js?v=30"></script>
   <script type="module" src="assets/js/basic-special-courses.js?v=4"></script>
   <script type="module" src="assets/js/basic-module-manager.js?v=2"></script>
 <script type="module" src="assets/js/official-list.js?v=1"></script></body>
