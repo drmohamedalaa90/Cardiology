@@ -11,6 +11,7 @@ let activeSessionId = null;
 let hallState = { capacity: 200, occupied: 0, members: [] };
 let selectedHallMember = null;
 let arrivalShown = false;
+const seenRoomCalls=new Map();let roomCallTimer=null;
 
 async function api(action, args = {}) {
   const { data, error } = await supabaseClient.rpc("acl_special_course_content_api", { p_action: action, p_args: { module_id: courseId, ...args } });
@@ -167,9 +168,11 @@ function renderAttendance(session) {
   panel.hidden = false;
   if (state.admin) {
     const phase = room.ended_at ? "Lecture ended" : room.started_at ? "Lecture in progress" : "Not started", checkedCount=attendees.filter(member=>attendanceFor(member,slot)?.checked_in_at).length;
-    panel.innerHTML = `<div class="scp-attendance-admin-head"><div><span>ROOM ${slot} ATTENDANCE</span><strong>${checkedCount} checked in · ${phase}</strong></div><div class="scp-lecture-actions"><button data-room-lock>${room.is_locked?"Unlock room":"Lock room"}</button><button data-reset-attendance>Reset attendance</button>${!room.started_at?'<button data-start-lecture>Start lecture</button>':!room.ended_at?'<button data-end-lecture>End lecture</button>':'<span class="scp-lecture-ended">Lecture ended</span>'}</div></div><div class="scp-attendance-list">${attendees.length?attendees.map(member=>{const a=attendanceFor(member,slot);return `<span class="${a.status==='orange'?'warning':a.status==='red'?'missed':''}"><b>${String(member.seat_number).padStart(3,"0")}</b>${esc(member.name)} · ${!a.checked_in_at?'did not check in':a.checked_out_at?'checked out':'inside'}</span>`}).join(""):"<p>No members have checked in yet.</p>"}</div>`;
+    panel.innerHTML = `<div class="scp-attendance-admin-head"><div><span>ROOM ${slot} ATTENDANCE</span><strong>${checkedCount} checked in · ${phase}</strong></div><div class="scp-lecture-actions"><button data-room-lock>${room.is_locked?"Unlock room":"Lock room"}</button><button data-reset-attendance>Reset attendance</button>${!room.started_at?'<button data-start-lecture>Start lecture</button>':!room.ended_at?'<button data-end-lecture>End lecture</button>':'<span class="scp-lecture-ended">Lecture ended</span>'}</div></div><div class="scp-seat-caller"><label>Call a checked-in seat</label><div><input data-call-seat type="number" min="1" max="200" placeholder="Seat number"><button data-call-manual>Call seat</button><button data-call-toss>Make a toss</button></div><p data-call-status></p></div><div class="scp-attendance-list">${attendees.length?attendees.map(member=>{const a=attendanceFor(member,slot);return `<span class="${a.status==='orange'?'warning':a.status==='red'?'missed':''}"><b>${String(member.seat_number).padStart(3,"0")}</b>${esc(member.name)} · ${!a.checked_in_at?'did not check in':a.checked_out_at?'checked out':'inside'}</span>`}).join(""):"<p>No members have checked in yet.</p>"}</div>`;
     panel.querySelector("[data-room-lock]")?.addEventListener("click",async()=>{await hallAction("set_room_lock",{session_id:session.id,locked:!room.is_locked});await refreshHall();render();openRoom(session.id)});
     panel.querySelector("[data-reset-attendance]")?.addEventListener("click",async()=>{if(!confirm(`Reset all Room ${slot} check-ins, checkouts and lecture timing?`))return;await hallAction("reset_room_attendance",{session_id:session.id});await refreshHall();render();openRoom(session.id)});
+    panel.querySelector("[data-call-manual]")?.addEventListener("click",async()=>{const seat=Number(panel.querySelector("[data-call-seat]").value),status=panel.querySelector("[data-call-status]");try{const result=await hallAction("call_seat_manual",{session_id:session.id,seat_number:seat});await refreshHall();await runSeatCall(session.id,result.seat_number,"manual")}catch(error){status.textContent=error.message||"Could not call this seat"}});
+    panel.querySelector("[data-call-toss]")?.addEventListener("click",async()=>{const status=panel.querySelector("[data-call-status]");try{const result=await hallAction("call_seat_toss",{session_id:session.id});await refreshHall();await runSeatCall(session.id,result.seat_number,"toss")}catch(error){status.textContent=error.message||"No checked-in seats available"}});
     panel.querySelector("[data-start-lecture]")?.addEventListener("click",async()=>{await hallAction("start_lecture",{session_id:session.id});await refreshHall();render();openRoom(session.id)});
     panel.querySelector("[data-end-lecture]")?.addEventListener("click",async()=>{await hallAction("end_lecture",{session_id:session.id});await refreshHall();render();openRoom(session.id)});
   } else if (me) {
@@ -186,6 +189,7 @@ function openRoom(id) {
   if (!session) return;
   if (roomState(id).is_locked && !state.admin) { alert("This room is currently locked by the Academic Director."); return; }
   activeSessionId = id;
+  if(!seenRoomCalls.has(id))seenRoomCalls.set(id,Number(roomState(id).call_sequence||0));
   $("scpDoorNumber").textContent = String(session.session_number).padStart(2,"0");
   $("scpRoomEyebrow").textContent = `SESSION ${String(session.session_number).padStart(2,"0")}`;
   $("scpRoomTitle").textContent = session.title;
@@ -209,6 +213,16 @@ function openRoom(id) {
   });
   $("scpRoomAddItem")?.addEventListener("click", () => { closeRoom(); openItem(null, id); });
 }
+
+async function runSeatCall(sessionId,seat,mode){
+  const overlay=$("scpSeatCallOverlay"),number=$("scpSeatCallNumber"),label=$("scpSeatCallMode"),session=sessions().find(x=>x.id===sessionId);if(!overlay||!seat)return;
+  seenRoomCalls.set(sessionId,Number(roomState(sessionId).call_sequence||seenRoomCalls.get(sessionId)||0));overlay.hidden=false;label.textContent=mode==="toss"?"RANDOM SEAT TOSS":"SEAT CALLED";
+  const eligible=(hallState.members||[]).filter(member=>attendanceFor(member,Number(session?.session_number))?.checked_in_at).map(member=>Number(member.seat_number));
+  if(mode==="toss"&&eligible.length){let ticks=0;clearInterval(roomCallTimer);await new Promise(resolve=>{roomCallTimer=setInterval(()=>{number.textContent=String(eligible[Math.floor(Math.random()*eligible.length)]).padStart(3,"0");if(++ticks>=24){clearInterval(roomCallTimer);resolve()}},75)})}
+  number.textContent=String(seat).padStart(3,"0");await new Promise(resolve=>setTimeout(resolve,1200));overlay.hidden=true;renderHall();$("scpVisitorsHall").querySelector(`[data-seat="${seat}"]`)?.click();
+}
+async function pollRoomCalls(){if(!activeSessionId||$("scpRoomModal").hidden)return;try{hallState=await hallApi();const room=roomState(activeSessionId),seq=Number(room.call_sequence||0),seen=Number(seenRoomCalls.get(activeSessionId)||0);if(seq>seen&&room.called_seat){seenRoomCalls.set(activeSessionId,seq);await runSeatCall(activeSessionId,Number(room.called_seat),room.call_mode||"manual")}}catch{}}
+setInterval(()=>void pollRoomCalls(),1500);
 
 function closeRoom() {
   $("scpRoomModal").classList.remove("is-open");

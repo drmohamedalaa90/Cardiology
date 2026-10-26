@@ -908,3 +908,13 @@ function aclSaveNewsDestination(){
  if(label)u.searchParams.set('acl_link_label',label);else u.searchParams.delete('acl_link_label');
  return u.origin===location.origin?u.pathname+u.search+u.hash:u.href;
 }
+
+async function loadBasicLeagueLeaders(){
+ const podium=$("basicLeaguePodium"),list=$("basicLeagueTop10");if(!podium||!list)return;
+ try{const {data,error}=await supabaseClient.rpc("acl_basic_league_top10");if(error)throw error;const leaders=Array.isArray(data?.leaders)?data.leaders:[];
+  const avatar=row=>row.avatar_url?`<span class="basic-league-avatar"><img src="${esc(row.avatar_url)}" alt=""></span>`:`<span class="basic-league-avatar">${esc(initials(row.name))}</span>`;
+  podium.innerHTML=leaders.slice(0,3).length?leaders.slice(0,3).map(row=>`<article class="basic-league-winner rank-${row.rank}"><span class="basic-league-rank">${row.rank===1?'★ CHAMPION':`#${row.rank}`}</span>${avatar(row)}<strong>${esc(row.name)}</strong><b>${Number(row.points||0)} pts</b><small>${Number(row.modules_passed||0)} passed · ${Number(row.avg_accuracy||0)}%</small></article>`).join(""):'<div class="basic-league-loading">The league begins when candidates complete their first module quiz.</div>';
+  list.innerHTML=leaders.slice(3,10).map(row=>`<article class="basic-league-row"><span>#${row.rank}</span><strong>${esc(row.name)}</strong><b>${Number(row.points||0)} pts</b><small>${Number(row.modules_passed||0)} passed · ${Number(row.avg_accuracy||0)}%</small></article>`).join("");
+ }catch(error){podium.innerHTML='<div class="basic-league-loading">League standings are temporarily unavailable.</div>';list.innerHTML="";console.warn("ACL LEAGUE",error)}
+}
+void loadBasicLeagueLeaders();

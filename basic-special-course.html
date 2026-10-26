@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/acl-apple-touch-icon.png?v=3">
   <title>Special Course | Alexandria Cardiology League</title>
   <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
-  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=9">
+  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=10">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -128,6 +128,7 @@
       <button id="scpRoomClose" class="scp-room-close" type="button" aria-label="Close room">×</button>
       <div class="scp-room-door" aria-hidden="true"><span id="scpDoorNumber">01</span><i></i></div>
       <section class="scp-room-interior">
+        <div id="scpSeatCallOverlay" class="scp-seat-call-overlay" hidden><span id="scpSeatCallMode">CALLING A SEAT</span><strong id="scpSeatCallNumber">---</strong><small>Get ready</small></div>
         <div class="scp-room-title"><span id="scpRoomEyebrow">SESSION 01</span><h2 id="scpRoomTitle"></h2></div>
         <section id="scpAttendancePanel" class="scp-attendance-panel" hidden></section>
         <section id="scpRoomHelp" class="scp-room-help" hidden>
@@ -150,6 +151,6 @@
     </section>
   </div>
 
-  <script type="module" src="assets/js/basic-special-course-page.js?v=9"></script>
+  <script type="module" src="assets/js/basic-special-course-page.js?v=10"></script>
 </body>
 </html>
