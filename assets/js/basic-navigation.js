@@ -12,7 +12,7 @@ ensureHead('meta',{name:'msapplication-TileImage',content:'assets/images/acl-ico
 ensureHead('link',{rel:'manifest',href:'manifest.webmanifest?v=3'});
 ensureHead('link',{rel:'icon',type:'image/png',sizes:'192x192',href:'assets/images/acl-icon-192.png?v=3'});
 ensureHead('link',{rel:'apple-touch-icon',sizes:'180x180',href:'assets/images/acl-apple-touch-icon.png?v=3'});
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js?v=8.0.0',{scope:'/Cardiology/',updateViaCache:'none'}).catch(()=>{}),{once:true});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js?v=8.1.0',{scope:'/Cardiology/',updateViaCache:'none'}).catch(()=>{}),{once:true});
 if(document.getElementById('aclFixedNavigation'))return;
 const links=[['basic-home.html','⌂','Home'],['basic-modules.html','▦','Modules'],['basic-challenges.html','⚔','Challenges'],['basic-progress.html','▤','Progress'],['basic-notifications.html','♢','Notifications']];
 const section=page.includes('official')||page==='challenge.html'?'basic-challenges.html':page==='progress.html'?'basic-progress.html':page==='notifications.html'?'basic-notifications.html':page;

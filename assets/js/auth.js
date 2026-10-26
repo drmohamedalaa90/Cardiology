@@ -224,7 +224,7 @@ if (isStandaloneApp() && byId("installAclApp")) {
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
-    .register(`${ACL_CONFIG.siteBase}service-worker.js?v=8.0.0`, {
+    .register(`${ACL_CONFIG.siteBase}service-worker.js?v=8.1.0`, {
       scope: ACL_CONFIG.siteBase,
       updateViaCache: "none"
     })

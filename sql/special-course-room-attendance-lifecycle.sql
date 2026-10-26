@@ -37,7 +37,7 @@ end $function$;
 create or replace function private.acl_special_course_hall_action(p_action text,p_module_id text,p_args jsonb default '{}'::jsonb)
 returns jsonb language plpgsql security definer set search_path='pg_catalog','public','private','auth'
 as $function$
-declare v_uid uuid:=auth.uid();v_admin boolean;v_module public.modules%rowtype;v_access boolean;v_seat integer:=nullif(p_args->>'seat_number','')::integer;v_slot integer:=nullif(p_args->>'attendance_slot','')::integer;v_session uuid:=nullif(p_args->>'session_id','')::uuid;v_question text:=nullif(trim(p_args->>'question'),'');v_room public.special_course_sessions%rowtype;
+declare v_uid uuid:=auth.uid();v_admin boolean;v_module public.modules%rowtype;v_access boolean;v_seat integer:=nullif(p_args->>'seat_number','')::integer;v_slot integer:=nullif(p_args->>'attendance_slot','')::integer;v_session uuid:=nullif(p_args->>'session_id','')::uuid;v_question text:=nullif(trim(p_args->>'question'),'');v_request uuid;v_room public.special_course_sessions%rowtype;
 begin
  if v_uid is null then raise exception 'Sign in required';end if;v_admin:=public.acl_is_basic_question_admin();
  select * into v_module from public.modules where id=p_module_id and edition='basic' and is_special_course;if not found then raise exception 'Special course not found';end if;
@@ -55,7 +55,7 @@ begin
  elsif p_action in ('request_repeat','submit_question') then
   if v_admin then raise exception 'Candidate action only';end if;if v_room.id is null or v_room.is_locked then raise exception 'This course room is locked';end if;
   if p_action='submit_question' and v_question is null then raise exception 'Write your question first';end if;if length(coalesce(v_question,''))>1000 then raise exception 'Question is too long';end if;
-  insert into public.special_course_help_requests(module_id,session_id,user_id,request_type,question) values(p_module_id,v_session,v_uid,case when p_action='request_repeat' then 'repeat' else 'question' end,v_question);return jsonb_build_object('ok',true);
+  insert into public.special_course_help_requests(module_id,session_id,user_id,request_type,question) values(p_module_id,v_session,v_uid,case when p_action='request_repeat' then 'repeat' else 'question' end,v_question) returning id into v_request;return jsonb_build_object('ok',true,'request_id',v_request);
  end if;
  if not v_admin then raise exception 'Admin access required';end if;
  if p_action='set_room_lock' then update public.special_course_sessions set is_locked=coalesce((p_args->>'locked')::boolean,false),updated_at=now() where id=v_session and module_id=p_module_id;

@@ -1,4 +1,5 @@
 import { supabaseClient } from "./supabase-client.js";
+import { ACL_CONFIG } from "./config.js";
 
 const $ = id => document.getElementById(id);
 const esc = (value = "") => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
@@ -32,6 +33,18 @@ async function hallAction(action, args = {}) {
 async function refreshHall() {
   hallState = await hallApi();
   renderHall();
+}
+function urlKeyBytes(value){const padding="=".repeat((4-value.length%4)%4),raw=atob((value+padding).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(raw,c=>c.charCodeAt(0))}
+function bufferBase64(buffer){let raw="";for(const byte of new Uint8Array(buffer))raw+=String.fromCharCode(byte);return btoa(raw)}
+async function ensureAdminPush(){
+  if(!state?.admin||!("serviceWorker"in navigator)||!("PushManager"in window)||Notification.permission!=="granted")return;
+  try{
+    const registration=await navigator.serviceWorker.register("service-worker.js?v=8.1.0",{scope:"/Cardiology/",updateViaCache:"none"});await registration.update();
+    let subscription=await registration.pushManager.getSubscription();
+    if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlKeyBytes(ACL_CONFIG.vapidPublicKey)});
+    const key=subscription.getKey("p256dh"),auth=subscription.getKey("auth"),{data:{session}}=await supabaseClient.auth.getSession();if(!session||!key||!auth)return;
+    await supabaseClient.from("push_subscriptions").upsert({user_id:session.user.id,endpoint:subscription.endpoint,p256dh:bufferBase64(key),auth:bufferBase64(auth),user_agent:navigator.userAgent,device_type:/Mobi|Android/i.test(navigator.userAgent)?"mobile":"desktop",edition:"basic",is_active:true,updated_at:new Date().toISOString()},{onConflict:"endpoint"});
+  }catch(error){console.warn("Admin push registration failed",error)}
 }
 
 const typeInfo = {
@@ -171,15 +184,9 @@ function openRoom(id) {
   $("scpQuestionStatus").textContent = "";
   $("scpQuestionText").value = "";
   const items = sessionItems(id).filter(item => state.admin || item.is_active);
-  $("scpRoomItems").innerHTML = items.length ? items.map((item, index) => {
-    const info = typeInfo[item.item_type] || ["•", "Course item", "Open"];
-    const ready = item.url && item.url !== "#";
-    return `<article class="scp-content-box" style="--box-delay:${180 + index * 70}ms">
-      <span class="scp-box-icon">${info[0]}</span><div><small>${info[1]}</small><h3>${esc(item.title)}</h3>${item.subtitle ? `<p>${esc(item.subtitle)}</p>` : ""}</div>
-      ${ready ? `<a href="${esc(item.url)}" target="_blank" rel="noopener">${info[2]} →</a>` : '<span class="scp-coming">Coming soon</span>'}
-      ${state.admin ? `<div class="scp-box-admin"><button type="button" data-edit-item="${item.id}">Edit</button><button type="button" data-delete-item="${item.id}">Delete</button></div>` : ""}
-    </article>`;
-  }).join("") : `<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin ? '<button id="scpRoomAddItem" type="button">+ Add the first content box</button>' : ""}</div>`;
+  const itemCard=(item,index)=>{const info=typeInfo[item.item_type]||["•","Course item","Open"],ready=item.url&&item.url!=="#";return `<article class="scp-content-box" style="--box-delay:${180+index*70}ms"><span class="scp-box-icon">${info[0]}</span><div><small>${info[1]}</small><h3>${esc(item.title)}</h3>${item.subtitle?`<p>${esc(item.subtitle)}</p>`:""}</div>${ready?`<a href="${esc(item.url)}" target="_blank" rel="noopener">${info[2]} →</a>`:'<span class="scp-coming">Coming soon</span>'}${state.admin?`<div class="scp-box-admin"><button type="button" data-edit-item="${item.id}">Edit</button><button type="button" data-delete-item="${item.id}">Delete</button></div>`:""}</article>`};
+  const videos=items.filter(item=>item.item_type==="lecture"),others=items.filter(item=>item.item_type!=="lecture");
+  $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
   $("scpRoomModal").hidden = false;
   document.body.classList.add("scp-modal-open");
   requestAnimationFrame(() => $("scpRoomModal").classList.add("is-open"));
@@ -326,6 +333,7 @@ async function load() {
   if (!courseId) throw new Error("Course link is incomplete.");
   [state, hallState] = await Promise.all([api("get"), hallApi()]);
   render();
+  void ensureAdminPush();
 }
 
 load().catch(error => {
@@ -338,5 +346,6 @@ load().catch(error => {
 });
 
 $("scpRefresh")?.addEventListener("click",()=>location.reload());
-$("scpRepeatRequest")?.addEventListener("click",async event=>{if(!activeSessionId)return;const session=sessions().find(x=>x.id===activeSessionId);const button=event.currentTarget;button.disabled=true;button.textContent="Sending…";try{await hallAction("request_repeat",{session_id:activeSessionId,session_number:session?.session_number});button.textContent="✓ Request sent to Dr. Mohamed Alaa";$("scpQuestionStatus").textContent="The Academic Director has been notified.";}catch(error){button.disabled=false;button.textContent="Please repeat — I don’t understand";$("scpQuestionStatus").textContent=error.message||"Could not send the request.";}});
-$("scpQuestionForm")?.addEventListener("submit",async event=>{event.preventDefault();if(!activeSessionId)return;const text=$("scpQuestionText").value.trim(),session=sessions().find(x=>x.id===activeSessionId),button=event.currentTarget.querySelector("button");if(!text)return;button.disabled=true;button.textContent="Sending…";try{await hallAction("submit_question",{session_id:activeSessionId,session_number:session?.session_number,question:text});$("scpQuestionText").value="";$("scpQuestionStatus").textContent="✓ Your question was sent to the Academic Director.";button.textContent="Sent";}catch(error){button.disabled=false;button.textContent="Submit question";$("scpQuestionStatus").textContent=error.message||"Could not submit your question.";}});
+async function sendHelpPush(requestId){if(!requestId)return;try{await supabaseClient.functions.invoke("send-course-help-push",{body:{request_id:requestId}})}catch(error){console.warn("Push delivery failed",error)}}
+$("scpRepeatRequest")?.addEventListener("click",async event=>{if(!activeSessionId)return;const session=sessions().find(x=>x.id===activeSessionId),button=event.currentTarget;button.disabled=true;button.textContent="Sending…";try{const result=await hallAction("request_repeat",{session_id:activeSessionId,session_number:session?.session_number});void sendHelpPush(result?.request_id);button.textContent="✓ Request sent";$("scpQuestionStatus").textContent="The Doctor has been notified.";setTimeout(()=>{button.disabled=false;button.textContent="Please repeat — I don’t understand";$("scpQuestionStatus").textContent=""},3500)}catch(error){button.disabled=false;button.textContent="Please repeat — I don’t understand";$("scpQuestionStatus").textContent=error.message||"Could not send the request.";}});
+$("scpQuestionForm")?.addEventListener("submit",async event=>{event.preventDefault();if(!activeSessionId)return;const text=$("scpQuestionText").value.trim(),session=sessions().find(x=>x.id===activeSessionId),button=event.currentTarget.querySelector("button");if(!text)return;button.disabled=true;button.textContent="Sending…";try{const result=await hallAction("submit_question",{session_id:activeSessionId,session_number:session?.session_number,question:text});void sendHelpPush(result?.request_id);$("scpQuestionText").value="";$("scpQuestionStatus").textContent="✓ Your question was sent to the Doctor.";button.textContent="Sent";}catch(error){button.disabled=false;button.textContent="Submit question";$("scpQuestionStatus").textContent=error.message||"Could not submit your question.";}});

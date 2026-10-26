@@ -1,4 +1,5 @@
 import { supabaseClient } from "./supabase-client.js";
+import { ACL_CONFIG } from "./config.js";
 const $=id=>document.getElementById(id);
 const esc=(v="")=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const safeHref=(value="")=>{
@@ -166,6 +167,10 @@ function bnRefreshDeviceControls(){
 }
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();bnInstallPrompt=event;bnRefreshDeviceControls();});
 window.addEventListener('appinstalled',()=>{bnInstallPrompt=null;bnRefreshDeviceControls();});
+function bnUrlKey(value){const pad="=".repeat((4-value.length%4)%4),raw=atob((value+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(raw,c=>c.charCodeAt(0))}
+function bnB64(buffer){let raw="";for(const byte of new Uint8Array(buffer))raw+=String.fromCharCode(byte);return btoa(raw)}
+async function bnSavePush(){const registration=await navigator.serviceWorker.register('service-worker.js?v=8.1.0',{scope:'/Cardiology/',updateViaCache:'none'});await registration.update();let subscription=await registration.pushManager.getSubscription();if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:bnUrlKey(ACL_CONFIG.vapidPublicKey)});const key=subscription.getKey('p256dh'),auth=subscription.getKey('auth'),{data:{session}}=await supabaseClient.auth.getSession();if(!session||!key||!auth)throw new Error('Sign in again to enable notifications.');const {error}=await supabaseClient.from('push_subscriptions').upsert({user_id:session.user.id,endpoint:subscription.endpoint,p256dh:bnB64(key),auth:bnB64(auth),user_agent:navigator.userAgent,device_type:/Mobi|Android/i.test(navigator.userAgent)?'mobile':'desktop',edition:'basic',is_active:true,updated_at:new Date().toISOString()},{onConflict:'endpoint'});if(error)throw error}
+
 $('bnPushToggle')?.addEventListener('change',async event=>{
  const toggle=event.currentTarget;
  if(!toggle.checked){localStorage.setItem('aclDeviceNotifications','off');bnRefreshDeviceControls();return;}
@@ -174,7 +179,7 @@ $('bnPushToggle')?.addEventListener('change',async event=>{
    const permission=await Notification.requestPermission();
    if(permission==='granted'){
      localStorage.setItem('aclDeviceNotifications','on');
-     if('serviceWorker'in navigator)await navigator.serviceWorker.register('service-worker.js',{scope:'/Cardiology/'});
+     if('serviceWorker'in navigator&&'PushManager'in window)await bnSavePush();
    }else localStorage.setItem('aclDeviceNotifications','off');
  }catch{localStorage.setItem('aclDeviceNotifications','off');}
  bnRefreshDeviceControls();
