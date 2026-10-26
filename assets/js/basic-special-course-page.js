@@ -164,6 +164,9 @@ function openRoom(id) {
   $("scpRoomEyebrow").textContent = `SESSION ${String(session.session_number).padStart(2,"0")}`;
   $("scpRoomTitle").textContent = session.title;
   renderAttendance(session);
+  $("scpRoomHelp").hidden = !!state.admin;
+  $("scpQuestionStatus").textContent = "";
+  $("scpQuestionText").value = "";
   const items = sessionItems(id).filter(item => state.admin || item.is_active);
   $("scpRoomItems").innerHTML = items.length ? items.map((item, index) => {
     const info = typeInfo[item.item_type] || ["•", "Course item", "Open"];
@@ -326,3 +329,7 @@ load().catch(error => {
   $("scpTitle").textContent = "Course unavailable";
   $("scpContent").innerHTML = `<div class="scp-empty">${esc(error.message || "Could not load this course.")}</div>`;
 });
+
+$("scpRefresh")?.addEventListener("click",()=>location.reload());
+$("scpRepeatRequest")?.addEventListener("click",async event=>{if(!activeSessionId)return;const session=sessions().find(x=>x.id===activeSessionId);const button=event.currentTarget;button.disabled=true;button.textContent="Sending…";try{await hallAction("request_repeat",{session_id:activeSessionId,session_number:session?.session_number});button.textContent="✓ Request sent to Dr. Mohamed Alaa";$("scpQuestionStatus").textContent="The Academic Director has been notified.";}catch(error){button.disabled=false;button.textContent="Please repeat — I don’t understand";$("scpQuestionStatus").textContent=error.message||"Could not send the request.";}});
+$("scpQuestionForm")?.addEventListener("submit",async event=>{event.preventDefault();if(!activeSessionId)return;const text=$("scpQuestionText").value.trim(),session=sessions().find(x=>x.id===activeSessionId),button=event.currentTarget.querySelector("button");if(!text)return;button.disabled=true;button.textContent="Sending…";try{await hallAction("submit_question",{session_id:activeSessionId,session_number:session?.session_number,question:text});$("scpQuestionText").value="";$("scpQuestionStatus").textContent="✓ Your question was sent to the Academic Director.";button.textContent="Sent";}catch(error){button.disabled=false;button.textContent="Submit question";$("scpQuestionStatus").textContent=error.message||"Could not submit your question.";}});

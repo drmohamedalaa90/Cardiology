@@ -14,12 +14,12 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/acl-apple-touch-icon.png?v=3">
   <title>Special Course | Alexandria Cardiology League</title>
   <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
-  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=5">
+  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=6">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <main class="scp-shell">
-    <a class="scp-back" href="basic-modules.html?edition=basic">← All modules</a>
+    <nav class="scp-page-actions"><a class="scp-back" href="basic-modules.html?edition=basic">← Back to modules</a><button id="scpRefresh" type="button">↻ Refresh</button></nav>
 
     <section id="scpHero" class="scp-hero">
       <div id="scpCover" class="scp-cover"></div>
@@ -121,7 +121,12 @@
       <div class="scp-room-door" aria-hidden="true"><span id="scpDoorNumber">01</span><i></i></div>
       <section class="scp-room-interior">
         <div class="scp-room-title"><span id="scpRoomEyebrow">SESSION 01</span><h2 id="scpRoomTitle"></h2></div>
-        <section id="scpAttendancePanel" class="scp-attendance-panel" hidden></section><div id="scpRoomItems" class="scp-room-items"></div>
+        <section id="scpAttendancePanel" class="scp-attendance-panel" hidden></section>
+        <section id="scpRoomHelp" class="scp-room-help" hidden>
+          <button id="scpRepeatRequest" class="scp-repeat-request" type="button">Please repeat — I don’t understand</button>
+          <form id="scpQuestionForm"><label for="scpQuestionText">Ask the ACL Academic Director</label><div><textarea id="scpQuestionText" rows="2" maxlength="1000" placeholder="Write your question here…" required></textarea><button type="submit">Submit question</button></div><p id="scpQuestionStatus" aria-live="polite"></p></form>
+        </section>
+        <div id="scpRoomItems" class="scp-room-items"></div>
       </section>
     </div>
   </div>
@@ -137,6 +142,6 @@
     </section>
   </div>
 
-  <script type="module" src="assets/js/basic-special-course-page.js?v=5"></script>
+  <script type="module" src="assets/js/basic-special-course-page.js?v=6"></script>
 </body>
 </html>
