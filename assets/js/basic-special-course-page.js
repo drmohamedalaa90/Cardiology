@@ -50,6 +50,8 @@ function sessions() {
 function sessionItems(sessionId) {
   return (state?.items || []).filter(item => item.session_id === sessionId).sort((a,b) => a.display_order-b.display_order);
 }
+function roomState(sessionId) { return (hallState.rooms || []).find(room => room.id === sessionId) || {}; }
+function attendanceFor(member, slot) { return (member?.attendance || []).find(entry => Number(entry.slot) === Number(slot)); }
 
 function render() {
   const course = state.course;
@@ -64,12 +66,14 @@ function render() {
   const list = sessions();
   $("scpContent").innerHTML = list.length ? list.map((session, index) => {
     const count = sessionItems(session.id).filter(item => state.admin || item.is_active).length;
-    return `<article class="scp-session-room ${session.is_active ? "" : "is-hidden"}" style="--room-delay:${index * 70}ms">
+    const room = roomState(session.id);
+    return `<article class="scp-session-room ${session.is_active ? "" : "is-hidden"} ${room.is_locked ? "is-locked" : ""}" style="--room-delay:${index * 70}ms">
       <div class="scp-room-light"></div>
       <button class="scp-door-button" type="button" data-open-room="${session.id}" aria-label="Enter session ${session.session_number}: ${esc(session.title)}">
-        <span class="scp-door-number">${String(session.session_number).padStart(2,"0")}</span><i class="scp-door-line"></i><b>ENTER ROOM</b>
+        <span class="scp-door-number">${String(session.session_number).padStart(2,"0")}</span><i class="scp-door-line"></i><b>${room.is_locked && !state.admin ? "LOCKED" : "ENTER ROOM"}</b>
       </button>
       <div class="scp-session-copy"><span>SESSION ${String(session.session_number).padStart(2,"0")}</span><h3>${esc(session.title)}</h3><small>${count ? `${count} course ${count === 1 ? "item" : "items"}` : "Room prepared · content coming soon"}</small></div>
+      ${room.is_locked ? '<span class="scp-room-lock-badge">LOCKED</span>' : ""}
       ${state.admin ? `<div class="scp-session-admin"><button type="button" data-edit-session="${session.id}">Edit</button><button type="button" data-delete-session="${session.id}">Delete</button></div>` : ""}
     </article>`;
   }).join("") : '<div class="scp-empty">Course sessions will appear here when they are released.</div>';
@@ -98,9 +102,9 @@ function renderHall() {
     const seat = index + 1;
     const member = members.get(seat);
     const label = member ? `Seat ${seat}, occupied by ${member.name}` : `Seat ${seat}, available`;
-    const attendance = new Set(member?.attendance || []);
+    const attendance = new Map((member?.attendance || []).map(entry => [Number(entry.slot), entry.status]));
     return `<button class="scp-chair ${member ? "is-occupied" : ""} ${member?.is_you ? "is-you" : ""} ${member?.asked ? "is-asked" : ""} ${member?.gender === "female" ? "is-female" : "is-male"}" type="button" data-seat="${seat}" ${member ? "" : "disabled"} aria-label="${esc(label)}">
-      ${member ? '<span class="scp-person"><i></i><b></b><em></em></span>' : ""}<span class="scp-chair-back"></span><span class="scp-chair-seat"></span><small>${String(seat).padStart(3,"0")}</small><span class="scp-attendance-dots">${[1,2,3,4].map(slot=>`<i class="${attendance.has(slot)?"done":""}"></i>`).join("")}</span>
+      ${member ? '<span class="scp-person"><i></i><b></b><em></em></span>' : ""}<span class="scp-chair-back"></span><span class="scp-chair-seat"></span><small>${String(seat).padStart(3,"0")}</small><span class="scp-attendance-dots">${[1,2,3,4].map(slot=>`<i class="${attendance.has(slot)?(attendance.get(slot)==="warning"?"warning":"done"):""}"></i>`).join("")}</span>
     </button>`;
   }).join("");
   $("scpVisitorsHall").querySelectorAll(".is-occupied").forEach(button => button.addEventListener("click", () => {
@@ -134,31 +138,30 @@ function showArrivalSeat() {
 }
 
 function renderAttendance(session) {
-  const panel = $("scpAttendancePanel");
-  const slot = Number(session.session_number);
+  const panel = $("scpAttendancePanel"), slot = Number(session.session_number), room = roomState(session.id);
   if (slot < 1 || slot > 4) { panel.hidden = true; panel.innerHTML = ""; return; }
-  const attendees = (hallState.members || []).filter(member => (member.attendance || []).includes(slot));
-  const me = (hallState.members || []).find(member => member.is_you);
-  const checked = (me?.attendance || []).includes(slot);
+  const attendees = (hallState.members || []).filter(member => attendanceFor(member, slot));
+  const me = (hallState.members || []).find(member => member.is_you), mine = attendanceFor(me, slot);
   panel.hidden = false;
   if (state.admin) {
-    panel.innerHTML = `<div class="scp-attendance-admin-head"><div><span>ROOM ${slot} ATTENDANCE</span><strong>${attendees.length} checked in</strong></div></div><div class="scp-attendance-list">${attendees.length?attendees.map(member=>`<span><b>${String(member.seat_number).padStart(3,"0")}</b>${esc(member.name)}</span>`).join(""):"<p>No members have checked in yet.</p>"}</div>`;
+    const phase = room.ended_at ? "Lecture ended" : room.started_at ? "Lecture in progress" : "Not started";
+    panel.innerHTML = `<div class="scp-attendance-admin-head"><div><span>ROOM ${slot} ATTENDANCE</span><strong>${attendees.length} checked in · ${phase}</strong></div><div class="scp-lecture-actions"><button data-room-lock>${room.is_locked?"Unlock room":"Lock room"}</button>${!room.started_at?'<button data-start-lecture>Start lecture</button>':!room.ended_at?'<button data-end-lecture>End lecture</button>':'<span class="scp-lecture-ended">Lecture ended</span>'}</div></div><div class="scp-attendance-list">${attendees.length?attendees.map(member=>{const a=attendanceFor(member,slot);return `<span class="${a.status==='warning'?'warning':''}"><b>${String(member.seat_number).padStart(3,"0")}</b>${esc(member.name)} · ${a.checked_out_at?'checked out':'inside'}</span>`}).join(""):"<p>No members have checked in yet.</p>"}</div>`;
+    panel.querySelector("[data-room-lock]")?.addEventListener("click",async()=>{await hallAction("set_room_lock",{session_id:session.id,locked:!room.is_locked});await refreshHall();render();openRoom(session.id)});
+    panel.querySelector("[data-start-lecture]")?.addEventListener("click",async()=>{await hallAction("start_lecture",{session_id:session.id});await refreshHall();render();openRoom(session.id)});
+    panel.querySelector("[data-end-lecture]")?.addEventListener("click",async()=>{await hallAction("end_lecture",{session_id:session.id});await refreshHall();render();openRoom(session.id)});
   } else if (me) {
-    panel.innerHTML = checked ? `<div class="scp-checkin-success">✓ Attendance recorded for Room ${slot}</div>` : `<button id="scpCheckIn" class="scp-checkin-button" type="button">Check in to Room ${slot}</button>`;
-    $("scpCheckIn")?.addEventListener("click", async event => {
-      event.currentTarget.disabled = true;
-      event.currentTarget.textContent = "Recording attendance…";
-      try { await hallAction("check_in", { attendance_slot: slot, session_id: session.id }); await refreshHall(); renderAttendance(session); }
-      catch (error) { event.currentTarget.disabled = false; event.currentTarget.textContent = error.message || "Could not check in"; }
-    });
-  } else {
-    panel.innerHTML = '<div class="scp-checkin-success">Your theater seat is required before attendance can be recorded.</div>';
-  }
+    if (room.is_locked) panel.innerHTML='<div class="scp-attendance-warning">This room is currently locked by the Academic Director.</div>';
+    else if (!mine) panel.innerHTML=`<button id="scpCheckIn" class="scp-checkin-button" type="button">Check in to Room ${slot}</button>`;
+    else if (!mine.checked_out_at) panel.innerHTML=`<div class="scp-checkin-success">✓ Checked in${mine.status==='warning'?' · Late arrival':''}</div><button id="scpCheckOut" class="scp-checkout-button" type="button">Check out</button>${room.ended_at?'<small>The lecture has ended. Please check out now.</small>':'<small>Check out only when the Academic Director ends the lecture.</small>'}`;
+    else panel.innerHTML=`<div class="${mine.status==='warning'?'scp-attendance-warning':'scp-checkin-success'}">${mine.status==='warning'?'● Attendance needs review':'✓ Attendance completed'}</div>`;
+    $("scpCheckIn")?.addEventListener("click",async e=>{e.currentTarget.disabled=true;try{await hallAction("check_in",{attendance_slot:slot,session_id:session.id});await refreshHall();renderAttendance(session)}catch(error){e.currentTarget.disabled=false;e.currentTarget.textContent=error.message||"Could not check in"}});
+    $("scpCheckOut")?.addEventListener("click",async e=>{e.currentTarget.disabled=true;try{await hallAction("check_out",{session_id:session.id});await refreshHall();renderAttendance(session)}catch(error){e.currentTarget.disabled=false;e.currentTarget.textContent=error.message||"Could not check out"}});
+  } else panel.innerHTML='<div class="scp-attendance-warning">Your theater seat is required before attendance can be recorded.</div>';
 }
-
 function openRoom(id) {
   const session = sessions().find(entry => entry.id === id);
   if (!session) return;
+  if (roomState(id).is_locked && !state.admin) { alert("This room is currently locked by the Academic Director."); return; }
   activeSessionId = id;
   $("scpDoorNumber").textContent = String(session.session_number).padStart(2,"0");
   $("scpRoomEyebrow").textContent = `SESSION ${String(session.session_number).padStart(2,"0")}`;
@@ -211,6 +214,7 @@ function openSession(session = null) {
   $("scpSessionTitle").value = session?.title || "";
   $("scpSessionOrder").value = session?.display_order || sessions().length + 1;
   $("scpSessionActive").checked = session?.is_active !== false;
+  $("scpSessionLocked").checked = !!roomState(session?.id).is_locked;
   $("scpSessionStatus").textContent = "";
   $("scpSessionTitle").focus();
 }
@@ -257,10 +261,13 @@ $("scpSessionForm")?.addEventListener("submit", async event => {
   const status = $("scpSessionStatus");
   status.textContent = "Saving…";
   try {
-    await api("save_session", { id: editingSession?.id || null, session_number: Number($("scpSessionNumber").value), title: $("scpSessionTitle").value.trim(), display_order: Number($("scpSessionOrder").value), is_active: $("scpSessionActive").checked });
+    const savedId=editingSession?.id || null, savedNumber=Number($("scpSessionNumber").value), savedTitle=$("scpSessionTitle").value.trim(), lockWanted=$("scpSessionLocked").checked;
+    await api("save_session", { id:savedId, session_number:savedNumber, title:savedTitle, display_order:Number($("scpSessionOrder").value), is_active:$("scpSessionActive").checked });
+    await load();
+    const targetId=savedId || sessions().find(x=>Number(x.session_number)===savedNumber&&x.title===savedTitle)?.id;
+    if(targetId && !!roomState(targetId).is_locked!==lockWanted){await hallAction("set_room_lock",{session_id:targetId,locked:lockWanted});await refreshHall();render()}
     $("scpSessionForm").hidden = true;
     editingSession = null;
-    await load();
   } catch (error) { status.textContent = error.message || "Could not save the session."; }
 });
 
