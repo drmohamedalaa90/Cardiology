@@ -15,3 +15,13 @@
 @media(max-width:650px){.scp-hall-head{display:grid;grid-template-columns:minmax(0,1fr) auto}.scp-hall-counter{grid-column:1}.scp-hall-section>summary:after{grid-column:2;grid-row:1}.scp-reset-asked{grid-column:1/-1;justify-self:start}.scp-auditorium-wrap{overflow:hidden;padding:7px}.scp-auditorium-stage{width:88%;margin-bottom:12px}.scp-auditorium{grid-template-columns:repeat(10,minmax(0,1fr));gap:11px 3px;min-width:0;width:100%;padding:8px 3px 21px}.scp-chair{width:100%;height:35px}.scp-chair-back{left:18%;top:6px;width:64%;height:17px}.scp-chair-seat{left:12%;top:21px;width:76%;height:7px}.scp-chair small{bottom:-8px;font-size:.31rem}.scp-person{left:24%;top:-2px;width:52%;height:24px}.scp-person i{left:25%;width:50%;height:auto;aspect-ratio:1}.scp-person b{left:8%;top:8px;width:84%;height:16px}.scp-attendance-dots{bottom:-14px;gap:1px}.scp-attendance-dots i{width:4px;height:4px}}
 .scp-seat-card:before{height:330px}
 @media print{.scp-hall-section{display:none!important}}
+/* Keep the complete member card inside its golden panel. */
+.scp-seat-card{place-content:unset;align-items:center;justify-items:center;overflow:auto;padding:18px}
+.scp-seat-card:before{display:none}
+.scp-seat-dialog{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:min(390px,100%);max-height:calc(100vh - 36px);overflow:auto;padding:34px 22px 24px;border:1px solid #d6b85b;border-radius:24px;background:linear-gradient(145deg,#fffdf4,#f1dda1);box-shadow:0 26px 80px rgba(0,0,0,.38);text-align:center}
+.scp-seat-dialog>button{position:absolute;right:12px;top:12px;width:34px;height:34px;border:1px solid #c39d3e;border-radius:50%;background:#76520e;color:#fff;font-size:1.15rem;cursor:pointer}
+.scp-seat-dialog>span{color:#9a6b12;font-size:.55rem;font-weight:950;letter-spacing:.13em}
+.scp-seat-dialog>h2{max-width:100%;margin:7px 0;color:#4e3608;font-size:1.35rem;overflow-wrap:anywhere}
+.scp-seat-dialog .scp-seat-avatar{flex:0 0 auto;margin-top:3px}
+.scp-seat-dialog .scp-seat-admin-actions{max-width:100%}
+@media(max-width:480px){.scp-seat-card{padding:12px}.scp-seat-dialog{max-height:calc(100vh - 24px);padding:30px 14px 18px;border-radius:19px}.scp-seat-admin-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.scp-seat-admin-actions button:last-child{grid-column:1/-1}}
