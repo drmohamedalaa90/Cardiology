@@ -223,6 +223,10 @@ async function load() {
 }
 
 load().catch(error => {
+  if (/sign in required|permission denied/i.test(error.message || "")) {
+    location.replace("acl-access.html");
+    return;
+  }
   $("scpTitle").textContent = "Course unavailable";
   $("scpContent").innerHTML = `<div class="scp-empty">${esc(error.message || "Could not load this course.")}</div>`;
 });
