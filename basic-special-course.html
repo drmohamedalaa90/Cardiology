@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/acl-apple-touch-icon.png?v=3">
   <title>Special Course | Alexandria Cardiology League</title>
   <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
-  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=8">
+  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=9">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -45,6 +45,12 @@
       <p class="scp-hall-hint">Tap an occupied chair to see the member’s name and stars.</p></div>
     </details>
 
+    <details id="scpAttendanceReport" class="scp-attendance-report" hidden>
+      <summary><div><span>ADMIN ATTENDANCE</span><h2>Attendance report</h2></div><b id="scpCertificateReadyCount">0 certificates ready</b></summary>
+      <div class="scp-report-legend"><span><i class="green"></i>Complete</span><span><i class="orange"></i>Needs review</span><span><i class="red"></i>Did not check in</span></div>
+      <div id="scpAttendanceReportBody"></div>
+    </details>
+
     <section class="scp-layout">
       <div>
         <section class="scp-journey-head">
@@ -53,6 +59,7 @@
         </section>
         <div id="scpContent" class="scp-corridor"><div class="scp-empty">Preparing your course rooms…</div></div>
 
+        <section id="scpCertificatePending" class="scp-certificate-pending" hidden><strong>Certificate pending</strong><p>Your four attendance circles must be green. The Doctor will review any orange or red attendance.</p></section>
         <section id="scpCertificateSection" class="scp-certificate-section" hidden>
           <div class="scp-section-heading"><div><span>COURSE CERTIFICATE</span><h2>Your certificate</h2></div><button id="scpPrintCertificate" type="button">Print / Save PDF</button></div>
           <article id="scpCertificate" class="scp-certificate"><img id="scpCertificateBackground" class="scp-certificate-bg" alt=""><div class="scp-certificate-inner"><img id="scpCertificateLogo" class="scp-certificate-logo" alt=""><small>ALEXANDRIA CARDIOLOGY LEAGUE</small><h2 id="scpCertificateTitle">Certificate of Completion</h2><p id="scpCertificateSubtitle"></p><p class="scp-awarded">This certificate is awarded to</p><h3 id="scpCandidateName"></h3><p><span id="scpCompletionText">has successfully completed</span></p><h4 id="scpCertificateCourse"></h4><div class="scp-signature"><strong id="scpSignatory"></strong><span id="scpSignatoryRole"></span></div></div></article>
@@ -143,6 +150,6 @@
     </section>
   </div>
 
-  <script type="module" src="assets/js/basic-special-course-page.js?v=8"></script>
+  <script type="module" src="assets/js/basic-special-course-page.js?v=9"></script>
 </body>
 </html>

@@ -103,6 +103,7 @@ function render() {
 
   populateSessionSelect();
   renderHall();
+  renderAttendanceReport();
   renderCertificate(state.certificate || {});
 }
 
@@ -117,7 +118,7 @@ function renderHall() {
     const label = member ? `Seat ${seat}, occupied by ${member.name}` : `Seat ${seat}, available`;
     const attendance = new Map((member?.attendance || []).map(entry => [Number(entry.slot), entry.status]));
     return `<button class="scp-chair ${member ? "is-occupied" : ""} ${member?.is_you ? "is-you" : ""} ${member?.asked ? "is-asked" : ""} ${member?.gender === "female" ? "is-female" : "is-male"}" type="button" data-seat="${seat}" ${member ? "" : "disabled"} aria-label="${esc(label)}">
-      ${member ? '<span class="scp-person"><i></i><b></b><em></em></span>' : ""}<span class="scp-chair-back"></span><span class="scp-chair-seat"></span><small>${String(seat).padStart(3,"0")}</small><span class="scp-attendance-dots">${[1,2,3,4].map(slot=>`<i class="${attendance.has(slot)?(attendance.get(slot)==="warning"?"warning":"done"):""}"></i>`).join("")}</span>
+      ${member ? '<span class="scp-person"><i></i><b></b><em></em></span>' : ""}<span class="scp-chair-back"></span><span class="scp-chair-seat"></span><small>${String(seat).padStart(3,"0")}</small><span class="scp-attendance-dots">${[1,2,3,4].map(slot=>`<i class="${attendance.get(slot)||""}"></i>`).join("")}</span>
     </button>`;
   }).join("");
   $("scpVisitorsHall").querySelectorAll(".is-occupied").forEach(button => button.addEventListener("click", () => {
@@ -150,6 +151,14 @@ function showArrivalSeat() {
   history.replaceState(null,"",location.pathname+`?edition=basic&course=${encodeURIComponent(courseId)}`);
 }
 
+function renderAttendanceReport(){
+  const section=$("scpAttendanceReport"),body=$("scpAttendanceReportBody");if(!section||!body)return;section.hidden=!hallState.admin;if(!hallState.admin)return;
+  const members=hallState.members||[],ready=members.filter(member=>[1,2,3,4].every(slot=>attendanceFor(member,slot)?.status==="green")).length;
+  $("scpCertificateReadyCount").textContent=`${ready} certificate${ready===1?"":"s"} ready`;
+  body.innerHTML=members.length?members.map(member=>`<article class="scp-report-row"><div><b>${String(member.seat_number).padStart(3,"0")}</b><strong>${esc(member.name)}</strong><small>${[1,2,3,4].every(slot=>attendanceFor(member,slot)?.status==="green")?"Certificate ready":"Needs review"}</small></div><div class="scp-report-statuses">${[1,2,3,4].map(slot=>{const status=attendanceFor(member,slot)?.status||"empty";return `<button class="${status}" data-report-seat="${member.seat_number}" data-report-slot="${slot}" title="Room ${slot}: ${status}"><span>${slot}</span><i></i></button>`}).join("")}</div></article>`).join(""):'<p class="scp-report-empty">No course members yet.</p>';
+  body.querySelectorAll("[data-report-seat]").forEach(button=>button.addEventListener("click",async()=>{const current=["empty","green","orange","red"].findIndex(x=>button.classList.contains(x)),next=["green","orange","red"][Math.max(0,(current-1+1)%3)];button.disabled=true;await hallAction("set_attendance_status",{seat_number:Number(button.dataset.reportSeat),attendance_slot:Number(button.dataset.reportSlot),status:next});await refreshHall();renderAttendanceReport()}));
+}
+
 function renderAttendance(session) {
   const panel = $("scpAttendancePanel"), slot = Number(session.session_number), room = roomState(session.id);
   if (slot < 1 || slot > 4) { panel.hidden = true; panel.innerHTML = ""; return; }
@@ -157,16 +166,17 @@ function renderAttendance(session) {
   const me = (hallState.members || []).find(member => member.is_you), mine = attendanceFor(me, slot);
   panel.hidden = false;
   if (state.admin) {
-    const phase = room.ended_at ? "Lecture ended" : room.started_at ? "Lecture in progress" : "Not started";
-    panel.innerHTML = `<div class="scp-attendance-admin-head"><div><span>ROOM ${slot} ATTENDANCE</span><strong>${attendees.length} checked in · ${phase}</strong></div><div class="scp-lecture-actions"><button data-room-lock>${room.is_locked?"Unlock room":"Lock room"}</button>${!room.started_at?'<button data-start-lecture>Start lecture</button>':!room.ended_at?'<button data-end-lecture>End lecture</button>':'<span class="scp-lecture-ended">Lecture ended</span>'}</div></div><div class="scp-attendance-list">${attendees.length?attendees.map(member=>{const a=attendanceFor(member,slot);return `<span class="${a.status==='warning'?'warning':''}"><b>${String(member.seat_number).padStart(3,"0")}</b>${esc(member.name)} · ${a.checked_out_at?'checked out':'inside'}</span>`}).join(""):"<p>No members have checked in yet.</p>"}</div>`;
+    const phase = room.ended_at ? "Lecture ended" : room.started_at ? "Lecture in progress" : "Not started", checkedCount=attendees.filter(member=>attendanceFor(member,slot)?.checked_in_at).length;
+    panel.innerHTML = `<div class="scp-attendance-admin-head"><div><span>ROOM ${slot} ATTENDANCE</span><strong>${checkedCount} checked in · ${phase}</strong></div><div class="scp-lecture-actions"><button data-room-lock>${room.is_locked?"Unlock room":"Lock room"}</button><button data-reset-attendance>Reset attendance</button>${!room.started_at?'<button data-start-lecture>Start lecture</button>':!room.ended_at?'<button data-end-lecture>End lecture</button>':'<span class="scp-lecture-ended">Lecture ended</span>'}</div></div><div class="scp-attendance-list">${attendees.length?attendees.map(member=>{const a=attendanceFor(member,slot);return `<span class="${a.status==='orange'?'warning':a.status==='red'?'missed':''}"><b>${String(member.seat_number).padStart(3,"0")}</b>${esc(member.name)} · ${!a.checked_in_at?'did not check in':a.checked_out_at?'checked out':'inside'}</span>`}).join(""):"<p>No members have checked in yet.</p>"}</div>`;
     panel.querySelector("[data-room-lock]")?.addEventListener("click",async()=>{await hallAction("set_room_lock",{session_id:session.id,locked:!room.is_locked});await refreshHall();render();openRoom(session.id)});
+    panel.querySelector("[data-reset-attendance]")?.addEventListener("click",async()=>{if(!confirm(`Reset all Room ${slot} check-ins, checkouts and lecture timing?`))return;await hallAction("reset_room_attendance",{session_id:session.id});await refreshHall();render();openRoom(session.id)});
     panel.querySelector("[data-start-lecture]")?.addEventListener("click",async()=>{await hallAction("start_lecture",{session_id:session.id});await refreshHall();render();openRoom(session.id)});
     panel.querySelector("[data-end-lecture]")?.addEventListener("click",async()=>{await hallAction("end_lecture",{session_id:session.id});await refreshHall();render();openRoom(session.id)});
   } else if (me) {
     if (room.is_locked) panel.innerHTML='<div class="scp-attendance-warning">This room is currently locked by the Academic Director.</div>';
     else if (!mine) panel.innerHTML=`<button id="scpCheckIn" class="scp-checkin-button" type="button">Check in to Room ${slot}</button>`;
-    else if (!mine.checked_out_at) panel.innerHTML=`<div class="scp-checkin-success">✓ Checked in${mine.status==='warning'?' · Late arrival':''}</div><button id="scpCheckOut" class="scp-checkout-button" type="button">Check out</button>${room.ended_at?'<small>The lecture has ended. Please check out now.</small>':'<small>Check out only when the Academic Director ends the lecture.</small>'}`;
-    else panel.innerHTML=`<div class="${mine.status==='warning'?'scp-attendance-warning':'scp-checkin-success'}">${mine.status==='warning'?'● Attendance needs review':'✓ Attendance completed'}</div>`;
+    else if (!mine.checked_out_at) panel.innerHTML=`<div class="scp-checkin-success">✓ Checked in${mine.status==='orange'?' · Late arrival':''}</div><button id="scpCheckOut" class="scp-checkout-button" type="button">Check out</button>${room.ended_at?'<small>The lecture has ended. Please check out now.</small>':'<small>Check out only when the Academic Director ends the lecture.</small>'}`;
+    else panel.innerHTML=`<div class="${mine.status==='green'?'scp-checkin-success':'scp-attendance-warning'}">${mine.status==='green'?'✓ Attendance completed':mine.status==='red'?'● Did not check in':'● Attendance needs review'}</div>`;
     $("scpCheckIn")?.addEventListener("click",async e=>{e.currentTarget.disabled=true;try{await hallAction("check_in",{attendance_slot:slot,session_id:session.id});await refreshHall();renderAttendance(session)}catch(error){e.currentTarget.disabled=false;e.currentTarget.textContent=error.message||"Could not check in"}});
     $("scpCheckOut")?.addEventListener("click",async e=>{e.currentTarget.disabled=true;try{await hallAction("check_out",{session_id:session.id});await refreshHall();renderAttendance(session)}catch(error){e.currentTarget.disabled=false;e.currentTarget.textContent=error.message||"Could not check out"}});
   } else panel.innerHTML='<div class="scp-attendance-warning">Your theater seat is required before attendance can be recorded.</div>';
@@ -243,7 +253,9 @@ function openItem(item = null, preferredSession = "") {
 }
 
 function renderCertificate(cert) {
-  $("scpCertificateSection").hidden = !(cert.enabled || state.admin);
+  const me=(hallState.members||[]).find(member=>member.is_you),eligible=!!me&&[1,2,3,4].every(slot=>attendanceFor(me,slot)?.status==="green");
+  $("scpCertificateSection").hidden = !(state.admin || eligible);
+  $("scpCertificatePending").hidden = state.admin || eligible;
   $("scpCertificateTitle").textContent = cert.certificate_title || "Certificate of Completion";
   $("scpCertificateSubtitle").textContent = cert.certificate_subtitle || "";
   $("scpCompletionText").textContent = cert.completion_text || "has successfully completed";
