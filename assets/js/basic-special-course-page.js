@@ -118,7 +118,7 @@ function renderHall() {
     const member = members.get(seat);
     const label = member ? `Seat ${seat}, occupied by ${member.name}` : `Seat ${seat}, available`;
     const attendance = new Map((member?.attendance || []).map(entry => [Number(entry.slot), entry.status]));
-    return `<button class="scp-chair ${member ? "is-occupied" : ""} ${member?.is_you ? "is-you" : ""} ${member?.asked ? "is-asked" : ""} ${member?.gender === "female" ? "is-female" : "is-male"}" type="button" data-seat="${seat}" ${member ? "" : "disabled"} aria-label="${esc(label)}">
+    return `<button class="scp-chair ${member ? "is-occupied" : ""} ${member?.is_you ? "is-you" : ""} ${member?.asked ? "is-asked" : ""} ${member?.suspended ? "is-suspended" : ""} ${member?.gender === "female" ? "is-female" : "is-male"}" type="button" data-seat="${seat}" ${member ? "" : "disabled"} aria-label="${esc(label)}">
       ${member ? '<span class="scp-person"><i></i><b></b><em></em></span>' : ""}<span class="scp-chair-back"></span><span class="scp-chair-seat"></span><small>${String(seat).padStart(3,"0")}</small><span class="scp-attendance-dots">${[1,2,3,4].map(slot=>`<i class="${attendance.get(slot)||""}"></i>`).join("")}</span>
     </button>`;
   }).join("");
@@ -132,6 +132,9 @@ function renderHall() {
     $("scpSeatCard").classList.toggle("is-female", member.gender === "female");
     $("scpSeatAdminActions").hidden = !hallState.admin;
     $("scpCallMember").textContent = member.asked ? "Called already" : "Call this seat";
+    const suspendButton=$("scpSuspendMember");
+    if(suspendButton){suspendButton.textContent=member.suspended?"Restore course access":"Suspend from course";suspendButton.classList.toggle("is-restore",!!member.suspended)}
+    $("scpSuspendForm").hidden=true;$("scpSuspendStatus").textContent="";$("scpSuspendReason").value=member.suspension_reason||"";
     $("scpSeatCard").hidden = false;
   }));
   showArrivalSeat();
@@ -352,12 +355,22 @@ document.addEventListener("keydown", event => { if (event.key === "Escape") $("s
 $("scpCallMember")?.addEventListener("click", async () => { if (!selectedHallMember) return; await hallAction("call_member",{seat_number:selectedHallMember.seat_number}); $("scpSeatCard").hidden=true; await refreshHall(); });
 $("scpAwardStar")?.addEventListener("click", async () => { if (!selectedHallMember) return; await hallAction("award_star",{seat_number:selectedHallMember.seat_number}); await refreshHall(); const updated=(hallState.members||[]).find(m=>m.seat_number===selectedHallMember.seat_number); if(updated){selectedHallMember=updated;$("scpSeatStars").textContent=`${"★".repeat(Math.min(Number(updated.stars||0),10))}${Number(updated.stars||0)>10?` +${Number(updated.stars)-10}`:""}  ${updated.stars||0} star${Number(updated.stars)===1?"":"s"}`;} });
 $("scpRemoveStar")?.addEventListener("click", async () => { if (!selectedHallMember) return; await hallAction("remove_star",{seat_number:selectedHallMember.seat_number}); await refreshHall(); const updated=(hallState.members||[]).find(m=>m.seat_number===selectedHallMember.seat_number); if(updated){selectedHallMember=updated;$("scpSeatStars").textContent=`${"★".repeat(Math.min(Number(updated.stars||0),10))}  ${updated.stars||0} star${Number(updated.stars)===1?"":"s"}`;} });
+$("scpSuspendMember")?.addEventListener("click",async()=>{if(!selectedHallMember)return;if(selectedHallMember.suspended){if(!confirm(`Restore ${selectedHallMember.name}'s course access?`))return;await hallAction("restore_member",{seat_number:selectedHallMember.seat_number});$("scpSeatCard").hidden=true;await refreshHall();return;}$("scpSuspendForm").hidden=false;$("scpSuspendReason").focus();});
+$("scpSuspendCancel")?.addEventListener("click",()=>{$("scpSuspendForm").hidden=true;$("scpSuspendStatus").textContent=""});
+$("scpSuspendForm")?.addEventListener("submit",async event=>{event.preventDefault();if(!selectedHallMember)return;const reason=$("scpSuspendReason").value.trim(),status=$("scpSuspendStatus");if(!reason){status.textContent="Write the reason first.";return;}status.textContent="Suspending…";try{await hallAction("suspend_member",{seat_number:selectedHallMember.seat_number,reason});$("scpSeatCard").hidden=true;await refreshHall()}catch(error){status.textContent=error.message||"Could not suspend this member.";}});
 $("scpResetAsked")?.addEventListener("click", async event => { event.preventDefault();event.stopPropagation();await hallAction("reset_asked");await refreshHall(); });
 $("scpPrintCertificate")?.addEventListener("click", () => window.print());
+
+function renderCourseSuspension(suspension){
+  const overlay=document.createElement("div");overlay.className="scp-suspension-screen";
+  overlay.innerHTML=`<article><span>!</span><h1>Course access suspended</h1><div class="reason">${esc(suspension?.reason||"Your course access is under review.")}</div><p>After review, your suspension may be removed and your course access restored. If you need help or want to discuss this decision, contact us on WhatsApp.</p><a href="https://wa.me/201093938488" target="_blank" rel="noopener">Contact ACL on WhatsApp</a></article>`;
+  document.body.appendChild(overlay);
+}
 
 async function load() {
   if (!courseId) throw new Error("Course link is incomplete.");
   [state, hallState] = await Promise.all([api("get"), hallApi()]);
+  if(hallState?.suspension){renderCourseSuspension(hallState.suspension);return;}
   render();
   void ensureAdminPush();
 }

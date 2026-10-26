@@ -915,6 +915,7 @@ async function loadBasicLeagueLeaders(){
   const avatar=row=>row.avatar_url?`<span class="basic-league-avatar"><img src="${esc(row.avatar_url)}" alt=""></span>`:`<span class="basic-league-avatar">${esc(initials(row.name))}</span>`;
   podium.innerHTML=leaders.slice(0,3).length?leaders.slice(0,3).map(row=>`<article class="basic-league-winner rank-${row.rank}"><span class="basic-league-rank">${row.rank===1?'★ CHAMPION':`#${row.rank}`}</span>${avatar(row)}<strong>${esc(row.name)}</strong><b>${Number(row.points||0)} pts</b><small>${Number(row.modules_passed||0)} passed · ${Number(row.avg_accuracy||0)}%</small></article>`).join(""):'<div class="basic-league-loading">The league begins when candidates complete their first module quiz.</div>';
   list.innerHTML=leaders.slice(3,10).map(row=>`<article class="basic-league-row"><span>#${row.rank}</span><strong>${esc(row.name)}</strong><b>${Number(row.points||0)} pts</b><small>${Number(row.modules_passed||0)} passed · ${Number(row.avg_accuracy||0)}%</small></article>`).join("");
+  const next=Date.parse(data?.next_update_at||"");if(Number.isFinite(next)){const delay=Math.max(1000,next-Date.now()+1500);setTimeout(()=>void loadBasicLeagueLeaders(),Math.min(delay,2147483647));}
  }catch(error){podium.innerHTML='<div class="basic-league-loading">League standings are temporarily unavailable.</div>';list.innerHTML="";console.warn("ACL LEAGUE",error)}
 }
 void loadBasicLeagueLeaders();

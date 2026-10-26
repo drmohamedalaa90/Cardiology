@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/acl-apple-touch-icon.png?v=3">
   <title>Special Course | Alexandria Cardiology League</title>
   <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
-  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=10">
+  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=11">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -147,10 +147,11 @@
       <span id="scpSeatNumber">SEAT 001</span>
       <h2 id="scpSeatName">ACL Member</h2>
       <div id="scpSeatStars" class="scp-seat-stars">☆ 0</div>
-      <div id="scpSeatAdminActions" class="scp-seat-admin-actions" hidden><button id="scpCallMember" type="button">Call this seat</button><button id="scpAwardStar" type="button">★ Award star</button><button id="scpRemoveStar" type="button">Remove star</button></div>
+      <div id="scpSeatAdminActions" class="scp-seat-admin-actions" hidden><button id="scpCallMember" type="button">Call this seat</button><button id="scpAwardStar" type="button">★ Award star</button><button id="scpRemoveStar" type="button">Remove star</button><button id="scpSuspendMember" class="scp-suspend-member" type="button">Suspend from course</button></div>
+      <form id="scpSuspendForm" class="scp-suspend-form" hidden><label for="scpSuspendReason">Suspension reason</label><textarea id="scpSuspendReason" rows="3" maxlength="500" placeholder="Explain why this member is suspended…" required></textarea><p>The member will be told that access can be restored after review and can contact ACL by WhatsApp.</p><div><button id="scpSuspendCancel" type="button">Cancel</button><button type="submit">Confirm suspension</button></div><small id="scpSuspendStatus" aria-live="polite"></small></form>
     </section>
   </div>
 
-  <script type="module" src="assets/js/basic-special-course-page.js?v=10"></script>
+  <script type="module" src="assets/js/basic-special-course-page.js?v=11"></script>
 </body>
 </html>
