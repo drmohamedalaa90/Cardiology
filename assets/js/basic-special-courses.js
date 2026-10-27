@@ -5,7 +5,7 @@ let specialCourses=[],specialAdmin=false,specialEditing=null;
 
 async function specialApi(action,args={}){const {data,error}=await supabaseClient.rpc("acl_special_course_api",{p_action:action,p_args:args});if(error)throw error;return data}
 function specialLaunch(course){return course.launch_path||("basic-special-course.html?edition=basic&course="+encodeURIComponent(course.id))}
-function renderCourseHallShortcut(){const host=sp("basicLaunchCountdown"),course=specialCourses.find(c=>c.released&&c.has_access);if(!host||!course)return;const join=specialLaunch(course).includes("?")?"&":"?";host.innerHTML=`<a class="basic-course-hall-shortcut" href="${spEsc(specialLaunch(course)+join+"hall=1#scpHallSection")}"><span><small>YOUR SPECIAL COURSE</small><strong>Return to ${spEsc(course.title)} hall</strong></span><b>Open Visitors’ Hall →</b></a>`;host.setAttribute("aria-label",`Open ${course.title} Visitors’ Hall`)}
+function renderCourseHallShortcut(){const host=sp("basicLaunchCountdown"),course=specialCourses.find(c=>c.released&&c.has_access);if(!host||!course)return;const join=specialLaunch(course).includes("?")?"&":"?";host.classList.add("course-shortcut-active");host.innerHTML=`<a class="basic-course-hall-shortcut" href="${spEsc(specialLaunch(course)+join+"hall=1#scpHallSection")}"><span><small>YOUR SPECIAL COURSE</small><strong>Return to ${spEsc(course.title)} hall</strong></span><b>Open Visitors’ Hall →</b></a>`;host.setAttribute("aria-label",`Open ${course.title} Visitors’ Hall`)}
 function renderSpecialHome(){
  const host=sp("basicSpecialCourses");if(!host)return;
  const rows=specialCourses.filter(c=>c.released);
