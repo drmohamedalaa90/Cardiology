@@ -70,6 +70,8 @@ function sessionItems(sessionId) {
 function roomState(sessionId) { return (hallState.rooms || []).find(room => room.id === sessionId) || {}; }
 function attendanceFor(member, slot) { return (member?.attendance || []).find(entry => Number(entry.slot) === Number(slot)); }
 
+function preloadCourseImages(){for(const item of state?.items||[]){if(!item.cover_image_url)continue;const image=new Image();image.decoding="async";image.fetchPriority="high";image.src=item.cover_image_url}}
+
 function render() {
   const course = state.course;
   $("scpTitle").textContent = course.title;
@@ -200,7 +202,7 @@ function openRoom(id) {
   $("scpQuestionStatus").textContent = "";
   $("scpQuestionText").value = "";
   const items = sessionItems(id).filter(item => state.admin || item.is_active);
-  const itemCard=(item,index)=>{const info=typeInfo[item.item_type]||["•","Course item","Open"],ready=item.url&&item.url!=="#";return `<article class="scp-content-box ${item.cover_image_url?"has-cover":""}" style="--box-delay:${180+index*70}ms">${item.cover_image_url?`<img class="scp-lecture-cover" src="${esc(item.cover_image_url)}" alt="${esc(item.title)} cover" loading="lazy">`:`<span class="scp-box-icon">${info[0]}</span>`}<div><small>${info[1]}</small><h3>${esc(item.title)}</h3>${item.subtitle?`<p>${esc(item.subtitle)}</p>`:""}</div>${ready?`<a href="${esc(item.url)}" target="_blank" rel="noopener">${info[2]} →</a>`:'<span class="scp-coming">Coming soon</span>'}${state.admin?`<div class="scp-box-admin"><button type="button" data-edit-item="${item.id}">Edit</button><button type="button" data-delete-item="${item.id}">Delete</button></div>`:""}</article>`};
+  const itemCard=(item,index)=>{const info=typeInfo[item.item_type]||["•","Course item","Open"],ready=item.url&&item.url!=="#";if(item.item_type==="lecture"&&item.cover_image_url)return `<article class="scp-content-box has-cover" style="--box-delay:${180+index*70}ms;background-image:url(\'${esc(item.cover_image_url)}\')" aria-label="${esc(item.title)}">${ready?`<a class="scp-cover-play" href="${esc(item.url)}" target="_blank" rel="noopener" aria-label="Play ${esc(item.title)}"><span>▶</span></a>`:'<span class="scp-cover-coming">Coming soon</span>'}${state.admin?`<div class="scp-box-admin"><button type="button" data-edit-item="${item.id}">Edit</button><button type="button" data-delete-item="${item.id}">Delete</button></div>`:""}</article>`;return `<article class="scp-content-box" style="--box-delay:${180+index*70}ms"><span class="scp-box-icon">${info[0]}</span><div><small>${info[1]}</small><h3>${esc(item.title)}</h3>${item.subtitle?`<p>${esc(item.subtitle)}</p>`:""}</div>${ready?`<a href="${esc(item.url)}" target="_blank" rel="noopener">${info[2]} →</a>`:'<span class="scp-coming">Coming soon</span>'}${state.admin?`<div class="scp-box-admin"><button type="button" data-edit-item="${item.id}">Edit</button><button type="button" data-delete-item="${item.id}">Delete</button></div>`:""}</article>`};
   const videos=items.filter(item=>item.item_type==="lecture"),flashcards=items.filter(item=>item.item_type==="flashcards"),others=items.filter(item=>!["lecture","flashcards"].includes(item.item_type));
   const flashAlbum=`<details class="scp-flashcard-section"><summary><span>▣</span><strong>View flashcards</strong><small>${flashcards.length?`${flashcards.length} photo${flashcards.length===1?"":"s"}`:"Coming soon"}</small></summary>${flashcards.length?`<div class="scp-flashcard-album">${flashcards.map((item,index)=>`<button type="button" data-album-index="${index}"><img src="${esc(item.url||'assets/images/acl-header-mark.svg')}" alt="${esc(item.title)}" loading="lazy"><span>${esc(item.title||`Flashcard ${index+1}`)}</span>${state.admin?`<i data-edit-item="${item.id}">Edit</i>`:""}</button>`).join("")}</div>`:`<div class="scp-flashcard-empty">${state.admin?'<button id="scpAddFlashcards" type="button">+ Upload lecture flashcards</button>':'Lecture flashcards have not been uploaded yet.'}</div>`}</details>`;
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
@@ -334,8 +336,11 @@ $("scpItemForm")?.addEventListener("submit", async event => {
   } catch (error) { status.textContent = error.message || "Could not save the content box."; }
 });
 
+async function optimizeLectureCover(file){if(!file||!file.type.startsWith("image/"))return file;const bitmap=await createImageBitmap(file),maxWidth=1280,maxHeight=720,scale=Math.min(1,maxWidth/bitmap.width,maxHeight/bitmap.height),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext("2d",{alpha:false}).drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",.82));return blob?new File([blob],"lecture-cover.webp",{type:"image/webp"}):file}
+
 async function upload(file, kind) {
   if (!file) return null;
+  if(kind==="lecture-cover")file=await optimizeLectureCover(file);
   const extension = (file.name.split(".").pop() || "png").replace(/[^a-z0-9]/gi, "");
   const path = `special-courses/${kind}-${Date.now()}-${crypto.randomUUID()}.${extension}`;
   const { error } = await supabaseClient.storage.from("acl-news").upload(path, file, { contentType: file.type || "image/png" });
@@ -359,7 +364,7 @@ $("scpCertificateForm")?.addEventListener("submit", async event => {
   } catch (error) { status.textContent = error.message || "Could not save certificate."; }
 });
 
-$("scpRoomRefresh")?.addEventListener("click",async()=>{const roomId=activeSessionId;if(!roomId)return;const loaded=await Promise.all([api("get"),hallApi(),extrasApi("get")]);[state,hallState]=loaded;applyExtras(loaded[2]);render();openRoom(roomId)});
+$("scpRoomRefresh")?.addEventListener("click",async()=>{const roomId=activeSessionId;if(!roomId)return;const loaded=await Promise.all([api("get"),hallApi(),extrasApi("get")]);[state,hallState]=loaded;applyExtras(loaded[2]);preloadCourseImages();render();openRoom(roomId)});
 $("scpRoomClose")?.addEventListener("click", closeRoom);
 $("scpRoomModal")?.addEventListener("click", event => { if (event.target === $("scpRoomModal")) closeRoom(); });
 document.addEventListener("keydown", event => { if (event.key === "Escape" && !$("scpRoomModal").hidden) closeRoom(); });
@@ -384,7 +389,7 @@ async function renderCourseSuspension(suspension){
 
 async function load() {
   if (!courseId) throw new Error("Course link is incomplete.");
-  const loaded=await Promise.all([api("get"),hallApi(),extrasApi("get")]);[state,hallState]=loaded;applyExtras(loaded[2]);
+  const loaded=await Promise.all([api("get"),hallApi(),extrasApi("get")]);[state,hallState]=loaded;applyExtras(loaded[2]);preloadCourseImages();
   if(hallState?.suspension){await renderCourseSuspension(hallState.suspension);return;}
   render();
   const requestedRoom=new URLSearchParams(location.search).get("room");
