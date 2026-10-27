@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/acl-apple-touch-icon.png?v=3">
   <title>Special Course | Alexandria Cardiology League</title>
   <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
-  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=26">
+  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=27">
   <link rel="stylesheet" href="assets/css/basic-module-forum.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -34,7 +34,7 @@
       </div>
     </section>
 
-    <details class="scp-attendance-rules" open>
+    <details class="scp-attendance-rules" data-persist-details="attendance-rules" open>
       <summary><div><span>ATTENDANCE GUIDE</span><h2>How attendance works</h2></div><b>Important rules</b></summary>
       <ol>
         <li>Enter the relevant lecture room and check its scheduled date and time.</li>
@@ -49,7 +49,7 @@
       </ol>
     </details>
 
-    <details id="scpHallSection" class="scp-hall-section" open>
+    <details id="scpHallSection" class="scp-hall-section" data-persist-details="visitors-hall">
       <summary class="scp-hall-head">
         <div><span>ECG DEMYSTIFIED COMMUNITY</span><h2 id="scpHallTitle">Visitors’ Hall</h2><p>Every course member has a numbered seat.</p></div>
         <div class="scp-hall-counter"><strong id="scpHallOccupied">0</strong><span>of 200 seats occupied</span></div>
@@ -61,7 +61,7 @@
       <p class="scp-hall-hint">Tap an occupied chair to see the member’s name and stars.</p></div>
     </details>
 
-    <details id="scpAttendanceReport" class="scp-attendance-report" hidden>
+    <details id="scpAttendanceReport" class="scp-attendance-report" data-persist-details="attendance-report" hidden>
       <summary><div><span>ADMIN ATTENDANCE</span><h2>Attendance report</h2></div><b id="scpCertificateReadyCount">0 certificates ready</b></summary>
       <div class="scp-report-legend"><span><i class="green"></i>Complete</span><span><i class="orange"></i>Needs review</span><span><i class="red"></i>Did not check in</span></div>
       <div id="scpAttendanceReportBody"></div>
@@ -83,7 +83,7 @@
       </div>
 
       <aside id="scpAdmin" class="scp-admin" hidden>
-        <details open>
+        <details data-persist-details="admin-sessions" open>
           <summary><span>ADMIN EDITOR</span><strong>Session rooms</strong></summary>
           <div class="scp-admin-panel">
             <button id="scpNewSession" class="scp-admin-primary" type="button">+ Add session room</button>
@@ -100,7 +100,7 @@
           </div>
         </details>
 
-        <details>
+        <details data-persist-details="admin-content">
           <summary><span>ADMIN EDITOR</span><strong>Room content boxes</strong></summary>
           <div class="scp-admin-panel">
             <button id="scpNewItem" class="scp-admin-primary" type="button">+ Add content box</button>
@@ -121,7 +121,7 @@
           </div>
         </details>
 
-        <details>
+        <details data-persist-details="admin-certificate">
           <summary><span>ADMIN EDITOR</span><strong>Certificate</strong></summary>
           <div class="scp-admin-panel">
             <form id="scpCertificateForm" class="scp-admin-form">
@@ -181,6 +181,6 @@
   <div id="scpAttendanceReviewModal" class="scp-ar-modal" hidden role="dialog" aria-modal="true" aria-labelledby="scpArTitle"><section class="scp-ar-dialog"><button id="scpArRefresh" type="button" aria-label="Refresh attendance report">↻</button><button id="scpArClose" type="button" aria-label="Close attendance review">×</button><div id="scpArContent"></div></section></div>
 
   <script type="module" src="assets/js/basic-module-forum.js?v=2"></script>
-  <script type="module" src="assets/js/basic-special-course-page.js?v=26"></script>
+  <script type="module" src="assets/js/basic-special-course-page.js?v=27"></script>
 </body>
 </html>
