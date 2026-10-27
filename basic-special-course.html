@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/acl-apple-touch-icon.png?v=3">
   <title>Special Course | Alexandria Cardiology League</title>
   <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
-  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=20">
+  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=21">
   <link rel="stylesheet" href="assets/css/basic-module-forum.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -35,7 +35,7 @@
     </section>
 
     <details class="scp-attendance-rules" open>
-      <summary><div><span>ATTENDANCE GUIDE</span><h2>Before entering the Visitors’ Hall</h2></div><b>Read the rules</b></summary>
+      <summary><div><span>ATTENDANCE GUIDE</span><h2>How attendance works</h2></div><b>Important rules</b></summary>
       <ol>
         <li>Enter the relevant lecture room and check its scheduled date and time.</li>
         <li>Check-in opens only 10 minutes before the scheduled lecture.</li>
@@ -44,7 +44,7 @@
         <li>During the lecture, use the red <strong>Please repeat</strong> button or type your question under <strong>Ask the Doctor</strong>.</li>
         <li>After the lecture, the Doctor will send your attendance report.</li>
         <li>The circle for that lecture below your seat should turn green, confirming correct attendance.</li>
-        <li>If you find a mistake, request reconsideration. You may be invited to a short attendance checker taking less than one minute.</li>
+        <li>If you request reconsideration, you will be directed immediately to the short five-question attendance checker.</li>
         <li>For any problem, contact the administrator.</li>
       </ol>
     </details>
@@ -143,6 +143,7 @@
   <div id="scpRoomModal" class="scp-room-modal" hidden>
     <div class="scp-room-stage" role="dialog" aria-modal="true" aria-labelledby="scpRoomTitle">
       <button id="scpRoomClose" class="scp-room-close" type="button" aria-label="Close room">×</button>
+      <button id="scpRoomRefresh" class="scp-room-refresh" type="button">↻ Refresh</button>
       <div class="scp-room-door" aria-hidden="true"><span id="scpDoorNumber">01</span><i></i></div>
       <section class="scp-room-interior">
         <div id="scpSeatCallOverlay" class="scp-seat-call-overlay" hidden><span id="scpSeatCallMode">CALLING A SEAT</span><strong id="scpSeatCallNumber">---</strong><small>Get ready</small></div>
@@ -168,6 +169,7 @@
       <span id="scpSeatNumber">SEAT 001</span>
       <h2 id="scpSeatName">ACL Member</h2>
       <div id="scpSeatStars" class="scp-seat-stars">☆ 0</div>
+      <div id="scpSeatAttendance" class="scp-seat-attendance" aria-label="Attendance circles"></div>
       <div id="scpSeatAdminActions" class="scp-seat-admin-actions" hidden><button id="scpCallMember" type="button">Call this seat</button><button id="scpAwardStar" type="button">★ Award star</button><button id="scpRemoveStar" type="button">Remove star</button><button id="scpSuspendMember" class="scp-suspend-member" type="button">Suspend from course</button></div>
       <form id="scpSuspendForm" class="scp-suspend-form" hidden><label for="scpSuspendReason">Suspension reason</label><textarea id="scpSuspendReason" rows="3" maxlength="500" placeholder="Explain why this member is suspended…" required></textarea><p>The member will be told that access can be restored after review and can contact ACL by WhatsApp.</p><div><button id="scpSuspendCancel" type="button">Cancel</button><button type="submit">Confirm suspension</button></div><small id="scpSuspendStatus" aria-live="polite"></small></form>
     </section>
@@ -175,9 +177,9 @@
 
   <div id="scpVoteModal" class="scp-vote-modal" hidden role="dialog" aria-modal="true" aria-labelledby="scpVoteModalTitle"><section class="scp-vote-dialog"><button id="scpVoteClose" type="button" aria-label="Close voting">×</button><div id="scpVoteContent"></div></section></div>
   <div id="scpAlbumModal" class="scp-album-modal" hidden role="dialog" aria-modal="true" aria-label="Flashcard album"><button id="scpAlbumClose" type="button" aria-label="Close album">×</button><button id="scpAlbumPrev" class="scp-album-nav prev" type="button" aria-label="Previous flashcard">‹</button><figure><img id="scpAlbumImage" alt="Lecture flashcard"><figcaption><strong id="scpAlbumTitle"></strong><span id="scpAlbumCounter"></span></figcaption></figure><button id="scpAlbumNext" class="scp-album-nav next" type="button" aria-label="Next flashcard">›</button></div>
-  <div id="scpAttendanceReviewModal" class="scp-ar-modal" hidden role="dialog" aria-modal="true" aria-labelledby="scpArTitle"><section class="scp-ar-dialog"><button id="scpArClose" type="button" aria-label="Close attendance review">×</button><div id="scpArContent"></div></section></div>
+  <div id="scpAttendanceReviewModal" class="scp-ar-modal" hidden role="dialog" aria-modal="true" aria-labelledby="scpArTitle"><section class="scp-ar-dialog"><button id="scpArRefresh" type="button" aria-label="Refresh attendance report">↻</button><button id="scpArClose" type="button" aria-label="Close attendance review">×</button><div id="scpArContent"></div></section></div>
 
   <script type="module" src="assets/js/basic-module-forum.js?v=2"></script>
-  <script type="module" src="assets/js/basic-special-course-page.js?v=20"></script>
+  <script type="module" src="assets/js/basic-special-course-page.js?v=21"></script>
 </body>
 </html>
