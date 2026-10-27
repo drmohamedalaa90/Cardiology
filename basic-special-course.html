@@ -14,7 +14,8 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/acl-apple-touch-icon.png?v=3">
   <title>Special Course | Alexandria Cardiology League</title>
   <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
-  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=19">
+  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=20">
+  <link rel="stylesheet" href="assets/css/basic-module-forum.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -110,6 +111,7 @@
               <label>Box title<input id="scpItemTitle" required></label>
               <label>Short details<textarea id="scpItemSubtitle" rows="2"></textarea></label>
               <label>Link <small>(optional until ready)</small><input id="scpItemUrl" type="url" placeholder="https://..."></label>
+              <label id="scpFlashcardPhotosLabel" hidden>Flashcard photos<input id="scpFlashcardPhotos" type="file" accept="image/*" multiple><small>Select one or several photos. Each photo becomes a page in the room’s flashcard album.</small></label>
               <label>Order inside room<input id="scpItemOrder" type="number" min="1" value="1"></label>
               <label class="scp-check"><input id="scpItemActive" type="checkbox" checked> Visible to candidates</label>
               <div class="scp-form-actions"><button type="submit">Save box</button><button id="scpItemCancel" type="button">Cancel</button></div>
@@ -151,6 +153,10 @@
           <form id="scpQuestionForm"><label for="scpQuestionText">Ask the Doctor</label><div><textarea id="scpQuestionText" rows="2" maxlength="1000" placeholder="Write your question here…" required></textarea><button type="submit">Submit question</button></div><p id="scpQuestionStatus" aria-live="polite"></p></form>
         </section>
         <div id="scpRoomItems" class="scp-room-items"></div>
+        <details id="bmForum" class="bm-forum scp-course-forum">
+          <summary class="bm-forum-head"><div><span class="basic-module-kicker">COURSE COMMUNITY</span><h2 id="bmForumTitle">Questions &amp; answers</h2><p>Ask by name or anonymously. Colleagues can reply, and ACL can verify correct answers.</p></div><strong id="bmForumCount">—</strong></summary>
+          <div class="scp-forum-body"><form id="bmForumQuestionForm" class="bm-forum-compose"><textarea id="bmForumQuestion" rows="3" maxlength="2000" required placeholder="Ask a question about this course…"></textarea><div><label><input id="bmForumQuestionAnonymous" type="checkbox"> Ask anonymously</label><button type="submit">Post question</button></div><small id="bmForumStatus" aria-live="polite"></small></form><div id="bmForumList" class="bm-forum-list" aria-live="polite"><div class="bm-forum-empty">Loading course discussions…</div></div></div>
+        </details>
       </section>
     </div>
   </div>
@@ -168,8 +174,10 @@
   </div>
 
   <div id="scpVoteModal" class="scp-vote-modal" hidden role="dialog" aria-modal="true" aria-labelledby="scpVoteModalTitle"><section class="scp-vote-dialog"><button id="scpVoteClose" type="button" aria-label="Close voting">×</button><div id="scpVoteContent"></div></section></div>
+  <div id="scpAlbumModal" class="scp-album-modal" hidden role="dialog" aria-modal="true" aria-label="Flashcard album"><button id="scpAlbumClose" type="button" aria-label="Close album">×</button><button id="scpAlbumPrev" class="scp-album-nav prev" type="button" aria-label="Previous flashcard">‹</button><figure><img id="scpAlbumImage" alt="Lecture flashcard"><figcaption><strong id="scpAlbumTitle"></strong><span id="scpAlbumCounter"></span></figcaption></figure><button id="scpAlbumNext" class="scp-album-nav next" type="button" aria-label="Next flashcard">›</button></div>
   <div id="scpAttendanceReviewModal" class="scp-ar-modal" hidden role="dialog" aria-modal="true" aria-labelledby="scpArTitle"><section class="scp-ar-dialog"><button id="scpArClose" type="button" aria-label="Close attendance review">×</button><div id="scpArContent"></div></section></div>
 
-  <script type="module" src="assets/js/basic-special-course-page.js?v=19"></script>
+  <script type="module" src="assets/js/basic-module-forum.js?v=2"></script>
+  <script type="module" src="assets/js/basic-special-course-page.js?v=20"></script>
 </body>
 </html>
