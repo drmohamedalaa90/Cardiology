@@ -202,6 +202,7 @@ function openRoom(id) {
   $("scpRoomTitle").textContent = session.title;
   renderAttendance(session);
   $("scpRoomHelp").hidden = !!state.admin;
+  $("scpRepeatRequest").hidden = !!roomState(id).ended_at;
   $("scpQuestionStatus").textContent = "";
   $("scpQuestionText").value = "";
   const items = sessionItems(id).filter(item => state.admin || item.is_active);
@@ -392,7 +393,7 @@ load().catch(error => {
 
 $("scpRefresh")?.addEventListener("click",()=>location.reload());
 async function sendHelpPush(requestId){if(!requestId)return;try{await supabaseClient.functions.invoke("send-course-help-push",{body:{request_id:requestId}})}catch(error){console.warn("Push delivery failed",error)}}
-$("scpRepeatRequest")?.addEventListener("click",async event=>{if(!activeSessionId)return;const session=sessions().find(x=>x.id===activeSessionId),button=event.currentTarget;button.disabled=true;button.textContent="Sending…";try{const result=await hallAction("request_repeat",{session_id:activeSessionId,session_number:session?.session_number});void sendHelpPush(result?.request_id);button.textContent="✓ Request sent";$("scpQuestionStatus").textContent="The Doctor has been notified.";setTimeout(()=>{button.disabled=false;button.textContent="Please repeat — I don’t understand";$("scpQuestionStatus").textContent=""},3500)}catch(error){button.disabled=false;button.textContent="Please repeat — I don’t understand";$("scpQuestionStatus").textContent=error.message||"Could not send the request.";}});
+$("scpRepeatRequest")?.addEventListener("click",async event=>{if(!activeSessionId)return;const session=sessions().find(x=>x.id===activeSessionId),button=event.currentTarget;if(roomState(activeSessionId).ended_at){button.hidden=true;$("scpQuestionStatus").textContent="The lecture has ended.";return;}button.disabled=true;button.textContent="Sending…";try{const result=await hallAction("request_repeat",{session_id:activeSessionId,session_number:session?.session_number});void sendHelpPush(result?.request_id);button.textContent="✓ Request sent";$("scpQuestionStatus").textContent="The Doctor has been notified.";setTimeout(()=>{button.disabled=false;button.textContent="Please repeat — I don’t understand";$("scpQuestionStatus").textContent=""},3500)}catch(error){button.disabled=false;button.textContent="Please repeat — I don’t understand";$("scpQuestionStatus").textContent=error.message||"Could not send the request.";}});
 $("scpQuestionForm")?.addEventListener("submit",async event=>{event.preventDefault();if(!activeSessionId)return;const text=$("scpQuestionText").value.trim(),session=sessions().find(x=>x.id===activeSessionId),button=event.currentTarget.querySelector("button");if(!text)return;button.disabled=true;button.textContent="Sending…";try{const result=await hallAction("submit_question",{session_id:activeSessionId,session_number:session?.session_number,question:text});void sendHelpPush(result?.request_id);$("scpQuestionText").value="";$("scpQuestionStatus").textContent="✓ Your question was sent to the Doctor.";button.textContent="Sent";}catch(error){button.disabled=false;button.textContent="Submit question";$("scpQuestionStatus").textContent=error.message||"Could not submit your question.";}});
 
 /* Live voting inside special-course rooms */
