@@ -12,6 +12,10 @@ let hallState = { capacity: 200, occupied: 0, members: [] };
 let selectedHallMember = null;
 let arrivalShown = false;
 const seenRoomCalls=new Map();let roomCallTimer=null;
+let editorReturnRoom=null;
+const detailsKey=name=>`acl-special-details:${courseId}:${name}`;
+function restoreDetails(root=document){root.querySelectorAll("details[data-persist-details]").forEach(detail=>{const key=detailsKey(detail.dataset.persistDetails);const saved=localStorage.getItem(key);if(saved!==null)detail.open=saved==="1";else if(detail.dataset.persistDetails==="visitors-hall")detail.open=false;if(detail.dataset.detailsBound)return;detail.dataset.detailsBound="1";detail.addEventListener("toggle",()=>localStorage.setItem(detailsKey(detail.dataset.persistDetails),detail.open?"1":"0"))})}
+function setPopupEditor(form,kind,enabled){form.classList.toggle("is-popup-editor",!!enabled);if(enabled)form.dataset.editorKind=kind;else delete form.dataset.editorKind}
 
 async function api(action, args = {}) {
   const { data, error } = await supabaseClient.rpc("acl_special_course_content_api", { p_action: action, p_args: { module_id: courseId, ...args } });
@@ -98,7 +102,7 @@ function render() {
   }).join("") : '<div class="scp-empty">Course sessions will appear here when they are released.</div>';
 
   document.querySelectorAll("[data-open-room]").forEach(button => button.addEventListener("click", () => openRoom(button.dataset.openRoom)));
-  document.querySelectorAll("[data-edit-session]").forEach(button => button.addEventListener("click", event => { event.stopPropagation(); openSession(sessions().find(s => s.id === button.dataset.editSession)); }));
+  document.querySelectorAll("[data-edit-session]").forEach(button => button.addEventListener("click", event => { event.stopPropagation(); openSession(sessions().find(s => s.id === button.dataset.editSession),true); }));
   document.querySelectorAll("[data-delete-session]").forEach(button => button.addEventListener("click", async event => {
     event.stopPropagation();
     const session = sessions().find(s => s.id === button.dataset.deleteSession);
@@ -111,6 +115,7 @@ function render() {
   renderHall();
   renderAttendanceReport();
   renderCertificate(state.certificate || {});
+  restoreDetails();
 }
 
 function renderHall() {
@@ -204,21 +209,22 @@ function openRoom(id) {
   const items = sessionItems(id).filter(item => state.admin || item.is_active);
   const itemCard=(item,index)=>{const info=typeInfo[item.item_type]||["•","Course item","Open"],ready=item.url&&item.url!=="#";if(item.item_type==="lecture"&&item.cover_image_url)return `<article class="scp-content-box has-cover" style="--box-delay:${180+index*70}ms;background-image:url(\'${esc(item.cover_image_url)}\')" aria-label="${esc(item.title)}">${ready?`<a class="scp-cover-play" href="${esc(item.url)}" target="_blank" rel="noopener" aria-label="Play ${esc(item.title)}"><span>▶</span></a>`:'<span class="scp-cover-coming">Coming soon</span>'}${state.admin?`<div class="scp-box-admin"><button type="button" data-edit-item="${item.id}">Edit</button><button type="button" data-delete-item="${item.id}">Delete</button></div>`:""}</article>`;return `<article class="scp-content-box" style="--box-delay:${180+index*70}ms"><span class="scp-box-icon">${info[0]}</span><div><small>${info[1]}</small><h3>${esc(item.title)}</h3>${item.subtitle?`<p>${esc(item.subtitle)}</p>`:""}</div>${ready?`<a href="${esc(item.url)}" target="_blank" rel="noopener">${info[2]} →</a>`:'<span class="scp-coming">Coming soon</span>'}${state.admin?`<div class="scp-box-admin"><button type="button" data-edit-item="${item.id}">Edit</button><button type="button" data-delete-item="${item.id}">Delete</button></div>`:""}</article>`};
   const videos=items.filter(item=>item.item_type==="lecture"),flashcards=items.filter(item=>item.item_type==="flashcards"),others=items.filter(item=>!["lecture","flashcards"].includes(item.item_type));
-  const flashAlbum=`<details class="scp-flashcard-section"><summary><span>▣</span><strong>View flashcards</strong><small>${flashcards.length?`${flashcards.length} photo${flashcards.length===1?"":"s"}`:"Coming soon"}</small></summary>${flashcards.length?`<div class="scp-flashcard-album">${flashcards.map((item,index)=>`<button type="button" data-album-index="${index}"><img src="${esc(item.url||'assets/images/acl-header-mark.svg')}" alt="${esc(item.title)}" loading="lazy"><span>${esc(item.title||`Flashcard ${index+1}`)}</span>${state.admin?`<i data-edit-item="${item.id}">Edit</i>`:""}</button>`).join("")}</div>`:`<div class="scp-flashcard-empty">${state.admin?'<button id="scpAddFlashcards" type="button">+ Upload lecture flashcards</button>':'Lecture flashcards have not been uploaded yet.'}</div>`}</details>`;
-  $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
+  const flashAlbum=`<details class="scp-flashcard-section" data-persist-details="room:${id}:flashcards"><summary><span>▣</span><strong>View flashcards</strong><small>${flashcards.length?`${flashcards.length} photo${flashcards.length===1?"":"s"}`:"Coming soon"}</small></summary>${flashcards.length?`<div class="scp-flashcard-album">${flashcards.map((item,index)=>`<button type="button" data-album-index="${index}"><img src="${esc(item.url||'assets/images/acl-header-mark.svg')}" alt="${esc(item.title)}" loading="lazy"><span>${esc(item.title||`Flashcard ${index+1}`)}</span>${state.admin?`<i data-edit-item="${item.id}">Edit</i>`:""}</button>`).join("")}</div>`:`<div class="scp-flashcard-empty">${state.admin?'<button id="scpAddFlashcards" type="button">+ Upload lecture flashcards</button>':'Lecture flashcards have not been uploaded yet.'}</div>`}</details>`;
+  $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
+  $("bmForum").dataset.persistDetails=`room:${id}:forum`;restoreDetails($("scpRoomModal"));
   bindFlashcardAlbum(flashcards);
   $("scpRoomModal").hidden = false;
   document.body.classList.add("scp-modal-open");
   requestAnimationFrame(() => $("scpRoomModal").classList.add("is-open"));
-  document.querySelectorAll("[data-edit-item]").forEach(button => button.onclick = () => { closeRoom(); openItem((state.items || []).find(item => item.id === button.dataset.editItem)); });
+  $("scpRoomModal").querySelectorAll("[data-edit-item]").forEach(button => button.onclick = () => openItem((state.items || []).find(item => item.id === button.dataset.editItem),id,true));
   document.querySelectorAll("[data-delete-item]").forEach(button => button.onclick = async () => {
     if (!confirm("Delete this content box?")) return;
     await api("delete_item", { id: button.dataset.deleteItem });
     await load();
     openRoom(id);
   });
-  $("scpRoomAddItem")?.addEventListener("click", () => { closeRoom(); openItem(null, id); });
-  $("scpAddFlashcards")?.addEventListener("click",()=>{closeRoom();openItem(null,id);$("scpItemType").value="flashcards";updateItemPhotoFields();$("scpFlashcardPhotos").focus()});
+  $("scpRoomAddItem")?.addEventListener("click", () => openItem(null,id,true));
+  $("scpAddFlashcards")?.addEventListener("click",()=>{openItem(null,id,true);$("scpItemType").value="flashcards";updateItemPhotoFields();$("scpFlashcardPhotos").focus()});
 }
 
 async function runSeatCall(sessionId,seat,mode){
@@ -244,9 +250,10 @@ function populateSessionSelect(selected = "") {
   if (selected) select.value = selected;
 }
 
-function openSession(session = null) {
+function openSession(session = null,popup=false) {
   editingSession = session;
   $("scpSessionForm").hidden = false;
+  setPopupEditor($("scpSessionForm"),"session",popup);
   $("scpSessionId").value = session?.id || "";
   $("scpSessionNumber").value = session?.session_number || sessions().length + 1;
   $("scpSessionTitle").value = session?.title || "";
@@ -257,10 +264,12 @@ function openSession(session = null) {
   $("scpSessionTitle").focus();
 }
 
-function openItem(item = null, preferredSession = "") {
+function openItem(item = null, preferredSession = "",popup=false) {
   if (!sessions().length) { openSession(); return; }
   editingItem = item;
+  editorReturnRoom=popup?(preferredSession||activeSessionId):null;
   $("scpItemForm").hidden = false;
+  setPopupEditor($("scpItemForm"),"item",popup);
   $("scpItemId").value = item?.id || "";
   populateSessionSelect(item?.session_id || preferredSession || activeSessionId || sessions()[0].id);
   $("scpItemType").value = item?.item_type || "lecture";
@@ -298,7 +307,7 @@ function renderCertificate(cert) {
 }
 
 $("scpNewSession")?.addEventListener("click", () => openSession());
-$("scpSessionCancel")?.addEventListener("click", () => { $("scpSessionForm").hidden = true; editingSession = null; });
+$("scpSessionCancel")?.addEventListener("click", () => { $("scpSessionForm").hidden = true;setPopupEditor($("scpSessionForm"),"session",false);editingSession = null; });
 $("scpSessionForm")?.addEventListener("submit", async event => {
   event.preventDefault();
   const status = $("scpSessionStatus");
@@ -310,6 +319,7 @@ $("scpSessionForm")?.addEventListener("submit", async event => {
     const targetId=savedId || sessions().find(x=>Number(x.session_number)===savedNumber&&x.title===savedTitle)?.id;
     if(targetId && !!roomState(targetId).is_locked!==lockWanted){await hallAction("set_room_lock",{session_id:targetId,locked:lockWanted});await refreshHall();render()}
     $("scpSessionForm").hidden = true;
+    setPopupEditor($("scpSessionForm"),"session",false);
     editingSession = null;
   } catch (error) { status.textContent = error.message || "Could not save the session."; }
 });
@@ -321,7 +331,7 @@ function bindFlashcardAlbum(items){albumItems=items.filter(x=>x.url&&x.url!=="#"
 $("scpAlbumClose")?.addEventListener("click",()=>$("scpAlbumModal").hidden=true);$("scpAlbumPrev")?.addEventListener("click",()=>showAlbum(albumIndex-1));$("scpAlbumNext")?.addEventListener("click",()=>showAlbum(albumIndex+1));$("scpAlbumModal")?.addEventListener("click",event=>{if(event.target===$("scpAlbumModal"))$("scpAlbumModal").hidden=true});
 
 $("scpNewItem")?.addEventListener("click", () => openItem());
-$("scpItemCancel")?.addEventListener("click", () => { $("scpItemForm").hidden = true; editingItem = null; });
+$("scpItemCancel")?.addEventListener("click", () => { $("scpItemForm").hidden = true;setPopupEditor($("scpItemForm"),"item",false);editorReturnRoom=null;editingItem = null; });
 $("scpItemForm")?.addEventListener("submit", async event => {
   event.preventDefault();
   const status = $("scpItemStatus");
@@ -330,9 +340,13 @@ $("scpItemForm")?.addEventListener("submit", async event => {
     const files=[...($("scpFlashcardPhotos").files||[])],coverFile=$("scpLectureCover").files?.[0],baseOrder=Number($("scpItemOrder").value||1),itemTitle=$("scpItemTitle").value.trim(),common={session_id:$("scpItemSession").value,item_type:$("scpItemType").value,subtitle:$("scpItemSubtitle").value.trim(),is_active:$("scpItemActive").checked};
     if(files.length&&!editingItem){for(const [index,file] of files.entries()){status.textContent=`Uploading flashcard ${index+1} of ${files.length}…`;const url=await upload(file,"flashcard");await api("save_item",{...common,id:null,title:files.length>1?`${$("scpItemTitle").value.trim()||"Flashcard"} ${index+1}`:$("scpItemTitle").value.trim()||"Flashcard",url,display_order:baseOrder+index})}}else{let url=$("scpItemUrl").value.trim();if(files[0])url=await upload(files[0],"flashcard");await api("save_item",{...common,id:editingItem?.id||null,title:$("scpItemTitle").value.trim(),url,display_order:baseOrder})}
     if(coverFile&&common.item_type==="lecture"){status.textContent="Uploading lecture cover…";const cover_image_url=await upload(coverFile,"lecture-cover");await extrasApi("set_cover",{item_id:editingItem?.id||null,session_id:common.session_id,title:itemTitle,display_order:baseOrder,cover_image_url})}
+    const returnRoom=editorReturnRoom;
     $("scpItemForm").hidden = true;
+    setPopupEditor($("scpItemForm"),"item",false);
+    editorReturnRoom=null;
     editingItem = null;
     await load();
+    if(returnRoom&&sessions().some(room=>room.id===returnRoom))openRoom(returnRoom);
   } catch (error) { status.textContent = error.message || "Could not save the content box."; }
 });
 
@@ -392,6 +406,7 @@ async function load() {
   const loaded=await Promise.all([api("get"),hallApi(),extrasApi("get")]);[state,hallState]=loaded;applyExtras(loaded[2]);preloadCourseImages();
   if(hallState?.suspension){await renderCourseSuspension(hallState.suspension);return;}
   render();
+  const pageParams=new URLSearchParams(location.search);if(pageParams.get("hall")==="1"){const hall=$("scpHallSection");hall.open=true;localStorage.setItem(detailsKey("visitors-hall"),"1");setTimeout(()=>hall.scrollIntoView({behavior:"smooth",block:"start"}),120)}
   const requestedRoom=new URLSearchParams(location.search).get("room");
   if(requestedRoom&&sessions().some(room=>room.id===requestedRoom))setTimeout(()=>{openRoom(requestedRoom);const params=new URLSearchParams(location.search);if(params.get("attendance")==="1"&&roomState(requestedRoom).attendance_enabled!==false)setTimeout(()=>openAttendanceReview(requestedRoom),180);params.delete("attendance");params.delete("checker");params.delete("room");history.replaceState(null,"",location.pathname+"?"+params.toString())},120);
   void ensureAdminPush();
