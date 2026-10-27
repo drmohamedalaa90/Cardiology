@@ -1,5 +1,5 @@
 import { supabaseClient } from './supabase-client.js';
-const $=id=>document.getElementById(id),moduleId=new URLSearchParams(location.search).get('module')||new URLSearchParams(location.search).get('slug')||'';
+const $=id=>document.getElementById(id),moduleId=new URLSearchParams(location.search).get('module')||new URLSearchParams(location.search).get('course')||new URLSearchParams(location.search).get('slug')||'';
 const esc=(v='')=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));let forum={is_admin:false,questions:[]};
 const when=v=>{const d=new Date(v),m=Math.max(0,Math.floor((Date.now()-d.getTime())/60000));if(!Number.isFinite(m))return'';if(m<1)return'Just now';if(m<60)return m+' min ago';const h=Math.floor(m/60);if(h<24)return h+' h ago';const day=Math.floor(h/24);return day<7?day+' d ago':d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});};
 const meta=a=>a?.admin?'<span class="bm-author-admin"><img src="assets/images/acl-header-mark.svg" alt="">ACL Academic Director</span>':a?.anonymous?'<span class="bm-author-role">Anonymous</span>':'<span class="bm-author-role">'+esc([a?.academic_year,'Colleague'].filter(Boolean).join(' · '))+'</span>';
