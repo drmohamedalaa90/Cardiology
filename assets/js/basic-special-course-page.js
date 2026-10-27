@@ -388,7 +388,7 @@ async function load() {
   if(hallState?.suspension){await renderCourseSuspension(hallState.suspension);return;}
   render();
   const requestedRoom=new URLSearchParams(location.search).get("room");
-  if(requestedRoom&&sessions().some(room=>room.id===requestedRoom))setTimeout(()=>{openRoom(requestedRoom);const params=new URLSearchParams(location.search);if(params.get("attendance")==="1"&&roomState(requestedRoom).attendance_enabled!==false)setTimeout(()=>openAttendanceReview(requestedRoom),180);params.delete("attendance");params.delete("checker");history.replaceState(null,"",location.pathname+"?"+params.toString())},120);
+  if(requestedRoom&&sessions().some(room=>room.id===requestedRoom))setTimeout(()=>{openRoom(requestedRoom);const params=new URLSearchParams(location.search);if(params.get("attendance")==="1"&&roomState(requestedRoom).attendance_enabled!==false)setTimeout(()=>openAttendanceReview(requestedRoom),180);params.delete("attendance");params.delete("checker");params.delete("room");history.replaceState(null,"",location.pathname+"?"+params.toString())},120);
   void ensureAdminPush();
 }
 
