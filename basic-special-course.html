@@ -1,1 +1,160 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#76520e"><title>Special Course | Alexandria Cardiology League</title><link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple"><link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body><main class="scp-shell"><a class="scp-back" href="basic-home.html?edition=basic">← Basic home</a><section id="scpHero" class="scp-hero"><div id="scpCover" class="scp-cover"></div><div class="scp-hero-content"><div id="scpLogo" class="scp-logo">ACL</div><div><span>ACL SPECIAL COURSE</span><h1 id="scpTitle">Loading course…</h1><p id="scpDescription"></p></div></div></section><section class="scp-layout"><div><div id="scpContent" class="scp-content"><div class="scp-empty">Loading course content…</div></div><section id="scpCertificateSection" class="scp-certificate-section" hidden><div class="scp-section-heading"><div><span>COURSE CERTIFICATE</span><h2>Your certificate</h2></div><button id="scpPrintCertificate" type="button">Print / Save PDF</button></div><article id="scpCertificate" class="scp-certificate"><img id="scpCertificateBackground" class="scp-certificate-bg" alt=""><div class="scp-certificate-inner"><img id="scpCertificateLogo" class="scp-certificate-logo" alt=""><small>ALEXANDRIA CARDIOLOGY LEAGUE</small><h2 id="scpCertificateTitle">Certificate of Completion</h2><p id="scpCertificateSubtitle"></p><p class="scp-awarded">This certificate is awarded to</p><h3 id="scpCandidateName"></h3><p><span id="scpCompletionText">has successfully completed</span></p><h4 id="scpCertificateCourse"></h4><div class="scp-signature"><strong id="scpSignatory"></strong><span id="scpSignatoryRole"></span></div></div></article></section></div><aside id="scpAdmin" class="scp-admin" hidden><header><span>ADMIN EDITOR</span><h2>Course content</h2></header><button id="scpNewItem" class="scp-admin-primary" type="button">+ Add course item</button><form id="scpItemForm" class="scp-admin-form" hidden><input id="scpItemId" type="hidden"><label>Section<input id="scpItemSection" required placeholder="e.g. Session 1 · ECG Basics"></label><label>Content type<select id="scpItemType"><option value="lecture">Lecture</option><option value="flashcards">Flashcards</option><option value="quiz_during">Quiz during lectures</option><option value="quiz_final">Final quiz</option></select></label><label>Title<input id="scpItemTitle" required></label><label>Short details<textarea id="scpItemSubtitle" rows="2"></textarea></label><label>Link<input id="scpItemUrl" type="url" required placeholder="https://..."></label><label>Order<input id="scpItemOrder" type="number" min="1" value="1"></label><label class="scp-check"><input id="scpItemActive" type="checkbox" checked> Visible to candidates</label><div class="scp-form-actions"><button type="submit">Save item</button><button id="scpItemCancel" type="button">Cancel</button></div><p id="scpItemStatus"></p></form><hr><header><span>CERTIFICATE EDITOR</span><h2>Certificate</h2></header><form id="scpCertificateForm" class="scp-admin-form"><label class="scp-check"><input id="scpCertificateEnabled" type="checkbox"> Enable certificate</label><label>Certificate title<input id="scpCertTitle"></label><label>Subtitle<input id="scpCertSubtitle"></label><label>Completion text<input id="scpCertCompletion"></label><label>Signatory name<input id="scpCertSignatory"></label><label>Signatory role<input id="scpCertRole"></label><label>Certificate logo<input id="scpCertLogoFile" type="file" accept="image/*"></label><label>Background image<input id="scpCertBackgroundFile" type="file" accept="image/*"></label><button class="scp-admin-primary" type="submit">Save certificate</button><p id="scpCertificateStatus"></p></form></aside></section></main><script type="module" src="assets/js/basic-special-course-page.js?v=1"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#76520e">
+  <meta name="application-name" content="Cardiology League">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Cardiology League">
+  <link rel="manifest" href="manifest.webmanifest?v=3">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/images/acl-icon-192.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/acl-apple-touch-icon.png?v=3">
+  <title>Special Course | Alexandria Cardiology League</title>
+  <link rel="stylesheet" href="assets/css/basic-universal-shell.css?v=20261023-simple">
+  <link rel="stylesheet" href="assets/css/basic-special-course-page.css?v=16">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main class="scp-shell">
+    <nav class="scp-page-actions"><a class="scp-back" href="basic-modules.html?edition=basic">← Back to modules</a><button id="scpRefresh" type="button">↻ Refresh</button></nav>
+
+    <section id="scpHero" class="scp-hero">
+      <div id="scpCover" class="scp-cover"></div>
+      <div class="scp-hero-content">
+        <div id="scpLogo" class="scp-logo">ACL</div>
+        <div>
+          <span>ACL SPECIAL COURSE</span>
+          <h1 id="scpTitle">Loading course…</h1>
+          <p id="scpDescription"></p>
+        </div>
+      </div>
+    </section>
+
+    <details id="scpHallSection" class="scp-hall-section" open>
+      <summary class="scp-hall-head">
+        <div><span>ECG DEMYSTIFIED COMMUNITY</span><h2 id="scpHallTitle">Visitors’ Hall</h2><p>Every course member has a numbered seat.</p></div>
+        <div class="scp-hall-counter"><strong id="scpHallOccupied">0</strong><span>of 200 seats occupied</span></div>
+      <button id="scpResetAsked" class="scp-reset-asked" type="button" hidden>Reset questioning round</button></summary>
+      <div class="scp-hall-body"><div class="scp-auditorium-wrap">
+        <div class="scp-auditorium-stage"><span>ECG DEMYSTIFIED 2026</span><i></i></div>
+        <div id="scpVisitorsHall" class="scp-auditorium" aria-label="Course members seating plan"><div class="scp-empty">Opening the hall…</div></div>
+      </div>
+      <p class="scp-hall-hint">Tap an occupied chair to see the member’s name and stars.</p></div>
+    </details>
+
+    <details id="scpAttendanceReport" class="scp-attendance-report" hidden>
+      <summary><div><span>ADMIN ATTENDANCE</span><h2>Attendance report</h2></div><b id="scpCertificateReadyCount">0 certificates ready</b></summary>
+      <div class="scp-report-legend"><span><i class="green"></i>Complete</span><span><i class="orange"></i>Needs review</span><span><i class="red"></i>Did not check in</span></div>
+      <div id="scpAttendanceReportBody"></div>
+    </details>
+
+    <section class="scp-layout">
+      <div>
+        <section class="scp-journey-head">
+          <div><span>YOUR COURSE JOURNEY</span><h2>Choose a session room</h2></div>
+          <p>Enter each room to explore its lectures, activities and assessments.</p>
+        </section>
+        <div id="scpContent" class="scp-corridor"><div class="scp-empty">Preparing your course rooms…</div></div>
+
+        <section id="scpCertificatePending" class="scp-certificate-pending" hidden><strong>Certificate pending</strong><p>Your four attendance circles must be green. The Doctor will review any orange or red attendance.</p></section>
+        <section id="scpCertificateSection" class="scp-certificate-section" hidden>
+          <div class="scp-section-heading"><div><span>COURSE CERTIFICATE</span><h2>Your certificate</h2></div><button id="scpPrintCertificate" type="button">Print / Save PDF</button></div>
+          <article id="scpCertificate" class="scp-certificate"><img id="scpCertificateBackground" class="scp-certificate-bg" alt=""><div class="scp-certificate-inner"><img id="scpCertificateLogo" class="scp-certificate-logo" alt=""><small>ALEXANDRIA CARDIOLOGY LEAGUE</small><h2 id="scpCertificateTitle">Certificate of Completion</h2><p id="scpCertificateSubtitle"></p><p class="scp-awarded">This certificate is awarded to</p><h3 id="scpCandidateName"></h3><p><span id="scpCompletionText">has successfully completed</span></p><h4 id="scpCertificateCourse"></h4><div class="scp-signature"><strong id="scpSignatory"></strong><span id="scpSignatoryRole"></span></div></div></article>
+        </section>
+      </div>
+
+      <aside id="scpAdmin" class="scp-admin" hidden>
+        <details open>
+          <summary><span>ADMIN EDITOR</span><strong>Session rooms</strong></summary>
+          <div class="scp-admin-panel">
+            <button id="scpNewSession" class="scp-admin-primary" type="button">+ Add session room</button>
+            <form id="scpSessionForm" class="scp-admin-form" hidden>
+              <input id="scpSessionId" type="hidden">
+              <label>Session number<input id="scpSessionNumber" type="number" min="1" required></label>
+              <label>Session name<input id="scpSessionTitle" maxlength="160" required></label>
+              <label>Order<input id="scpSessionOrder" type="number" min="1" required></label>
+              <label class="scp-check"><input id="scpSessionActive" type="checkbox" checked> Visible to candidates</label>
+              <label class="scp-check"><input id="scpSessionLocked" type="checkbox"> Lock this room</label>
+              <div class="scp-form-actions"><button type="submit">Save room</button><button id="scpSessionCancel" type="button">Cancel</button></div>
+              <p id="scpSessionStatus"></p>
+            </form>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>ADMIN EDITOR</span><strong>Room content boxes</strong></summary>
+          <div class="scp-admin-panel">
+            <button id="scpNewItem" class="scp-admin-primary" type="button">+ Add content box</button>
+            <form id="scpItemForm" class="scp-admin-form" hidden>
+              <input id="scpItemId" type="hidden">
+              <label>Session room<select id="scpItemSession" required></select></label>
+              <label>Content type<select id="scpItemType"><option value="lecture">Lecture</option><option value="flashcards">Flashcards</option><option value="quiz_during">Quiz during session</option><option value="quiz_final">Final quiz</option><option value="file">File / handout</option><option value="link">External link</option></select></label>
+              <label>Box title<input id="scpItemTitle" required></label>
+              <label>Short details<textarea id="scpItemSubtitle" rows="2"></textarea></label>
+              <label>Link <small>(optional until ready)</small><input id="scpItemUrl" type="url" placeholder="https://..."></label>
+              <label>Order inside room<input id="scpItemOrder" type="number" min="1" value="1"></label>
+              <label class="scp-check"><input id="scpItemActive" type="checkbox" checked> Visible to candidates</label>
+              <div class="scp-form-actions"><button type="submit">Save box</button><button id="scpItemCancel" type="button">Cancel</button></div>
+              <p id="scpItemStatus"></p>
+            </form>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>ADMIN EDITOR</span><strong>Certificate</strong></summary>
+          <div class="scp-admin-panel">
+            <form id="scpCertificateForm" class="scp-admin-form">
+              <label class="scp-check"><input id="scpCertificateEnabled" type="checkbox"> Enable certificate</label>
+              <label>Certificate title<input id="scpCertTitle"></label>
+              <label>Subtitle<input id="scpCertSubtitle"></label>
+              <label>Completion text<input id="scpCertCompletion"></label>
+              <label>Signatory name<input id="scpCertSignatory"></label>
+              <label>Signatory role<input id="scpCertRole"></label>
+              <label>Certificate logo<input id="scpCertLogoFile" type="file" accept="image/*"></label>
+              <label>Background image<input id="scpCertBackgroundFile" type="file" accept="image/*"></label>
+              <button class="scp-admin-primary" type="submit">Save certificate</button><p id="scpCertificateStatus"></p>
+            </form>
+          </div>
+        </details>
+      </aside>
+    </section>
+  </main>
+
+  <div id="scpRoomModal" class="scp-room-modal" hidden>
+    <div class="scp-room-stage" role="dialog" aria-modal="true" aria-labelledby="scpRoomTitle">
+      <button id="scpRoomClose" class="scp-room-close" type="button" aria-label="Close room">×</button>
+      <div class="scp-room-door" aria-hidden="true"><span id="scpDoorNumber">01</span><i></i></div>
+      <section class="scp-room-interior">
+        <div id="scpSeatCallOverlay" class="scp-seat-call-overlay" hidden><span id="scpSeatCallMode">CALLING A SEAT</span><strong id="scpSeatCallNumber">---</strong><small>Get ready</small></div>
+        <div class="scp-room-title"><span id="scpRoomEyebrow">SESSION 01</span><h2 id="scpRoomTitle"></h2></div>
+        <section id="scpAttendancePanel" class="scp-attendance-panel" hidden></section>
+        <section id="scpRoomHelp" class="scp-room-help" hidden>
+          <button id="scpRepeatRequest" class="scp-repeat-request" type="button">Please repeat — I don’t understand</button>
+          <form id="scpQuestionForm"><label for="scpQuestionText">Ask the Doctor</label><div><textarea id="scpQuestionText" rows="2" maxlength="1000" placeholder="Write your question here…" required></textarea><button type="submit">Submit question</button></div><p id="scpQuestionStatus" aria-live="polite"></p></form>
+        </section>
+        <div id="scpRoomItems" class="scp-room-items"></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="scpSeatCard" class="scp-seat-card" hidden role="dialog" aria-modal="true" aria-labelledby="scpSeatName">
+    <section class="scp-seat-dialog">
+      <button id="scpSeatClose" type="button" aria-label="Close">×</button>
+      <div class="scp-seat-avatar" aria-hidden="true"><i></i><b></b></div>
+      <span id="scpSeatNumber">SEAT 001</span>
+      <h2 id="scpSeatName">ACL Member</h2>
+      <div id="scpSeatStars" class="scp-seat-stars">☆ 0</div>
+      <div id="scpSeatAdminActions" class="scp-seat-admin-actions" hidden><button id="scpCallMember" type="button">Call this seat</button><button id="scpAwardStar" type="button">★ Award star</button><button id="scpRemoveStar" type="button">Remove star</button><button id="scpSuspendMember" class="scp-suspend-member" type="button">Suspend from course</button></div>
+      <form id="scpSuspendForm" class="scp-suspend-form" hidden><label for="scpSuspendReason">Suspension reason</label><textarea id="scpSuspendReason" rows="3" maxlength="500" placeholder="Explain why this member is suspended…" required></textarea><p>The member will be told that access can be restored after review and can contact ACL by WhatsApp.</p><div><button id="scpSuspendCancel" type="button">Cancel</button><button type="submit">Confirm suspension</button></div><small id="scpSuspendStatus" aria-live="polite"></small></form>
+    </section>
+  </div>
+
+  <div id="scpVoteModal" class="scp-vote-modal" hidden role="dialog" aria-modal="true" aria-labelledby="scpVoteModalTitle"><section class="scp-vote-dialog"><button id="scpVoteClose" type="button" aria-label="Close voting">×</button><div id="scpVoteContent"></div></section></div>
+  <div id="scpAttendanceReviewModal" class="scp-ar-modal" hidden role="dialog" aria-modal="true" aria-labelledby="scpArTitle"><section class="scp-ar-dialog"><button id="scpArClose" type="button" aria-label="Close attendance review">×</button><div id="scpArContent"></div></section></div>
+
+  <script type="module" src="assets/js/basic-special-course-page.js?v=16"></script>
+</body>
+</html>
