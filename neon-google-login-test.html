@@ -35,7 +35,7 @@ try {
   const result = await auth.getSession();
   if (result.error) throw new Error(result.error.message);
   if (result.data?.user) {
-    if (!loginStarted) { status.textContent = "Signed in successfully — opening preview…"; window.location.replace("./neon-dashboard-preview.html"); return; }
+    if (!loginStarted) { status.textContent = "Signed in successfully — opening preview…"; window.location.replace("./neon-dashboard-preview.html"); }
     details.textContent = JSON.stringify({ email: result.data.user.email, emailVerified: result.data.user.emailVerified, authUserId: result.data.user.id }, null, 2);
   } else if (!loginStarted) { status.textContent = "Not signed in"; }
 } catch (e) { details.textContent = "Session check: " + String(e.message || e); }
