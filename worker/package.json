@@ -1,0 +1,1 @@
+{"name":"acl-neon-api","private":true,"type":"module","scripts":{"deploy":"wrangler deploy"},"dependencies":{"postgres":"^3.4.7"},"devDependencies":{"wrangler":"^4.0.0"}}
