@@ -4,13 +4,17 @@
 <title>ACL · Neon Google Sign-In Test</title>
 <style>body{font:16px system-ui;background:#f6f7fb;color:#172033;display:grid;place-items:center;min-height:100vh;margin:0}.card{background:white;padding:2rem;max-width:460px;border-radius:18px;box-shadow:0 8px 30px #16203a15}button{padding:12px 18px;background:#b91c1c;color:white;border:0;border-radius:9px;cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style>
 </head>
-<body><main class="card"><h1>ACL Google Sign-In Test</h1><p>Migration preview only. No existing student profile will be linked or modified.</p><button id="login">Sign in with Google</button><p id="status" role="status">Not signed in</p><pre id="details"></pre></main>
+<body><main class="card"><h1>ACL Google Sign-In Test</h1><p>Migration preview only. No existing student profile will be linked or modified.</p><button id="login">Sign in with Google</button><p id="status" role="status">Not signed in</p><pre id="details"></pre><p><a id="continue" hidden rel="noreferrer">Continue to Google manually</a></p></main>
 <script type="module">
 import { createAuthClient } from "https://esm.sh/better-auth/client";
 const auth = createAuthClient({ baseURL: "https://ep-mute-sky-zantnre1.neonauth.c-2.eu-west-2.aws.neon.tech/neondb/auth", fetchOptions: { credentials: "include" } });
 const status = document.querySelector("#status");
 const details = document.querySelector("#details");
+const continueLink = document.querySelector("#continue");
+let loginStarted = false;
 document.querySelector("#login").addEventListener("click", async () => {
+  loginStarted = true;
+  continueLink.hidden = true;
   status.textContent = "Contacting Neon Auth…";
   details.textContent = "";
   try {
@@ -18,10 +22,12 @@ document.querySelector("#login").addEventListener("click", async () => {
     if (result.error) throw new Error(result.error.message || "Google login failed");
     if (result.data?.redirect && result.data?.url) {
       status.textContent = "Opening Google sign-in…";
+      continueLink.href = result.data.url;
+      continueLink.hidden = false;
       window.location.assign(result.data.url);
       return;
     }
-    if (result.data?.url) { status.textContent = "Opening Google sign-in…"; window.location.assign(result.data.url); }
+    if (result.data?.url) { status.textContent = "Opening Google sign-in…"; continueLink.href = result.data.url; continueLink.hidden = false; window.location.assign(result.data.url); }
     else { status.textContent = "No redirect URL returned"; details.textContent = "Check Network → social → Response"; }
   } catch (e) { status.textContent = "Sign-in failed"; details.textContent = String(e.message || e); }
 });
@@ -29,8 +35,8 @@ try {
   const result = await auth.getSession();
   if (result.error) throw new Error(result.error.message);
   if (result.data?.user) {
-    status.textContent = "Signed in successfully";
+    if (!loginStarted) status.textContent = "Signed in successfully";
     details.textContent = JSON.stringify({ email: result.data.user.email, emailVerified: result.data.user.emailVerified, authUserId: result.data.user.id }, null, 2);
-  } else { status.textContent = "Not signed in"; }
+  } else if (!loginStarted) { status.textContent = "Not signed in"; }
 } catch (e) { details.textContent = "Session check: " + String(e.message || e); }
 </script></body></html>
