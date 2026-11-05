@@ -34,7 +34,7 @@ export default {
       });
     }
     if (request.method !== "GET") return reply({ error: "method_not_allowed" }, 405, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me")
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students")
       return reply({ error: "not_found" }, 404, origin);
 
     const sql = postgres(env.ACL_DB.connectionString, { max: 1 });
@@ -71,6 +71,15 @@ export default {
       `;
       if (!links.length)
         return reply({ authenticated: true, linked: false }, 200, origin);
+      if (url.pathname === "/admin/students") {
+        if (links[0].role !== "admin") return reply({ error: "forbidden" }, 403, origin);
+        const students = await sql`
+          SELECT id, full_name, academic_year, role, xp, account_status
+          FROM public.profiles
+          ORDER BY full_name ASC, id ASC LIMIT 500
+        `;
+        return reply({ students, count: students.length }, 200, origin);
+      }
       return reply({
         authenticated: true,
         linked: true,
