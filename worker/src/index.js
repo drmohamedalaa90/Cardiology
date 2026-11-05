@@ -1,6 +1,6 @@
 import postgres from "postgres";
 
-const AUTH_BASE = "https://ep-mute-sky-zantre1.neonauth.c-2.eu-west-2.aws.neon.tech/neondb/auth";
+const AUTH_BASE = "https://ep-mute-sky-zantnre1.neonauth.c-2.eu-west-2.aws.neon.tech/neondb/auth";
 const ALLOWED_ORIGINS = new Set(["https://drmohamedalaa90.github.io"]);
 
 function headers(origin) {
