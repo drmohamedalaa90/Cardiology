@@ -46,7 +46,7 @@ export default {
       // Do not trust an email, profile ID or role provided by the browser.
       const cookie = request.headers.get("Cookie");
       if (!cookie) return reply({ authenticated: false }, 401, origin);
-      const sessionResponse = await fetch(AUTH_BASE + "/api/auth/get-session", {
+      const sessionResponse = await fetch(AUTH_BASE + "/get-session", {
         method: "GET",
         headers: { Cookie: cookie, Accept: "application/json" },
         redirect: "manual"
