@@ -1,7 +1,9 @@
 import postgres from "postgres";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const AUTH_BASE = "https://ep-mute-sky-zantnre1.neonauth.c-2.eu-west-2.aws.neon.tech/neondb/auth";
-const ALLOWED_ORIGINS = new Set(["https://drmohamedalaa90.github.io"]);
+const jwks = createRemoteJWKSet(new URL(AUTH_BASE + "/jwks"));
+const ALLOWED_ORIGINS = new Set(["https://drmohamedalaa90.github.io", "https://acl-google-test.pages.dev"]);
 
 function headers(origin) {
   const h = { "Content-Type": "application/json", "Cache-Control": "no-store", "Vary": "Origin" };
@@ -26,7 +28,7 @@ export default {
         headers: {
           ...headers(origin),
           "Access-Control-Allow-Methods": "GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
           "Access-Control-Max-Age": "600"
         }
       });
@@ -42,20 +44,16 @@ export default {
         return reply({ connected: result[0].ok === 1 }, 200, origin);
       }
 
-      // Only Better Auth's own session endpoint can authenticate a request.
-      // Do not trust an email, profile ID or role provided by the browser.
-      const cookie = request.headers.get("Cookie");
-      if (!cookie) return reply({ authenticated: false }, 401, origin);
-      const sessionResponse = await fetch(AUTH_BASE + "/get-session", {
-        method: "GET",
-        headers: { Cookie: cookie, Accept: "application/json" },
-        redirect: "manual"
-      });
-      if (!sessionResponse.ok) return reply({ authenticated: false }, 401, origin);
-      const sessionData = await sessionResponse.json();
-      const user = sessionData?.user;
-      if (!user?.id || user.emailVerified !== true)
-        return reply({ authenticated: false, reason: "verified_email_required" }, 401, origin);
+      // Verify a signed, unexpired Neon Auth JWT before accessing ACL records.
+      const match = /^Bearer (.+)$/i.exec(request.headers.get("Authorization") || "");
+      if (!match) return reply({ authenticated: false }, 401, origin);
+      let payload;
+      try {
+        ({ payload } = await jwtVerify(match[1], jwks, { issuer: new URL(AUTH_BASE).origin }));
+      } catch {
+        return reply({ authenticated: false }, 401, origin);
+      }
+      if (!payload.sub) return reply({ authenticated: false }, 401, origin);
 
       // Never auto-link by email: existing ACL roles must not be claimed
       // without a separate, audited account-recovery verification process.
@@ -63,7 +61,7 @@ export default {
         SELECT l.profile_id, p.full_name, p.role
         FROM public.acl_auth_links l
         JOIN public.profiles p ON p.id = l.profile_id
-        WHERE l.auth_user_id = ${user.id}::uuid
+        WHERE l.auth_user_id = ${payload.sub}::uuid
         LIMIT 1
       `;
       if (!links.length)
