@@ -2,7 +2,7 @@ import postgres from "postgres";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const AUTH_BASE = "https://ep-mute-sky-zantnre1.neonauth.c-2.eu-west-2.aws.neon.tech/neondb/auth";
-const jwks = createRemoteJWKSet(new URL(AUTH_BASE + "/jwks"));
+const jwks = createRemoteJWKSet(new URL(AUTH_BASE + "/.well-known/jwks.json"));
 const ALLOWED_ORIGINS = new Set(["https://drmohamedalaa90.github.io", "https://acl-google-test.pages.dev"]);
 
 function headers(origin) {
