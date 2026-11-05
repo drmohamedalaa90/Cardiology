@@ -47,13 +47,17 @@ export default {
       // Verify a signed, unexpired Neon Auth JWT before accessing ACL records.
       const match = /^Bearer (.+)$/i.exec(request.headers.get("Authorization") || "");
       if (!match) return reply({ authenticated: false }, 401, origin);
-      let payload;
-      try {
-        ({ payload } = await jwtVerify(match[1], jwks, { issuer: new URL(AUTH_BASE).origin }));
-      } catch {
-        return reply({ authenticated: false }, 401, origin);
-      }
-      if (!payload.sub) return reply({ authenticated: false }, 401, origin);
+      // Verify opaque session tokens with Neon Auth, never trust client identity.
+      const sessionToken = match[1];
+      if (sessionToken.length > 4096 || /[\r\n;,\s]/.test(sessionToken)) return reply({ authenticated: false }, 401, origin);
+      const sessionResponse = await fetch(AUTH_BASE + "/get-session", {
+        headers: { "Cookie": "better-auth.session_token=" + sessionToken, "Accept": "application/json" },
+        redirect: "manual"
+      });
+      if (!sessionResponse.ok) return reply({ authenticated: false }, 401, origin);
+      const verifiedSession = await sessionResponse.json();
+      const authUserId = verifiedSession?.user?.id;
+      if (!authUserId || !/^[0-9a-f-]{36}$/i.test(authUserId)) return reply({ authenticated: false }, 401, origin);
 
       // Never auto-link by email: existing ACL roles must not be claimed
       // without a separate, audited account-recovery verification process.
@@ -61,7 +65,7 @@ export default {
         SELECT l.profile_id, p.full_name, p.role
         FROM public.acl_auth_links l
         JOIN public.profiles p ON p.id = l.profile_id
-        WHERE l.auth_user_id = ${payload.sub}::uuid
+        WHERE l.auth_user_id = ${authUserId}::uuid
         LIMIT 1
       `;
       if (!links.length)
