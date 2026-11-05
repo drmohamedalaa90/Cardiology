@@ -47,16 +47,17 @@ export default {
       // Verify a signed, unexpired Neon Auth JWT before accessing ACL records.
       const match = /^Bearer (.+)$/i.exec(request.headers.get("Authorization") || "");
       if (!match) return reply({ authenticated: false }, 401, origin);
-      // Verify opaque session tokens with Neon Auth, never trust client identity.
-      const sessionToken = match[1];
-      if (sessionToken.length > 4096 || /[\r\n;,\s]/.test(sessionToken)) return reply({ authenticated: false }, 401, origin);
-      const sessionResponse = await fetch(AUTH_BASE + "/get-session", {
-        headers: { "Cookie": "better-auth.session_token=" + sessionToken, "Accept": "application/json" },
-        redirect: "manual"
-      });
-      if (!sessionResponse.ok) return reply({ authenticated: false }, 401, origin);
-      const verifiedSession = await sessionResponse.json();
-      const authUserId = verifiedSession?.user?.id;
+      let payload;
+      try {
+        ({ payload } = await jwtVerify(match[1], jwks, {
+          issuer: new URL(AUTH_BASE).origin,
+          audience: new URL(AUTH_BASE).origin,
+          algorithms: ["EdDSA"]
+        }));
+      } catch {
+        return reply({ authenticated: false }, 401, origin);
+      }
+      const authUserId = payload.sub;
       if (!authUserId || !/^[0-9a-f-]{36}$/i.test(authUserId)) return reply({ authenticated: false }, 401, origin);
 
       // Never auto-link by email: existing ACL roles must not be claimed
