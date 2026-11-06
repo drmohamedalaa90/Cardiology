@@ -1,7 +1,7 @@
-/* ACL service worker v7.3.0 — network-first app shell */
-const VERSION='acl-v8.7-20261104-anonymous-forum-identity';
+/* ACL service worker v7.4.0 — origin-aware network-first app shell */
+const VERSION='acl-v8.8-20261106-cloudflare-root-scope';
 const CACHE_NAME=VERSION;
-const BASE='/Cardiology/';
+const BASE=new URL(self.registration.scope).pathname.replace(/\/?$/,'/');
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(Promise.resolve());});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)));await self.clients.claim();const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const client of clients)client.postMessage({type:'ACL_SERVICE_WORKER_ACTIVATED',version:VERSION,cacheName:CACHE_NAME});})());});
 function isNavigation(request){return request.mode==='navigate'||(request.headers.get('accept')||'').includes('text/html');}
