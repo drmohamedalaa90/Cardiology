@@ -1,54 +1,37 @@
 import { ACL_CONFIG } from "./config.js";
+import {
+  createClient,
+  SupabaseAuthAdapter
+} from "https://esm.sh/@neondatabase/neon-js";
 
-const REMEMBER_KEY = "aclRememberMe";
-
-const authStorage = {
-  getItem(key) {
-    try {
-      const remember = localStorage.getItem(REMEMBER_KEY);
-      if (remember === "0") {
-        return sessionStorage.getItem(key);
-      }
-
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
+const neonClient = createClient({
+  auth: {
+    url: ACL_CONFIG.neonAuthUrl,
+    adapter: SupabaseAuthAdapter(),
+    allowAnonymous: true
   },
-
-  setItem(key, value) {
-    try {
-      const remember = localStorage.getItem(REMEMBER_KEY);
-      if (remember === "0") {
-        sessionStorage.setItem(key, value);
-        localStorage.removeItem(key);
-      } else {
-        localStorage.setItem(key, value);
-        sessionStorage.removeItem(key);
-      }
-    } catch {}
-  },
-
-  removeItem(key) {
-    try {
-      localStorage.removeItem(key);
-    } catch {}
-
-    try {
-      sessionStorage.removeItem(key);
-    } catch {}
+  dataApi: {
+    url: ACL_CONFIG.neonDataApiUrl
   }
-};
+});
 
-export const supabaseClient = window.supabase.createClient(
-  ACL_CONFIG.supabaseUrl,
-  ACL_CONFIG.supabasePublishableKey,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: authStorage
-    }
+// Keep existing ACL modules unchanged: Neon exposes the same PostgREST query,
+// RPC and Supabase-style auth surface through this adapter.
+export const supabaseClient = neonClient;
+
+// Temporary media-only bridge. Authentication, profiles, learning records,
+// RPCs and RLS all use Neon. The bridge can be removed when storage is moved
+// to a region supported by Neon Object Storage.
+if (window.supabase && ACL_CONFIG.mediaStorageUrl) {
+  const mediaClient = window.supabase.createClient(
+    ACL_CONFIG.mediaStorageUrl,
+    ACL_CONFIG.mediaStoragePublishableKey,
+    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+  );
+  if (!supabaseClient.storage) {
+    Object.defineProperty(supabaseClient, "storage", {
+      value: mediaClient.storage,
+      enumerable: true
+    });
   }
-);
+}
