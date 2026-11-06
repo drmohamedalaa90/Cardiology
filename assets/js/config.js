@@ -1,5 +1,21 @@
+const LEGACY_GITHUB_HOST = "drmohamedalaa90.github.io";
+const isLegacyGithub = window.location.hostname === LEGACY_GITHUB_HOST;
+
+if (isLegacyGithub) {
+  const forwardedPath =
+    window.location.pathname.replace(/^\/Cardiology(?=\/|$)/, "") || "/";
+  window.location.replace(
+    "https://acl-google-test.pages.dev" +
+      forwardedPath +
+      window.location.search +
+      window.location.hash
+  );
+}
+
 export const ACL_CONFIG = {
-  neonAuthUrl: new URL("/api/neon-auth", window.location.origin).toString(),
+  neonAuthUrl: isLegacyGithub
+    ? "https://acl-google-test.pages.dev/api/neon-auth"
+    : new URL("/api/neon-auth", window.location.origin).toString(),
   neonDataApiUrl:
     "https://ep-mute-sky-zantnre1.apirest.c-2.eu-west-2.aws.neon.tech/neondb/rest/v1",
 
@@ -11,7 +27,7 @@ export const ACL_CONFIG = {
   mediaStoragePublishableKey:
     "sb_publishable_YJNKDMu-fbyGMLUT46uUkg_IULOVaZH",
 
-  siteBase: "/",
+  siteBase: isLegacyGithub ? "/Cardiology/" : "/",
 
   vapidPublicKey:
     "BFM-lV_Uf3RvPDVLWZv_bEZgAEW7I-o6KlsJUbUuEDUhOG5QCat0EmD3hRx11WGcyjLmpkYvemP895pMuqPeBjA",
