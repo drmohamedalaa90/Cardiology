@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ACL · Neon Google Sign-In Test</title>
+<title>ACL · Google Sign-In</title>
 <style>body{font:16px system-ui;background:#f6f7fb;color:#172033;display:grid;place-items:center;min-height:100vh;margin:0}.card{background:white;padding:2rem;max-width:460px;border-radius:18px;box-shadow:0 8px 30px #16203a15}button{padding:12px 18px;background:#b91c1c;color:white;border:0;border-radius:9px;cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style>
 </head>
-<body><main class="card"><h1>ACL Google Sign-In Test</h1><p>Migration preview only. No existing student profile will be linked or modified.</p><button id="login">Sign in with Google</button><p id="status" role="status">Not signed in</p><pre id="details"></pre><p><a id="continue" hidden rel="noreferrer">Continue to Google manually</a></p></main>
+<body><main class="card"><h1>ACL Google Sign-In</h1><p>Sign in securely with Google to continue to Cardiology League.</p><button id="login">Sign in with Google</button><p id="status" role="status">Not signed in</p><pre id="details"></pre><p><a id="continue" hidden rel="noreferrer">Continue to Google manually</a></p></main>
 <script type="module">
 import { createAuthClient } from "https://esm.sh/@neondatabase/auth";
 const auth = createAuthClient(new URL("/api/neon-auth", window.location.origin).toString(), { fetchOptions: { credentials: "include" } });
@@ -63,7 +63,7 @@ async function resumeSignedInSession() {
     }
     if (!jwt) throw new Error("Neon returned no JWT");
     status.textContent = "Signed in and JWT ready — opening preview…";
-    window.location.replace("./neon-dashboard-preview.html");
+    window.location.replace("./edition-select.html");
   } catch (e) {
     status.textContent = "Session or JWT check failed";
     details.textContent = String(e.message || e);
