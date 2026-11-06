@@ -19,8 +19,8 @@ export async function onRequest(context) {
   const headers = new Headers(request.headers);
   headers.delete("host");
   headers.set("origin", request.headers.get("Origin") || incoming.origin);
-  headers.delete("x-forwarded-host");
-  headers.delete("x-forwarded-proto");
+  headers.set("x-forwarded-host", new URL(NEON_AUTH_ORIGIN).host);
+  headers.set("x-forwarded-proto", "https");
 
   const method = request.method.toUpperCase();
   const body = method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer();
