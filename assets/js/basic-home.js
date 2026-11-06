@@ -329,7 +329,7 @@ function renderBasicNews(){
         newsImage.addEventListener("load",()=>{
           newsImage.decode?.().catch(()=>{}).finally(revealNews);
         },{once:true});
-        newsImage.addEventListener("error",revealNews,{once:true});
+        newsImage.addEventListener("error",()=>{if(!newsImage.dataset.aclFallback){newsImage.dataset.aclFallback="1";newsImage.src="assets/images/acl-share-preview-20261024.png";return}revealNews()});
         revealTimer=window.setTimeout(revealNews,5000);
       }
     }else revealNews();
