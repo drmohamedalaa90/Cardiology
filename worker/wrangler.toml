@@ -1,0 +1,8 @@
+name = "acl-neon-api"
+main = "src/index.js"
+compatibility_date = "2026-11-05"
+compatibility_flags = ["nodejs_compat"]
+
+[[hyperdrive]]
+binding = "ACL_DB"
+id = "ba6ab8a2c7da49b297e13c8c8b7c4152"
