@@ -34,7 +34,7 @@ export default {
       });
     }
     if (request.method !== "GET") return reply({ error: "method_not_allowed" }, 405, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students")
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary")
       return reply({ error: "not_found" }, 404, origin);
 
     const sql = postgres(env.ACL_DB.connectionString, { max: 1 });
@@ -79,6 +79,36 @@ export default {
           ORDER BY full_name ASC, id ASC LIMIT 500
         `;
         return reply({ students, count: students.length }, 200, origin);
+      }
+      if (url.pathname === "/admin/learning-summary") {
+        if (links[0].role !== "admin") return reply({ error: "forbidden" }, 403, origin);
+        const [summary] = await sql`
+          SELECT
+            (SELECT COUNT(*)::int FROM public.profiles) AS profiles,
+            (SELECT COUNT(*)::int FROM public.quiz_attempts) AS quiz_attempts,
+            (SELECT COUNT(*)::int FROM public.special_course_attendance) AS attendance_records,
+            (SELECT COUNT(*)::int FROM public.course_access) AS course_access_records,
+            (SELECT COALESCE(SUM(xp), 0)::bigint FROM public.profiles) AS total_xp
+        `;
+        const quiz = await sql`
+          SELECT COALESCE(quiz_title, module_title, module_id, 'Quiz') AS title,
+                 status, score, percentage, completed_at
+          FROM public.quiz_attempts
+          ORDER BY created_at DESC NULLS LAST LIMIT 30
+        `;
+        const attendance = await sql`
+          SELECT module_id, attendance_slot, COUNT(*)::int AS participants
+          FROM public.special_course_attendance
+          GROUP BY module_id, attendance_slot
+          ORDER BY module_id, attendance_slot LIMIT 100
+        `;
+        const access = await sql`
+          SELECT module_id, status, COUNT(*)::int AS participants
+          FROM public.course_access
+          GROUP BY module_id, status
+          ORDER BY module_id, status LIMIT 100
+        `;
+        return reply({ summary, quiz, attendance, access }, 200, origin);
       }
       return reply({
         authenticated: true,
