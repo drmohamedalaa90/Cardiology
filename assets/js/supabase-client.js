@@ -15,13 +15,87 @@ const neonClient = createClient({
   }
 });
 
-// Keep existing ACL modules unchanged: Neon exposes the same PostgREST query,
-// RPC and Supabase-style auth surface through this adapter.
-export const supabaseClient = neonClient;
+const nativeAuth = neonClient.auth;
+let cachedProfileId = "";
+
+async function aclProfileId() {
+  if (cachedProfileId) return cachedProfileId;
+  const { data, error } = await neonClient.rpc("acl_my_profile_id");
+  if (error) throw error;
+  cachedProfileId = typeof data === "string" ? data : "";
+  return cachedProfileId;
+}
+
+async function mapSession(session) {
+  if (!session?.user) return session;
+  try {
+    const id = await aclProfileId();
+    if (!id) return session;
+    return { ...session, user: { ...session.user, id, auth_user_id: session.user.id } };
+  } catch {
+    return session;
+  }
+}
+
+const authCompat = new Proxy(nativeAuth, {
+  get(target, property) {
+    if (property === "getSession") {
+      return async (...args) => {
+        const result = await target.getSession(...args);
+        if (result?.data?.session) {
+          return {
+            ...result,
+            data: { ...result.data, session: await mapSession(result.data.session) }
+          };
+        }
+        return result;
+      };
+    }
+
+    if (property === "getUser" && typeof target.getUser === "function") {
+      return async (...args) => {
+        const result = await target.getUser(...args);
+        if (result?.data?.user) {
+          const session = await mapSession({ user: result.data.user });
+          return { ...result, data: { ...result.data, user: session.user } };
+        }
+        return result;
+      };
+    }
+
+    if (property === "onAuthStateChange" && typeof target.onAuthStateChange === "function") {
+      return (callback) => target.onAuthStateChange((event, session) => {
+        void mapSession(session).then(mapped => callback(event, mapped));
+      });
+    }
+
+    if (property === "signOut" && typeof target.signOut === "function") {
+      return async (...args) => {
+        const result = await target.signOut(...args);
+        cachedProfileId = "";
+        return result;
+      };
+    }
+
+    const value = Reflect.get(target, property, target);
+    return typeof value === "function" ? value.bind(target) : value;
+  }
+});
+
+// Keep the existing ACL modules unchanged: Neon provides the same PostgREST,
+// RPC and Supabase-style authentication surface through this adapter. The
+// auth wrapper exposes the linked ACL profile UUID to legacy direct inserts.
+export const supabaseClient = new Proxy(neonClient, {
+  get(target, property) {
+    if (property === "auth") return authCompat;
+    const value = Reflect.get(target, property, target);
+    return typeof value === "function" ? value.bind(target) : value;
+  }
+});
 
 // Temporary media-only bridge. Authentication, profiles, learning records,
-// RPCs and RLS all use Neon. The bridge can be removed when storage is moved
-// to a region supported by Neon Object Storage.
+// RPCs and RLS all use Neon. This can be removed when Neon Object Storage is
+// available in this project's region.
 if (window.supabase && ACL_CONFIG.mediaStorageUrl) {
   const mediaClient = window.supabase.createClient(
     ACL_CONFIG.mediaStorageUrl,
