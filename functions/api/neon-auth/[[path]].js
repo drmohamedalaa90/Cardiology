@@ -10,6 +10,17 @@ function rewriteCookie(cookie) {
   return kept.join("; ");
 }
 
+function forceGoogleAccountChooser(value) {
+  try {
+    const url = new URL(value);
+    if (url.hostname === "accounts.google.com") {
+      url.searchParams.set("prompt", "select_account");
+      return url.toString();
+    }
+  } catch {}
+  return value;
+}
+
 export async function onRequest(context) {
   const { request, params } = context;
   const incoming = new URL(request.url);
@@ -38,7 +49,28 @@ export async function onRequest(context) {
     for (const cookie of cookies) responseHeaders.append("set-cookie", rewriteCookie(cookie));
   }
 
-  return new Response(upstreamResponse.body, {
+  let responseBody = upstreamResponse.body;
+  const isGoogleStart = tail === "sign-in/social" && method === "POST";
+
+  if (isGoogleStart) {
+    const location = responseHeaders.get("location");
+    if (location) responseHeaders.set("location", forceGoogleAccountChooser(location));
+
+    if ((responseHeaders.get("content-type") || "").includes("application/json")) {
+      const text = await upstreamResponse.text();
+      try {
+        const payload = JSON.parse(text);
+        if (typeof payload?.url === "string") payload.url = forceGoogleAccountChooser(payload.url);
+        if (typeof payload?.data?.url === "string") payload.data.url = forceGoogleAccountChooser(payload.data.url);
+        responseBody = JSON.stringify(payload);
+        responseHeaders.delete("content-length");
+      } catch {
+        responseBody = text;
+      }
+    }
+  }
+
+  return new Response(responseBody, {
     status: upstreamResponse.status,
     statusText: upstreamResponse.statusText,
     headers: responseHeaders
