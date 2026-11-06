@@ -113,6 +113,15 @@ document.querySelector("#passwordForm").addEventListener("submit",async event=>{
     if(!email.includes("@"))throw new Error("Use your registered email address. Usernames are not available during the Neon migration.");
     const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
     if(error||!data?.session)throw new Error("Wrong email or password. If this is your first password sign-in after migration, choose Forgot password.");
+    const sessionResult=await supabaseClient.auth.getSession();
+    const profileId=sessionResult.data?.session?.user?.id;
+    if(profileId){
+      const {data:profile}=await supabaseClient.from("profiles").select("account_status").eq("id",profileId).maybeSingle();
+      if(profile?.account_status&&profile.account_status!=="active"){
+        await supabaseClient.auth.signOut();
+        throw new Error("This account is currently on hold. Please contact the ACL administrator.");
+      }
+    }
     openACL();
   }catch(error){showError(error.message||String(error))}
 });
@@ -149,7 +158,7 @@ document.querySelector("#installAcl").addEventListener("click",()=>{
 action.addEventListener("click",async()=>{if(!deferredInstallPrompt)return;await deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;modal.hidden=true});
 document.querySelector("#installClose").addEventListener("click",()=>modal.hidden=true);
 modal.addEventListener("click",e=>{if(e.target===modal)modal.hidden=true});
-if("serviceWorker" in navigator)navigator.serviceWorker.register("./service-worker.js?v=7.22.0",{updateViaCache:"none"}).catch(()=>{});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("./service-worker.js?v=7.22.1",{updateViaCache:"none"}).catch(()=>{});
 resumeSignedInSession();
 </script>
 </body>
