@@ -19,8 +19,8 @@ export async function onRequest(context) {
   const headers = new Headers(request.headers);
   headers.delete("host");
   headers.set("origin", request.headers.get("Origin") || incoming.origin);
-  headers.set("x-forwarded-host", incoming.host);
-  headers.set("x-forwarded-proto", incoming.protocol.slice(0, -1));
+  headers.delete("x-forwarded-host");
+  headers.delete("x-forwarded-proto");
 
   const method = request.method.toUpperCase();
   const body = method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer();
