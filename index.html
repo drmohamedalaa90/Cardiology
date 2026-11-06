@@ -4,10 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#082f4d">
-  <title>Cardiology League · Neon Test</title>
-  <meta http-equiv="refresh" content="0;url=edition-select.html">
-  <script>location.replace("edition-select.html");</script>
-  <meta name="robots" content="noindex,nofollow">
+  <title>Cardiology League</title>
+  <script>
+    const destination =
+      location.hostname === "drmohamedalaa90.github.io"
+        ? "https://acl-google-test.pages.dev/"
+        : "edition-select.html";
+    location.replace(destination);
+  </script>
+  <meta name="robots" content="index,follow">
 </head>
-<body><noscript><p><a href="edition-select.html">Open Cardiology League</a></p></noscript></body>
+<body>
+  <noscript>
+    <p><a href="https://acl-google-test.pages.dev/">Open Cardiology League</a></p>
+  </noscript>
+</body>
 </html>
