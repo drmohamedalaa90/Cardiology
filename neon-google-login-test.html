@@ -122,8 +122,7 @@ googleButton.addEventListener("click",async()=>{
   try{
     const result=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+"/neon-google-login-test.html"}});
     if(result.error)throw new Error(result.error.message||"Google login failed");
-    if(result.data?.url){status.textContent="Opening Google sign-in…";continueLink.href=result.data.url;continueLink.hidden=false;location.assign(result.data.url);return}
-    throw new Error("Google did not return a sign-in link");
+    status.textContent="Opening Google sign-in…";
   }catch(error){showError(error.message||String(error))}
 });
 
