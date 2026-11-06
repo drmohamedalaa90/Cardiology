@@ -99,7 +99,7 @@ function showError(message){status.textContent="Sign-in failed";details.textCont
 function openACL(){
   try{
     sessionStorage.setItem("aclSelectedEdition","basic");
-    sessionStorage.setItem("aclEditionEntryGranted","1");
+    sessionStorage.setItem("aclEditionEntryGranted","basic");
     localStorage.setItem("aclSelectedEdition","basic");
   }catch{}
   status.textContent="Signed in — opening ACL…";
