@@ -34,7 +34,7 @@ input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,.12)}
 .options{display:flex;justify-content:flex-end;margin-top:10px}.show-password{display:flex;align-items:center;gap:7px;margin:0;font-size:13px;color:#59677a;cursor:pointer}.show-password input{width:auto}
 button{width:100%;padding:13px 16px;border-radius:10px;font:inherit;font-weight:780;cursor:pointer}.primary{margin-top:18px;background:#0b4f7c;color:#fff;border:1px solid #0b4f7c}.google{background:#c61f26;color:#fff;border:1px solid #c61f26}.install{margin-top:12px;background:#edf6fb;color:#082f57;border:1px solid #b8d2e1;display:flex;justify-content:center;align-items:center;gap:9px}.install span{font-size:19px}
 button:disabled{cursor:wait;opacity:.65}.divider{display:flex;align-items:center;gap:12px;color:#8290a1;font-size:14px;margin:20px 0}.divider::before,.divider::after{content:"";height:1px;background:#dfe5eb;flex:1}
-#status{min-height:20px;margin:17px 0 0;font-weight:700;font-size:14px}#details{color:#a11b1b;font-size:13px;margin:5px 0 0}
+#status{min-height:20px;margin:17px 0 0;font-weight:700;font-size:14px}#details{color:#a11b1b;font-size:13px;margin:5px 0 0}.migration-note{margin:14px 0 0;color:#637083;font-size:12px;line-height:1.45}.migration-note a{color:#a31616;font-weight:750}
 .modal{position:fixed;inset:0;background:#061b2dbf;display:grid;place-items:center;padding:20px;z-index:10}.modal[hidden]{display:none}.dialog{width:min(100%,430px);background:#fff;border-radius:18px;padding:28px;box-shadow:0 20px 70px #0004}.dialog h3{margin:0 0 12px;color:#082f57}.dialog p,.dialog li{line-height:1.55;color:#526174}.dialog button{margin-top:14px;background:#082f57;color:#fff;border:0}.dialog .close{background:#eef2f5;color:#102033}
 @media(max-width:700px){.topbar{height:64px;padding:0 18px}.brand-link strong{font-size:14px}.brand-link small{font-size:10px}.brand-link img{width:36px;height:36px}.home-link{display:none}.shell{min-height:calc(100vh - 64px);padding:20px 14px;align-items:start}.auth-card{display:block;border-radius:20px}.identity{padding:25px 26px}.identity img{width:48px;margin:0 0 13px}.identity h1{font-size:28px;margin:8px 0}.identity p,.pills{display:none}.panel{padding:28px 26px 32px}.panel h2{font-size:28px}.intro{font-size:15px;margin-bottom:20px}}
 </style>
@@ -58,15 +58,16 @@ button:disabled{cursor:wait;opacity:.65}.divider{display:flex;align-items:center
   <section class="panel">
     <span class="kicker">WELCOME BACK</span>
     <h2>Sign in to ACL</h2>
-    <p class="intro">Use your existing ACL username and password, or continue securely with Google.</p>
+    <p class="intro">Use your registered ACL email and password, or continue securely with Google.</p>
     <form id="passwordForm">
-      <label for="identifier">Username or email</label>
-      <input id="identifier" autocomplete="username" required>
+      <label for="identifier">Registered email</label>
+      <input id="identifier" type="email" autocomplete="email" required>
       <div class="label-row"><label for="password">Password</label><a href="./forgot-password.html">Forgot password?</a></div>
       <input id="password" type="password" autocomplete="current-password" required>
       <div class="options"><label class="show-password"><input id="showPassword" type="checkbox"> Show password</label></div>
       <button class="primary" id="emailLogin" type="submit">Sign in</button>
     </form>
+    <p class="migration-note">First password sign-in after the migration? Choose <a href="./forgot-password.html">Forgot password</a> to create your new secure password.</p>
     <div class="divider">or</div>
     <button class="google" id="googleLogin" type="button">Continue with Google</button>
     <button class="install" id="installAcl" type="button"><span>↓</span> Install ACL app</button>
@@ -108,11 +109,10 @@ document.querySelector("#showPassword").addEventListener("change",e=>{document.q
 document.querySelector("#passwordForm").addEventListener("submit",async event=>{
   event.preventDefault();loginStarted=true;setBusy(true);details.textContent="";status.textContent="Signing in…";
   try{
-    const identifier=document.querySelector("#identifier").value.trim(),password=document.querySelector("#password").value;
-    const {data,error}=await supabaseClient.functions.invoke("username-login",{body:{identifier,password}});
-    if(error||!data?.session?.access_token||!data?.session?.refresh_token)throw new Error("Wrong username/email or password.");
-    const {error:sessionError}=await supabaseClient.auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});
-    if(sessionError)throw new Error("Could not restore your ACL session.");
+    const email=document.querySelector("#identifier").value.trim().toLowerCase(),password=document.querySelector("#password").value;
+    if(!email.includes("@"))throw new Error("Use your registered email address. Usernames are not available during the Neon migration.");
+    const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+    if(error||!data?.session)throw new Error("Wrong email or password. If this is your first password sign-in after migration, choose Forgot password.");
     openACL();
   }catch(error){showError(error.message||String(error))}
 });
@@ -149,7 +149,7 @@ document.querySelector("#installAcl").addEventListener("click",()=>{
 action.addEventListener("click",async()=>{if(!deferredInstallPrompt)return;await deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;modal.hidden=true});
 document.querySelector("#installClose").addEventListener("click",()=>modal.hidden=true);
 modal.addEventListener("click",e=>{if(e.target===modal)modal.hidden=true});
-if("serviceWorker" in navigator)navigator.serviceWorker.register("./service-worker.js?v=7.21.0",{updateViaCache:"none"}).catch(()=>{});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("./service-worker.js?v=7.22.0",{updateViaCache:"none"}).catch(()=>{});
 resumeSignedInSession();
 </script>
 </body>
