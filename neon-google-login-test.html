@@ -129,8 +129,19 @@ document.querySelector("#passwordForm").addEventListener("submit",async event=>{
 googleButton.addEventListener("click",async()=>{
   loginStarted=true;setBusy(true);continueLink.hidden=true;status.textContent="Opening Google account chooser…";details.textContent="";
   try{
-    const result=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+"/neon-google-login-test.html"}});
-    if(result.error)throw new Error(result.error.message||"Google login failed");
+    const response=await fetch("/api/neon-auth/sign-in/social",{
+      method:"POST",
+      credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({provider:"google",callbackURL:location.origin+"/neon-google-login-test.html",disableRedirect:true})
+    });
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(payload?.message||payload?.error?.message||"Google login failed");
+    const target=payload?.url||payload?.data?.url;
+    if(!target)throw new Error("Google did not return a sign-in page.");
+    const googleUrl=new URL(target);
+    googleUrl.searchParams.set("prompt","select_account");
+    location.assign(googleUrl.toString());
   }catch(error){showError(error.message||String(error))}
 });
 
@@ -157,7 +168,7 @@ document.querySelector("#installAcl").addEventListener("click",()=>{
 action.addEventListener("click",async()=>{if(!deferredInstallPrompt)return;await deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;modal.hidden=true});
 document.querySelector("#installClose").addEventListener("click",()=>modal.hidden=true);
 modal.addEventListener("click",e=>{if(e.target===modal)modal.hidden=true});
-if("serviceWorker" in navigator)navigator.serviceWorker.register("./service-worker.js?v=7.23.1",{updateViaCache:"none"}).catch(()=>{});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("./service-worker.js?v=7.23.2",{updateViaCache:"none"}).catch(()=>{});
 resumeSignedInSession();
 </script>
 </body>
