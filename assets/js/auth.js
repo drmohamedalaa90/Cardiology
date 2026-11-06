@@ -243,6 +243,19 @@ byId("signInForm")?.addEventListener("submit", async (event) => {
     if (error || !data?.session) {
       throw new Error("Wrong email or password. If this is your first password sign-in after migration, choose Forgot password.");
     }
+    const sessionResult = await supabaseClient.auth.getSession();
+    const profileId = sessionResult.data?.session?.user?.id;
+    if (profileId) {
+      const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("account_status")
+        .eq("id", profileId)
+        .maybeSingle();
+      if (profile?.account_status && profile.account_status !== "active") {
+        await supabaseClient.auth.signOut();
+        throw new Error("This account is currently on hold. Please contact the ACL administrator.");
+      }
+    }
     openAclHome();
   } catch (error) {
     setMessage("signInError", error?.message || "Could not sign in.");
