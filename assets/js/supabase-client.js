@@ -18,18 +18,29 @@ const neonClient = createClient({
 const nativeAuth = neonClient.auth;
 let cachedProfileId = "";
 
-async function aclProfileId() {
+async function aclProfileId(session) {
   if (cachedProfileId) return cachedProfileId;
-  const { data, error } = await neonClient.rpc("acl_my_profile_id");
-  if (error) throw error;
-  cachedProfileId = typeof data === "string" ? data : "";
+  const token =
+    session?.access_token ||
+    session?.accessToken ||
+    (typeof nativeAuth.getJWTToken === "function"
+      ? await nativeAuth.getJWTToken()
+      : "");
+  if (!token) return "";
+  const response = await fetch(
+    "https://acl-neon-api.drmohamedalaa90.workers.dev/auth/me",
+    { headers: { Authorization: "Bearer " + token } }
+  );
+  if (!response.ok) throw new Error("ACL identity lookup failed");
+  const result = await response.json();
+  cachedProfileId = result?.profile?.id || "";
   return cachedProfileId;
 }
 
 async function mapSession(session) {
   if (!session?.user) return session;
   try {
-    const id = await aclProfileId();
+    const id = await aclProfileId(session);
     if (!id) return session;
     return { ...session, user: { ...session.user, id, auth_user_id: session.user.id } };
   } catch {
