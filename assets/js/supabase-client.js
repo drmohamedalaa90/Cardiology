@@ -17,6 +17,7 @@ const neonClient = createClient({
 
 const nativeAuth = neonClient.auth;
 let cachedProfileId = "";
+let mediaStorage = null;
 
 async function aclProfileId(session) {
   if (cachedProfileId) return cachedProfileId;
@@ -99,6 +100,7 @@ const authCompat = new Proxy(nativeAuth, {
 export const supabaseClient = new Proxy(neonClient, {
   get(target, property) {
     if (property === "auth") return authCompat;
+    if (property === "storage" && mediaStorage) return mediaStorage;
     const value = Reflect.get(target, property, target);
     return typeof value === "function" ? value.bind(target) : value;
   }
@@ -113,10 +115,5 @@ if (window.supabase && ACL_CONFIG.mediaStorageUrl) {
     ACL_CONFIG.mediaStoragePublishableKey,
     { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
   );
-  if (!supabaseClient.storage) {
-    Object.defineProperty(supabaseClient, "storage", {
-      value: mediaClient.storage,
-      enumerable: true
-    });
-  }
+  mediaStorage = mediaClient.storage;
 }
