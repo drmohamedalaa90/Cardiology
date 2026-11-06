@@ -85,10 +85,8 @@ button:disabled{cursor:wait;opacity:.65}.divider{display:flex;align-items:center
   </section>
 </div>
 <script type="module">
-import { createAuthClient } from "https://esm.sh/@neondatabase/auth";
 import { supabaseClient } from "./assets/js/supabase-client.js";
 
-const auth = createAuthClient(new URL("/api/neon-auth", location.origin).toString(), {fetchOptions:{credentials:"include"}});
 const status = document.querySelector("#status"), details = document.querySelector("#details");
 const emailButton = document.querySelector("#emailLogin"), googleButton = document.querySelector("#googleLogin");
 const continueLink = document.querySelector("#continue");
@@ -122,7 +120,7 @@ document.querySelector("#passwordForm").addEventListener("submit",async event=>{
 googleButton.addEventListener("click",async()=>{
   loginStarted=true;setBusy(true);continueLink.hidden=true;status.textContent="Contacting Google…";details.textContent="";
   try{
-    const result=await auth.signIn.social({provider:"google",callbackURL:location.href});
+    const result=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+"/neon-google-login-test.html"}});
     if(result.error)throw new Error(result.error.message||"Google login failed");
     if(result.data?.url){status.textContent="Opening Google sign-in…";continueLink.href=result.data.url;continueLink.hidden=false;location.assign(result.data.url);return}
     throw new Error("Google did not return a sign-in link");
@@ -131,11 +129,9 @@ googleButton.addEventListener("click",async()=>{
 
 async function resumeSignedInSession(){
   try{
-    const result=await auth.getSession({fetchOptions:{credentials:"include"}});
+    const result=await supabaseClient.auth.getSession();
     if(result.error)throw new Error(result.error.message);
-    if(!result.data?.user){if(!loginStarted)status.textContent="Choose a sign-in method";return}
-    const tokenResult=await auth.token();
-    if(tokenResult.error||!tokenResult.data?.token)throw new Error(tokenResult.error?.message||"Neon returned no JWT");
+    if(!result.data?.session?.user){if(!loginStarted)status.textContent="Choose a sign-in method";return}
     openACL();
   }catch{if(!loginStarted){status.textContent="Choose a sign-in method";details.textContent=""}}
 }
