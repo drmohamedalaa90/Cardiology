@@ -51,7 +51,6 @@ export default {
       try {
         ({ payload } = await jwtVerify(match[1], jwks, {
           issuer: new URL(AUTH_BASE).origin,
-          audience: new URL(AUTH_BASE).origin,
           algorithms: ["EdDSA"]
         }));
       } catch {
