@@ -117,8 +117,12 @@ function clearEditionChoice() {
 }
 
 function openAclHome() {
-  clearEditionChoice();
-  window.location.href = "edition-select.html";
+  try {
+    sessionStorage.setItem("aclSelectedEdition", "basic");
+    sessionStorage.setItem("aclEditionEntryGranted", "basic");
+    localStorage.setItem("aclSelectedEdition", "basic");
+  } catch {}
+  window.location.href = "basic-home.html?edition=basic";
 }
 
 function showPanel(panel) {
@@ -219,61 +223,33 @@ if ("serviceWorker" in navigator) {
 byId("signInForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   setMessage("signInError"); setMessage("signInSuccess");
-  const identifier = byId("identifier").value.trim();
+  const email = byId("identifier").value.trim().toLowerCase();
   const password = byId("loginPassword").value;
   const rememberMe = byId("rememberMe")?.checked !== false;
 
   try {
     localStorage.setItem(REMEMBER_KEY, rememberMe ? "1" : "0");
-
-    if (rememberMe) {
-      localStorage.setItem(REMEMBER_IDENTIFIER_KEY, identifier);
-    } else {
-      localStorage.removeItem(REMEMBER_IDENTIFIER_KEY);
-    }
+    if (rememberMe) localStorage.setItem(REMEMBER_IDENTIFIER_KEY, email);
+    else localStorage.removeItem(REMEMBER_IDENTIFIER_KEY);
   } catch {}
 
-  const submit = event.submitter; if (submit) submit.disabled = true;
+  const submit = event.submitter;
+  if (submit) submit.disabled = true;
   try {
-    const { data, error } = await supabaseClient.functions.invoke("username-login", { body: { identifier, password } });
-
-    const serverMessage = String(data?.error || "").trim();
-
-    if (error) {
-      if (/suspend|hold/i.test(serverMessage)) {
-        throw new Error("This account is currently on hold. Please contact the ACL administrator.");
-      }
-      throw new Error("Wrong email or password.");
+    if (!email.includes("@")) {
+      throw new Error("Use your registered email address. Usernames are not available during the Neon migration.");
     }
-
-    if (!data?.session?.access_token || !data?.session?.refresh_token) {
-      if (/suspend|hold/i.test(serverMessage)) {
-        throw new Error("This account is currently on hold. Please contact the ACL administrator.");
-      }
-      throw new Error("Wrong email or password.");
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error || !data?.session) {
+      throw new Error("Wrong email or password. If this is your first password sign-in after migration, choose Forgot password.");
     }
-
-    const { error: sessionError } = await supabaseClient.auth.setSession({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token
-    });
-
-    if (sessionError) throw new Error("Wrong email or password.");
-
     openAclHome();
   } catch (error) {
-    const raw = String(error?.message || "");
-    const message =
-      /suspend|hold/i.test(raw)
-        ? "This account is currently on hold. Please contact the ACL administrator."
-        : "Wrong email or password.";
-
-    setMessage("signInError", message);
+    setMessage("signInError", error?.message || "Could not sign in.");
   } finally {
     if (submit) submit.disabled = false;
   }
 });
-
 byId("registerForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   setMessage("registerError"); setMessage("registerSuccess");
