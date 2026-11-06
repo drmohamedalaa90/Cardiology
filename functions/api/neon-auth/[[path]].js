@@ -2,9 +2,12 @@ const NEON_AUTH_ORIGIN = "https://ep-mute-sky-zantnre1.neonauth.c-2.eu-west-2.aw
 const NEON_AUTH_PATH = "/neondb/auth";
 
 function rewriteCookie(cookie) {
-  return cookie
-    .replace(/;\\s*domain=[^;]*/ig, "")
-    .replace(/;\\s*path=\\/neondb\\/auth(?:;|$)/ig, "; Path=/api/neon-auth");
+  const parts = cookie.split(";").map((part) => part.trim());
+  const kept = parts.filter((part, index) => index === 0 || !/^domain=/i.test(part));
+  const pathIndex = kept.findIndex((part, index) => index > 0 && /^path=/i.test(part));
+  if (pathIndex >= 0) kept[pathIndex] = "Path=/";
+  else kept.push("Path=/");
+  return kept.join("; ");
 }
 
 export async function onRequest(context) {
