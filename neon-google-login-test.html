@@ -120,7 +120,7 @@ document.querySelector("#passwordForm").addEventListener("submit",async event=>{
 googleButton.addEventListener("click",async()=>{
   loginStarted=true;setBusy(true);continueLink.hidden=true;status.textContent="Contacting Google…";details.textContent="";
   try{
-    const result=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+"/neon-google-login-test.html"}});
+    const result=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+"/neon-google-login-test.html",queryParams:{prompt:"select_account"}}});
     if(result.error)throw new Error(result.error.message||"Google login failed");
     status.textContent="Opening Google sign-in…";
   }catch(error){showError(error.message||String(error))}
@@ -149,7 +149,7 @@ document.querySelector("#installAcl").addEventListener("click",()=>{
 action.addEventListener("click",async()=>{if(!deferredInstallPrompt)return;await deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;modal.hidden=true});
 document.querySelector("#installClose").addEventListener("click",()=>modal.hidden=true);
 modal.addEventListener("click",e=>{if(e.target===modal)modal.hidden=true});
-if("serviceWorker" in navigator)navigator.serviceWorker.register("./service-worker.js?v=7.20.1",{updateViaCache:"none"}).catch(()=>{});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("./service-worker.js?v=7.21.0",{updateViaCache:"none"}).catch(()=>{});
 resumeSignedInSession();
 </script>
 </body>
