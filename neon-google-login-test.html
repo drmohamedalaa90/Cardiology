@@ -31,7 +31,7 @@ body{margin:0;min-height:100vh;background:linear-gradient(145deg,#edf6fb 0%,#f6f
 label{display:block;font-weight:750;margin:15px 0 7px}.label-row{display:flex;align-items:center;justify-content:space-between}.label-row label{margin-bottom:7px}.label-row a{font-size:13px;color:#a31616}
 input{width:100%;padding:13px 14px;border:1px solid #cbd5df;border-radius:10px;font:inherit;outline:none;background:#fff}
 input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,.12)}
-.options{display:flex;justify-content:flex-end;margin-top:10px}.show-password{display:flex;align-items:center;gap:7px;margin:0;font-size:13px;color:#59677a;cursor:pointer}.show-password input{width:auto}
+.options{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px}.remember-option,.show-password{display:flex;align-items:center;gap:7px;margin:0;font-size:13px;color:#59677a;cursor:pointer}.remember-option input,.show-password input{width:auto}
 button{width:100%;padding:13px 16px;border-radius:10px;font:inherit;font-weight:780;cursor:pointer}.primary{margin-top:18px;background:#0b4f7c;color:#fff;border:1px solid #0b4f7c}.google{background:#c61f26;color:#fff;border:1px solid #c61f26}.install{margin-top:12px;background:#edf6fb;color:#082f57;border:1px solid #b8d2e1;display:flex;justify-content:center;align-items:center;gap:9px}.install span{font-size:19px}
 button:disabled{cursor:wait;opacity:.65}.divider{display:flex;align-items:center;gap:12px;color:#8290a1;font-size:14px;margin:20px 0}.divider::before,.divider::after{content:"";height:1px;background:#dfe5eb;flex:1}
 #status{min-height:20px;margin:17px 0 0;font-weight:700;font-size:14px}#details{color:#a11b1b;font-size:13px;margin:5px 0 0}.migration-note{margin:14px 0 0;color:#637083;font-size:12px;line-height:1.45}.migration-note a{color:#a31616;font-weight:750}
@@ -64,7 +64,7 @@ button:disabled{cursor:wait;opacity:.65}.divider{display:flex;align-items:center
       <input id="identifier" type="email" autocomplete="email" required>
       <div class="label-row"><label for="password">Password</label><a href="./forgot-password.html">Forgot password?</a></div>
       <input id="password" type="password" autocomplete="current-password" required>
-      <div class="options"><label class="show-password"><input id="showPassword" type="checkbox"> Show password</label></div>
+      <div class="options"><label class="remember-option" title="Applies to email and password sign-ins"><input id="rememberMe" type="checkbox"> Remember me</label><label class="show-password"><input id="showPassword" type="checkbox"> Show password</label></div><p class="migration-note" style="margin-top:6px">Remember me applies to email and password sign-ins.</p>
       <button class="primary" id="emailLogin" type="submit">Sign in</button>
     </form>
     <p class="migration-note">First password sign-in after the migration? Choose <a href="./forgot-password.html">Forgot password</a> to create your new secure password.</p>
@@ -87,6 +87,7 @@ button:disabled{cursor:wait;opacity:.65}.divider{display:flex;align-items:center
 </div>
 <script type="module">
 import { supabaseClient } from "./assets/js/supabase-client.js";
+import { ACL_CONFIG } from "./assets/js/config.js";
 
 const status = document.querySelector("#status"), details = document.querySelector("#details");
 const emailButton = document.querySelector("#emailLogin"), googleButton = document.querySelector("#googleLogin");
@@ -111,9 +112,18 @@ document.querySelector("#passwordForm").addEventListener("submit",async event=>{
   try{
     const email=document.querySelector("#identifier").value.trim().toLowerCase(),password=document.querySelector("#password").value;
     if(!email.includes("@"))throw new Error("Use your registered email address. Usernames are not available during the Neon migration.");
-    const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
-    if(error||!data?.session)throw new Error("Wrong email or password. If this is your first password sign-in after migration, choose Forgot password.");
+    const rememberMe=document.querySelector("#rememberMe").checked;
+    const authBase=ACL_CONFIG.neonAuthUrl.replace(/\\/$/, "");
+    const response=await fetch(authBase+"/sign-in/email",{
+      method:"POST",
+      credentials:"include",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email,password,rememberMe})
+    });
+    const authPayload=await response.json().catch(()=>({}));
+    if(!response.ok||authPayload?.error)throw new Error(authPayload?.message||authPayload?.error?.message||"Wrong email or password. If this is your first password sign-in after migration, choose Forgot password.");
     const sessionResult=await supabaseClient.auth.getSession();
+    if(sessionResult.error||!sessionResult.data?.session)throw new Error("Sign-in succeeded but ACL could not restore the session. Please try again.");
     const profileId=sessionResult.data?.session?.user?.id;
     if(profileId){
       const {data:profile}=await supabaseClient.from("profiles").select("account_status").eq("id",profileId).maybeSingle();
