@@ -113,7 +113,7 @@ document.querySelector("#passwordForm").addEventListener("submit",async event=>{
     const email=document.querySelector("#identifier").value.trim().toLowerCase(),password=document.querySelector("#password").value;
     if(!email.includes("@"))throw new Error("Use your registered email address. Usernames are not available during the Neon migration.");
     const rememberMe=document.querySelector("#rememberMe").checked;
-    const authBase=ACL_CONFIG.neonAuthUrl.replace(/\\/$/, "");
+    const authBase=ACL_CONFIG.neonAuthUrl.replace(/\/$/, "");
     const response=await fetch(authBase+"/sign-in/email",{
       method:"POST",
       credentials:"include",
