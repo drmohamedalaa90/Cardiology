@@ -15,17 +15,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="assets/images/acl-icon-192.png?v=3">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/acl-apple-touch-icon.png?v=3">
   <title>Modules | Cardiology League</title>
-  <script>
-    (function(){
-      let granted="";
-      try{
-        granted=String(sessionStorage.getItem("aclEditionEntryGranted")||"").toLowerCase();
-      }catch{}
-      if(granted!=="basic"){
-        location.replace("edition-select.html");
-      }
-    })();
-  </script>
+  <script>try{sessionStorage.setItem("aclEditionEntryGranted","basic")}catch{}</script>
   <link rel="stylesheet" href="assets/css/basic-home.css?v=16">
   <link rel="stylesheet" href="assets/css/basic-special-courses.css?v=3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
