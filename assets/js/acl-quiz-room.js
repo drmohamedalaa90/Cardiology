@@ -38,6 +38,8 @@ async function identity(){
  }
 }
 identity();
+$("openStudioNow")?.addEventListener("click",async()=>{const status=$("studioEntryStatus");status.textContent="Checking your ACL administrator session…";try{const {supabaseClient}=await import("./supabase-client.js");const {data:{session},error}=await supabaseClient.auth.getSession();if(error)throw error;if(!session?.user){status.innerHTML='Please <a href="login.html">sign in to ACL</a> with your existing administrator password, then return here.';return;}if(String(session.user.email||"").toLowerCase()!=="drmohamedalaa90@gmail.com"){status.textContent="Only the ACL administrator account may open Question Studio.";return;}openEditor();status.textContent="";}catch(e){status.textContent="Could not verify your ACL login. Please sign in again.";}});
+
 function openEditor(){
   $("quizCount").value=db.settings.count;$("defaultTime").value=db.settings.seconds;$("quizPublished").value=String(!!db.settings.published);$("quizOrder").value=db.settings.order;
   show("editor");renderQuestionList();if(current)loadQuestion(current);
