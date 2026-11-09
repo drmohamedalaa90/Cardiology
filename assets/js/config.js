@@ -1,16 +1,7 @@
 const LEGACY_GITHUB_HOST = "drmohamedalaa90.github.io";
 const isLegacyGithub = window.location.hostname === LEGACY_GITHUB_HOST;
 
-if (isLegacyGithub) {
-  const forwardedPath =
-    window.location.pathname.replace(/^\/Cardiology(?=\/|$)/, "") || "/";
-  window.location.replace(
-    "https://acl-google-test.pages.dev" +
-      forwardedPath +
-      window.location.search +
-      window.location.hash
-  );
-}
+// Keep the public ACL URL on GitHub Pages; Cloudflare remains the auth API host.
 
 export const ACL_CONFIG = {
   neonAuthUrl: isLegacyGithub
