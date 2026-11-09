@@ -37,7 +37,7 @@ export default {
     if (request.method === "POST" && url.pathname !== "/auth/legacy-login") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method !== "GET" && request.method !== "POST") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method === "POST" && !ALLOWED_ORIGINS.has(origin)) return reply({ error: "origin_forbidden" }, 403, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts" && url.pathname !== "/learning/special-courses")
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/course" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts" && url.pathname !== "/learning/special-courses")
       return reply({ error: "not_found" }, 404, origin);
 
     // Prefer the explicitly configured Neon connection; Hyperdrive may target an older database.
@@ -163,6 +163,31 @@ export default {
         WHERE l.auth_user_id = ${authUserId}::uuid LIMIT 1
       `;
       if (!links.length) return reply({ authenticated: true, linked: false }, 200, origin);
+      if (url.pathname === "/learning/course") {
+        const courseId=url.searchParams.get("course");
+        if(!courseId || !/^basic-special-[a-z0-9-]{20,80}$/.test(courseId))
+          return reply({error:"invalid_course"},400,origin);
+        const courses=await sql`SELECT payload FROM public.modules WHERE id=${courseId} AND payload->>'is_special_course'='true' LIMIT 1`;
+        if(!courses.length)return reply({error:"course_not_found"},404,origin);
+        const sessions=await sql`SELECT payload FROM public.special_course_sessions WHERE payload->>'module_id'=${courseId} ORDER BY payload->>'display_order'`;
+        const items=await sql`SELECT payload FROM public.special_course_content WHERE payload->>'module_id'=${courseId} ORDER BY payload->>'display_order'`;
+        const seats=await sql`SELECT s.user_id,s.seat_number,s.payload,p.payload AS profile
+          FROM public.special_course_seats s LEFT JOIN public.profiles p ON p.id=s.user_id
+          WHERE s.module_id=${courseId} ORDER BY s.seat_number`;
+        const attendance=await sql`SELECT user_id,attendance_slot,payload FROM public.ecg_attendance_records WHERE module_id=${courseId}`;
+        const memberRows=seats.map(seat=>({
+          seat_number:seat.seat_number,user_id:seat.user_id,
+          name:seat.profile?.display_name||seat.profile?.full_name||seat.profile?.name||"ACL Member",
+          gender:seat.profile?.gender||null,is_you:seat.user_id===links[0].profile_id,
+          attendance:attendance.filter(a=>a.user_id===seat.user_id).map(a=>({slot:a.attendance_slot,status:a.payload?.status||""}))
+        }));
+        return reply({course:{...courses[0].payload,logo_url:courses[0].payload.special_logo_url},
+          sessions:sessions.map(row=>row.payload),items:items.map(row=>row.payload),
+          candidate_name:links[0].profile?.display_name||links[0].profile?.full_name||"ACL Member",
+          admin:links[0].role==="admin",
+          hall:{capacity:200,occupied:memberRows.length,members:memberRows,rooms:sessions.map(row=>row.payload),admin:links[0].role==="admin"}
+        },200,origin);
+      }
       if (url.pathname === "/learning/modules") {
         const rows = await sql`SELECT payload FROM public.modules WHERE payload->>'edition' = 'basic' ORDER BY payload->>'title'`;
         return reply({ modules: rows.map(r => r.payload).filter(m => m.is_special_course !== true) }, 200, origin);
