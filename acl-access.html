@@ -6,16 +6,14 @@
   <meta name="theme-color" content="#082f4d">
   <title>Cardiology League · Sign in</title>
   <script>
-    const loginUrl =
-      location.hostname === "drmohamedalaa90.github.io"
-        ? "https://acl-google-test.pages.dev/neon-google-login-test.html"
-        : "./neon-google-login-test.html";
+    // Keep login on the website's own origin to avoid cross-origin session loss.
+    const loginUrl = "./neon-google-login-test.html" + location.search + location.hash;
     location.replace(loginUrl);
   </script>
 </head>
 <body>
   <noscript>
-    <p><a href="https://acl-google-test.pages.dev/neon-google-login-test.html">Sign in to Cardiology League with Google</a></p>
+    <p><a href="./neon-google-login-test.html">Sign in to Cardiology League with Google</a></p>
   </noscript>
 </body>
 </html>
