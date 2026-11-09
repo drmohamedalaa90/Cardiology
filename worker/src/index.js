@@ -37,7 +37,7 @@ export default {
     if (request.method === "POST" && url.pathname !== "/auth/legacy-login") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method !== "GET" && request.method !== "POST") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method === "POST" && !ALLOWED_ORIGINS.has(origin)) return reply({ error: "origin_forbidden" }, 403, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login")
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts")
       return reply({ error: "not_found" }, 404, origin);
 
     // Prefer the explicitly configured Neon connection; Hyperdrive may target an older database.
@@ -163,6 +163,78 @@ export default {
         WHERE l.auth_user_id = ${authUserId}::uuid LIMIT 1
       `;
       if (!links.length) return reply({ authenticated: true, linked: false }, 200, origin);
+      if (url.pathname === "/learning/modules") {
+        const rows = await sql`SELECT payload FROM public.modules
+          WHERE payload->>'edition' = 'basic'
+          ORDER BY CASE WHEN payload->>'display_order' ~ '^[0-9]+
+        const rooms = await sql`SELECT payload FROM public.special_course_sessions ORDER BY payload->>'created_at' NULLS LAST`;
+        return reply({ rooms: rooms.map(r => r.payload) }, 200, origin);
+      }
+      if (url.pathname === "/ecg/hall") {
+        const seats = await sql`
+          SELECT s.seat_number, s.user_id, p.payload->>'full_name' AS full_name,
+                 p.payload->>'display_name' AS display_name
+          FROM public.special_course_seats s
+          LEFT JOIN public.profiles p ON p.id = s.user_id
+          ORDER BY s.seat_number
+        `;
+        return reply({ capacity: 200, occupied: seats.length, seats }, 200, origin);
+      }
+      if (url.pathname === "/admin/students") {
+        if (links[0].role !== "admin") return reply({ error: "forbidden" }, 403, origin);
+        const students = await sql`
+          SELECT id, payload->>'full_name' AS full_name,
+                 payload->>'academic_year' AS academic_year,
+                 payload->>'role' AS role,
+                 payload->>'xp' AS xp,
+                 payload->>'account_status' AS account_status
+          FROM public.profiles ORDER BY payload->>'full_name' LIMIT 500
+        `;
+        return reply({ students, count: students.length }, 200, origin);
+      }
+      if (url.pathname === "/admin/learning-summary") {
+        if (links[0].role !== "admin") return reply({ error: "forbidden" }, 403, origin);
+        const [summary] = await sql`
+          SELECT
+          (SELECT COUNT(*)::int FROM public.profiles) AS profiles,
+          (SELECT COUNT(*)::int FROM public.quiz_attempts) AS quiz_attempts,
+          (SELECT COUNT(*)::int FROM public.ecg_attendance_records) AS attendance_records,
+          (SELECT COUNT(*)::int FROM public.special_course_seats) AS hall_seats
+        `;
+        return reply({ summary }, 200, origin);
+      }
+      return reply({
+        authenticated: true,
+        linked: true,
+        profile: {
+          id: links[0].profile_id,
+          full_name: links[0].full_name,
+          role: links[0].role
+        }
+      }, 200, origin);
+    } catch (error) {
+      console.error("ACL API error", error?.message);
+      const code = error?.code || "";
+      const category = ["42P01", "42703", "3F000"].includes(code) ? "schema_mismatch" :
+        ["28P01", "28000"].includes(code) ? "database_auth_failed" :
+        ["3D000"].includes(code) ? "database_not_found" :
+        ["ENOTFOUND", "ETIMEDOUT", "ECONNREFUSED", "CONNECT_TIMEOUT"].includes(code) ? "database_unreachable" : "database_error";
+      return reply({ error: "internal_error", category, code: /^[A-Z0-9]{5}$/.test(code) ? code : undefined }, 500, origin);
+    } finally {
+      await sql.end();
+    }
+  }
+};
+
+            THEN (payload->>'display_order')::int ELSE 9999 END, payload->>'title'`;
+        return reply({ modules: rows.map(r => r.payload) }, 200, origin);
+      }
+      if (url.pathname === "/learning/attempts") {
+        const rows = await sql`SELECT payload FROM public.quiz_attempts
+          WHERE payload->>'user_id' = ${links[0].profile_id}
+          ORDER BY payload->>'created_at' DESC NULLS LAST LIMIT 1000`;
+        return reply({ attempts: rows.map(r => r.payload) }, 200, origin);
+      }
       if (url.pathname === "/ecg/rooms") {
         const rooms = await sql`SELECT payload FROM public.special_course_sessions ORDER BY payload->>'created_at' NULLS LAST`;
         return reply({ rooms: rooms.map(r => r.payload) }, 200, origin);
