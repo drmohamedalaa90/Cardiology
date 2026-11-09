@@ -97,3 +97,13 @@
 .scp-admin-form.is-popup-editor{position:fixed;z-index:6100;left:50%;top:50%;box-sizing:border-box;width:min(520px,calc(100vw - 22px));max-height:calc(100vh - 30px);margin:0;padding:19px;overflow:auto;border:1px solid #d6b65c;border-radius:18px;background:#fffaf0;box-shadow:0 0 0 100vmax rgba(18,12,2,.72),0 28px 80px rgba(0,0,0,.38);transform:translate(-50%,-50%)}.scp-admin-form.is-popup-editor:before{content:"Edit room content";display:block;margin-bottom:5px;color:#634409;font-size:.85rem;font-weight:950}.scp-admin-form.is-popup-editor[data-editor-kind="session"]:before{content:"Edit room criteria"}
 .scp-video-list .scp-content-box.has-cover{aspect-ratio:16/9;min-height:0!important;background-color:#160f03!important;background-size:contain!important}.scp-video-list .scp-content-box.has-cover:before{background:linear-gradient(180deg,transparent 68%,rgba(22,13,0,.18))}
 .scp-ar-final-decision{display:grid;gap:6px;margin-top:13px;padding:18px;border:1px solid;border-radius:15px;text-align:center}.scp-ar-final-decision small{font-size:.48rem;font-weight:950;letter-spacing:.08em}.scp-ar-final-decision strong{font-size:1rem}.scp-ar-final-decision span{font-size:.58rem;line-height:1.5}.scp-ar-final-decision.green{border-color:#8bcaaa;background:#eaf8f0;color:#176541}.scp-ar-final-decision.orange{border-color:#edbd72;background:#fff5df;color:#9a5b0b}.scp-ar-final-decision.red{border-color:#df9ba3;background:#fff0f1;color:#9f2633}
+
+/* Quiz Room: deep burgundy, preserving the course's gold accents. */
+#scpRoomModal.scp-quiz-room-theme .scp-room-stage{background:linear-gradient(145deg,#25040b 0%,#430817 48%,#170308 100%)!important;border-color:#8b3140!important}
+#scpRoomModal.scp-quiz-room-theme .scp-room-interior{background:linear-gradient(130deg,#330711,#4d0b1c 62%,#2b0610)!important;color:#fff0e6!important}
+#scpRoomModal.scp-quiz-room-theme .scp-room-title h2,#scpRoomModal.scp-quiz-room-theme .scp-room-title span{color:#fff0df!important}
+#scpRoomModal.scp-quiz-room-theme .scp-room-door{background:linear-gradient(145deg,#5b0b20,#26040e)!important}
+#scpRoomModal.scp-quiz-room-theme .scp-room-items{--scp-quiz-accent:#e5b958}
+#scpRoomModal.scp-quiz-room-theme .scp-room-close{background:#671a2a!important;color:#fff!important}
+/* A second modal is intentionally layered ABOVE the already-open room dialog. */
+body>.scp-admin-form.is-popup-editor:not([hidden]){z-index:2147483000!important;position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;isolation:isolate}
