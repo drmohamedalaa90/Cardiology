@@ -67,7 +67,7 @@ button:disabled{cursor:wait;opacity:.65}.divider{display:flex;align-items:center
       <div class="options"><label class="show-password"><input id="showPassword" type="checkbox"> Show password</label></div>
       <button class="primary" id="emailLogin" type="submit">Sign in</button>
     </form>
-    <p class="migration-note">First password sign-in after the migration? Choose <a href="./forgot-password.html">Forgot password</a> to create your new secure password.</p>
+    <p class="migration-note">Existing ACL passwords are not yet migrated to Neon Auth. Password sign-in may fail until the secure migration is completed. Your existing profile and progress remain preserved.</p>
     <div class="divider">or</div>
     <button class="google" id="googleLogin" type="button">Continue with Google</button>
     <button class="install" id="installAcl" type="button"><span>↓</span> Install ACL app</button>
@@ -112,7 +112,7 @@ document.querySelector("#passwordForm").addEventListener("submit",async event=>{
     const email=document.querySelector("#identifier").value.trim().toLowerCase(),password=document.querySelector("#password").value;
     if(!email.includes("@"))throw new Error("Use your registered email address. Usernames are not available during the Neon migration.");
     const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
-    if(error||!data?.session)throw new Error("Wrong email or password. If this is your first password sign-in after migration, choose Forgot password.");
+    if(error||!data?.session)throw new Error("Sign-in was not accepted by Neon Auth. Existing ACL passwords have not yet been migrated; this does not necessarily mean your original password is wrong.");
     const sessionResult=await supabaseClient.auth.getSession();
     const profileId=sessionResult.data?.session?.user?.id;
     if(profileId){
