@@ -37,7 +37,8 @@ export default {
     if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms")
       return reply({ error: "not_found" }, 404, origin);
 
-    const connectionString = env.ACL_DB?.connectionString || env.DATABASE_URL;
+    // Prefer the explicitly configured Neon connection; Hyperdrive may target an older database.
+    const connectionString = env.DATABASE_URL || env.ACL_DB?.connectionString;
     if (!connectionString) return reply({ error: "database_not_configured" }, 503, origin);
     const sql = postgres(connectionString, { max: 1, connect_timeout: 8 });
     try {
@@ -125,7 +126,12 @@ export default {
       }, 200, origin);
     } catch (error) {
       console.error("ACL API error", error?.message);
-      return reply({ error: "internal_error" }, 500, origin);
+      const code = error?.code || "";
+      const category = ["42P01", "42703", "3F000"].includes(code) ? "schema_mismatch" :
+        ["28P01", "28000"].includes(code) ? "database_auth_failed" :
+        ["3D000"].includes(code) ? "database_not_found" :
+        ["ENOTFOUND", "ETIMEDOUT", "ECONNREFUSED", "CONNECT_TIMEOUT"].includes(code) ? "database_unreachable" : "database_error";
+      return reply({ error: "internal_error", category, code: /^[A-Z0-9]{5}$/.test(code) ? code : undefined }, 500, origin);
     } finally {
       await sql.end();
     }
