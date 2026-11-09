@@ -115,12 +115,24 @@ async function restoreNeonLearningHome(originalError){
   if(!token)throw originalError;
   const base="https://acl-neon-api.drmohamedalaa90.workers.dev";
   const options={headers:{Authorization:"Bearer "+token}};
-  const [modulesResponse,attemptsResponse]=await Promise.all([
-    fetch(base+"/learning/modules",options),fetch(base+"/learning/attempts",options)
-  ]);
-  if(!modulesResponse.ok||!attemptsResponse.ok)throw new Error("Neon learning API unavailable");
-  const [moduleData,attemptData]=await Promise.all([modulesResponse.json(),attemptsResponse.json()]);
-  const modules=moduleData.modules||[],attempts=attemptData.attempts||[];
+  // Modules are essential; attempt history is optional. Never hide all modules
+  // just because the separate progress request fails or times out.
+  const modulesResponse=await fetch(base+"/learning/modules",options);
+  if(!modulesResponse.ok)throw new Error("Neon modules API HTTP "+modulesResponse.status);
+  const moduleData=await modulesResponse.json();
+  const modules=Array.isArray(moduleData.modules)?moduleData.modules:[];
+  let attempts=[];
+  try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),3500);
+    try{
+      const attemptsResponse=await fetch(base+"/learning/attempts",{...options,signal:controller.signal});
+      if(attemptsResponse.ok){
+        const attemptData=await attemptsResponse.json();
+        attempts=Array.isArray(attemptData.attempts)?attemptData.attempts:[];
+      }
+    }finally{clearTimeout(timeout)}
+  }catch(progressError){console.warn("ACL: progress temporarily unavailable; showing modules anyway.",progressError)}
   const progress=bestAttemptByModule(attempts);
   const available=[],locked=[];
   const isAdmin=(JSON.parse(sessionStorage.getItem("aclLegacyProfile")||localStorage.getItem("aclLegacyProfile")||"{}").role==="admin");
@@ -143,8 +155,11 @@ boot().catch(async e=>{
   try{await restoreNeonLearningHome(e)}
   catch(error){
     console.error("ACL BASIC HOME Neon fallback:",error);
-    $("basicAvailableModules").innerHTML='<div class="basic-empty">Modules temporarily unavailable. Your saved progress is preserved.</div>';
-    $("basicLockedModules").innerHTML='<div class="basic-empty">Learning path temporarily unavailable.</div>';
+    // Keep the already-rendered modules if an asynchronous refresh fails.
+    if(!$("basicAvailableModules").querySelector(".basic-module-card"))
+      $("basicAvailableModules").innerHTML='<div class="basic-empty">Modules temporarily unavailable. Your saved progress is preserved.</div>';
+    if(!$("basicLockedModules").querySelector(".basic-locked-card"))
+      $("basicLockedModules").innerHTML='<div class="basic-empty">Learning path temporarily unavailable.</div>';
   }
 });
 
