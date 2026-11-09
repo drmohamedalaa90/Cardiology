@@ -14,17 +14,28 @@ $("closeZoom").onclick=()=>{$("zoom").hidden=true;$("zoomImage").style.transform
 $("zoom").onclick=e=>{if(e.target===$("zoom"))$("closeZoom").click();else if(e.target.tagName==="IMG"){e.target.style.transform=e.target.style.transform==="scale(2)"?"scale(1)":"scale(2)"}};
 document.addEventListener("click",e=>{const img=e.target.closest("img[data-zoom]");if(img)zoom(img.src)});
 async function identity(){
-  try{
-    const [{supabaseClient},q]=await Promise.all([import("./supabase-client.js"),Promise.resolve(new URLSearchParams(location.search))]);
-    const {data:{session}}=await supabaseClient.auth.getSession();
-    if(!session?.user)return;
-    const adminEmail=String(session.user.email||"").toLowerCase();
-    if(adminEmail==="drmohamedalaa90@gmail.com"){$("editToggle").hidden=false;$("editToggle").onclick=()=>{$("editor").hidden?openEditor():show("welcome")};return;}
-    const course=q.get("course");
-    if(!course)return;
-    const {data,error}=await supabaseClient.rpc("acl_special_course_content_api",{p_action:"get",p_args:{module_id:course}});
-    if(!error&&data?.admin){$("editToggle").hidden=false;$("editToggle").onclick=()=>{if($("editor").hidden)openEditor();else show("welcome")}}
-  }catch(e){console.warn("Quiz admin verification unavailable",e)}
+ const studioRequested=new URLSearchParams(location.search).get("studio")==="1";
+ const status=$("welcomeStatus");
+ try{
+  const {supabaseClient}=await import("./supabase-client.js");
+  const {data:{session},error}=await supabaseClient.auth.getSession();
+  if(error)throw error;
+  const email=String(session?.user?.email||"").trim().toLowerCase();
+  if(!session?.user){
+   if(studioRequested){show("welcome");status.innerHTML='Admin sign-in required. <a href="login.html">Sign in using your existing ACL password</a>, then reopen the Studio link.';}
+   return;
+  }
+  if(email!=="drmohamedalaa90@gmail.com"){
+   if(studioRequested){show("welcome");status.textContent="Access denied: the Question Studio is restricted to the ACL administrator account.";}
+   return;
+  }
+  $("editToggle").hidden=false;
+  $("editToggle").onclick=()=>{$("editor").hidden?openEditor():show("welcome")};
+  if(studioRequested)openEditor();
+ }catch(e){
+  console.warn("Quiz admin verification unavailable",e);
+  if(studioRequested){show("welcome");status.textContent="Unable to verify your ACL admin session. Please sign in to ACL and retry.";}
+ }
 }
 identity();
 function openEditor(){
