@@ -16,6 +16,27 @@ const neonClient = createClient({
 });
 
 const nativeAuth = neonClient.auth;
+const ACL_API = "https://acl-neon-api.drmohamedalaa90.workers.dev";
+function legacyToken() { return sessionStorage.getItem("aclLegacyToken") || localStorage.getItem("aclLegacyToken"); }
+async function legacySession() {
+  const token = legacyToken();
+  if (!token) return null;
+  try {
+    const response = await fetch(ACL_API + "/auth/me", {headers:{Authorization:"Bearer " + token}});
+    const result = await response.json();
+    if (!response.ok || !result.authenticated || !result.linked || !result.profile?.id) throw new Error("expired");
+    const profile = result.profile;
+    return {access_token:token,token_type:"bearer",user:{
+      id:profile.id, role:profile.role, user_metadata:{full_name:profile.full_name},
+      app_metadata:{provider:"acl_legacy"}, email:profile.email || ""
+    }};
+  } catch {
+    sessionStorage.removeItem("aclLegacyToken");localStorage.removeItem("aclLegacyToken");
+    sessionStorage.removeItem("aclLegacyProfile");localStorage.removeItem("aclLegacyProfile");
+    return null;
+  }
+}
+
 let cachedProfileId = "";
 let mediaStorage = null;
 
@@ -53,6 +74,7 @@ const authCompat = new Proxy(nativeAuth, {
   get(target, property) {
     if (property === "getSession") {
       return async (...args) => {
+        if (legacyToken()) { const session = await legacySession(); if (session) return {data:{session},error:null}; }
         const result = await target.getSession(...args);
         if (result?.data?.session) {
           return {
@@ -66,6 +88,7 @@ const authCompat = new Proxy(nativeAuth, {
 
     if (property === "getUser" && typeof target.getUser === "function") {
       return async (...args) => {
+        if (legacyToken()) { const session = await legacySession(); if (session) return {data:{user:session.user},error:null}; }
         const result = await target.getUser(...args);
         if (result?.data?.user) {
           const session = await mapSession({ user: result.data.user });
@@ -83,6 +106,8 @@ const authCompat = new Proxy(nativeAuth, {
 
     if (property === "signOut" && typeof target.signOut === "function") {
       return async (...args) => {
+        sessionStorage.removeItem("aclLegacyToken");localStorage.removeItem("aclLegacyToken");
+        sessionStorage.removeItem("aclLegacyProfile");localStorage.removeItem("aclLegacyProfile");
         const result = await target.signOut(...args);
         cachedProfileId = "";
         return result;
