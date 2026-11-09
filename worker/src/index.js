@@ -165,7 +165,7 @@ export default {
       if (!links.length) return reply({ authenticated: true, linked: false }, 200, origin);
       if (url.pathname === "/learning/modules") {
         const rows = await sql`SELECT payload FROM public.modules
-          WHERE payload->>'edition' = 'basic'
+          WHERE payload->>'edition' = 'basic' AND coalesce(payload->>'is_special_course','false') <> 'true'
           ORDER BY CASE WHEN payload->>'display_order' ~ '^[0-9]+
         const rooms = await sql`SELECT payload FROM public.special_course_sessions ORDER BY payload->>'created_at' NULLS LAST`;
         return reply({ rooms: rooms.map(r => r.payload) }, 200, origin);
@@ -229,6 +229,12 @@ export default {
             THEN (payload->>'display_order')::int ELSE 9999 END, payload->>'title'`;
         return reply({ modules: rows.map(r => r.payload) }, 200, origin);
       }
+      if (url.pathname === "/learning/attempts") {
+        const rows = await sql`SELECT payload FROM public.quiz_attempts
+          WHERE payload->>'user_id' = ${links[0].profile_id}
+          ORDER BY payload->>'created_at' DESC NULLS LAST LIMIT 1000`;
+        return reply({ attempts: rows.map(r => r.payload) }, 200, origin);
+      }
       if (url.pathname === "/learning/special-courses") {
         const courses = await sql`SELECT payload FROM public.modules
           WHERE payload->>'edition'='basic' AND payload->>'is_special_course'='true'`;
@@ -240,12 +246,6 @@ export default {
           return {...course,released:course.status==="published",has_access:!!seat || links[0].role==="admin",
             seat_number:seat?.seat_number||null,logo_url:course.special_logo_url||null};
         })},200,origin);
-      }
-      if (url.pathname === "/learning/attempts") {
-        const rows = await sql`SELECT payload FROM public.quiz_attempts
-          WHERE payload->>'user_id' = ${links[0].profile_id}
-          ORDER BY payload->>'created_at' DESC NULLS LAST LIMIT 1000`;
-        return reply({ attempts: rows.map(r => r.payload) }, 200, origin);
       }
       if (url.pathname === "/ecg/rooms") {
         const rooms = await sql`SELECT payload FROM public.special_course_sessions ORDER BY payload->>'created_at' NULLS LAST`;
