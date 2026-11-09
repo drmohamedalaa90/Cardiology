@@ -486,10 +486,24 @@ async function loadBasicNews(){
 
   const {data,error}=await query;
   if(error){
-    console.error("BASIC NEWS:",error);
-    const host=document.getElementById("basicNewsGrid");
-    if(host)host.innerHTML='<div class="basic-news-empty">Updates are temporarily unavailable.</div>';
-    return;
+    console.warn("BASIC NEWS: legacy API unavailable; restoring archived Supabase announcements.",error);
+    try{
+      const response=await fetch("./assets/data/acl-announcements-recovered.json",{cache:"no-store"});
+      if(!response.ok)throw new Error("Archived news request failed: "+response.status);
+      const archive=await response.json();
+      basicNewsItems=(archive.announcements||[]).filter(item=>{
+        const edition=String(item.edition||"all").toLowerCase();
+        return ["basic","all","both",""].includes(edition) && (basicNewsAdmin||item.is_active);
+      });
+      await aclLoadDestinationOptions().catch(()=>{});
+      renderBasicNews();startBasicNewsAutoplay();
+      return;
+    }catch(archiveError){
+      console.error("BASIC NEWS archive:",archiveError);
+      const host=document.getElementById("basicNewsGrid");
+      if(host)host.innerHTML='<div class="basic-news-empty">Updates are temporarily unavailable.</div>';
+      return;
+    }
   }
 
   basicNewsItems=(data||[]).filter(item=>{
