@@ -414,7 +414,21 @@ async function renderCourseSuspension(suspension){
 
 async function load() {
   if (!courseId) throw new Error("Course link is incomplete.");
-  const loaded=await Promise.all([api("get"),hallApi(),extrasApi("get")]);[state,hallState]=loaded;applyExtras(loaded[2]);preloadCourseImages();
+  const legacyToken=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
+  if(legacyToken){
+    const response=await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/learning/course?course="+encodeURIComponent(courseId),{
+      headers:{Authorization:"Bearer "+legacyToken}
+    });
+    if(!response.ok)throw new Error("Could not retrieve the recovered course (HTTP "+response.status+").");
+    const recovered=await response.json();
+    state={course:recovered.course,sessions:recovered.sessions||[],items:recovered.items||[],
+      admin:recovered.admin===true,candidate_name:recovered.candidate_name||"ACL Member"};
+    hallState=recovered.hall||{capacity:200,occupied:0,members:[],rooms:[]};
+    preloadCourseImages();
+  }else{
+    const loaded=await Promise.all([api("get"),hallApi(),extrasApi("get")]);
+    [state,hallState]=loaded;applyExtras(loaded[2]);preloadCourseImages();
+  }
   if(hallState?.suspension){await renderCourseSuspension(hallState.suspension);return;}
   render();
   const pageParams=new URLSearchParams(location.search);if(pageParams.get("hall")==="1"){const hall=$("scpHallSection");hall.open=true;localStorage.setItem(detailsKey("visitors-hall"),"1");setTimeout(()=>hall.scrollIntoView({behavior:"smooth",block:"start"}),120)}
