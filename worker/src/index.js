@@ -37,11 +37,18 @@ export default {
     if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary")
       return reply({ error: "not_found" }, 404, origin);
 
-    const sql = postgres(env.ACL_DB.connectionString, { max: 1 });
+    const connectionString = env.ACL_DB?.connectionString || env.DATABASE_URL;
+    if (!connectionString) return reply({ error: "database_not_configured" }, 503, origin);
+    const sql = postgres(connectionString, { max: 1, connect_timeout: 8 });
     try {
       if (url.pathname === "/health") {
         const result = await sql`SELECT 1 AS ok`;
-        return reply({ connected: result[0].ok === 1 }, 200, origin);
+        const [data] = await sql`SELECT
+          (SELECT COUNT(*)::int FROM public.profiles) AS profiles,
+          (SELECT COUNT(*)::int FROM public.modules) AS modules,
+          (SELECT COUNT(*)::int FROM public.special_course_seats) AS hall_seats,
+          (SELECT COUNT(*)::int FROM public.ecg_attendance_records) AS attendance_records`;
+        return reply({ connected: result[0].ok === 1, data, authentication: "migration_pending" }, 200, origin);
       }
 
       // Verify a signed, unexpired Neon Auth JWT before accessing ACL records.
