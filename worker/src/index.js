@@ -37,7 +37,7 @@ export default {
     if (request.method === "POST" && url.pathname !== "/auth/legacy-login") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method !== "GET" && request.method !== "POST") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method === "POST" && !ALLOWED_ORIGINS.has(origin)) return reply({ error: "origin_forbidden" }, 403, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/course" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts" && url.pathname !== "/learning/special-courses")
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/course" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts" && url.pathname !== "/learning/special-courses" && url.pathname !== "/learning/forum")
       return reply({ error: "not_found" }, 404, origin);
 
     // Prefer the explicitly configured Neon connection; Hyperdrive may target an older database.
@@ -163,6 +163,25 @@ export default {
         WHERE l.auth_user_id = ${authUserId}::uuid LIMIT 1
       `;
       if (!links.length) return reply({ authenticated: true, linked: false }, 200, origin);
+      if (url.pathname === "/learning/forum") {
+        const moduleId=url.searchParams.get("module")||"";
+        if(!moduleId || moduleId.length>150)return reply({error:"invalid_module"},400,origin);
+        const qs=await sql`SELECT payload FROM public.module_forum_questions WHERE payload->>'module_id'=${moduleId} ORDER BY payload->>'created_at' DESC`;
+        const ids=qs.map(x=>x.payload.id);
+        const answers=ids.length?await sql`SELECT payload FROM public.module_forum_answers WHERE payload->>'question_id'=ANY(${ids}) ORDER BY payload->>'created_at'`:[];
+        const likes=await sql`SELECT payload FROM public.module_forum_answer_likes`;
+        const authors=[...new Set([...qs,...answers].map(x=>x.payload.author_id).filter(Boolean))];
+        const profiles=authors.length?await sql`SELECT id,payload FROM public.profiles WHERE id=ANY(${authors})`:[];
+        const names=new Map(profiles.map(x=>[x.id,x.payload]));
+        const authorFor=(p)=>{const profile=names.get(p.author_id)||{};return {name:profile.display_name||profile.full_name||"ACL Member",anonymous:!!p.is_anonymous,admin:profile.role==="admin"};};
+        return reply({is_admin:links[0].role==="admin",questions:qs.map(x=>({
+          id:x.payload.id,body:x.payload.body,created_at:x.payload.created_at,author:authorFor(x.payload),
+          answers:answers.filter(a=>a.payload.question_id===x.payload.id).map(a=>({
+            id:a.payload.id,body:a.payload.body,created_at:a.payload.created_at,author:authorFor(a.payload),
+            verified:!!a.payload.is_admin_verified,likes:likes.filter(l=>l.payload.answer_id===a.payload.id).length,liked_by_me:false
+          }))
+        }))},200,origin);
+      }
       if (url.pathname === "/learning/course") {
         const courseId=url.searchParams.get("course");
         if(!courseId || !/^basic-special-[a-z0-9-]{20,80}$/.test(courseId))
