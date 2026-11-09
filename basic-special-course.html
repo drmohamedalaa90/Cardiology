@@ -210,16 +210,5 @@
   })();
   </script>
 
-<!-- ECG EMERGENCY ACCESS 20261109 -->
-<script>
-(()=>{const course=new URLSearchParams(location.search).get('course');if(course!=='basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c')return;
-const names=['ECG Reading Fundamentals','Normal ECG interpretation','Abnormal ECG & Arrhythmia Schemes','Final Quiz and Course Summary','Quiz Room'];
-const sources=[['What is ECG?','https://youtu.be/Cbgfd5YV5HI'],['Uses of ECG','https://youtu.be/AiAkHQ62rvw'],['Basic anatomy','https://youtu.be/AkfFLkpl3L4']];
-const box=document.createElement('section');box.id='ecg-emergency-access';box.style.cssText='max-width:1000px;margin:24px auto;padding:22px;background:#102e56;color:white;border:2px solid #e9bd62;border-radius:20px;font-family:Arial,sans-serif;box-sizing:border-box';
-box.innerHTML='<h2 style="color:#ffdc7e;margin-top:0">ECG Demystified — Emergency Access</h2><p>Course navigation is available while the Neon migration is completed. Attendance and scores are not recorded in this temporary view.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px">'+names.map((n,i)=>'<div style="border:1px solid #759ac4;border-radius:12px;padding:15px;background:#173d6a"><b style="color:#ffdc7e">ROOM '+(i+1)+'</b><p>'+n+'</p>'+(i===4?'<a style="color:#ffe08b" href="quiz-room.html?course='+encodeURIComponent(course)+'">Open Quiz 1 →</a>':'')+'</div>').join('')+'</div><h3>Available ECG lectures</h3>'+sources.map(([n,u])=>'<p><a target="_blank" rel="noopener" style="color:#ffdc7e" href="'+u+'">▶ '+n+'</a></p>').join('');
-const mount=()=>{if(document.getElementById(box.id))return;const el=document.getElementById('scpContent');if(el&&el.parentNode)el.parentNode.insertBefore(box,el);else document.body.appendChild(box)};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
-})();
-</script>
 </body>
 </html>
