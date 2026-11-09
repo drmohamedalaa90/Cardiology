@@ -183,7 +183,7 @@ export default {
         }));
         return reply({course:{...courses[0].payload,logo_url:courses[0].payload.special_logo_url},
           sessions:sessions.map(row=>row.payload),items:items.map(row=>row.payload),
-          candidate_name:links[0].profile?.display_name||links[0].profile?.full_name||"ACL Member",
+          candidate_name:links[0].full_name||"ACL Member",
           admin:links[0].role==="admin",
           hall:{capacity:200,occupied:memberRows.length,members:memberRows,rooms:sessions.map(row=>row.payload),admin:links[0].role==="admin"}
         },200,origin);
