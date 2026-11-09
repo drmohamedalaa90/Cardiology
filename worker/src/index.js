@@ -37,7 +37,7 @@ export default {
     if (request.method === "POST" && url.pathname !== "/auth/legacy-login") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method !== "GET" && request.method !== "POST") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method === "POST" && !ALLOWED_ORIGINS.has(origin)) return reply({ error: "origin_forbidden" }, 403, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts")
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts" && url.pathname !== "/learning/special-courses")
       return reply({ error: "not_found" }, 404, origin);
 
     // Prefer the explicitly configured Neon connection; Hyperdrive may target an older database.
@@ -228,6 +228,18 @@ export default {
 
             THEN (payload->>'display_order')::int ELSE 9999 END, payload->>'title'`;
         return reply({ modules: rows.map(r => r.payload) }, 200, origin);
+      }
+      if (url.pathname === "/learning/special-courses") {
+        const courses = await sql`SELECT payload FROM public.modules
+          WHERE payload->>'edition'='basic' AND payload->>'is_special_course'='true'`;
+        const seats = await sql`SELECT module_id,seat_number FROM public.special_course_seats
+          WHERE user_id=${links[0].profile_id}`;
+        return reply({courses:courses.map(row=>{
+          const course=row.payload;
+          const seat=seats.find(s=>s.module_id===course.id);
+          return {...course,released:course.status==="published",has_access:!!seat || links[0].role==="admin",
+            seat_number:seat?.seat_number||null,logo_url:course.special_logo_url||null};
+        })},200,origin);
       }
       if (url.pathname === "/learning/attempts") {
         const rows = await sql`SELECT payload FROM public.quiz_attempts
