@@ -106,14 +106,15 @@ function finish(terminated){
  $("resultDetails").textContent=correctCount+" correct · "+penalty+" penalty points · "+violations+" screen changes. This is a browser-only preview, not an official recorded score.";
 }
 function violation(){
- if(!running||completed)return;
+ if(!running||completed||Date.now()-lastScreenExit<1400)return;
+ lastScreenExit=Date.now();
  violations++;$("violations").textContent="Screen changes: "+violations+"/4";
  if(violations===2)penalty+=1;
  if(violations===3)penalty+=3;
  if(violations>=4){finish(true);return}
  $("playStatus").textContent=violations===1?"⚠ First screen change: warning.":violations===2?"⚠ Second screen change: −1 point.":"⚠ Third screen change: additional −3 points (−4 total).";
 }
-let hiddenRecorded=false;
+let hiddenRecorded=false,lastScreenExit=0;
 document.addEventListener("visibilitychange",()=>{if(document.hidden){hiddenRecorded=true;violation()}else hiddenRecorded=false});
 window.addEventListener("blur",()=>{if(!document.hidden&&!hiddenRecorded){hiddenRecorded=true;violation()}});
 window.addEventListener("focus",()=>{hiddenRecorded=false});
