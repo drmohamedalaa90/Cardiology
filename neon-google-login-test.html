@@ -58,16 +58,16 @@ button:disabled{cursor:wait;opacity:.65}.divider{display:flex;align-items:center
   <section class="panel">
     <span class="kicker">WELCOME BACK</span>
     <h2>Sign in to ACL</h2>
-    <p class="intro">Use your registered ACL email and password, or continue securely with Google.</p>
+    <p class="intro">Use your registered ACL username or email and original password, or continue with Google.</p>
     <form id="passwordForm">
-      <label for="identifier">Registered email</label>
-      <input id="identifier" type="email" autocomplete="email" required>
+      <label for="identifier">Username or email</label>
+      <input id="identifier" type="text" autocomplete="username" required>
       <div class="label-row"><label for="password">Password</label><a href="./forgot-password.html">Forgot password?</a></div>
       <input id="password" type="password" autocomplete="current-password" required>
-      <div class="options"><label class="show-password"><input id="showPassword" type="checkbox"> Show password</label></div>
+      <div class="options" style="justify-content:space-between;align-items:center"><label class="show-password"><input id="rememberMe" type="checkbox"> Remember me (7 days)</label><label class="show-password"><input id="showPassword" type="checkbox"> Show password</label></div>
       <button class="primary" id="emailLogin" type="submit">Sign in</button>
     </form>
-    <p class="migration-note">Existing ACL passwords are not yet migrated to Neon Auth. Password sign-in may fail until the secure migration is completed. Your existing profile and progress remain preserved.</p>
+    <p class="migration-note">Original ACL passwords are checked securely against your migrated account.</p>
     <div class="divider">or</div>
     <button class="google" id="googleLogin" type="button">Continue with Google</button>
     <button class="install" id="installAcl" type="button"><span>↓</span> Install ACL app</button>
@@ -109,19 +109,21 @@ document.querySelector("#showPassword").addEventListener("change",e=>{document.q
 document.querySelector("#passwordForm").addEventListener("submit",async event=>{
   event.preventDefault();loginStarted=true;setBusy(true);details.textContent="";status.textContent="Signing in…";
   try{
-    const email=document.querySelector("#identifier").value.trim().toLowerCase(),password=document.querySelector("#password").value;
-    if(!email.includes("@"))throw new Error("Use your registered email address. Usernames are not available during the Neon migration.");
-    const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
-    if(error||!data?.session)throw new Error("Sign-in was not accepted by Neon Auth. Existing ACL passwords have not yet been migrated; this does not necessarily mean your original password is wrong.");
-    const sessionResult=await supabaseClient.auth.getSession();
-    const profileId=sessionResult.data?.session?.user?.id;
-    if(profileId){
-      const {data:profile}=await supabaseClient.from("profiles").select("account_status").eq("id",profileId).maybeSingle();
-      if(profile?.account_status&&profile.account_status!=="active"){
-        await supabaseClient.auth.signOut();
-        throw new Error("This account is currently on hold. Please contact the ACL administrator.");
-      }
+    const identifier=document.querySelector("#identifier").value.trim(),password=document.querySelector("#password").value;
+    const remember=document.querySelector("#rememberMe").checked;
+    const response=await fetch("https://acl-neon-api.drmohamedalaa.workers.dev/auth/legacy-login",{
+      method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identifier,password,remember})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.token){
+      if(result.error==="auth_not_configured")throw new Error("ACL password login is awaiting secure server configuration.");
+      if(result.error==="temporarily_locked")throw new Error("Too many attempts. Please wait 15 minutes.");
+      throw new Error("Invalid username or password. Please try again.");
     }
+    sessionStorage.removeItem("aclLegacyToken");
+    localStorage.removeItem("aclLegacyToken");
+    (remember?localStorage:sessionStorage).setItem("aclLegacyToken",result.token);
+    (remember?localStorage:sessionStorage).setItem("aclLegacyProfile",JSON.stringify(result.profile));
     openACL();
   }catch(error){showError(error.message||String(error))}
 });
