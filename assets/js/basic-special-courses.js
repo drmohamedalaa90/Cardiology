@@ -28,5 +28,21 @@ sp("specialAdminCancel")?.addEventListener("click",()=>{sp("specialAdminEditor")
 async function uploadSpecialFile(file,kind){if(!file)return null;if(file.size>8*1024*1024)throw new Error(kind+" must be smaller than 8 MB.");const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";const path=`special-courses/${kind}-${Date.now()}-${crypto.randomUUID()}.${ext}`;const {error}=await supabaseClient.storage.from("acl-news").upload(path,file,{upsert:false,contentType:file.type||"image/jpeg"});if(error)throw error;return supabaseClient.storage.from("acl-news").getPublicUrl(path).data.publicUrl}
 sp("specialAdminForm")?.addEventListener("submit",async e=>{e.preventDefault();const save=sp("specialAdminSave"),status=sp("specialAdminStatus");save.disabled=true;status.textContent="Saving…";try{const cover=await uploadSpecialFile(sp("specialAdminCover").files?.[0],"cover"),logo=await uploadSpecialFile(sp("specialAdminLogo").files?.[0],"logo");const payload={title:sp("specialAdminTitle").value.trim(),description:sp("specialAdminDescription").value.trim(),display_order:Number(sp("specialAdminOrder").value||1),released:sp("specialAdminReleased").checked,passcode:sp("specialAdminPasscode").value,keep_members:sp("specialAdminKeepMembers").checked,remove_passcode:sp("specialAdminRemovePasscode").checked};if(cover)payload.cover_image_url=cover;if(logo)payload.logo_url=logo;if(specialEditing)payload.module_id=specialEditing.id;await specialApi(specialEditing?"update":"create",payload);sp("specialAdminEditor").hidden=true;resetSpecialForm();await loadSpecialCourses()}catch(err){status.textContent=err.message||"Could not save course"}finally{save.disabled=false}});
 sp("specialAdminDelete")?.addEventListener("click",async()=>{if(!specialEditing||!confirm('Delete "'+specialEditing.title+'" and its access records?'))return;try{await specialApi("delete",{module_id:specialEditing.id});sp("specialAdminEditor").hidden=true;resetSpecialForm();await loadSpecialCourses()}catch(e){sp("specialAdminStatus").textContent=e.message||"Could not delete course"}});
-async function loadSpecialCourses(attempt=0){try{await supabaseClient.auth.getSession();const data=await specialApi("list");specialAdmin=data.admin===true;specialCourses=Array.isArray(data.courses)?data.courses:[];renderSpecialHome();renderSpecialAdmin()}catch(e){if(attempt<1){setTimeout(()=>void loadSpecialCourses(1),700);return}console.error("SPECIAL COURSES:",e);if(sp("basicSpecialCourses"))sp("basicSpecialCourses").innerHTML='<div class="special-course-empty">Special courses are temporarily unavailable.</div>';if(sp("bamSpecialCourseList"))sp("bamSpecialCourseList").innerHTML='<div class="bam-empty">Could not load special courses.</div>'}}
+async function loadSpecialCourses(attempt=0){try{await supabaseClient.auth.getSession();const data=await specialApi("list");specialAdmin=data.admin===true;specialCourses=Array.isArray(data.courses)?data.courses:[];renderSpecialHome();renderSpecialAdmin()}catch(e){if(attempt<1){setTimeout(()=>void loadSpecialCourses(1),700);return}
+  const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
+  if(token){
+    try{
+      const response=await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/learning/special-courses",{
+        headers:{Authorization:"Bearer "+token}
+      });
+      if(response.ok){
+        const data=await response.json();
+        specialCourses=data.courses||[];
+        specialAdmin=JSON.parse(sessionStorage.getItem("aclLegacyProfile")||localStorage.getItem("aclLegacyProfile")||"{}").role==="admin";
+        renderSpecialHome();
+        return;
+      }
+    }catch(err){console.error("SPECIAL COURSES Neon fallback:",err)}
+  }
+  console.error("SPECIAL COURSES:",e);if(sp("basicSpecialCourses"))sp("basicSpecialCourses").innerHTML='<div class="special-course-empty">Special courses are temporarily unavailable.</div>';if(sp("bamSpecialCourseList"))sp("bamSpecialCourseList").innerHTML='<div class="bam-empty">Could not load special courses.</div>'}}
 void loadSpecialCourses();
