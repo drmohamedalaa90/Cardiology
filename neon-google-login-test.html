@@ -164,7 +164,21 @@ async function resumeSignedInSession(){
     const result=await supabaseClient.auth.getSession();
     if(result.error)throw new Error(result.error.message);
     if(!result.data?.session?.user){if(!loginStarted)status.textContent="Choose a sign-in method";return}
-    openACL();
+    // A Neon session without a verified ACL profile must never auto-redirect:
+    // it previously caused an endless login → home → login loop.
+    const token=result.data.session.access_token||result.data.session.accessToken;
+    if(!token){status.textContent="Choose a sign-in method";return}
+    const check=await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/auth/me",{
+      headers:{Authorization:"Bearer "+token}
+    });
+    const identity=await check.json().catch(()=>({}));
+    if(check.ok&&identity.authenticated&&identity.linked&&identity.profile?.id){
+      openACL();return;
+    }
+    if(!loginStarted){
+      status.textContent="Choose a sign-in method";
+      details.textContent="Your Google/Neon account is not yet linked to an ACL member profile. Use your original ACL username and password.";
+    }
   }catch{if(!loginStarted){status.textContent="Choose a sign-in method";details.textContent=""}}
 }
 
