@@ -1,5 +1,6 @@
 import postgres from "postgres";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
+import { compare } from "bcryptjs";
 
 const AUTH_BASE = "https://ep-mute-sky-zantnre1.neonauth.c-2.eu-west-2.aws.neon.tech/neondb/auth";
 const jwks = createRemoteJWKSet(new URL(AUTH_BASE + "/.well-known/jwks.json"));
@@ -27,14 +28,16 @@ export default {
         status: 204,
         headers: {
           ...headers(origin),
-          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, Authorization",
           "Access-Control-Max-Age": "600"
         }
       });
     }
-    if (request.method !== "GET") return reply({ error: "method_not_allowed" }, 405, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms")
+    if (request.method === "POST" && url.pathname !== "/auth/legacy-login") return reply({ error: "method_not_allowed" }, 405, origin);
+    if (request.method !== "GET" && request.method !== "POST") return reply({ error: "method_not_allowed" }, 405, origin);
+    if (request.method === "POST" && !ALLOWED_ORIGINS.has(origin)) return reply({ error: "origin_forbidden" }, 403, origin);
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login")
       return reply({ error: "not_found" }, 404, origin);
 
     // Prefer the explicitly configured Neon connection; Hyperdrive may target an older database.
@@ -64,32 +67,102 @@ export default {
         }, 200, origin);
       }
 
-      // Verify a signed, unexpired Neon Auth JWT before accessing ACL records.
+
+      if (url.pathname === "/auth/legacy-login") {
+        if (request.method !== "POST") return reply({ error: "method_not_allowed" }, 405, origin);
+        if (!env.AUTH_SESSION_SECRET || env.AUTH_SESSION_SECRET.length < 32)
+          return reply({ error: "auth_not_configured" }, 503, origin);
+        const contentLength = Number(request.headers.get("content-length") || "0");
+        if (contentLength > 4096) return reply({ error: "invalid_request" }, 413, origin);
+        let body;
+        try { body = await request.json(); } catch { return reply({ error: "invalid_request" }, 400, origin); }
+        const identifier = typeof body?.identifier === "string" ? body.identifier.trim().toLowerCase() : "";
+        const password = typeof body?.password === "string" ? body.password : "";
+        if (!identifier || identifier.length > 254 || password.length < 1 || password.length > 1024)
+          return reply({ error: "invalid_credentials" }, 401, origin);
+        const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+        const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + ":" + identifier));
+        const key = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+        const [limit] = await sql`
+          SELECT failures, locked_until FROM acl_migration.login_attempt_limits WHERE attempt_key = ${key}
+        `;
+        if (limit?.locked_until && new Date(limit.locked_until) > new Date())
+          return reply({ error: "temporarily_locked" }, 429, origin);
+        const accounts = await sql`
+          SELECT m.legacy_user_id::text AS legacy_id, m.account_status,
+                 p.id AS profile_id, p.payload->>'full_name' AS full_name,
+                 p.payload->>'role' AS role, c.encrypted_password
+          FROM acl_migration.member_identity_map m
+          JOIN acl_migration.legacy_password_credentials c ON c.legacy_user_id = m.legacy_user_id
+          JOIN public.profiles p ON p.id = m.legacy_user_id::text
+          WHERE lower(m.email) = ${identifier} OR lower(m.username) = ${identifier}
+          LIMIT 2
+        `;
+        // Always perform a bcrypt check, including for unknown usernames, to reduce enumeration.
+        const dummyHash = "$2b$10$abcdefghijklmnopqrstuuJvQLX9B75tbkDXZJTFbXUJQDBqbJvN.";
+        const candidate = accounts.length === 1 ? accounts[0] : null;
+        const valid = await compare(password, candidate?.encrypted_password || dummyHash);
+        if (!valid || !candidate || (candidate.account_status && candidate.account_status !== "active")) {
+          await sql`
+            INSERT INTO acl_migration.login_attempt_limits (attempt_key, failures, window_start, locked_until)
+            VALUES (${key}, 1, now(), NULL)
+            ON CONFLICT (attempt_key) DO UPDATE SET
+              failures = CASE WHEN acl_migration.login_attempt_limits.window_start < now() - interval '15 minutes'
+                THEN 1 ELSE acl_migration.login_attempt_limits.failures + 1 END,
+              window_start = CASE WHEN acl_migration.login_attempt_limits.window_start < now() - interval '15 minutes'
+                THEN now() ELSE acl_migration.login_attempt_limits.window_start END,
+              locked_until = CASE WHEN acl_migration.login_attempt_limits.window_start >= now() - interval '15 minutes'
+                AND acl_migration.login_attempt_limits.failures >= 4
+                THEN now() + interval '15 minutes' ELSE NULL END
+          `;
+          return reply({ error: "invalid_credentials" }, 401, origin);
+        }
+        await sql`DELETE FROM acl_migration.login_attempt_limits WHERE attempt_key = ${key}`;
+        const remember = body.remember === true;
+        const seconds = remember ? 7 * 86400 : 12 * 3600;
+        const token = await new SignJWT({ acl_profile_id: candidate.profile_id, auth_method: "legacy" })
+          .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+          .setIssuer("acl-neon-api")
+          .setAudience("acl-web")
+          .setSubject(candidate.legacy_id)
+          .setIssuedAt()
+          .setExpirationTime(Math.floor(Date.now() / 1000) + seconds)
+          .sign(new TextEncoder().encode(env.AUTH_SESSION_SECRET));
+        return reply({ authenticated: true, token, expires_in: seconds,
+          profile: { id: candidate.profile_id, full_name: candidate.full_name, role: candidate.role } }, 200, origin);
+      }
+
+      // Verify a signed, unexpired Neon Auth JWT or a legacy ACL JWT.
       const match = /^Bearer (.+)$/i.exec(request.headers.get("Authorization") || "");
       if (!match) return reply({ authenticated: false }, 401, origin);
-      let payload;
+      let payload, legacyProfileId = null;
       try {
         ({ payload } = await jwtVerify(match[1], jwks, {
-          issuer: new URL(AUTH_BASE).origin,
-          algorithms: ["EdDSA"]
+          issuer: new URL(AUTH_BASE).origin, algorithms: ["EdDSA"]
         }));
       } catch {
-        return reply({ authenticated: false }, 401, origin);
+        if (!env.AUTH_SESSION_SECRET || env.AUTH_SESSION_SECRET.length < 32)
+          return reply({ authenticated: false }, 401, origin);
+        try {
+          ({ payload } = await jwtVerify(match[1], new TextEncoder().encode(env.AUTH_SESSION_SECRET), {
+            issuer: "acl-neon-api", audience: "acl-web", algorithms: ["HS256"]
+          }));
+          if (payload.auth_method !== "legacy" || payload.acl_profile_id !== payload.sub)
+            return reply({ authenticated: false }, 401, origin);
+          legacyProfileId = payload.sub;
+        } catch { return reply({ authenticated: false }, 401, origin); }
       }
       const authUserId = payload.sub;
       if (!authUserId || !/^[0-9a-f-]{36}$/i.test(authUserId)) return reply({ authenticated: false }, 401, origin);
-
-      // Never auto-link by email: existing ACL roles must not be claimed
-      // without a separate, audited account-recovery verification process.
-      const links = await sql`
+      const links = legacyProfileId ? await sql`
+        SELECT p.id AS profile_id, p.payload->>'full_name' AS full_name, p.payload->>'role' AS role
+        FROM public.profiles p WHERE p.id = ${legacyProfileId} LIMIT 1
+      ` : await sql`
         SELECT l.profile_id, p.payload->>'full_name' AS full_name, p.payload->>'role' AS role
-        FROM public.acl_auth_links l
-        JOIN public.profiles p ON p.id = l.profile_id
-        WHERE l.auth_user_id = ${authUserId}::uuid
-        LIMIT 1
+        FROM public.acl_auth_links l JOIN public.profiles p ON p.id = l.profile_id
+        WHERE l.auth_user_id = ${authUserId}::uuid LIMIT 1
       `;
-      if (!links.length)
-        return reply({ authenticated: true, linked: false }, 200, origin);
+      if (!links.length) return reply({ authenticated: true, linked: false }, 200, origin);
       if (url.pathname === "/ecg/rooms") {
         const rooms = await sql`SELECT payload FROM public.special_course_sessions ORDER BY payload->>'created_at' NULLS LAST`;
         return reply({ rooms: rooms.map(r => r.payload) }, 200, origin);
