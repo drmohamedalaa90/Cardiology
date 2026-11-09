@@ -110,7 +110,43 @@ async function boot(){try{localStorage.setItem("aclSelectedEdition","basic");ses
   locked.sort((a,b)=>Number(a.module.display_order)-Number(b.module.display_order));
 };await Promise.all(available.map(async m=>{try{const {data,error}=await supabaseClient.rpc("acl_get_basic_module_question_counts",{p_module_id:m.id});if(!error&&data&&Number.isFinite(Number(data.published)))m.question_count=Math.max(0,Number(data.published));}catch{}}));$("basicUnlockedCount").textContent=available.length;$("basicTotalCount").textContent=modules.length;$("basicAvailableSummary").textContent=`${available.length} ${available.length===1?"module":"modules"} available now`;await loadModuleResources(modules);renderAvailable(available,progress);renderLocked(locked)}
 $("basicLogout")?.addEventListener("click",async()=>{try{await supabaseClient.auth.signOut()}catch{}location.replace("login.html")});
-boot().catch(e=>{console.error("ACL BASIC HOME ERROR:",e);$("basicAvailableModules").innerHTML='<div class="basic-empty">The Basic Edition could not be loaded. Please refresh the page.</div>';$("basicLockedModules").innerHTML='<div class="basic-empty">Learning path unavailable.</div>'});
+async function restoreNeonLearningHome(originalError){
+  const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
+  if(!token)throw originalError;
+  const base="https://acl-neon-api.drmohamedalaa90.workers.dev";
+  const options={headers:{Authorization:"Bearer "+token}};
+  const [modulesResponse,attemptsResponse]=await Promise.all([
+    fetch(base+"/learning/modules",options),fetch(base+"/learning/attempts",options)
+  ]);
+  if(!modulesResponse.ok||!attemptsResponse.ok)throw new Error("Neon learning API unavailable");
+  const [moduleData,attemptData]=await Promise.all([modulesResponse.json(),attemptsResponse.json()]);
+  const modules=moduleData.modules||[],attempts=attemptData.attempts||[];
+  const progress=bestAttemptByModule(attempts);
+  const available=[],locked=[];
+  const isAdmin=(JSON.parse(sessionStorage.getItem("aclLegacyProfile")||localStorage.getItem("aclLegacyProfile")||"{}").role==="admin");
+  modules.forEach((module,index)=>{
+    const previous=modules[index-1],previousBest=previous?progress.get(String(previous.id))?.bestAccuracy??null:null;
+    const adminHeld=module.basic_admin_released!==true;
+    const passed=index===0||previousBest!==null&&previousBest>PASS_MARK;
+    if((!adminHeld&&passed)||isAdmin)available.push(module);
+    else locked.push({module,previous,previousBest,adminHeld,reason:adminHeld?
+      "Locked by the ACL administrator.": "Pass the previous module with more than 70%."});
+  });
+  if($("basicUnlockedCount"))$("basicUnlockedCount").textContent=available.length;
+  if($("basicTotalCount"))$("basicTotalCount").textContent=modules.length;
+  if($("basicAvailableSummary"))$("basicAvailableSummary").textContent=available.length+" modules available";
+  renderAvailable(available,progress);
+  renderLocked(locked);
+}
+boot().catch(async e=>{
+  console.error("ACL BASIC HOME legacy data API:",e);
+  try{await restoreNeonLearningHome(e)}
+  catch(error){
+    console.error("ACL BASIC HOME Neon fallback:",error);
+    $("basicAvailableModules").innerHTML='<div class="basic-empty">Modules temporarily unavailable. Your saved progress is preserved.</div>';
+    $("basicLockedModules").innerHTML='<div class="basic-empty">Learning path temporarily unavailable.</div>';
+  }
+});
 
 const basicLevelModalHome=document.getElementById("basicLevelModalHome");
 const closeBasicLevelHome=()=>{if(basicLevelModalHome)basicLevelModalHome.hidden=true};
