@@ -175,6 +175,12 @@ export default {
           FROM public.special_course_seats s LEFT JOIN public.profiles p ON p.id=s.user_id
           WHERE s.module_id=${courseId} ORDER BY s.seat_number`;
         const attendance=await sql`SELECT user_id,attendance_slot,payload FROM public.ecg_attendance_records WHERE module_id=${courseId}`;
+        const reviews=await sql`SELECT user_id,attendance_slot,status FROM public.ecg_attendance_reviews WHERE module_id=${courseId}`;
+        const reviewByUser=new Map();
+        for(const review of reviews){
+          if(!reviewByUser.has(review.user_id))reviewByUser.set(review.user_id,new Map());
+          reviewByUser.get(review.user_id).set(Number(review.attendance_slot),review.status);
+        }
         // Reproduce the original ACL hall colour rules from the legacy course function.
         const roomBySlot=new Map(sessions.map(row=>[Number(row.payload.session_number),row.payload]));
         const attendanceByUser=new Map();
@@ -198,7 +204,7 @@ export default {
           attendance:[1,2,3,4].map(slot=>{
             const record=attendanceByUser.get(seat.user_id)?.get(slot);
             const room=roomBySlot.get(slot);
-            return {slot,status:record?.status||statusFor(record,room),
+            return {slot,status:reviewByUser.get(seat.user_id)?.get(slot)||record?.status||statusFor(record,room),
               checked_in_at:record?.checked_at||null,checked_out_at:record?.checked_out_at||null};
           })
         }));
