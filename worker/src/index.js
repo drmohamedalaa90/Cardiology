@@ -175,16 +175,32 @@ export default {
           FROM public.special_course_seats s LEFT JOIN public.profiles p ON p.id=s.user_id
           WHERE s.module_id=${courseId} ORDER BY s.seat_number`;
         const attendance=await sql`SELECT user_id,attendance_slot,payload FROM public.ecg_attendance_records WHERE module_id=${courseId}`;
+        // Reproduce the original ACL hall colour rules from the legacy course function.
+        const roomBySlot=new Map(sessions.map(row=>[Number(row.payload.session_number),row.payload]));
+        const attendanceByUser=new Map();
+        for(const entry of attendance){
+          if(!attendanceByUser.has(entry.user_id))attendanceByUser.set(entry.user_id,new Map());
+          attendanceByUser.get(entry.user_id).set(Number(entry.attendance_slot),entry.payload);
+        }
+        const statusFor=(record,room)=>{
+          if(!record)return room?.lecture_ended_at?"red":null;
+          if(room?.lecture_started_at && record.checked_at && new Date(record.checked_at)>new Date(room.lecture_started_at))return "orange";
+          if(record.checked_out_at && (!room?.lecture_ended_at || new Date(record.checked_out_at)<new Date(room.lecture_ended_at)))return "orange";
+          if(room?.lecture_ended_at && !record.checked_out_at)return "orange";
+          return "green";
+        };
         const memberRows=seats.map(seat=>({
           seat_number:seat.seat_number,user_id:seat.user_id,
           name:seat.profile?.display_name||seat.profile?.full_name||seat.profile?.name||"ACL Member",
           gender:seat.payload?.gender||seat.profile?.gender||null,is_you:seat.user_id===links[0].profile_id,
           stars:Number(seat.payload?.stars||0),asked:!!seat.payload?.asked_at,
           suspended:!!seat.payload?.suspended_at,
-          attendance:attendance.filter(a=>a.user_id===seat.user_id).map(a=>({
-            slot:a.attendance_slot,
-            status:a.payload?.status||(a.payload?.checked_out_at?"present":a.payload?.checked_at?"present":"empty")
-          }))
+          attendance:[1,2,3,4].map(slot=>{
+            const record=attendanceByUser.get(seat.user_id)?.get(slot);
+            const room=roomBySlot.get(slot);
+            return {slot,status:record?.status||statusFor(record,room),
+              checked_in_at:record?.checked_at||null,checked_out_at:record?.checked_out_at||null};
+          })
         }));
         return reply({course:{...courses[0].payload,logo_url:courses[0].payload.special_logo_url},
           sessions:sessions.map(row=>row.payload),items:items.map(row=>row.payload),
