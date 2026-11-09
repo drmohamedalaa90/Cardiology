@@ -15,7 +15,18 @@ const seenRoomCalls=new Map();let roomCallTimer=null;
 let editorReturnRoom=null;
 const detailsKey=name=>`acl-special-details:${courseId}:${name}`;
 function restoreDetails(root=document){root.querySelectorAll("details[data-persist-details]").forEach(detail=>{const key=detailsKey(detail.dataset.persistDetails);const saved=localStorage.getItem(key);if(saved!==null)detail.open=saved==="1";else if(detail.dataset.persistDetails==="visitors-hall")detail.open=false;if(detail.dataset.detailsBound)return;detail.dataset.detailsBound="1";detail.addEventListener("toggle",()=>localStorage.setItem(detailsKey(detail.dataset.persistDetails),detail.open?"1":"0"))})}
-function setPopupEditor(form,kind,enabled){form.classList.toggle("is-popup-editor",!!enabled);if(enabled)form.dataset.editorKind=kind;else delete form.dataset.editorKind}
+const editorHomes = new WeakMap();
+function setPopupEditor(form,kind,enabled){
+ if(!form)return;
+ if(enabled){
+  if(!editorHomes.has(form)){const marker=document.createComment("Editor original location");form.parentNode.insertBefore(marker,form);editorHomes.set(form,marker)}
+  document.body.appendChild(form);form.classList.add("is-popup-editor");form.dataset.editorKind=kind;
+  form.setAttribute("role","dialog");form.setAttribute("aria-modal","true");
+ }else{
+  form.classList.remove("is-popup-editor");delete form.dataset.editorKind;form.removeAttribute("role");form.removeAttribute("aria-modal");
+  const marker=editorHomes.get(form);if(marker?.parentNode)marker.parentNode.insertBefore(form,marker.nextSibling);
+ }
+}
 
 async function api(action, args = {}) {
   const { data, error } = await supabaseClient.rpc("acl_special_course_content_api", { p_action: action, p_args: { module_id: courseId, ...args } });
@@ -222,6 +233,7 @@ function openRoom(id) {
 
   $("bmForum").dataset.persistDetails=`room:${id}:forum`;restoreDetails($("scpRoomModal"));
   bindFlashcardAlbum(flashcards);
+  $("scpRoomModal").classList.toggle("scp-quiz-room-theme", /quiz\s*room/i.test(String(session?.title || "")));
   $("scpRoomModal").hidden = false;
   document.body.classList.add("scp-modal-open");
   requestAnimationFrame(() => $("scpRoomModal").classList.add("is-open"));
