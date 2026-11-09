@@ -1,6 +1,7 @@
 
 const $=id=>document.getElementById(id);
 const KEY="acl-quiz-room-preview-v1";
+let candidateName="";
 const defaults={settings:{count:10,seconds:60,published:false,order:"manual"},questions:[]};
 let db;try{db=JSON.parse(localStorage.getItem(KEY))||structuredClone(defaults)}catch{db=structuredClone(defaults)}
 let current=null,idx=0,queue=[],chosen=-1,violations=0,penalty=0,remaining=0,timer=null,running=false,completed=false,correctCount=0,answerLog=[];
@@ -17,6 +18,8 @@ async function identity(){
     const [{supabaseClient},q]=await Promise.all([import("./supabase-client.js"),Promise.resolve(new URLSearchParams(location.search))]);
     const {data:{session}}=await supabaseClient.auth.getSession();
     if(!session?.user)return;
+    const adminEmail=String(session.user.email||"").toLowerCase();
+    if(adminEmail==="drmohamedalaa90@gmail.com"){$("editToggle").hidden=false;$("editToggle").onclick=()=>{$("editor").hidden?openEditor():show("welcome")};return;}
     const course=q.get("course");
     if(!course)return;
     const {data,error}=await supabaseClient.rpc("acl_special_course_content_api",{p_action:"get",p_args:{module_id:course}});
@@ -69,6 +72,9 @@ $("deleteQuestion").onclick=()=>{const q=getQuestion();if(!q||!confirm("Delete t
 function move(direction){const i=db.questions.findIndex(q=>q.id===current),j=i+direction;if(i<0||j<0||j>=db.questions.length)return;[db.questions[i],db.questions[j]]=[db.questions[j],db.questions[i]];store();renderQuestionList();$("editQuestionTitle").textContent="Editing question "+(j+1)}
 $("moveUp").onclick=()=>move(-1);$("moveDown").onclick=()=>move(1);
 $("start").onclick=()=>{
+ candidateName=String($("candidateName")?.value||"").trim();
+ if(candidateName.length<3){$("welcomeStatus").textContent="Enter your full name to continue.";return;}
+ try{sessionStorage.setItem("aclQuizCandidateName",candidateName)}catch{}
  if(!$("agree").checked){$("welcomeStatus").textContent="Please accept the integrity rules first.";return}
  if(!db.settings.published){$("welcomeStatus").textContent="Quiz 1 is currently locked by the administrator.";return}
  if(!db.questions.length){$("welcomeStatus").textContent="Quiz 1 has no published questions yet.";return}
@@ -119,3 +125,5 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden){hiddenReco
 window.addEventListener("blur",()=>{if(!document.hidden&&!hiddenRecorded){hiddenRecorded=true;violation()}});
 window.addEventListener("focus",()=>{hiddenRecorded=false});
 window.addEventListener("beforeunload",e=>{if(running){e.preventDefault();e.returnValue=""}});
+
+try{const saved=sessionStorage.getItem("aclQuizCandidateName");if(saved&&$("candidateName"))$("candidateName").value=saved}catch{}
