@@ -15,7 +15,12 @@ const seenRoomCalls=new Map();let roomCallTimer=null;
 let editorReturnRoom=null;
 const detailsKey=name=>`acl-special-details:${courseId}:${name}`;
 function restoreDetails(root=document){root.querySelectorAll("details[data-persist-details]").forEach(detail=>{const key=detailsKey(detail.dataset.persistDetails);const saved=localStorage.getItem(key);if(saved!==null)detail.open=saved==="1";else if(detail.dataset.persistDetails==="visitors-hall")detail.open=false;if(detail.dataset.detailsBound)return;detail.dataset.detailsBound="1";detail.addEventListener("toggle",()=>localStorage.setItem(detailsKey(detail.dataset.persistDetails),detail.open?"1":"0"))})}
-function setPopupEditor(form,kind,enabled){form.classList.toggle("is-popup-editor",!!enabled);if(enabled)form.dataset.editorKind=kind;else delete form.dataset.editorKind}
+function setPopupEditor(form,kind,enabled){
+  form.classList.toggle("is-popup-editor",!!enabled);
+  if(enabled){form.dataset.editorKind=kind;form.setAttribute("role","dialog");form.setAttribute("aria-modal","true");document.body.classList.add("scp-editor-open");}
+  else{delete form.dataset.editorKind;form.removeAttribute("role");form.removeAttribute("aria-modal");if(!document.querySelector(".scp-admin-form.is-popup-editor:not([hidden])"))document.body.classList.remove("scp-editor-open");}
+}
+document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;const form=document.querySelector(".scp-admin-form.is-popup-editor:not([hidden])");if(!form)return;event.preventDefault();const cancel=form.querySelector('[id$="Cancel"]');if(cancel)cancel.click();else{form.hidden=true;setPopupEditor(form,"",false)}});
 
 async function api(action, args = {}) {
   const { data, error } = await supabaseClient.rpc("acl_special_course_content_api", { p_action: action, p_args: { module_id: courseId, ...args } });
@@ -260,7 +265,7 @@ function populateSessionSelect(selected = "") {
   if (selected) select.value = selected;
 }
 
-function openSession(session = null,popup=false) {
+function openSession(session = null,popup=true) {
   editingSession = session;
   $("scpSessionForm").hidden = false;
   setPopupEditor($("scpSessionForm"),"session",popup);
@@ -274,7 +279,7 @@ function openSession(session = null,popup=false) {
   $("scpSessionTitle").focus();
 }
 
-function openItem(item = null, preferredSession = "",popup=false) {
+function openItem(item = null, preferredSession = "",popup=true) {
   if (!sessions().length) { openSession(); return; }
   editingItem = item;
   editorReturnRoom=popup?(preferredSession||activeSessionId):null;
