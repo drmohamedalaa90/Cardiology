@@ -49,7 +49,19 @@ export default {
           (SELECT COUNT(*)::int FROM public.modules) AS modules,
           (SELECT COUNT(*)::int FROM public.special_course_seats) AS hall_seats,
           (SELECT COUNT(*)::int FROM public.ecg_attendance_records) AS attendance_records`;
-        return reply({ connected: result[0].ok === 1, data, authentication: "migration_pending" }, 200, origin);
+        const [auth] = await sql`
+          SELECT
+            (SELECT COUNT(*)::int FROM public.acl_auth_links) AS linked_accounts,
+            (SELECT COUNT(*)::int FROM public.profiles) AS total_profiles
+        `;
+        return reply({
+          connected: result[0].ok === 1,
+          data,
+          authentication: auth.linked_accounts > 0 && auth.linked_accounts === auth.total_profiles
+            ? "linked" : "migration_pending",
+          linked_accounts: auth.linked_accounts,
+          unlinked_profiles: auth.total_profiles - auth.linked_accounts
+        }, 200, origin);
       }
 
       // Verify a signed, unexpired Neon Auth JWT before accessing ACL records.
