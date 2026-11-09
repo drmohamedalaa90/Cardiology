@@ -178,8 +178,8 @@ export default {
         const memberRows=seats.map(seat=>({
           seat_number:seat.seat_number,user_id:seat.user_id,
           name:seat.profile?.display_name||seat.profile?.full_name||seat.profile?.name||"ACL Member",
-          gender:seat.profile?.gender||null,is_you:seat.user_id===links[0].profile_id,
-          attendance:attendance.filter(a=>a.user_id===seat.user_id).map(a=>({slot:a.attendance_slot,status:a.payload?.status||""}))
+          gender:seat.payload?.gender||seat.profile?.gender||null,is_you:seat.user_id===links[0].profile_id,
+          attendance:attendance.filter(a=>a.user_id===seat.user_id).map(a=>({slot:a.attendance_slot,status:a.payload?.status||(a.payload?.checked_out_at?"present":a.payload?.checked_at?"present":"")}))
         }));
         return reply({course:{...courses[0].payload,logo_url:courses[0].payload.special_logo_url},
           sessions:sessions.map(row=>row.payload),items:items.map(row=>row.payload),
