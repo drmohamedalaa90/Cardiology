@@ -34,7 +34,7 @@ export default {
       });
     }
     if (request.method !== "GET") return reply({ error: "method_not_allowed" }, 405, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary")
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms")
       return reply({ error: "not_found" }, 404, origin);
 
     const connectionString = env.ACL_DB?.connectionString || env.DATABASE_URL;
@@ -69,7 +69,7 @@ export default {
       // Never auto-link by email: existing ACL roles must not be claimed
       // without a separate, audited account-recovery verification process.
       const links = await sql`
-        SELECT l.profile_id, p.full_name, p.role
+        SELECT l.profile_id, p.payload->>'full_name' AS full_name, p.payload->>'role' AS role
         FROM public.acl_auth_links l
         JOIN public.profiles p ON p.id = l.profile_id
         WHERE l.auth_user_id = ${authUserId}::uuid
@@ -77,12 +77,29 @@ export default {
       `;
       if (!links.length)
         return reply({ authenticated: true, linked: false }, 200, origin);
+      if (url.pathname === "/ecg/rooms") {
+        const rooms = await sql`SELECT payload FROM public.special_course_sessions ORDER BY payload->>'created_at' NULLS LAST`;
+        return reply({ rooms: rooms.map(r => r.payload) }, 200, origin);
+      }
+      if (url.pathname === "/ecg/hall") {
+        const seats = await sql`
+          SELECT s.seat_number, s.user_id, p.payload->>'full_name' AS full_name,
+                 p.payload->>'display_name' AS display_name
+          FROM public.special_course_seats s
+          LEFT JOIN public.profiles p ON p.id = s.user_id
+          ORDER BY s.seat_number
+        `;
+        return reply({ capacity: 200, occupied: seats.length, seats }, 200, origin);
+      }
       if (url.pathname === "/admin/students") {
         if (links[0].role !== "admin") return reply({ error: "forbidden" }, 403, origin);
         const students = await sql`
-          SELECT id, full_name, academic_year, role, xp, account_status
-          FROM public.profiles
-          ORDER BY full_name ASC, id ASC LIMIT 500
+          SELECT id, payload->>'full_name' AS full_name,
+                 payload->>'academic_year' AS academic_year,
+                 payload->>'role' AS role,
+                 payload->>'xp' AS xp,
+                 payload->>'account_status' AS account_status
+          FROM public.profiles ORDER BY payload->>'full_name' LIMIT 500
         `;
         return reply({ students, count: students.length }, 200, origin);
       }
@@ -90,31 +107,12 @@ export default {
         if (links[0].role !== "admin") return reply({ error: "forbidden" }, 403, origin);
         const [summary] = await sql`
           SELECT
-            (SELECT COUNT(*)::int FROM public.profiles) AS profiles,
-            (SELECT COUNT(*)::int FROM public.quiz_attempts) AS quiz_attempts,
-            (SELECT COUNT(*)::int FROM public.special_course_attendance) AS attendance_records,
-            (SELECT COUNT(*)::int FROM public.course_access) AS course_access_records,
-            (SELECT COALESCE(SUM(xp), 0)::bigint FROM public.profiles) AS total_xp
+          (SELECT COUNT(*)::int FROM public.profiles) AS profiles,
+          (SELECT COUNT(*)::int FROM public.quiz_attempts) AS quiz_attempts,
+          (SELECT COUNT(*)::int FROM public.ecg_attendance_records) AS attendance_records,
+          (SELECT COUNT(*)::int FROM public.special_course_seats) AS hall_seats
         `;
-        const quiz = await sql`
-          SELECT COALESCE(quiz_title, module_title, module_id, 'Quiz') AS title,
-                 status, score, percentage, completed_at
-          FROM public.quiz_attempts
-          ORDER BY created_at DESC NULLS LAST LIMIT 30
-        `;
-        const attendance = await sql`
-          SELECT module_id, attendance_slot, COUNT(*)::int AS participants
-          FROM public.special_course_attendance
-          GROUP BY module_id, attendance_slot
-          ORDER BY module_id, attendance_slot LIMIT 100
-        `;
-        const access = await sql`
-          SELECT module_id, status, COUNT(*)::int AS participants
-          FROM public.course_access
-          GROUP BY module_id, status
-          ORDER BY module_id, status LIMIT 100
-        `;
-        return reply({ summary, quiz, attendance, access }, 200, origin);
+        return reply({ summary }, 200, origin);
       }
       return reply({
         authenticated: true,
