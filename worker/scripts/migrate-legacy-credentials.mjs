@@ -37,7 +37,7 @@ try {
   const map = await target`SELECT legacy_user_id::text AS id FROM acl_migration.member_identity_map`;
   const ids = new Set(map.map(x => x.id));
   if (users.some(u => !ids.has(u.id))) throw new Error("Unmapped user; refusing import.");
-  if (users.some(u => !/^\\$2[aby]\\$\\d\\d\\$/.test(u.encrypted_password)))
+  if (users.some(u => !/^\$2[aby]\$\d\d\$/.test(u.encrypted_password)))
     throw new Error("Unexpected password hash format; refusing import.");
 
   await target.begin(async tx => {
