@@ -117,7 +117,7 @@ function sessions() {
 function sessionItems(sessionId) {
   return (state?.items || []).filter(item => item.session_id === sessionId).sort((a,b) => a.display_order-b.display_order);
 }
-function roomState(sessionId) { return (hallState.rooms || []).find(room => room.id === sessionId) || {}; }
+function roomState(sessionId) { const room = (hallState.rooms || []).find(room => room.id === sessionId) || {}; const session = sessions().find(entry => entry.id === sessionId); return (Number(session?.session_number) === 5 || /quiz\s*room/i.test(String(session?.title || ""))) ? {...room, is_locked: true} : room; }
 function attendanceFor(member, slot) { return (member?.attendance || []).find(entry => Number(entry.slot) === Number(slot)); }
 
 function preloadCourseImages(){for(const item of state?.items||[]){if(!item.cover_image_url)continue;const image=new Image();image.decoding="async";image.fetchPriority="high";image.src=item.cover_image_url}}
