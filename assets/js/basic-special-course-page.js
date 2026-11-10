@@ -74,6 +74,22 @@ document.addEventListener("keydown",event=>{
   if(cancel)cancel.click();else{form.hidden=true;setPopupEditor(form,"",false)}
 });
 
+const aclCourseApiBase="https://acl-neon-api.drmohamedalaa90.workers.dev";
+async function aclCourseToken(){
+ const stored=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
+ if(stored)return stored;
+ const session=(await supabaseClient.auth.getSession())?.data?.session;
+ return session?.access_token||session?.accessToken||"";
+}
+async function aclCourseFetch(path){
+ const token=await aclCourseToken();
+ if(!token)throw new Error("Sign in required. Your saved course data has not been deleted.");
+ const response=await fetch(aclCourseApiBase+path,{headers:{Authorization:"Bearer "+token}});
+ const result=await response.json().catch(()=>({error:"Invalid server response"}));
+ if(!response.ok)throw new Error(result.error||"Course request failed (HTTP "+response.status+")");
+ if(result.linked===false)throw new Error("Your account is not yet linked to your existing ACL profile.");
+ return result;
+}
 async function api(action, args = {}) {
   if(["save_session","save_item","delete_session","delete_item"].includes(action)){
     const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
@@ -86,12 +102,14 @@ async function api(action, args = {}) {
     if(!response.ok)throw new Error(result.error||"Could not save changes (HTTP "+response.status+").");
     return result;
   }
+  if(action==="get")return aclCourseFetch("/learning/course?course="+encodeURIComponent(courseId));
   const { data, error } = await supabaseClient.rpc("acl_special_course_content_api", { p_action: action, p_args: { module_id: courseId, ...args } });
   if (error) throw error;
   return data;
 }
 
 async function hallApi() {
+  if(state?.hall)return state.hall;
   const { data, error } = await supabaseClient.rpc("acl_special_course_hall", { p_module_id: courseId });
   if (error) throw error;
   return data;
@@ -107,7 +125,7 @@ async function extrasApi(action,args={}){const {data,error}=await supabaseClient
 function applyExtras(extras={}){const roomMap=new Map((extras.rooms||[]).map(x=>[x.id,x]));hallState.rooms=(hallState.rooms||[]).map(x=>({...x,...(roomMap.get(x.id)||{})}));const coverMap=new Map((extras.covers||[]).map(x=>[x.id,x.cover_image_url]));state.items=(state.items||[]).map(x=>({...x,cover_image_url:coverMap.get(x.id)||x.cover_image_url||""}))}
 
 async function refreshHall() {
-  const [hall,extras]=await Promise.all([hallApi(),extrasApi("get")]);hallState=hall;applyExtras(extras);
+  const course=await api("get");state=course;hallState=course.hall||hallState;
   renderHall();
 }
 function urlKeyBytes(value){const padding="=".repeat((4-value.length%4)%4),raw=atob((value+padding).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(raw,c=>c.charCodeAt(0))}
@@ -484,7 +502,9 @@ async function renderCourseSuspension(suspension){
 
 async function load() {
   if (!courseId) throw new Error("Course link is incomplete.");
-  const loaded=await Promise.all([api("get"),hallApi(),extrasApi("get")]);[state,hallState]=loaded;applyExtras(loaded[2]);preloadCourseImages();
+  state=await api("get");
+  hallState=state.hall||{capacity:200,occupied:0,members:[],rooms:[],admin:!!state.admin};
+  preloadCourseImages();
   if(hallState?.suspension){await renderCourseSuspension(hallState.suspension);return;}
   render();
   const pageParams=new URLSearchParams(location.search);if(pageParams.get("hall")==="1"){const hall=$("scpHallSection");hall.open=true;localStorage.setItem(detailsKey("visitors-hall"),"1");setTimeout(()=>hall.scrollIntoView({behavior:"smooth",block:"start"}),120)}
@@ -584,7 +604,7 @@ async function sendAttendancePush(mode,requestId=""){try{await supabaseClient.fu
 async function sendAttendanceLifecyclePush(mode,sessionId){try{await supabaseClient.functions.invoke("send-course-attendance-lifecycle-push",{body:{mode,module_id:courseId,session_id:sessionId}})}catch(e){console.warn("Attendance lifecycle notification failed",e)}}
 
 
-const nativeQuizApiBase="https://acl-neon-api.drmohamedalaa.workers.dev/learning/native-quiz";
+const nativeQuizApiBase=aclCourseApiBase+"/learning/native-quiz";
 let nativeQuiz=null,nativeQuizViolations=[],nativeQuizTimer=null,nativeQuizRunning=false,nativeQuizIndex=0,nativeQuizAnswers=[],nativeQuizSeconds=0;
 const nqEsc=esc;
 async function nativeQuizRequest(action,body){
