@@ -588,9 +588,14 @@ async function nativeQuizRequest(action,body){
  const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken")||(await supabaseClient.auth.getSession())?.data?.session?.access_token;
  if(!token)throw new Error("Please sign in again.");
  const url=nativeQuizApiBase+"?course="+encodeURIComponent(courseId);
- const response=await fetch(url,{method:action?"POST":"GET",headers:{Authorization:"Bearer "+token,...(action?{"Content-Type":"application/json"}:{})},...(action?{body:JSON.stringify({action,...body})}:{})});
+ let response;
+ try {
+   response=await fetch(url,{method:action?"POST":"GET",mode:"cors",headers:{Authorization:"Bearer "+token,...(action?{"Content-Type":"application/json"}:{})},...(action?{body:JSON.stringify({action,...body})}:{})});
+ } catch (error) {
+   throw new Error("Cannot connect to ACL quiz server. Check Cloudflare Worker deployment and CORS settings. ("+error.message+")");
+ }
  const result=await response.json().catch(()=>({error:"Invalid server response"}));
- if(!response.ok)throw new Error(result.error||"Quiz request failed");
+ if(!response.ok)throw new Error((result.error||"Quiz request failed")+" (HTTP "+response.status+")");
  return result;
 }
 function nqBody(){return document.getElementById("aclNativeQuizBody")}
