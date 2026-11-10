@@ -386,7 +386,7 @@ export default {
         const courses=await sql`SELECT payload FROM public.modules WHERE id=${courseId} AND payload->>'is_special_course'='true' LIMIT 1`;
         if(!courses.length)return reply({error:"course_not_found"},404,origin);
         const sessions=await sql`SELECT CASE WHEN jsonb_typeof(payload)='array' THEN payload->0 ELSE payload END AS payload FROM public.special_course_sessions WHERE (CASE WHEN jsonb_typeof(payload)='array' THEN payload->0 ELSE payload END)->>'module_id'=${courseId} ORDER BY (CASE WHEN jsonb_typeof(payload)='array' THEN payload->0 ELSE payload END)->>'display_order'`;
-        const items=await sql`SELECT payload FROM public.special_course_content WHERE payload->>'module_id'=${courseId} ORDER BY payload->>'display_order'`;
+        const items=await sql`SELECT CASE WHEN jsonb_typeof(payload)='array' THEN payload->0 ELSE payload END AS payload FROM public.special_course_content WHERE (CASE WHEN jsonb_typeof(payload)='array' THEN payload->0 ELSE payload END)->>'module_id'=${courseId} ORDER BY (CASE WHEN jsonb_typeof(payload)='array' THEN payload->0 ELSE payload END)->>'display_order'`;
         const seats=await sql`SELECT s.user_id,s.seat_number,s.payload,p.payload AS profile
           FROM public.special_course_seats s LEFT JOIN public.profiles p ON p.id=s.user_id
           WHERE s.module_id=${courseId} ORDER BY s.seat_number`;
