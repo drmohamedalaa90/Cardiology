@@ -103,3 +103,14 @@ body>.scp-admin-form.is-popup-editor:not([hidden]){position:fixed!important;z-in
 #scpRoomModal.scp-quiz-room-theme .scp-room-stage{background:linear-gradient(145deg,#27030d,#500b1d 55%,#1d030a)!important;border-color:#aa6d45!important}
 #scpRoomModal.scp-quiz-room-theme .scp-room-interior{background:linear-gradient(135deg,#320711,#4d0a1b 65%,#270510)!important;color:#fff5e9!important}
 #scpRoomModal.scp-quiz-room-theme .scp-room-title h2,#scpRoomModal.scp-quiz-room-theme .scp-room-title span{color:#fff5e9!important}
+
+/* Quiz Room: burgundy door ONLY, keep the room interior unchanged. */
+.scp-session-room.scp-quiz-door .scp-door-button,.scp-door-button.scp-quiz-door-button{background:linear-gradient(105deg,#8e1832,#5a0b22 62%,#350613)!important;border-color:#420b1b!important;box-shadow:inset -14px 0 18px rgba(20,0,8,.3),0 10px 20px rgba(70,8,28,.22)!important;color:#fff1d5!important}
+.scp-session-room.scp-quiz-door .scp-door-button:after,.scp-door-button.scp-quiz-door-button:after{background:#e8bd60!important}
+#scpRoomModal.scp-quiz-room-theme .scp-room-stage,#scpRoomModal.scp-quiz-room-theme .scp-room-interior{background:revert-layer!important;color:inherit!important}
+#scpRoomModal.scp-quiz-room-theme .scp-room-title h2,#scpRoomModal.scp-quiz-room-theme .scp-room-title span{color:inherit!important}
+
+#scpRoomModal.scp-quiz-room-theme .scp-room-stage{background:linear-gradient(120deg,#7a5109,#4c3003)!important}
+#scpRoomModal.scp-quiz-room-theme .scp-room-interior{background:radial-gradient(circle at 50% 0,rgba(255,238,181,.9),transparent 40%),linear-gradient(115deg,#fffdf7,#f3e5bc)!important;color:#4e3608!important}
+#scpRoomModal.scp-quiz-room-theme .scp-room-title h2{color:#4e3608!important}
+#scpRoomModal.scp-quiz-room-theme .scp-room-title span{color:#a06f12!important}
