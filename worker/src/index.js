@@ -34,10 +34,10 @@ export default {
         }
       });
     }
-    if (request.method === "POST" && url.pathname !== "/auth/legacy-login") return reply({ error: "method_not_allowed" }, 405, origin);
+    if (request.method === "POST" && !["/auth/legacy-login","/learning/course/edit"].includes(url.pathname)) return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method !== "GET" && request.method !== "POST") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method === "POST" && !ALLOWED_ORIGINS.has(origin)) return reply({ error: "origin_forbidden" }, 403, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/course" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts" && url.pathname !== "/learning/special-courses" && url.pathname !== "/learning/forum")
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/course" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts" && url.pathname !== "/learning/special-courses" && url.pathname !== "/learning/forum" && url.pathname !== "/learning/course/edit")
       return reply({ error: "not_found" }, 404, origin);
 
     // Prefer the explicitly configured Neon connection; Hyperdrive may target an older database.
@@ -163,6 +163,53 @@ export default {
         WHERE l.auth_user_id = ${authUserId}::uuid LIMIT 1
       `;
       if (!links.length) return reply({ authenticated: true, linked: false }, 200, origin);
+      if (url.pathname === "/learning/course/edit") {
+        if (request.method !== "POST") return reply({error:"method_not_allowed"},405,origin);
+        if (links[0].role !== "admin") return reply({error:"admin_required"},403,origin);
+        const rawLength=Number(request.headers.get("content-length")||0);
+        if(rawLength>65536)return reply({error:"request_too_large"},413,origin);
+        let body;
+        try{body=await request.json()}catch{return reply({error:"invalid_json"},400,origin)}
+        const courseId=body?.module_id,action=body?.action,args=body?.args||{};
+        if(typeof courseId!=="string"||!/^basic-special-[a-z0-9-]{20,80}$/.test(courseId))return reply({error:"invalid_course"},400,origin);
+        if(!["save_session","save_item","delete_session","delete_item"].includes(action))return reply({error:"unsupported_action"},400,origin);
+        const course=await sql`SELECT id FROM public.modules WHERE id=${courseId} AND payload->>'is_special_course'='true' LIMIT 1`;
+        if(!course.length)return reply({error:"course_not_found"},404,origin);
+        const isSession=action.endsWith("session"),table=isSession?"special_course_sessions":"special_course_content";
+        const id=typeof args.id==="string"?args.id:null;
+        if(action.startsWith("delete_")){
+          if(!id)return reply({error:"missing_id"},400,origin);
+          if(isSession){
+            const children=await sql`SELECT COUNT(*)::int AS count FROM public.special_course_content WHERE payload->>'session_id'=${id} AND payload->>'module_id'=${courseId}`;
+            if(children[0].count>0)return reply({error:"room_not_empty"},409,origin);
+            await sql`DELETE FROM public.special_course_sessions WHERE id=${id} AND payload->>'module_id'=${courseId}`;
+          }else{
+            await sql`DELETE FROM public.special_course_content WHERE id=${id} AND payload->>'module_id'=${courseId}`;
+          }
+          return reply({success:true},200,origin);
+        }
+        const fields=isSession?["title","session_number","display_order","is_active","is_locked"]:["title","subtitle","url","session_id","item_type","display_order","is_active","cover_image_url"];
+        const patch={};
+        for(const field of fields)if(Object.prototype.hasOwnProperty.call(args,field))patch[field]=args[field];
+        if(isSession){
+          if(typeof patch.title!=="string"||!patch.title.trim()||!Number.isInteger(Number(patch.session_number))||Number(patch.session_number)<1)return reply({error:"invalid_session"},400,origin);
+        }else{
+          if(typeof patch.title!=="string"||!patch.title.trim()||typeof patch.session_id!=="string")return reply({error:"invalid_item"},400,origin);
+          const parent=await sql`SELECT id FROM public.special_course_sessions WHERE id=${patch.session_id} AND payload->>'module_id'=${courseId}`;
+          if(!parent.length)return reply({error:"invalid_session"},400,origin);
+          if(patch.url && typeof patch.url==="string" && patch.url!=="#" && !/^https:\/\//i.test(patch.url))return reply({error:"invalid_url"},400,origin);
+        }
+        if(patch.title.length>250)return reply({error:"title_too_long"},400,origin);
+        if(id){
+          const rows=isSession?await sql`UPDATE public.special_course_sessions SET payload=payload||${JSON.stringify({...patch,updated_at:new Date().toISOString()})}::jsonb WHERE id=${id} AND payload->>'module_id'=${courseId} RETURNING payload`:await sql`UPDATE public.special_course_content SET payload=payload||${JSON.stringify({...patch,updated_at:new Date().toISOString()})}::jsonb WHERE id=${id} AND payload->>'module_id'=${courseId} RETURNING payload`;
+          if(!rows.length)return reply({error:"record_not_found"},404,origin);
+          return reply({success:true,item:rows[0].payload},200,origin);
+        }
+        const newId=crypto.randomUUID(),payload={...patch,id:newId,module_id:courseId,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+        if(isSession)await sql`INSERT INTO public.special_course_sessions(id,payload) VALUES (${newId},${JSON.stringify(payload)}::jsonb)`;
+        else await sql`INSERT INTO public.special_course_content(id,payload) VALUES (${newId},${JSON.stringify(payload)}::jsonb)`;
+        return reply({success:true,item:payload},200,origin);
+      }
       if (url.pathname === "/learning/forum") {
         const moduleId=url.searchParams.get("module")||"";
         if(!moduleId || moduleId.length>150)return reply({error:"invalid_module"},400,origin);
