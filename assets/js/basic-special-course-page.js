@@ -287,7 +287,7 @@ function openRoom(id) {
   const flashAlbum=`<details class="scp-flashcard-section" data-persist-details="room:${id}:flashcards"><summary><span>▣</span><strong>View flashcards</strong><small>${flashcards.length?`${flashcards.length} photo${flashcards.length===1?"":"s"}`:"Coming soon"}</small></summary>${flashcards.length?`<div class="scp-flashcard-album">${flashcards.map((item,index)=>`<button type="button" data-album-index="${index}"><img src="${esc(item.url||'assets/images/acl-header-mark.svg')}" alt="${esc(item.title)}" loading="lazy" onerror="this.onerror=null;this.src='assets/images/acl-share-preview-20261024.png'"><span>${esc(item.title||`Flashcard ${index+1}`)}</span>${state.admin?`<i data-edit-item="${item.id}">Edit</i>`:""}</button>`).join("")}</div>`:`<div class="scp-flashcard-empty">${state.admin?'<button id="scpAddFlashcards" type="button">+ Upload lecture flashcards</button>':'Lecture flashcards have not been uploaded yet.'}</div>`}</details>`;
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
   // Native Quiz Room: part of the ACL course DOM, never an iframe or a second sign-in.
-  if (/quiz\\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5) {
+  if (/quiz\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5) {
     $("scpRoomItems").innerHTML='<section class="acl-native-quiz" style="background:#fffaf0;border:1px solid #d8b46c;border-radius:20px;padding:clamp(14px,3vw,28px);color:#49350f"><h3 style="margin:0 0 12px">ACL Quiz Room</h3><div id="aclNativeQuizBody">Loading quiz…</div></section>';
     void loadNativeQuiz();
   }
@@ -654,7 +654,8 @@ document.addEventListener("fullscreenchange",()=>{if(nativeQuizRunning&&!documen
 document.addEventListener("click",async event=>{
  const button=event.target.closest("[data-nq]");if(!button)return;
  const action=button.dataset.nq;
- if(action==="preview"){nqMessage("Candidate preview will be available after publishing. Preview cannot create an actual attempt.");return}\n if(action==="start"){if(!nativeQuiz.questions.length){nqMessage("No questions published yet.");return}nativeQuizRunning=true;nativeQuizViolations=[];nativeQuizIndex=0;nativeQuizAnswers=[];nqRenderQuestion();return}
+ if(action==="preview"){nqMessage("Candidate preview will be available after publishing. Preview cannot create an actual attempt.");return}
+ if(action==="start"){if(!nativeQuiz.questions.length){nqMessage("No questions published yet.");return}nativeQuizRunning=true;nativeQuizViolations=[];nativeQuizIndex=0;nativeQuizAnswers=[];nqRenderQuestion();return}
  if(action==="next"){nqNext();return}
  if(!nativeQuiz?.admin)return;
  if(action==="add"){nqReadEditor();nativeQuiz.questions.push({id:crypto.randomUUID(),text:"",answers:[{text:""},{text:""},{text:""},{text:""}],correct:0,explanation:""});renderNativeQuiz()}
