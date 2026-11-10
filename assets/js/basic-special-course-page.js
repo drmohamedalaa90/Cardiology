@@ -266,6 +266,19 @@ function openRoom(id) {
   const flashAlbum=`<details class="scp-flashcard-section" data-persist-details="room:${id}:flashcards"><summary><span>▣</span><strong>View flashcards</strong><small>${flashcards.length?`${flashcards.length} photo${flashcards.length===1?"":"s"}`:"Coming soon"}</small></summary>${flashcards.length?`<div class="scp-flashcard-album">${flashcards.map((item,index)=>`<button type="button" data-album-index="${index}"><img src="${esc(item.url||'assets/images/acl-header-mark.svg')}" alt="${esc(item.title)}" loading="lazy" onerror="this.onerror=null;this.src='assets/images/acl-share-preview-20261024.png'"><span>${esc(item.title||`Flashcard ${index+1}`)}</span>${state.admin?`<i data-edit-item="${item.id}">Edit</i>`:""}</button>`).join("")}</div>`:`<div class="scp-flashcard-empty">${state.admin?'<button id="scpAddFlashcards" type="button">+ Upload lecture flashcards</button>':'Lecture flashcards have not been uploaded yet.'}</div>`}</details>`;
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${Number(session.session_number)===5?"":flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
 
+  // Display the existing quiz engine inside every Quiz Room, not in a separate tab.
+  if (/quiz\s*room/i.test(String(session.title || "")) || Number(session.session_number) === 5) {
+    const panel = document.createElement("section");
+    panel.className = "scp-embedded-quiz";
+    panel.style.cssText = "width:100%;margin-bottom:20px;border:1px solid #d9b56d;border-radius:18px;overflow:hidden;background:#0c2447";
+    const url = "quiz-room.html?course=" + encodeURIComponent(courseId) + "&room=" + encodeURIComponent(id);
+    panel.innerHTML = '<iframe title="ACL Quiz and Question Studio" loading="eager" style="display:block;width:100%;height:75vh;min-height:520px;border:0;background:#0c2447" src="' + url + '"></iframe>';
+    $("scpRoomItems").prepend(panel);
+    $("scpRoomItems").querySelector(".scp-room-empty")?.remove();
+    $("scpRoomItems").querySelectorAll(".scp-content-box").forEach(card => {
+      if (/quiz|assessment/i.test(card.textContent)) card.hidden = true;
+    });
+  }
   $("bmForum").dataset.persistDetails=`room:${id}:forum`;restoreDetails($("scpRoomModal"));
   bindFlashcardAlbum(flashcards);
   $("scpRoomModal").classList.toggle("scp-quiz-room-theme", /quiz\s*room/i.test(String(session?.title || "")));
