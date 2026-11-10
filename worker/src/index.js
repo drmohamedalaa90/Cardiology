@@ -310,7 +310,7 @@ export default {
           return reply({admin:true,room_locked:roomLocked,settings,questions,attempt:attempt||null,results,ongoing},200,origin);
         }
         if(!settings.published)return reply({admin:false,room_locked:roomLocked,settings:{published:false},questions:[],attempt:attempt||null},200,origin);
-        if(roomLocked&&!settings.started)return reply({admin:false,room_locked:true,settings:{published:true,started:false},questions:[],attempt:attempt||null,session:session?{started_at:session.started_at,incidents:session.incidents.length,terminated:session.terminated}:null},200,origin);
+        if(!settings.started)return reply({admin:false,room_locked:roomLocked,waiting_room:true,settings:{published:true,started:false},questions:[],attempt:attempt||null,session:session?{started_at:session.started_at,incidents:session.incidents.length,terminated:session.terminated}:null},200,origin);
         return reply({admin:false,room_locked:roomLocked&&!settings.started,settings,questions:questions.slice(0,Math.max(1,Number(settings.count)||10)).map(({correct,explanation,...q})=>q),attempt:attempt||null,session:session?{started_at:session.started_at,incidents:session.incidents.length,terminated:session.terminated}:null},200,origin);
       }
       if (url.pathname === "/learning/course/edit") {
