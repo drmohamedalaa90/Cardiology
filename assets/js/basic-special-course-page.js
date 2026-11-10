@@ -368,10 +368,10 @@ $("scpSessionForm")?.addEventListener("submit", async event => {
   status.textContent = "Saving…";
   try {
     const savedId=editingSession?.id || null, savedNumber=Number($("scpSessionNumber").value), savedTitle=$("scpSessionTitle").value.trim(), lockWanted=$("scpSessionLocked").checked;
-    await api("save_session", { id:savedId, session_number:savedNumber, title:savedTitle, display_order:Number($("scpSessionOrder").value), is_active:$("scpSessionActive").checked });
+    await api("save_session", { id:savedId, session_number:savedNumber, title:savedTitle, display_order:Number($("scpSessionOrder").value), is_active:$("scpSessionActive").checked, is_locked:lockWanted });
     await load();
     const targetId=savedId || sessions().find(x=>Number(x.session_number)===savedNumber&&x.title===savedTitle)?.id;
-    if(targetId && !!roomState(targetId).is_locked!==lockWanted){await hallAction("set_room_lock",{session_id:targetId,locked:lockWanted});await refreshHall();render()}
+    if(targetId && !!roomState(targetId).is_locked!==lockWanted && !(sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken"))){await hallAction("set_room_lock",{session_id:targetId,locked:lockWanted});await refreshHall();render()}
     $("scpSessionForm").hidden = true;
     setPopupEditor($("scpSessionForm"),"session",false);
     editingSession = null;
