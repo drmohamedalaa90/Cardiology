@@ -113,6 +113,20 @@ function showReview(result){
 }
 function next(){clearInterval(timer);if(idx+1<state.questions.length){idx++;question()}else{active=false;message("Assessment completed. Your responses are being submitted…");request("submit",{answers}).then(showReview).catch(e=>message("Submission failed: "+e.message+". Keep this page open and contact the administrator."))}}
 $("next").onclick=next;
+function showIntegrityWarning(count,detail){
+ const prior=document.getElementById("acl-integrity-warning");if(prior)prior.remove();
+ const overlay=document.createElement("div");overlay.id="acl-integrity-warning";
+ overlay.setAttribute("role","alertdialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-labelledby","acl-integrity-title");
+ overlay.style.cssText="position:fixed;inset:0;z-index:99999;background:rgba(10,5,15,.87);display:flex;align-items:center;justify-content:center;padding:20px";
+ const panel=document.createElement("div");panel.style.cssText="width:min(94vw,590px);background:linear-gradient(145deg,#621b37,#290f24);border:3px solid #f6c35d;border-radius:24px;box-shadow:0 25px 100px #000b;padding:clamp(25px,5vw,50px);text-align:center;color:white";
+ const symbol=document.createElement("div");symbol.textContent="⚠";symbol.style.cssText="font-size:76px;line-height:1.2;color:#ffd46c";
+ const title=document.createElement("h2");title.id="acl-integrity-title";title.textContent="INTEGRITY WARNING";title.style.cssText="font-size:clamp(26px,5vw,40px);margin:14px 0;color:#ffd46c";
+ const msg=document.createElement("p");msg.textContent="Screen change detected — Incident "+count;msg.style.cssText="font-size:clamp(20px,3vw,27px);font-weight:800";
+ const penalty=document.createElement("p");penalty.textContent=detail;penalty.style.cssText="font-size:clamp(24px,4vw,34px);font-weight:900;color:#ffcf65";
+ const caution=document.createElement("p");caution.textContent="Stay on the quiz screen. A fourth incident will terminate your attempt.";caution.style.cssText="font-size:17px;line-height:1.6";
+ const ok=document.createElement("button");ok.type="button";ok.className="btn gold";ok.textContent="I understand — Continue quiz";ok.style.cssText="font-size:18px;padding:16px 24px;margin-top:15px";
+ ok.onclick=()=>{overlay.remove();};panel.append(symbol,title,msg,penalty,caution,ok);overlay.append(panel);document.body.append(overlay);ok.focus();
+}
 async function recordIncident(kind){
  if(!active||incidentBusy||Date.now()-lastIncident<1300)return;
  lastIncident=Date.now();incidentBusy=true;
@@ -121,7 +135,7 @@ async function recordIncident(kind){
   violations=result.count;
   if(result.terminated){active=false;clearInterval(timer);message("⛔ Quiz terminated after the fourth screen change. This incident is recorded for the administrator.");return}
   const detail=result.count===1?"Warning only":result.count===2?"−1 point":result.count===3?"−4 points total":"";
-  const notice=document.createElement("div");notice.className="panel";notice.style.borderColor="#e5b452";notice.textContent="⚠ Integrity incident "+result.count+": "+detail;document.querySelector("main").prepend(notice);setTimeout(()=>notice.remove(),4500);
+  showIntegrityWarning(result.count,detail);
  }catch(e){active=false;clearInterval(timer);message("Integrity verification interrupted: "+e.message+". Contact the administrator.")}
  finally{incidentBusy=false}
 }
