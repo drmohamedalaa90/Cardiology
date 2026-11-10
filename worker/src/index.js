@@ -18,6 +18,15 @@ function reply(data, status, origin) {
   return new Response(JSON.stringify(data), { status, headers: headers(origin) });
 }
 
+function decodeQuizJson(value, fallback) {
+  let decoded=value;
+  for(let i=0;i<3&&typeof decoded==="string";i++){
+    try{decoded=JSON.parse(decoded)}catch{return fallback}
+  }
+  return Array.isArray(fallback) ? (Array.isArray(decoded)?decoded:fallback)
+    : (decoded&&typeof decoded==="object"&&!Array.isArray(decoded)?decoded:fallback);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -183,11 +192,13 @@ export default {
             const settings=body.settings,questions=body.questions;
             if(!settings || !Array.isArray(questions) || questions.length>300 || JSON.stringify(body).length>500000)return reply({error:"invalid_quiz"},400,origin);
             if(questions.some(q=>typeof q.text!=="string"||q.text.length>5000||!Array.isArray(q.answers)||q.answers.length!==4||!Number.isInteger(q.correct)||q.correct<0||q.correct>3))return reply({error:"invalid_questions"},400,origin);
-            await sql`INSERT INTO public.acl_native_quizzes(course_id,settings,questions) VALUES (${courseId},${JSON.stringify(settings)}::jsonb,${JSON.stringify(questions)}::jsonb) ON CONFLICT(course_id) DO UPDATE SET settings=excluded.settings,questions=excluded.questions,updated_at=now()`;
+            await sql`INSERT INTO public.acl_native_quizzes(course_id,settings,questions) VALUES (${courseId},${sql.json(settings)},${sql.json(questions)}) ON CONFLICT(course_id) DO UPDATE SET settings=excluded.settings,questions=excluded.questions,updated_at=now()`;
             return reply({success:true},200,origin);
           }
           if(body?.action==="submit"){
             const [quiz]=await sql`SELECT settings,questions FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
+            if(quiz){quiz.questions=decodeQuizJson(quiz.questions,[]);quiz.settings=decodeQuizJson(quiz.settings,{});}
+            if(quiz){quiz.questions=decodeQuizJson(quiz.questions,[]);quiz.settings=decodeQuizJson(quiz.settings,{});}
             if(!quiz?.settings?.published)return reply({error:"quiz_not_released"},403,origin);
             const [room]=await sql`SELECT payload FROM public.special_course_sessions WHERE payload->>'module_id'=${courseId} AND (payload->>'session_number'='5' OR payload->>'title' ILIKE '%Quiz Room%') LIMIT 1`;
             if(room?.payload?.is_locked!==false)return reply({error:"quiz_room_locked"},403,origin);
@@ -207,8 +218,8 @@ export default {
         }
         const [quiz]=await sql`SELECT settings,questions FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
         const [attempt]=await sql`SELECT score,total,completed_at FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
-        const settings=quiz?.settings||{count:10,seconds:60,published:false,order:"manual"};
-        const questions=quiz?.questions||[];
+        const settings=decodeQuizJson(quiz?.settings,{count:10,seconds:60,published:false,order:"manual"});
+        const questions=decodeQuizJson(quiz?.questions,[]);
         if(!admin && !settings.published)return reply({admin:false,settings:{published:false},questions:[],attempt:attempt||null},200,origin);
         return reply({admin,settings,questions:admin?questions:questions.slice(0,Math.max(1,Number(settings.count)||10)).map(({correct,explanation,...q})=>q),attempt:attempt||null},200,origin);
       }
