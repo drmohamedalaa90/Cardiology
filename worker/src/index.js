@@ -224,15 +224,15 @@ export default {
             if(prior.length)return reply({error:"attempt_already_completed"},409,origin);
             const [session]=await sql`INSERT INTO public.acl_native_quiz_sessions(course_id,profile_id) VALUES (${courseId},${profileId}) ON CONFLICT(course_id,profile_id) DO UPDATE SET course_id=excluded.course_id RETURNING started_at,incidents,terminated`;
             if(session.terminated)return reply({error:"quiz_terminated"},403,origin);
-            return reply({success:true,started_at:session.started_at,incidents:session.incidents.length},200,origin);
+            return reply({success:true,started_at:session.started_at,incidents:Array.isArray(session.incidents)?session.incidents.length:0},200,origin);
           }
           if(body?.action==="incident"){
             if(admin)return reply({error:"admin_preview_only"},403,origin);
             const kind=String(body.kind||"screen_change").slice(0,60);
             if(!["tab_hidden","window_blur","fullscreen_exit"].includes(kind))return reply({error:"invalid_incident"},400,origin);
-            const [session]=await sql`UPDATE public.acl_native_quiz_sessions SET incidents=incidents||jsonb_build_array(jsonb_build_object('kind',${kind},'at',now())),terminated=(jsonb_array_length(incidents)+1>=4) WHERE course_id=${courseId} AND profile_id=${profileId} AND terminated=false RETURNING incidents,terminated`;
+            const [session]=await sql`UPDATE public.acl_native_quiz_sessions SET incidents=incidents||jsonb_build_array(jsonb_build_object('kind',${kind},'at',now())),terminated=(jsonb_array_length(incidents)+1>=4) WHERE course_id=${courseId} AND profile_id=${profileId} AND terminated=false RETURNING incidents,terminated,jsonb_array_length(incidents) AS incident_count`;
             if(!session)return reply({error:"session_not_active"},409,origin);
-            const count=session.incidents.length;
+            const count=Number(session.incident_count)||0;
             if(session.terminated){
               const [record]=await sql`SELECT started_at FROM public.acl_native_quiz_sessions WHERE course_id=${courseId} AND profile_id=${profileId}`;
               const duration=Math.max(0,Math.round((Date.now()-new Date(record.started_at).getTime())/1000));
