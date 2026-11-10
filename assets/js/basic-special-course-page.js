@@ -267,9 +267,9 @@ function openRoom(id) {
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${Number(session.session_number)===5?"":flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
 
   // ACL-native quiz; do not embed a second webpage.
-  const isQuizRoom=/quiz\\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5;
+  const isQuizRoom=/quiz\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5;
   if(isQuizRoom){
-    $("scpRoomItems").innerHTML='<section class="acl-native-quiz" style="background:#fffaf0;border:1px solid #d8b46c;border-radius:20px;padding:24px;color:#49350f"><h3>ACL Quiz Room</h3><div id="aclNativeQuizBody">Loading quiz…</div></section>';
+    $("scpRoomItems").innerHTML='<section class="acl-native-quiz" style="background:linear-gradient(145deg,#fffaf6,#f9e9e8);border:1px solid #a94758;border-radius:20px;padding:24px;color:#511323"><h3>ACL Quiz Room</h3><div id="aclNativeQuizBody">Loading quiz…</div></section>';
     void loadNativeQuiz();
   }
   $("bmForum").hidden=isQuizRoom;
@@ -581,7 +581,7 @@ async function sendAttendancePush(mode,requestId=""){try{await supabaseClient.fu
 
 async function sendAttendanceLifecyclePush(mode,sessionId){try{await supabaseClient.functions.invoke("send-course-attendance-lifecycle-push",{body:{mode,module_id:courseId,session_id:sessionId}})}catch(e){console.warn("Attendance lifecycle notification failed",e)}}
 
-const nativeQuizApiBase="https://acl-neon-api.drmohamedalaa.workers.dev/learning/native-quiz";
+const nativeQuizApiBase="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/native-quiz";
 let nativeQuiz=null,nativeQuizViolations=[],nativeQuizTimer=null,nativeQuizRunning=false,nativeQuizIndex=0,nativeQuizAnswers=[],nativeQuizSeconds=0;
 const nqEsc=esc;
 async function nativeQuizRequest(action,body){
@@ -599,7 +599,7 @@ async function loadNativeQuiz(){
  try{nativeQuiz=await nativeQuizRequest();renderNativeQuiz()}
  catch(error){nqMessage("Quiz unavailable: "+error.message)}
 }
-function nqButton(text,action){return '<button type="button" data-nq="'+action+'" style="background:#805709;color:white;border:0;border-radius:10px;padding:11px 17px;margin:6px 8px 6px 0;cursor:pointer;font-weight:700">'+text+'</button>'}
+function nqButton(text,action){return '<button type="button" data-nq="'+action+'" style="background:#74152d;color:white;border:0;border-radius:10px;padding:11px 17px;margin:6px 8px 6px 0;cursor:pointer;font-weight:700">'+text+'</button>'}
 function renderNativeQuiz(){
  const root=nqBody();if(!root||!nativeQuiz)return;
  if(nativeQuiz.attempt){nqMessage("Completed · Score: "+nativeQuiz.attempt.score+" / "+nativeQuiz.attempt.total);return}
@@ -611,7 +611,7 @@ function renderNativeQuiz(){
 }
 function nqQuestionEditor(q,i){
  const answers=Array.isArray(q.answers)?q.answers:[{text:""},{text:""},{text:""},{text:""}];
- return '<fieldset data-nq-index="'+i+'" style="border:1px solid #d8b46c;border-radius:12px;margin:12px 0;padding:12px"><legend>Question '+(i+1)+'</legend><textarea data-nq-field="text" placeholder="Question text" style="width:100%;min-height:65px">'+nqEsc(q.text||"")+'</textarea><label>Question image URL <input data-nq-field="image" value="'+nqEsc(q.image||"")+'" style="width:100%"></label>'+answers.map((a,j)=>'<label style="display:block;margin:7px 0"> '+String.fromCharCode(65+j)+' <input data-nq-answer="'+j+'" value="'+nqEsc(a.text||"")+'" style="width:85%"></label>').join("")+'<label>Correct answer <select data-nq-field="correct">'+[0,1,2,3].map(j=>'<option value="'+j+'" '+(q.correct===j?"selected":"")+'>'+String.fromCharCode(65+j)+'</option>').join("")+'</select></label> <label>Explanation <input data-nq-field="explanation" value="'+nqEsc(q.explanation||"")+'"></label> '+nqButton("Delete question","delete:"+i)+'</fieldset>';
+ return '<fieldset data-nq-index="'+i+'" style="border:1px solid #bd7b87;border-radius:12px;margin:12px 0;padding:12px"><legend>Question '+(i+1)+'</legend><textarea data-nq-field="text" placeholder="Question text" style="width:100%;min-height:65px">'+nqEsc(q.text||"")+'</textarea><label>Question image URL <input data-nq-field="image" value="'+nqEsc(q.image||"")+'" style="width:100%"></label>'+answers.map((a,j)=>'<label style="display:block;margin:7px 0"> '+String.fromCharCode(65+j)+' <input data-nq-answer="'+j+'" value="'+nqEsc(a.text||"")+'" style="width:85%"></label>').join("")+'<label>Correct answer <select data-nq-field="correct">'+[0,1,2,3].map(j=>'<option value="'+j+'" '+(q.correct===j?"selected":"")+'>'+String.fromCharCode(65+j)+'</option>').join("")+'</select></label> <label>Explanation <input data-nq-field="explanation" value="'+nqEsc(q.explanation||"")+'"></label> '+nqButton("Delete question","delete:"+i)+'</fieldset>';
 }
 function nqReadEditor(){
  const root=nqBody();if(!root)return;
