@@ -505,8 +505,26 @@ load().catch(error => {
     location.replace("acl-access.html");
     return;
   }
-  $("scpTitle").textContent = "Course unavailable";
-  $("scpContent").innerHTML = `<div class="scp-empty">${esc(error.message || "Could not load this course.")}</div>`;
+  // Keep the lecture navigation visible even if the authenticated API is temporarily unreachable.
+  // This fallback is read-only; it never fabricates member records or writes attendance.
+  const safeRooms=[
+    ["5c8e475c-cfde-4796-abdd-dea69fc4c941",1,"ECG Reading Fundamentals"],
+    ["c55f475d-b2be-4e8f-8380-40e6825749bd",2,"Normal ECG interpretation"],
+    ["6c189730-082d-4c50-98a3-e4a3ebd97fa6",3,"Abnormal ECG & Arrhythmia Schemes"],
+    ["f42a8b5c-8e61-4947-ab19-3cd068c80d78",4,"Final Quiz and Course Summary"],
+    ["71c34507-5ac0-4ba8-9f03-2bac95f57bbe",5,"Quiz Room"]
+  ];
+  state={course:{title:"ECG Demystified 2026",description:"A practical ECG course for medical interns."},
+    sessions:safeRooms.map(([id,session_number,title])=>({id,session_number,title,display_order:session_number,is_active:true})),
+    items:[],admin:false,candidate_name:"ACL Member"};
+  hallState={capacity:200,occupied:null,members:[],rooms:[]};
+  render();
+  $("scpHallOccupied").textContent="—";
+  const notice=document.createElement("div");
+  notice.className="scp-empty";
+  notice.style.cssText="margin:12px 0;padding:14px;border:1px solid #d7a53d;border-radius:12px;background:#fff6db;color:#654400";
+  notice.textContent="Live course data is temporarily disconnected ("+(error.message||"connection error")+"). Rooms are shown for navigation only; seats, attendance and editing will return when the connection is restored. No saved data has been changed.";
+  $("scpContent").prepend(notice);
 });
 
 $("scpRefresh")?.addEventListener("click",()=>location.reload());
