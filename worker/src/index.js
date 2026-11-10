@@ -191,7 +191,6 @@ export default {
           let body;try{body=await request.json()}catch{return reply({error:"invalid_json"},400,origin)}
           if(body?.action==="join"){
             if(admin)return reply({error:"admin_preview_only"},403,origin);
-            if(roomLocked)return reply({error:"quiz_room_locked"},403,origin);
             const [ready]=await sql`SELECT settings FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
             if(!decodeQuizJson(ready?.settings,{})?.published)return reply({error:"quiz_not_released"},403,origin);
             const [prior]=await sql`SELECT 1 FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
@@ -278,7 +277,7 @@ export default {
             const settings=decodeQuizJson(quiz?.settings,{}),allQuestions=decodeQuizJson(quiz?.questions,[]);
             if(!settings.published)return reply({error:"quiz_not_released"},403,origin);
             if(!settings.started)return reply({error:"waiting_for_administrator"},403,origin);
-            if(roomLocked)return reply({error:"quiz_room_locked"},403,origin);
+            if(roomLocked&&!settings.started)return reply({error:"quiz_room_locked"},403,origin);
             const [session]=await sql`SELECT started_at,incidents,terminated FROM public.acl_native_quiz_sessions WHERE course_id=${courseId} AND profile_id=${profileId}`;
             if(!session)return reply({error:"quiz_not_started"},403,origin);
             const questions=allQuestions.slice(0,Math.min(300,Math.max(1,Number(settings.count)||10)));
@@ -311,7 +310,8 @@ export default {
             WHERE s.course_id=${courseId} AND NOT EXISTS(SELECT 1 FROM public.acl_native_quiz_attempts a WHERE a.course_id=s.course_id AND a.profile_id=s.profile_id) ORDER BY s.started_at DESC`;
           return reply({admin:true,room_locked:roomLocked,settings,questions,attempt:attempt||null,results,ongoing},200,origin);
         }
-        if(roomLocked||!settings.published)return reply({admin:false,room_locked:roomLocked,settings:{published:false},questions:[],attempt:attempt||null},200,origin);
+        if(!settings.published)return reply({admin:false,room_locked:roomLocked,settings:{published:false},questions:[],attempt:attempt||null},200,origin);
+        if(roomLocked&&!settings.started)return reply({admin:false,room_locked:true,settings:{published:true,started:false},questions:[],attempt:attempt||null,session:session?{started_at:session.started_at,incidents:session.incidents.length,terminated:session.terminated}:null},200,origin);
         return reply({admin:false,room_locked:false,settings,questions:questions.slice(0,Math.max(1,Number(settings.count)||10)).map(({correct,explanation,...q})=>q),attempt:attempt||null,session:session?{started_at:session.started_at,incidents:session.incidents.length,terminated:session.terminated}:null},200,origin);
       }
       if (url.pathname === "/learning/course/edit") {
