@@ -288,7 +288,7 @@ function openRoom(id) {
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
   // Keep the existing quiz engine and Question Studio inside the course room.
   // Do not navigate away or create a second quiz link.
-  const isQuizRoom = /quiz\\s*room/i.test(String(session.title || "")) || Number(session.session_number) === 5;
+  const isQuizRoom = /quiz\s*room/i.test(String(session.title || "")) || Number(session.session_number) === 5;
   if (isQuizRoom) {
     const quizItems = items.filter(item => item.item_type === "quiz_final" || item.item_type === "quiz_during");
     const quizPanel = document.createElement("section");
