@@ -230,7 +230,7 @@ export default {
             if(admin)return reply({error:"admin_preview_only"},403,origin);
             const kind=String(body.kind||"screen_change").slice(0,60);
             if(!["tab_hidden","window_blur","fullscreen_exit"].includes(kind))return reply({error:"invalid_incident"},400,origin);
-            const [session]=await sql`UPDATE public.acl_native_quiz_sessions SET incidents=incidents||jsonb_build_array(jsonb_build_object('kind',${kind},'at',now())),terminated=(jsonb_array_length(incidents)+1>=4) WHERE course_id=${courseId} AND profile_id=${profileId} AND terminated=false RETURNING incidents,terminated,jsonb_array_length(incidents) AS incident_count`;
+            const [session]=await sql`UPDATE public.acl_native_quiz_sessions SET incidents=incidents||jsonb_build_array(jsonb_build_object('kind',${kind}::text,'at',now())),terminated=(jsonb_array_length(incidents)+1>=4) WHERE course_id=${courseId} AND profile_id=${profileId} AND terminated=false RETURNING incidents,terminated,jsonb_array_length(incidents) AS incident_count`;
             if(!session)return reply({error:"session_not_active"},409,origin);
             const count=Number(session.incident_count)||0;
             if(session.terminated){
