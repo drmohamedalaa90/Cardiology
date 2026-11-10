@@ -501,10 +501,8 @@ async function load() {
 }
 
 load().catch(error => {
-  if (/sign in required|permission denied/i.test(error.message || "")) {
-    location.replace("acl-access.html");
-    return;
-  }
+  // Never redirect away from the lecture during a temporary auth outage.
+  // Display the read-only course navigation and a clear connection warning instead.
   // Keep the lecture navigation visible even if the authenticated API is temporarily unreachable.
   // This fallback is read-only; it never fabricates member records or writes attendance.
   const safeRooms=[
