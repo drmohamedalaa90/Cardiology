@@ -187,13 +187,6 @@ function render() {
     </article>`;
   }).join("") : '<div class="scp-empty">Course sessions will appear here when they are released.</div>';
 
-  // Deployment-safe discovery of ACL Room 05, even on legacy course records.
-  if (courseId === "basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c" && !list.some(s => Number(s.session_number) === 5)) {
-    const card = document.createElement("article");
-    card.className = "scp-session-room";
-    card.innerHTML = `<div class="scp-room-light"></div><a class="scp-door-button" style="text-decoration:none" href="quiz-room.html?course=${encodeURIComponent(courseId)}"><span class="scp-door-number">05</span><i class="scp-door-line"></i><b>ENTER ROOM</b></a><div class="scp-session-copy"><span>ROOM 05 · QUIZ 1</span><h3>Quiz Room</h3><small>◆ ACL interactive cardiology challenge</small></div>`;
-    $("scpContent").appendChild(card);
-  }
   document.querySelectorAll("[data-open-room]").forEach(button => button.addEventListener("click", () => openRoom(button.dataset.openRoom)));
   document.querySelectorAll("[data-edit-session]").forEach(button => button.addEventListener("click", event => { event.stopPropagation(); openSession(sessions().find(s => s.id === button.dataset.editSession),true); }));
   document.querySelectorAll("[data-delete-session]").forEach(button => button.addEventListener("click", async event => {
@@ -301,15 +294,19 @@ function openRoom(id) {
   $("scpQuestionText").value = "";
   const items = sessionItems(id).filter(item => state.admin || item.is_active);
   const itemCard=(item,index)=>{const info=typeInfo[item.item_type]||["•","Course item","Open"],ready=item.url&&item.url!=="#";if(item.item_type==="lecture"&&item.cover_image_url)return `<article class="scp-content-box has-cover" style="--box-delay:${180+index*70}ms;background-image:url(\'${esc(item.cover_image_url)}\'),url(\'assets/images/acl-share-preview-20261024.png\')" aria-label="${esc(item.title)}">${ready?`<a class="scp-cover-play" href="${esc(item.url)}" target="_blank" rel="noopener" aria-label="Play ${esc(item.title)}"><span>▶</span></a>`:'<span class="scp-cover-coming">Coming soon</span>'}${state.admin?`<div class="scp-box-admin"><button type="button" data-edit-item="${item.id}">Edit</button><button type="button" data-delete-item="${item.id}">Delete</button></div>`:""}</article>`;return `<article class="scp-content-box" style="--box-delay:${180+index*70}ms"><span class="scp-box-icon">${info[0]}</span><div><small>${info[1]}</small><h3>${esc(item.title)}</h3>${item.subtitle?`<p>${esc(item.subtitle)}</p>`:""}</div>${ready?`<a href="${esc(item.url)}" target="_blank" rel="noopener">${info[2]} →</a>`:'<span class="scp-coming">Coming soon</span>'}${state.admin?`<div class="scp-box-admin"><button type="button" data-edit-item="${item.id}">Edit</button><button type="button" data-delete-item="${item.id}">Delete</button></div>`:""}</article>`};
+  const isQuizRoom=/quiz\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5;
   const videos=items.filter(item=>item.item_type==="lecture"),flashcards=items.filter(item=>item.item_type==="flashcards"),others=items.filter(item=>!["lecture","flashcards"].includes(item.item_type));
   const flashAlbum=`<details class="scp-flashcard-section" data-persist-details="room:${id}:flashcards"><summary><span>▣</span><strong>View flashcards</strong><small>${flashcards.length?`${flashcards.length} photo${flashcards.length===1?"":"s"}`:"Coming soon"}</small></summary>${flashcards.length?`<div class="scp-flashcard-album">${flashcards.map((item,index)=>`<button type="button" data-album-index="${index}"><img src="${esc(item.url||'assets/images/acl-header-mark.svg')}" alt="${esc(item.title)}" loading="lazy" onerror="this.onerror=null;this.src='assets/images/acl-share-preview-20261024.png'"><span>${esc(item.title||`Flashcard ${index+1}`)}</span>${state.admin?`<i data-edit-item="${item.id}">Edit</i>`:""}</button>`).join("")}</div>`:`<div class="scp-flashcard-empty">${state.admin?'<button id="scpAddFlashcards" type="button">+ Upload lecture flashcards</button>':'Lecture flashcards have not been uploaded yet.'}</div>`}</details>`;
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
   // Native Quiz Room: part of the ACL course DOM, never an iframe or a second sign-in.
-  if (/quiz\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5) {
+  if (isQuizRoom) {
     $("scpRoomItems").innerHTML='<section class="acl-native-quiz" style="background:#fffaf0;border:1px solid #d8b46c;border-radius:20px;padding:clamp(14px,3vw,28px);color:#49350f"><h3 style="margin:0 0 12px">ACL Quiz Room</h3><div id="aclNativeQuizBody">Loading quiz…</div></section>';
     void loadNativeQuiz();
   }
-  $("bmForum").dataset.persistDetails=`room:${id}:forum`;restoreDetails($("scpRoomModal"));
+  $("bmForum").hidden=isQuizRoom;
+  if(isQuizRoom)$("bmForum").open=false;
+  else $("bmForum").dataset.persistDetails=`room:${id}:forum`;
+  restoreDetails($("scpRoomModal"));
   bindFlashcardAlbum(flashcards);
   $("scpRoomModal").classList.toggle("scp-quiz-room-theme", /quiz\s*room/i.test(String(session?.title || "")));
   $("scpRoomModal").hidden = false;
