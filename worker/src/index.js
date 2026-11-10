@@ -216,7 +216,6 @@ export default {
           }
           if(body?.action==="start"){
             if(admin)return reply({error:"admin_preview_only"},403,origin);
-            if(roomLocked)return reply({error:"quiz_room_locked"},403,origin);
             const [ready]=await sql`SELECT settings FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
             const readySettings=decodeQuizJson(ready?.settings,{});
             if(!readySettings.published)return reply({error:"quiz_not_released"},403,origin);
@@ -312,7 +311,7 @@ export default {
         }
         if(!settings.published)return reply({admin:false,room_locked:roomLocked,settings:{published:false},questions:[],attempt:attempt||null},200,origin);
         if(roomLocked&&!settings.started)return reply({admin:false,room_locked:true,settings:{published:true,started:false},questions:[],attempt:attempt||null,session:session?{started_at:session.started_at,incidents:session.incidents.length,terminated:session.terminated}:null},200,origin);
-        return reply({admin:false,room_locked:false,settings,questions:questions.slice(0,Math.max(1,Number(settings.count)||10)).map(({correct,explanation,...q})=>q),attempt:attempt||null,session:session?{started_at:session.started_at,incidents:session.incidents.length,terminated:session.terminated}:null},200,origin);
+        return reply({admin:false,room_locked:roomLocked&&!settings.started,settings,questions:questions.slice(0,Math.max(1,Number(settings.count)||10)).map(({correct,explanation,...q})=>q),attempt:attempt||null,session:session?{started_at:session.started_at,incidents:session.incidents.length,terminated:session.terminated}:null},200,origin);
       }
       if (url.pathname === "/learning/course/edit") {
         if (request.method !== "POST") return reply({error:"method_not_allowed"},405,origin);
