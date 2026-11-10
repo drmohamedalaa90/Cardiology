@@ -29,6 +29,17 @@ function setPopupEditor(form,kind,enabled){
 }
 
 async function api(action, args = {}) {
+  if(["save_session","save_item","delete_session","delete_item"].includes(action)){
+    const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
+    if(!token)throw new Error("Your session has expired. Please sign in again.");
+    const response=await fetch("https://acl-neon-api.drmohamedalaa.workers.dev/learning/course/edit",{
+      method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},
+      body:JSON.stringify({module_id:courseId,action,args})
+    });
+    const result=await response.json().catch(()=>({error:"invalid_server_response"}));
+    if(!response.ok)throw new Error(result.error||"Could not save changes (HTTP "+response.status+").");
+    return result;
+  }
   const { data, error } = await supabaseClient.rpc("acl_special_course_content_api", { p_action: action, p_args: { module_id: courseId, ...args } });
   if (error) throw error;
   return data;
@@ -335,10 +346,10 @@ $("scpSessionForm")?.addEventListener("submit", async event => {
   status.textContent = "Saving…";
   try {
     const savedId=editingSession?.id || null, savedNumber=Number($("scpSessionNumber").value), savedTitle=$("scpSessionTitle").value.trim(), lockWanted=$("scpSessionLocked").checked;
-    await api("save_session", { id:savedId, session_number:savedNumber, title:savedTitle, display_order:Number($("scpSessionOrder").value), is_active:$("scpSessionActive").checked });
+    await api("save_session", { id:savedId, session_number:savedNumber, title:savedTitle, display_order:Number($("scpSessionOrder").value), is_active:$("scpSessionActive").checked, is_locked:lockWanted });
     await load();
     const targetId=savedId || sessions().find(x=>Number(x.session_number)===savedNumber&&x.title===savedTitle)?.id;
-    if(targetId && !!roomState(targetId).is_locked!==lockWanted){await hallAction("set_room_lock",{session_id:targetId,locked:lockWanted});await refreshHall();render()}
+    if(targetId && !!roomState(targetId).is_locked!==lockWanted && !(sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken"))){await hallAction("set_room_lock",{session_id:targetId,locked:lockWanted});await refreshHall();render()}
     $("scpSessionForm").hidden = true;
     setPopupEditor($("scpSessionForm"),"session",false);
     editingSession = null;
