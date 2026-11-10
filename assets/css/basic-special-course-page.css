@@ -107,3 +107,7 @@
 #scpRoomModal.scp-quiz-room-theme .scp-room-close{background:#671a2a!important;color:#fff!important}
 /* A second modal is intentionally layered ABOVE the already-open room dialog. */
 body>.scp-admin-form.is-popup-editor:not([hidden]){z-index:2147483000!important;position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;isolation:isolate}
+
+/* Native Quiz Room: never show the course discussion forum in this room. */
+#scpRoomModal.scp-quiz-room-theme #bmForum,
+#scpRoomModal #bmForum[hidden]{display:none!important}
