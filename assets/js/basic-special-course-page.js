@@ -266,20 +266,16 @@ function openRoom(id) {
   const flashAlbum=`<details class="scp-flashcard-section" data-persist-details="room:${id}:flashcards"><summary><span>▣</span><strong>View flashcards</strong><small>${flashcards.length?`${flashcards.length} photo${flashcards.length===1?"":"s"}`:"Coming soon"}</small></summary>${flashcards.length?`<div class="scp-flashcard-album">${flashcards.map((item,index)=>`<button type="button" data-album-index="${index}"><img src="${esc(item.url||'assets/images/acl-header-mark.svg')}" alt="${esc(item.title)}" loading="lazy" onerror="this.onerror=null;this.src='assets/images/acl-share-preview-20261024.png'"><span>${esc(item.title||`Flashcard ${index+1}`)}</span>${state.admin?`<i data-edit-item="${item.id}">Edit</i>`:""}</button>`).join("")}</div>`:`<div class="scp-flashcard-empty">${state.admin?'<button id="scpAddFlashcards" type="button">+ Upload lecture flashcards</button>':'Lecture flashcards have not been uploaded yet.'}</div>`}</details>`;
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${Number(session.session_number)===5?"":flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
 
-  // Display the existing quiz engine inside every Quiz Room, not in a separate tab.
-  if (/quiz\s*room/i.test(String(session.title || "")) || Number(session.session_number) === 5) {
-    const panel = document.createElement("section");
-    panel.className = "scp-embedded-quiz";
-    panel.style.cssText = "width:100%;margin-bottom:20px;border:1px solid #d9b56d;border-radius:18px;overflow:hidden;background:#0c2447";
-    const url = "quiz-room.html?course=" + encodeURIComponent(courseId) + "&room=" + encodeURIComponent(id);
-    panel.innerHTML = '<iframe title="ACL Quiz and Question Studio" loading="eager" style="display:block;width:100%;height:75vh;min-height:520px;border:0;background:#0c2447" src="' + url + '"></iframe>';
-    $("scpRoomItems").prepend(panel);
-    $("scpRoomItems").querySelector(".scp-room-empty")?.remove();
-    $("scpRoomItems").querySelectorAll(".scp-content-box").forEach(card => {
-      if (/quiz|assessment/i.test(card.textContent)) card.hidden = true;
-    });
+  // ACL-native quiz; do not embed a second webpage.
+  const isQuizRoom=/quiz\\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5;
+  if(isQuizRoom){
+    $("scpRoomItems").innerHTML='<section class="acl-native-quiz" style="background:#fffaf0;border:1px solid #d8b46c;border-radius:20px;padding:24px;color:#49350f"><h3>ACL Quiz Room</h3><div id="aclNativeQuizBody">Loading quiz…</div></section>';
+    void loadNativeQuiz();
   }
-  $("bmForum").dataset.persistDetails=`room:${id}:forum`;restoreDetails($("scpRoomModal"));
+  $("bmForum").hidden=isQuizRoom;
+  if(isQuizRoom)$("bmForum").open=false;
+  else $("bmForum").dataset.persistDetails=`room:${id}:forum`;
+  restoreDetails($("scpRoomModal"));
   bindFlashcardAlbum(flashcards);
   $("scpRoomModal").classList.toggle("scp-quiz-room-theme", /quiz\s*room/i.test(String(session?.title || "")));
   $("scpRoomModal").hidden = false;
@@ -584,3 +580,83 @@ $("scpAttendanceReviewModal")?.addEventListener("click",e=>{if(e.target===$("scp
 async function sendAttendancePush(mode,requestId=""){try{await supabaseClient.functions.invoke("send-attendance-review-push",{body:{mode,module_id:courseId,session_id:arRoomId,request_id:requestId}})}catch(e){console.warn("Attendance notification failed",e)}}
 
 async function sendAttendanceLifecyclePush(mode,sessionId){try{await supabaseClient.functions.invoke("send-course-attendance-lifecycle-push",{body:{mode,module_id:courseId,session_id:sessionId}})}catch(e){console.warn("Attendance lifecycle notification failed",e)}}
+
+const nativeQuizApiBase="https://acl-neon-api.drmohamedalaa.workers.dev/learning/native-quiz";
+let nativeQuiz=null,nativeQuizViolations=[],nativeQuizTimer=null,nativeQuizRunning=false,nativeQuizIndex=0,nativeQuizAnswers=[],nativeQuizSeconds=0;
+const nqEsc=esc;
+async function nativeQuizRequest(action,body){
+ const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken")||(await supabaseClient.auth.getSession())?.data?.session?.access_token;
+ if(!token)throw new Error("Please sign in again.");
+ const url=nativeQuizApiBase+"?course="+encodeURIComponent(courseId);
+ const response=await fetch(url,{method:action?"POST":"GET",headers:{Authorization:"Bearer "+token,...(action?{"Content-Type":"application/json"}:{})},...(action?{body:JSON.stringify({action,...body})}:{})});
+ const result=await response.json().catch(()=>({error:"Invalid server response"}));
+ if(!response.ok)throw new Error(result.error||"Quiz request failed");
+ return result;
+}
+function nqBody(){return document.getElementById("aclNativeQuizBody")}
+function nqMessage(message){if(nqBody())nqBody().innerHTML='<p role="status">'+nqEsc(message)+'</p>'}
+async function loadNativeQuiz(){
+ try{nativeQuiz=await nativeQuizRequest();renderNativeQuiz()}
+ catch(error){nqMessage("Quiz unavailable: "+error.message)}
+}
+function nqButton(text,action){return '<button type="button" data-nq="'+action+'" style="background:#805709;color:white;border:0;border-radius:10px;padding:11px 17px;margin:6px 8px 6px 0;cursor:pointer;font-weight:700">'+text+'</button>'}
+function renderNativeQuiz(){
+ const root=nqBody();if(!root||!nativeQuiz)return;
+ if(nativeQuiz.attempt){nqMessage("Completed · Score: "+nativeQuiz.attempt.score+" / "+nativeQuiz.attempt.total);return}
+ if(nativeQuiz.admin){
+ const q=nativeQuiz.questions||[];
+ root.innerHTML='<p>Question Studio · Saved securely in ACL Neon database</p><label>Questions per quiz <input id="nqCount" type="number" min="1" max="300" value="'+Number(nativeQuiz.settings.count||10)+'"></label> <label>Seconds per question <input id="nqSeconds" type="number" min="5" max="3600" value="'+Number(nativeQuiz.settings.seconds||60)+'"></label> <label>Published <input id="nqPublished" type="checkbox" '+(nativeQuiz.settings.published?"checked":"")+'></label><div id="nqQuestionEditor">'+q.map((x,i)=>nqQuestionEditor(x,i)).join("")+'</div>'+nqButton("+ Add question","add")+nqButton("Save quiz","save")+nqButton("Preview as candidate","preview")+'<p id="nqStatus"></p>';
+ }else if(!nativeQuiz.settings.published){nqMessage("This quiz is locked until the administrator releases it.")}
+ else root.innerHTML='<p>'+nativeQuiz.questions.length+' questions · One attempt · Timed questions · Integrity monitoring</p><p>Changing tabs or leaving the quiz is recorded as an integrity violation.</p>'+nqButton("Start assessment","start");
+}
+function nqQuestionEditor(q,i){
+ const answers=Array.isArray(q.answers)?q.answers:[{text:""},{text:""},{text:""},{text:""}];
+ return '<fieldset data-nq-index="'+i+'" style="border:1px solid #d8b46c;border-radius:12px;margin:12px 0;padding:12px"><legend>Question '+(i+1)+'</legend><textarea data-nq-field="text" placeholder="Question text" style="width:100%;min-height:65px">'+nqEsc(q.text||"")+'</textarea><label>Question image URL <input data-nq-field="image" value="'+nqEsc(q.image||"")+'" style="width:100%"></label>'+answers.map((a,j)=>'<label style="display:block;margin:7px 0"> '+String.fromCharCode(65+j)+' <input data-nq-answer="'+j+'" value="'+nqEsc(a.text||"")+'" style="width:85%"></label>').join("")+'<label>Correct answer <select data-nq-field="correct">'+[0,1,2,3].map(j=>'<option value="'+j+'" '+(q.correct===j?"selected":"")+'>'+String.fromCharCode(65+j)+'</option>').join("")+'</select></label> <label>Explanation <input data-nq-field="explanation" value="'+nqEsc(q.explanation||"")+'"></label> '+nqButton("Delete question","delete:"+i)+'</fieldset>';
+}
+function nqReadEditor(){
+ const root=nqBody();if(!root)return;
+ nativeQuiz.settings={...nativeQuiz.settings,count:Number(root.querySelector("#nqCount")?.value||10),seconds:Number(root.querySelector("#nqSeconds")?.value||60),published:!!root.querySelector("#nqPublished")?.checked};
+ nativeQuiz.questions=Array.from(root.querySelectorAll("[data-nq-index]")).map((field,i)=>({id:nativeQuiz.questions[i]?.id||crypto.randomUUID(),text:field.querySelector('[data-nq-field="text"]').value,image:field.querySelector('[data-nq-field="image"]').value,answers:[0,1,2,3].map(j=>({text:field.querySelector('[data-nq-answer="'+j+'"]').value})),correct:Number(field.querySelector('[data-nq-field="correct"]').value),explanation:field.querySelector('[data-nq-field="explanation"]').value}));
+}
+function nqTick(){
+ if(!nativeQuizRunning)return;
+ const display=document.getElementById("nqCountdown");if(display)display.textContent=String(nativeQuizSeconds)+" seconds";
+ if(nativeQuizSeconds<=0){nativeQuizAnswers[nativeQuizIndex]=-1;nqNext();return}
+ nativeQuizSeconds--;nativeQuizTimer=setTimeout(nqTick,1000);
+}
+function nqRenderQuestion(){
+ const root=nqBody();if(!root||!nativeQuizRunning)return;
+ clearTimeout(nativeQuizTimer);
+ const q=nativeQuiz.questions[nativeQuizIndex];if(!q){void nqSubmit();return}
+ nativeQuizSeconds=Math.max(5,Number(nativeQuiz.settings.seconds)||60);
+ root.innerHTML='<p>Question '+(nativeQuizIndex+1)+' of '+nativeQuiz.questions.length+' · <strong id="nqCountdown"></strong></p><h3>'+nqEsc(q.text)+'</h3>'+(q.image?'<img style="max-width:100%;max-height:280px" src="'+nqEsc(q.image)+'" alt="Question image">':"")+'<div>'+q.answers.map((a,j)=>'<label style="display:block;padding:10px;border-bottom:1px solid #eee"><input type="radio" name="nqAnswer" value="'+j+'"> '+String.fromCharCode(65+j)+'. '+nqEsc(a.text)+'</label>').join("")+'</div>'+nqButton("Next question","next");
+ nqTick();
+}
+function nqNext(){
+ if(!nativeQuizRunning)return;
+ clearTimeout(nativeQuizTimer);
+ const checked=nqBody()?.querySelector('input[name="nqAnswer"]:checked');
+ nativeQuizAnswers[nativeQuizIndex]=checked?Number(checked.value):-1;
+ nativeQuizIndex++;
+ if(nativeQuizIndex>=nativeQuiz.questions.length){void nqSubmit();return}
+ nqRenderQuestion();
+}
+async function nqSubmit(){
+ nativeQuizRunning=false;clearTimeout(nativeQuizTimer);
+ nqMessage("Submitting answers securely…");
+ try{const result=await nativeQuizRequest("submit",{answers:nativeQuizAnswers,violations:nativeQuizViolations});nqMessage("Assessment completed · Score: "+result.score+" / "+result.total+" · Integrity events: "+result.violations)}
+ catch(error){nqMessage("Submission failed: "+error.message+" · Please contact the administrator.")}
+}
+document.addEventListener("visibilitychange",()=>{if(nativeQuizRunning&&document.hidden)nativeQuizViolations.push("tab_hidden")});
+document.addEventListener("fullscreenchange",()=>{if(nativeQuizRunning&&!document.fullscreenElement)nativeQuizViolations.push("fullscreen_exit")});
+document.addEventListener("click",async event=>{
+ const button=event.target.closest("[data-nq]");if(!button)return;
+ const action=button.dataset.nq;
+ if(action==="preview"){nqMessage("Candidate preview will be available after publishing. Preview cannot create an actual attempt.");return}
+ if(action==="start"){if(!nativeQuiz.questions.length){nqMessage("No questions published yet.");return}nativeQuizRunning=true;nativeQuizViolations=[];nativeQuizIndex=0;nativeQuizAnswers=[];nqRenderQuestion();return}
+ if(action==="next"){nqNext();return}
+ if(!nativeQuiz?.admin)return;
+ if(action==="add"){nqReadEditor();nativeQuiz.questions.push({id:crypto.randomUUID(),text:"",answers:[{text:""},{text:""},{text:""},{text:""}],correct:0,explanation:""});renderNativeQuiz()}
+ else if(action.startsWith("delete:")){nqReadEditor();nativeQuiz.questions.splice(Number(action.split(":")[1]),1);renderNativeQuiz()}
+ else if(action==="save"){nqReadEditor();try{await nativeQuizRequest("save",{settings:nativeQuiz.settings,questions:nativeQuiz.questions});nqBody().querySelector("#nqStatus").textContent="Saved to Neon ✓"}catch(error){nqBody().querySelector("#nqStatus").textContent=error.message}}
+});
