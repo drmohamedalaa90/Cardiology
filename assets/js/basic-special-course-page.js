@@ -654,7 +654,7 @@ document.addEventListener("fullscreenchange",()=>{if(nativeQuizRunning&&!documen
 document.addEventListener("click",async event=>{
  const button=event.target.closest("[data-nq]");if(!button)return;
  const action=button.dataset.nq;
- if(action==="start"||action==="preview"){nativeQuizRunning=true;nativeQuizViolations=[];nativeQuizIndex=0;nativeQuizAnswers=[];nqRenderQuestion();return}
+ if(action==="preview"){nqMessage("Candidate preview will be available after publishing. Preview cannot create an actual attempt.");return}\n if(action==="start"){if(!nativeQuiz.questions.length){nqMessage("No questions published yet.");return}nativeQuizRunning=true;nativeQuizViolations=[];nativeQuizIndex=0;nativeQuizAnswers=[];nqRenderQuestion();return}
  if(action==="next"){nqNext();return}
  if(!nativeQuiz?.admin)return;
  if(action==="add"){nqReadEditor();nativeQuiz.questions.push({id:crypto.randomUUID(),text:"",answers:[{text:""},{text:""},{text:""},{text:""}],correct:0,explanation:""});renderNativeQuiz()}
