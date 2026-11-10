@@ -53,20 +53,33 @@ function setPopupEditor(form,kind,enabled){
 }
 
 const aclCourseApiBase="https://acl-neon-api.drmohamedalaa90.workers.dev";
-async function aclCourseToken(){
- const stored=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
- if(stored)return stored;
- const session=(await supabaseClient.auth.getSession())?.data?.session;
- return session?.access_token||session?.accessToken||"";
+async function aclCourseTokens(){
+ const tokens=[];
+ for(const token of [sessionStorage.getItem("aclLegacyToken"),localStorage.getItem("aclLegacyToken")]){
+   if(token&&!tokens.includes(token))tokens.push(token);
+ }
+ try{
+   const session=(await supabaseClient.auth.getSession())?.data?.session;
+   const token=session?.access_token||session?.accessToken;
+   if(token&&!tokens.includes(token))tokens.push(token);
+ }catch{}
+ return tokens;
 }
+async function aclCourseToken(){return (await aclCourseTokens())[0]||""}
 async function aclCourseFetch(path){
- const token=await aclCourseToken();
- if(!token)throw new Error("Sign in required. Your saved course data has not been deleted.");
- const response=await fetch(aclCourseApiBase+path,{headers:{Authorization:"Bearer "+token}});
- const result=await response.json().catch(()=>({error:"Invalid server response"}));
- if(!response.ok)throw new Error(result.error||"Course request failed (HTTP "+response.status+")");
- if(result.linked===false)throw new Error("Your account is not yet linked to your existing ACL profile.");
- return result;
+ const tokens=await aclCourseTokens();
+ if(!tokens.length)throw new Error("No active ACL session. Please sign in again; your course records are safe.");
+ let lastError="authentication_failed";
+ for(const token of tokens){
+   let response;
+   try{response=await fetch(aclCourseApiBase+path,{headers:{Authorization:"Bearer "+token},cache:"no-store"})}
+   catch(error){throw new Error("ACL server unreachable: "+error.message)}
+   const result=await response.json().catch(()=>({error:"invalid_server_response"}));
+   if(response.ok&&result?.course)return result;
+   lastError=(result.error||(result.linked===false?"account_not_linked":"unexpected_response"))+" (HTTP "+response.status+")";
+   if(response.status!==401&&result.linked!==false)break;
+ }
+ throw new Error("ACL course API: "+lastError+". Please send this exact error to support.");
 }
 async function api(action, args = {}) {
   if(["save_session","save_item","delete_session","delete_item"].includes(action)){
