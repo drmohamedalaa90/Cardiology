@@ -216,6 +216,27 @@ export default {
             }
             return reply({count,terminated:session.terminated,penalty:count>=3?4:count>=2?1:0},200,origin);
           }
+          if(body?.action==="reset_attempt"){
+            if(!admin)return reply({error:"admin_required"},403,origin);
+            const target=String(body.profile_id||"");
+            if(!target||target.length>150)return reply({error:"invalid_member"},400,origin);
+            const [known]=await sql`SELECT 1 FROM public.profiles WHERE id=${target}`;
+            if(!known)return reply({error:"member_not_found"},404,origin);
+            await sql.begin(async tx=>{
+              await tx`DELETE FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${target}`;
+              await tx`DELETE FROM public.acl_native_quiz_sessions WHERE course_id=${courseId} AND profile_id=${target}`;
+            });
+            return reply({success:true},200,origin);
+          }
+          if(body?.action==="reset_all"){
+            if(!admin)return reply({error:"admin_required"},403,origin);
+            if(body.confirm!=="RESET ALL ATTEMPTS")return reply({error:"confirmation_required"},400,origin);
+            await sql.begin(async tx=>{
+              await tx`DELETE FROM public.acl_native_quiz_attempts WHERE course_id=${courseId}`;
+              await tx`DELETE FROM public.acl_native_quiz_sessions WHERE course_id=${courseId}`;
+            });
+            return reply({success:true},200,origin);
+          }
           if(body?.action==="save"){
             if(!admin)return reply({error:"admin_required"},403,origin);
             const settings=body.settings,questions=body.questions;
