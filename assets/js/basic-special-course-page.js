@@ -152,7 +152,7 @@ function render() {
   if (!list.some(session => Number(session.session_number) === 5)) {
     const roomLink = document.createElement("article");
     roomLink.className = "scp-session-room";
-    roomLink.innerHTML = `<div class="scp-room-light"></div><a class="scp-door-button" style="text-decoration:none" href="quiz-room.html?course=${encodeURIComponent(courseId)}" class="scp-door-button scp-quiz-door-button" aria-label="Enter Room 5 Quiz Room"><span class="scp-door-number">05</span><i class="scp-door-line"></i><b>ENTER ROOM</b></a><div class="scp-session-copy"><span>ROOM 05 · QUIZ 1</span><h3>Quiz Room</h3><small>◆ ACL interactive cardiology challenge</small></div>`;
+    roomLink.innerHTML = `<div class="scp-room-light"></div><a class="scp-door-button" style="text-decoration:none" href="acl-quiz-arena.html?course=${encodeURIComponent(courseId)}" class="scp-door-button scp-quiz-door-button" aria-label="Enter Room 5 Quiz Room"><span class="scp-door-number">05</span><i class="scp-door-line"></i><b>ENTER ROOM</b></a><div class="scp-session-copy"><span>ROOM 05 · QUIZ 1</span><h3>Quiz Room</h3><small>◆ ACL interactive cardiology challenge</small></div>`;
     $("scpContent").appendChild(roomLink);
   }
   document.querySelectorAll("[data-open-room]").forEach(button => button.addEventListener("click", () => openRoom(button.dataset.openRoom)));
