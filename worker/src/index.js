@@ -34,10 +34,10 @@ export default {
         }
       });
     }
-    if (request.method === "POST" && !["/auth/legacy-login","/learning/course/edit"].includes(url.pathname)) return reply({ error: "method_not_allowed" }, 405, origin);
+    if (request.method === "POST" && !["/auth/legacy-login","/learning/course/edit","/learning/native-quiz"].includes(url.pathname)) return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method !== "GET" && request.method !== "POST") return reply({ error: "method_not_allowed" }, 405, origin);
     if (request.method === "POST" && !ALLOWED_ORIGINS.has(origin)) return reply({ error: "origin_forbidden" }, 403, origin);
-    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/course" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts" && url.pathname !== "/learning/special-courses" && url.pathname !== "/learning/forum" && url.pathname !== "/learning/course/edit")
+    if (url.pathname !== "/health" && url.pathname !== "/auth/me" && url.pathname !== "/admin/students" && url.pathname !== "/admin/learning-summary" && url.pathname !== "/ecg/hall" && url.pathname !== "/ecg/rooms" && url.pathname !== "/auth/legacy-login" && url.pathname !== "/learning/course" && url.pathname !== "/learning/modules" && url.pathname !== "/learning/attempts" && url.pathname !== "/learning/special-courses" && url.pathname !== "/learning/forum" && url.pathname !== "/learning/course/edit" && url.pathname !== "/learning/native-quiz")
       return reply({ error: "not_found" }, 404, origin);
 
     // Prefer the explicitly configured Neon connection; Hyperdrive may target an older database.
@@ -163,6 +163,46 @@ export default {
         WHERE l.auth_user_id = ${authUserId}::uuid LIMIT 1
       `;
       if (!links.length) return reply({ authenticated: true, linked: false }, 200, origin);
+      if (url.pathname === "/learning/native-quiz") {
+        const courseId=url.searchParams.get("course") || "";
+        if (!/^basic-special-[a-z0-9-]{20,80}$/.test(courseId)) return reply({error:"invalid_course"},400,origin);
+        const admin=links[0].role==="admin",profileId=links[0].profile_id;
+        const [course]=await sql`SELECT id FROM public.modules WHERE id=${courseId} AND payload->>'is_special_course'='true' LIMIT 1`;
+        if(!course)return reply({error:"course_not_found"},404,origin);
+        if(request.method==="POST"){
+          let body;try{body=await request.json()}catch{return reply({error:"invalid_json"},400,origin)}
+          if(body?.action==="save"){
+            if(!admin)return reply({error:"admin_required"},403,origin);
+            const settings=body.settings,questions=body.questions;
+            if(!settings || !Array.isArray(questions) || questions.length>300 || JSON.stringify(body).length>500000)return reply({error:"invalid_quiz"},400,origin);
+            if(questions.some(q=>typeof q.text!=="string"||q.text.length>5000||!Array.isArray(q.answers)||q.answers.length!==4||!Number.isInteger(q.correct)||q.correct<0||q.correct>3))return reply({error:"invalid_questions"},400,origin);
+            await sql`INSERT INTO public.acl_native_quizzes(course_id,settings,questions) VALUES (${courseId},${JSON.stringify(settings)}::jsonb,${JSON.stringify(questions)}::jsonb) ON CONFLICT(course_id) DO UPDATE SET settings=excluded.settings,questions=excluded.questions,updated_at=now()`;
+            return reply({success:true},200,origin);
+          }
+          if(body?.action==="submit"){
+            const [quiz]=await sql`SELECT settings,questions FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
+            if(!quiz?.settings?.published)return reply({error:"quiz_not_released"},403,origin);
+            const [previous]=await sql`SELECT profile_id FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
+            if(previous)return reply({error:"attempt_already_completed"},409,origin);
+            const questions=quiz.questions.slice(0,Math.min(300,Math.max(1,Number(quiz.settings.count)||10)));
+            const answers=body.answers;
+            if(!Array.isArray(answers)||answers.length!==questions.length||answers.some(x=>!Number.isInteger(x)||x< -1||x>3))return reply({error:"invalid_answers"},400,origin);
+            const violations=Array.isArray(body.violations)?body.violations.slice(0,100).map(x=>String(x).slice(0,100)):[];
+            const correct=questions.reduce((sum,q,i)=>sum+Number(answers[i]===q.correct),0);
+            const score=Math.max(0,correct-violations.length);
+            const saved=await sql`INSERT INTO public.acl_native_quiz_attempts(course_id,profile_id,answers,score,total,violations) VALUES (${courseId},${profileId},${JSON.stringify(answers)}::jsonb,${score},${questions.length},${JSON.stringify(violations)}::jsonb) ON CONFLICT DO NOTHING RETURNING score,total`;
+            if(!saved.length)return reply({error:"attempt_already_completed"},409,origin);
+            return reply({success:true,score,total:questions.length,correct,violations:violations.length},200,origin);
+          }
+          return reply({error:"invalid_action"},400,origin);
+        }
+        const [quiz]=await sql`SELECT settings,questions FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
+        const [attempt]=await sql`SELECT score,total,completed_at FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
+        const settings=quiz?.settings||{count:10,seconds:60,published:false,order:"manual"};
+        const questions=quiz?.questions||[];
+        if(!admin && !settings.published)return reply({admin:false,settings:{published:false},questions:[],attempt:attempt||null},200,origin);
+        return reply({admin,settings,questions:admin?questions:questions.slice(0,Math.max(1,Number(settings.count)||10)).map(({correct,explanation,...q})=>q),attempt:attempt||null},200,origin);
+      }
       if (url.pathname === "/learning/course/edit") {
         if (request.method !== "POST") return reply({error:"method_not_allowed"},405,origin);
         if (links[0].role !== "admin") return reply({error:"admin_required"},403,origin);
