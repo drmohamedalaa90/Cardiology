@@ -17,6 +17,30 @@ const detailsKey=name=>`acl-special-details:${courseId}:${name}`;
 function restoreDetails(root=document){root.querySelectorAll("details[data-persist-details]").forEach(detail=>{const key=detailsKey(detail.dataset.persistDetails);const saved=localStorage.getItem(key);if(saved!==null)detail.open=saved==="1";else if(detail.dataset.persistDetails==="visitors-hall")detail.open=false;if(detail.dataset.detailsBound)return;detail.dataset.detailsBound="1";detail.addEventListener("toggle",()=>localStorage.setItem(detailsKey(detail.dataset.persistDetails),detail.open?"1":"0"))})}
 // Portal editors to document.body: a fixed child of the sidebar remains trapped
 // beneath the full-screen room modal because of its ancestor stacking context.
+// Close nested dialogs in visual stacking order: editor first, room second.
+document.addEventListener("keydown",event=>{
+ if(event.key!=="Escape")return;
+ const editors=[$("scpItemForm"),$("scpSessionForm")].filter(el=>el&&!el.hidden&&el.classList.contains("is-popup-editor"));
+ if(editors.length){
+  event.preventDefault();event.stopImmediatePropagation();
+  const top=editors[editors.length-1];
+  const cancel=$(top.id==="scpItemForm"?"scpItemCancel":"scpSessionCancel");
+  cancel?.click();
+  return;
+ }
+ const modalIds=["scpAlbumModal","scpAttendanceReviewModal","scpVoteModal","scpRoomModal","scpSeatCard"];
+ for(const id of modalIds){
+  const modal=$(id);
+  if(!modal||modal.hidden)continue;
+  event.preventDefault();event.stopImmediatePropagation();
+  if(id==="scpRoomModal")closeRoom();
+  else if(id==="scpSeatCard")modal.hidden=true;
+  else if(id==="scpAlbumModal")$("scpAlbumClose")?.click();
+  else if(id==="scpAttendanceReviewModal")$("scpArClose")?.click();
+  else modal.hidden=true;
+  return;
+ }
+},true);
 const editorHomes = new WeakMap();
 function setPopupEditor(form,kind,enabled){
   if(!form)return;
@@ -307,7 +331,7 @@ function populateSessionSelect(selected = "") {
 function openSession(session = null,popup=true) {
   editingSession = session;
   $("scpSessionForm").hidden = false;
-  setPopupEditor($("scpSessionForm"),"session",popup);
+  setPopupEditor($("scpSessionForm"),"session",popup || !$("scpRoomModal")?.hidden);
   $("scpSessionId").value = session?.id || "";
   $("scpSessionNumber").value = session?.session_number || sessions().length + 1;
   $("scpSessionTitle").value = session?.title || "";
@@ -323,7 +347,7 @@ function openItem(item = null, preferredSession = "",popup=true) {
   editingItem = item;
   editorReturnRoom=popup?(preferredSession||activeSessionId):null;
   $("scpItemForm").hidden = false;
-  setPopupEditor($("scpItemForm"),"item",popup);
+  setPopupEditor($("scpItemForm"),"item",popup || !$("scpRoomModal")?.hidden);
   $("scpItemId").value = item?.id || "";
   populateSessionSelect(item?.session_id || preferredSession || activeSessionId || sessions()[0].id);
   $("scpItemType").value = item?.item_type || "lecture";
