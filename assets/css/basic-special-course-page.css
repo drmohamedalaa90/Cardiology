@@ -114,3 +114,13 @@ body>.scp-admin-form.is-popup-editor:not([hidden]){position:fixed!important;z-in
 #scpRoomModal.scp-quiz-room-theme .scp-room-interior{background:radial-gradient(circle at 50% 0,rgba(255,238,181,.9),transparent 40%),linear-gradient(115deg,#fffdf7,#f3e5bc)!important;color:#4e3608!important}
 #scpRoomModal.scp-quiz-room-theme .scp-room-title h2{color:#4e3608!important}
 #scpRoomModal.scp-quiz-room-theme .scp-room-title span{color:#a06f12!important}
+
+/* Room 05: burgundy door only; keep the room interior in the standard course theme. */
+.scp-session-room.scp-quiz-door > .scp-door-button,
+.scp-session-room.scp-quiz-door .scp-door-button,
+.scp-door-button.scp-quiz-door-button {
+ background:linear-gradient(110deg,#8c173a 0%,#64102e 58%,#39091e 100%) !important;
+ border-color:#39091e !important;
+ box-shadow:inset -14px 0 18px rgba(20,0,9,.28),0 10px 22px rgba(80,10,40,.25) !important;
+ color:#fff3ed !important;
+}
