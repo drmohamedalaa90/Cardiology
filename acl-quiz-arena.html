@@ -12,7 +12,34 @@ async function request(action,data={}){await Promise.race([authImport,new Promis
 function show(id){for(const x of ["message","arena","studio"])$(x).classList.toggle("hidden",x!==id)}
 function message(text){$("message").textContent=text;show("message")}
 function imgurl(value){try{let u=new URL(value);return u.protocol==="https:"?u.href:""}catch{return""}}
-function editor(q,i){const a=q.answers||[];return '<div class="editor" data-index="'+i+'"><div class="status"><b>Question '+(i+1)+'</b><button class="btn" data-remove="'+i+'">Delete</button></div><label>Question text</label><textarea class="qt" rows="3">'+esc(q.text)+'</textarea><label>Question image (HTTPS URL)</label><input class="qi" value="'+esc(q.image||q.imageUrl||'')+'" placeholder="https://…/ecg.webp"><div class="grid">'+[0,1,2,3].map(n=>'<div><label>Choice '+String.fromCharCode(65+n)+'</label><input class="at" value="'+esc(a[n]?.text||'')+'"><label>Choice image URL (optional)</label><input class="ai" value="'+esc(a[n]?.image||a[n]?.imageUrl||'')+'"></div>').join('')+'</div><label>Correct answer</label><select class="correct">'+[0,1,2,3].map(n=>'<option value="'+n+'" '+(Number(q.correct)===n?'selected':'')+'>'+String.fromCharCode(65+n)+'</option>').join('')+'</select><label>Explanation / comments (shown after quiz submission only)</label><textarea class="ex" rows="2">'+esc(q.explanation||'')+'</textarea></div>'}
+function editor(q,i){const a=q.answers||[];return '<div class="editor" data-index="'+i+'"><div class="status"><b>Question '+(i+1)+'</b><button class="btn" data-remove="'+i+'">Delete</button></div><label>Question text <span class="muted">· Paste 7 lines here to fill Q, A–D, answer and explanation automatically</span></label><textarea class="qt" rows="3">'+esc(q.text)+'</textarea><label>Question image (HTTPS URL)</label><input class="qi" value="'+esc(q.image||q.imageUrl||'')+'" placeholder="https://…/ecg.webp"><div class="grid">'+[0,1,2,3].map(n=>'<div><label>Choice '+String.fromCharCode(65+n)+'</label><input class="at" value="'+esc(a[n]?.text||'')+'"><label>Choice image URL (optional)</label><input class="ai" value="'+esc(a[n]?.image||a[n]?.imageUrl||'')+'"></div>').join('')+'</div><label>Correct answer</label><select class="correct">'+[0,1,2,3].map(n=>'<option value="'+n+'" '+(Number(q.correct)===n?'selected':'')+'>'+String.fromCharCode(65+n)+'</option>').join('')+'</select><label>Explanation / comments (shown after quiz submission only)</label><textarea class="ex" rows="2">'+esc(q.explanation||'')+'</textarea></div>'}
+// Smart seven-line paste: Q, A, B, C, D, correct answer, explanation.
+function parseSevenLines(raw){
+ const lines=raw.replace(/\r\n?/g,"\n").split("\n").map(x=>x.trim()).filter(Boolean);
+ if(lines.length!==7)return null;
+ const strip=(v,kind)=>kind==="question"?v.replace(/^(?:Q(?:uestion)?\s*[:.)-]\s*)/i,"").trim():kind==="answer"?v.replace(/^(?:correct\s*(?:answer)?|answer|ans)\s*[:.)-]\s*/i,"").trim():kind==="explanation"?v.replace(/^(?:explanation|rationale|comments?)\s*[:.)-]\s*/i,"").trim():v.replace(/^(?:[A-D]\s*[.):\-]\s*)/i,"").trim();
+ const answer=strip(lines[5],"answer").toUpperCase().replace(/[.)\s]/g,"");
+ const answerIndex=/^[A-D]$/.test(answer)?answer.charCodeAt(0)-65:/^[1-4]$/.test(answer)?Number(answer)-1:-1;
+ if(answerIndex<0||!strip(lines[0],"question")||lines.slice(1,5).some(x=>!strip(x,"choice")))return null;
+ return {text:strip(lines[0],"question"),choices:lines.slice(1,5).map(x=>strip(x,"choice")),correct:answerIndex,explanation:strip(lines[6],"explanation")};
+}
+$("editors").addEventListener("paste",event=>{
+ const field=event.target.closest("textarea.qt");
+ if(!field)return;
+ const raw=event.clipboardData?.getData("text/plain")||"";
+ const parsed=parseSevenLines(raw);
+ if(!parsed)return; // Ordinary single-field paste remains unchanged.
+ event.preventDefault();
+ const card=field.closest(".editor");
+ field.value=parsed.text;
+ card.querySelectorAll(".at").forEach((input,i)=>input.value=parsed.choices[i]);
+ card.querySelector(".correct").value=String(parsed.correct);
+ card.querySelector(".ex").value=parsed.explanation;
+ const note=card.querySelector(".paste-note")||document.createElement("p");
+ note.className="paste-note muted";
+ note.textContent="✓ Seven lines distributed into the question, four choices, correct answer and explanation. Press Save to Neon to publish changes.";
+ field.after(note);
+});
 function collect(){state.questions=[...$("editors").querySelectorAll(".editor")].map((el,i)=>({id:state.questions[i]?.id||crypto.randomUUID(),text:el.querySelector(".qt").value,image:el.querySelector(".qi").value,answers:[...el.querySelectorAll(".at")].map((a,n)=>({text:a.value,image:el.querySelectorAll(".ai")[n].value})),correct:Number(el.querySelector(".correct").value),explanation:el.querySelector(".ex").value}));state.settings={...state.settings,count:Number($("count").value),seconds:Number($("seconds").value),published:$("published").checked}}
 function drawStudio(){show("studio");$("count").value=state.settings?.count||10;$("seconds").value=state.settings?.seconds||60;$("published").checked=!!state.settings?.published;$("editors").innerHTML=(state.questions||[]).map(editor).join("")}
 $("add").onclick=()=>{collect();state.questions.push({id:crypto.randomUUID(),text:"",answers:[{text:""},{text:""},{text:""},{text:""}],correct:0,explanation:""});drawStudio()};
