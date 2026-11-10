@@ -293,7 +293,8 @@ function openRoom(id) {
   }
   $("bmForum").dataset.persistDetails=`room:${id}:forum`;restoreDetails($("scpRoomModal"));
   bindFlashcardAlbum(flashcards);
-  $("scpRoomModal").classList.toggle("scp-quiz-room-theme", /quiz\s*room/i.test(String(session?.title || "")));\n  $("scpRoomModal").hidden = false;
+  $("scpRoomModal").classList.toggle("scp-quiz-room-theme", /quiz\s*room/i.test(String(session?.title || "")));
+  $("scpRoomModal").hidden = false;
   document.body.classList.add("scp-modal-open");
   requestAnimationFrame(() => $("scpRoomModal").classList.add("is-open"));
   $("scpRoomModal").querySelectorAll("[data-edit-item]").forEach(button => button.onclick = () => openItem((state.items || []).find(item => item.id === button.dataset.editItem),id,true));
