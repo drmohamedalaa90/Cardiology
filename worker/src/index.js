@@ -198,7 +198,6 @@ export default {
           if(body?.action==="submit"){
             const [quiz]=await sql`SELECT settings,questions FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
             if(quiz){quiz.questions=decodeQuizJson(quiz.questions,[]);quiz.settings=decodeQuizJson(quiz.settings,{});}
-            if(quiz){quiz.questions=decodeQuizJson(quiz.questions,[]);quiz.settings=decodeQuizJson(quiz.settings,{});}
             if(!quiz?.settings?.published)return reply({error:"quiz_not_released"},403,origin);
             const [room]=await sql`SELECT payload FROM public.special_course_sessions WHERE payload->>'module_id'=${courseId} AND (payload->>'session_number'='5' OR payload->>'title' ILIKE '%Quiz Room%') LIMIT 1`;
             if(room?.payload?.is_locked!==false)return reply({error:"quiz_room_locked"},403,origin);
