@@ -206,6 +206,8 @@ export default {
             const settings=decodeQuizJson(quiz.settings,{});
             if(settings.started)return reply({error:"quiz_already_started"},409,origin);
             if(!settings.published)return reply({error:"publish_quiz_first"},409,origin);
+            const [waiting]=await sql`SELECT count(*)::int AS count FROM public.acl_native_quiz_sessions WHERE course_id=${courseId} AND terminated=false`;
+            if(!waiting?.count)return reply({error:"no_candidates_in_waiting_room"},409,origin);
             settings.started=true;settings.started_at=new Date().toISOString();
             await sql.begin(async tx=>{
               await tx`UPDATE public.acl_native_quizzes SET settings=${sql.json(settings)},updated_at=now() WHERE course_id=${courseId}`;
