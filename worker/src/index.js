@@ -182,6 +182,8 @@ export default {
           if(body?.action==="submit"){
             const [quiz]=await sql`SELECT settings,questions FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
             if(!quiz?.settings?.published)return reply({error:"quiz_not_released"},403,origin);
+            const [room]=await sql`SELECT payload FROM public.special_course_sessions WHERE payload->>'module_id'=${courseId} AND (payload->>'session_number'='5' OR payload->>'title' ILIKE '%Quiz Room%') LIMIT 1`;
+            if(room?.payload?.is_locked!==false)return reply({error:"quiz_room_locked"},403,origin);
             const [previous]=await sql`SELECT profile_id FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
             if(previous)return reply({error:"attempt_already_completed"},409,origin);
             const questions=quiz.questions.slice(0,Math.min(300,Math.max(1,Number(quiz.settings.count)||10)));
