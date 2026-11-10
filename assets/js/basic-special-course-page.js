@@ -269,8 +269,8 @@ function openRoom(id) {
   // ACL-native quiz; do not embed a second webpage.
   const isQuizRoom=/quiz\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5;
   if(isQuizRoom){
-    $("scpRoomItems").innerHTML='<section class="acl-native-quiz" style="background:linear-gradient(145deg,#fffaf6,#f9e9e8);border:1px solid #a94758;border-radius:20px;padding:24px;color:#511323"><h3>ACL Quiz Room</h3><div id="aclNativeQuizBody">Loading quiz…</div></section>';
-    void loadNativeQuiz();
+    const arenaUrl="acl-quiz-arena.html?course="+encodeURIComponent(courseId);
+    $("scpRoomItems").innerHTML='<section class="acl-native-quiz" style="background:linear-gradient(140deg,#5b102b,#270c20);border:2px solid #c8a059;border-radius:20px;padding:30px;color:white;text-align:center"><h3 style="font-size:clamp(24px,4vw,38px);color:#ffe3a0">◆ ACL QUIZ ARENA ◆</h3><p style="color:#f5dce4">Four choices · Individual timer · Integrity rules</p><a href="'+arenaUrl+'" class="scp-quiz-arena-link" style="display:inline-block;margin-top:15px;padding:15px 26px;border-radius:12px;background:#e5b85a;color:#321022;text-decoration:none;font-weight:900">ENTER QUIZ ARENA →</a></section>';
   }
   $("bmForum").hidden=isQuizRoom;
   if(isQuizRoom)$("bmForum").open=false;
