@@ -5,7 +5,7 @@
 <script type="module">
 import {supabaseClient} from "./assets/js/supabase-client.js";
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])),course=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";
-$("back").href="basic-special-course.html?course="+encodeURIComponent(course);
+
 const endpoint="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/native-quiz?course="+encodeURIComponent(course);let state=null,idx=0,answers=[],remaining=0,timer=null,violations=0,active=false;
 async function request(action,data={}){const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken")||(await supabaseClient.auth.getSession())?.data?.session?.access_token;if(!token)throw Error("Please sign in to ACL first.");let response;try{response=await fetch(endpoint,{method:action?"POST":"GET",headers:{Authorization:"Bearer "+token,...(action?{"Content-Type":"application/json"}:{})},...(action?{body:JSON.stringify({action,...data})}:{})})}catch(e){throw Error("Cannot reach ACL Worker. Check its deployment and CORS. "+e.message)}const result=await response.json().catch(()=>({error:"Server returned an invalid response"}));if(!response.ok)throw Error((result.error||"Request failed")+" (HTTP "+response.status+")");return result}
 function show(id){for(const x of ["message","arena","studio"])$(x).classList.toggle("hidden",x!==id)}
