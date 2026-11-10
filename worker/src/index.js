@@ -166,7 +166,14 @@ export default {
       if (url.pathname === "/learning/native-quiz") {
         const courseId=url.searchParams.get("course") || "";
         if (!/^basic-special-[a-z0-9-]{20,80}$/.test(courseId)) return reply({error:"invalid_course"},400,origin);
-        const admin=links[0].role==="admin",profileId=links[0].profile_id;
+        const profileId=links[0].profile_id;
+        // Question Studio is restricted to the designated ACL administrator's verified legacy identity.
+        const [studioOwner]=await sql`
+          SELECT 1 AS allowed FROM acl_migration.member_identity_map
+          WHERE legacy_user_id::text=${profileId}
+            AND lower(email)='drmohamedalaa90@gmail.com' LIMIT 1
+        `;
+        const admin=links[0].role==="admin" && !!studioOwner;
         const [course]=await sql`SELECT id FROM public.modules WHERE id=${courseId} AND payload->>'is_special_course'='true' LIMIT 1`;
         if(!course)return reply({error:"course_not_found"},404,origin);
         if(request.method==="POST"){
