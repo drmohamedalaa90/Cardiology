@@ -185,8 +185,30 @@ export default {
         const admin=links[0].role==="admin" && !!studioOwner;
         const [course]=await sql`SELECT id FROM public.modules WHERE id=${courseId} AND payload->>'is_special_course'='true' LIMIT 1`;
         if(!course)return reply({error:"course_not_found"},404,origin);
+        const [quizRoom]=await sql`SELECT payload FROM public.special_course_sessions WHERE payload->>'module_id'=${courseId} AND (payload->>'session_number'='5' OR payload->>'title' ILIKE '%Quiz Room%') LIMIT 1`;
+        const roomLocked=quizRoom?.payload?.is_locked!==false;
         if(request.method==="POST"){
           let body;try{body=await request.json()}catch{return reply({error:"invalid_json"},400,origin)}
+          if(body?.action==="start"){
+            if(admin)return reply({error:"admin_preview_only"},403,origin);
+            if(roomLocked)return reply({error:"quiz_room_locked"},403,origin);
+            const [ready]=await sql`SELECT settings FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
+            if(!decodeQuizJson(ready?.settings,{})?.published)return reply({error:"quiz_not_released"},403,origin);
+            const prior=await sql`SELECT 1 FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
+            if(prior.length)return reply({error:"attempt_already_completed"},409,origin);
+            const [session]=await sql`INSERT INTO public.acl_native_quiz_sessions(course_id,profile_id) VALUES (${courseId},${profileId}) ON CONFLICT(course_id,profile_id) DO UPDATE SET course_id=excluded.course_id RETURNING started_at,incidents,terminated`;
+            if(session.terminated)return reply({error:"quiz_terminated"},403,origin);
+            return reply({success:true,started_at:session.started_at,incidents:session.incidents.length},200,origin);
+          }
+          if(body?.action==="incident"){
+            if(admin)return reply({error:"admin_preview_only"},403,origin);
+            const kind=String(body.kind||"screen_change").slice(0,60);
+            if(!["tab_hidden","window_blur","fullscreen_exit"].includes(kind))return reply({error:"invalid_incident"},400,origin);
+            const [session]=await sql`UPDATE public.acl_native_quiz_sessions SET incidents=incidents||jsonb_build_array(jsonb_build_object('kind',${kind},'at',now())),terminated=(jsonb_array_length(incidents)+1>=4) WHERE course_id=${courseId} AND profile_id=${profileId} AND terminated=false RETURNING incidents,terminated`;
+            if(!session)return reply({error:"session_not_active"},409,origin);
+            const count=session.incidents.length;
+            return reply({count,terminated:session.terminated,penalty:count>=3?4:count>=2?1:0},200,origin);
+          }
           if(body?.action==="save"){
             if(!admin)return reply({error:"admin_required"},403,origin);
             const settings=body.settings,questions=body.questions;
@@ -197,30 +219,43 @@ export default {
           }
           if(body?.action==="submit"){
             const [quiz]=await sql`SELECT settings,questions FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
-            if(quiz){quiz.questions=decodeQuizJson(quiz.questions,[]);quiz.settings=decodeQuizJson(quiz.settings,{});}
-            if(!quiz?.settings?.published)return reply({error:"quiz_not_released"},403,origin);
-            const [room]=await sql`SELECT payload FROM public.special_course_sessions WHERE payload->>'module_id'=${courseId} AND (payload->>'session_number'='5' OR payload->>'title' ILIKE '%Quiz Room%') LIMIT 1`;
-            if(room?.payload?.is_locked!==false)return reply({error:"quiz_room_locked"},403,origin);
-            const [previous]=await sql`SELECT profile_id FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
-            if(previous)return reply({error:"attempt_already_completed"},409,origin);
-            const questions=quiz.questions.slice(0,Math.min(300,Math.max(1,Number(quiz.settings.count)||10)));
+            const settings=decodeQuizJson(quiz?.settings,{}),allQuestions=decodeQuizJson(quiz?.questions,[]);
+            if(!settings.published)return reply({error:"quiz_not_released"},403,origin);
+            if(roomLocked)return reply({error:"quiz_room_locked"},403,origin);
+            const [session]=await sql`SELECT started_at,incidents,terminated FROM public.acl_native_quiz_sessions WHERE course_id=${courseId} AND profile_id=${profileId}`;
+            if(!session)return reply({error:"quiz_not_started"},403,origin);
+            const questions=allQuestions.slice(0,Math.min(300,Math.max(1,Number(settings.count)||10)));
             const answers=body.answers;
             if(!Array.isArray(answers)||answers.length!==questions.length||answers.some(x=>!Number.isInteger(x)||x< -1||x>3))return reply({error:"invalid_answers"},400,origin);
-            const violations=Array.isArray(body.violations)?body.violations.slice(0,100).map(x=>String(x).slice(0,100)):[];
             const correct=questions.reduce((sum,q,i)=>sum+Number(answers[i]===q.correct),0);
-            const score=Math.max(0,correct-violations.length);
-            const saved=await sql`INSERT INTO public.acl_native_quiz_attempts(course_id,profile_id,answers,score,total,violations) VALUES (${courseId},${profileId},${JSON.stringify(answers)}::jsonb,${score},${questions.length},${JSON.stringify(violations)}::jsonb) ON CONFLICT DO NOTHING RETURNING score,total`;
+            const mistakes=questions.map((q,i)=>answers[i]===q.correct?null:({question:i+1,question_text:q.text,selected:answers[i],correct:q.correct})).filter(Boolean);
+            const count=session.incidents.length,penalty=count>=3?4:count>=2?1:0;
+            const score=session.terminated?0:Math.max(0,correct-penalty);
+            const duration=Math.max(0,Math.round((Date.now()-new Date(session.started_at).getTime())/1000));
+            const saved=await sql`INSERT INTO public.acl_native_quiz_attempts(course_id,profile_id,answers,score,total,violations,started_at,duration_seconds,correct_count,terminated,mistakes)
+              VALUES (${courseId},${profileId},${sql.json(answers)},${score},${questions.length},${sql.json(session.incidents)},${session.started_at},${duration},${correct},${session.terminated},${sql.json(mistakes)})
+              ON CONFLICT DO NOTHING RETURNING score,total`;
             if(!saved.length)return reply({error:"attempt_already_completed"},409,origin);
-            return reply({success:true,score,total:questions.length,correct,violations:violations.length},200,origin);
+            return reply({success:true,score,total:questions.length,correct,penalty,terminated:session.terminated,duration_seconds:duration,violations:count},200,origin);
           }
           return reply({error:"invalid_action"},400,origin);
         }
         const [quiz]=await sql`SELECT settings,questions FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
-        const [attempt]=await sql`SELECT score,total,completed_at FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
+        const [attempt]=await sql`SELECT score,total,completed_at,duration_seconds,terminated FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
+        const [session]=await sql`SELECT started_at,incidents,terminated FROM public.acl_native_quiz_sessions WHERE course_id=${courseId} AND profile_id=${profileId}`;
         const settings=decodeQuizJson(quiz?.settings,{count:10,seconds:60,published:false,order:"manual"});
         const questions=decodeQuizJson(quiz?.questions,[]);
-        if(!admin && !settings.published)return reply({admin:false,settings:{published:false},questions:[],attempt:attempt||null},200,origin);
-        return reply({admin,settings,questions:admin?questions:questions.slice(0,Math.max(1,Number(settings.count)||10)).map(({correct,explanation,...q})=>q),attempt:attempt||null},200,origin);
+        if(admin){
+          const results=await sql`SELECT a.profile_id,coalesce(p.payload->>'full_name',p.payload->>'display_name','ACL Member') AS name,a.score,a.total,a.correct_count,a.duration_seconds,a.terminated,a.violations,a.mistakes,a.answers,a.started_at,a.completed_at
+            FROM public.acl_native_quiz_attempts a LEFT JOIN public.profiles p ON p.id=a.profile_id
+            WHERE a.course_id=${courseId} ORDER BY a.terminated ASC,a.score DESC,a.duration_seconds ASC NULLS LAST,a.completed_at ASC`;
+          const ongoing=await sql`SELECT s.profile_id,coalesce(p.payload->>'full_name',p.payload->>'display_name','ACL Member') AS name,s.started_at,s.incidents,s.terminated
+            FROM public.acl_native_quiz_sessions s LEFT JOIN public.profiles p ON p.id=s.profile_id
+            WHERE s.course_id=${courseId} AND NOT EXISTS(SELECT 1 FROM public.acl_native_quiz_attempts a WHERE a.course_id=s.course_id AND a.profile_id=s.profile_id) ORDER BY s.started_at DESC`;
+          return reply({admin:true,room_locked:roomLocked,settings,questions,attempt:attempt||null,results,ongoing},200,origin);
+        }
+        if(roomLocked||!settings.published)return reply({admin:false,room_locked:roomLocked,settings:{published:false},questions:[],attempt:attempt||null},200,origin);
+        return reply({admin:false,room_locked:false,settings,questions:questions.slice(0,Math.max(1,Number(settings.count)||10)).map(({correct,explanation,...q})=>q),attempt:attempt||null,session:session?{started_at:session.started_at,incidents:session.incidents.length,terminated:session.terminated}:null},200,origin);
       }
       if (url.pathname === "/learning/course/edit") {
         if (request.method !== "POST") return reply({error:"method_not_allowed"},405,origin);
