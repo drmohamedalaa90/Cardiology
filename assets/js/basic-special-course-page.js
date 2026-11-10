@@ -286,8 +286,23 @@ function openRoom(id) {
   const videos=items.filter(item=>item.item_type==="lecture"),flashcards=items.filter(item=>item.item_type==="flashcards"),others=items.filter(item=>!["lecture","flashcards"].includes(item.item_type));
   const flashAlbum=`<details class="scp-flashcard-section" data-persist-details="room:${id}:flashcards"><summary><span>▣</span><strong>View flashcards</strong><small>${flashcards.length?`${flashcards.length} photo${flashcards.length===1?"":"s"}`:"Coming soon"}</small></summary>${flashcards.length?`<div class="scp-flashcard-album">${flashcards.map((item,index)=>`<button type="button" data-album-index="${index}"><img src="${esc(item.url||'assets/images/acl-header-mark.svg')}" alt="${esc(item.title)}" loading="lazy" onerror="this.onerror=null;this.src='assets/images/acl-share-preview-20261024.png'"><span>${esc(item.title||`Flashcard ${index+1}`)}</span>${state.admin?`<i data-edit-item="${item.id}">Edit</i>`:""}</button>`).join("")}</div>`:`<div class="scp-flashcard-empty">${state.admin?'<button id="scpAddFlashcards" type="button">+ Upload lecture flashcards</button>':'Lecture flashcards have not been uploaded yet.'}</div>`}</details>`;
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
-  if (Number(session.session_number) === 5) {
-    $("scpRoomItems").insertAdjacentHTML("afterbegin", `<a class="scp-content-box" style="display:block;text-decoration:none;color:#ffe0a0;border:1px solid #d9b56d;background:#142d55" href="quiz-room.html?course=${encodeURIComponent(courseId)}"><span class="scp-box-icon">◆</span><h3>Quiz 1 — Enter the Challenge →</h3><p>Interactive quiz · images · timers · integrity rules</p></a>`);
+  // Keep the existing quiz engine and Question Studio inside the course room.
+  // Do not navigate away or create a second quiz link.
+  const isQuizRoom = /quiz\\s*room/i.test(String(session.title || "")) || Number(session.session_number) === 5;
+  if (isQuizRoom) {
+    const quizItems = items.filter(item => item.item_type === "quiz_final" || item.item_type === "quiz_during");
+    const quizPanel = document.createElement("section");
+    quizPanel.className = "scp-embedded-quiz";
+    quizPanel.style.cssText = "width:100%;margin:0 0 20px;border:1px solid #d9b56d;border-radius:20px;overflow:hidden;background:#0c2447";
+    const quizUrl = "quiz-room.html?course=" + encodeURIComponent(courseId) + "&room=" + encodeURIComponent(id);
+    quizPanel.innerHTML = '<iframe title="ACL Quiz and Question Studio" loading="eager" allow="fullscreen" style="display:block;width:100%;height:min(78vh,850px);min-height:520px;border:0;background:#0c2447" src="' + quizUrl + '"></iframe>';
+    $("scpRoomItems").prepend(quizPanel);
+    // The embedded quiz is authoritative; suppress duplicated legacy quiz cards.
+    $("scpRoomItems").querySelectorAll(".scp-content-box").forEach(card => {
+      if (quizItems.some(item => card.textContent.includes(item.title))) card.hidden = true;
+    });
+    const empty = $("scpRoomItems").querySelector(".scp-room-empty");
+    if (empty) empty.remove();
   }
   $("bmForum").dataset.persistDetails=`room:${id}:forum`;restoreDetails($("scpRoomModal"));
   bindFlashcardAlbum(flashcards);
