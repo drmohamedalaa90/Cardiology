@@ -52,6 +52,22 @@ function setPopupEditor(form,kind,enabled){
  }
 }
 
+const aclCourseApiBase="https://acl-neon-api.drmohamedalaa90.workers.dev";
+async function aclCourseToken(){
+ const stored=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
+ if(stored)return stored;
+ const session=(await supabaseClient.auth.getSession())?.data?.session;
+ return session?.access_token||session?.accessToken||"";
+}
+async function aclCourseFetch(path){
+ const token=await aclCourseToken();
+ if(!token)throw new Error("Sign in required. Your saved course data has not been deleted.");
+ const response=await fetch(aclCourseApiBase+path,{headers:{Authorization:"Bearer "+token}});
+ const result=await response.json().catch(()=>({error:"Invalid server response"}));
+ if(!response.ok)throw new Error(result.error||"Course request failed (HTTP "+response.status+")");
+ if(result.linked===false)throw new Error("Your account is not yet linked to your existing ACL profile.");
+ return result;
+}
 async function api(action, args = {}) {
   if(["save_session","save_item","delete_session","delete_item"].includes(action)){
     const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
@@ -468,21 +484,14 @@ async function renderCourseSuspension(suspension){
 
 async function load() {
   if (!courseId) throw new Error("Course link is incomplete.");
-  const legacyToken=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
-  if(legacyToken){
-    const response=await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/learning/course?course="+encodeURIComponent(courseId),{
-      headers:{Authorization:"Bearer "+legacyToken}
-    });
-    if(!response.ok)throw new Error("Could not retrieve the recovered course (HTTP "+response.status+").");
-    const recovered=await response.json();
-    state={course:recovered.course,sessions:recovered.sessions||[],items:recovered.items||[],
-      admin:recovered.admin===true,candidate_name:recovered.candidate_name||"ACL Member"};
-    hallState=recovered.hall||{capacity:200,occupied:0,members:[],rooms:[]};
-    preloadCourseImages();
-  }else{
-    const loaded=await Promise.all([api("get"),hallApi(),extrasApi("get")]);
-    [state,hallState]=loaded;applyExtras(loaded[2]);preloadCourseImages();
-  }
+  // Single authoritative course load: avoid mixing legacy RPCs with migrated Neon data.
+  // In particular, never replace saved hall occupancy with a fabricated zero on failure.
+  const recovered=await aclCourseFetch("/learning/course?course="+encodeURIComponent(courseId));
+  if(!recovered?.course)throw new Error("Course data was not returned. Please refresh or sign in again.");
+  state={course:recovered.course,sessions:recovered.sessions||[],items:recovered.items||[],
+    admin:recovered.admin===true,candidate_name:recovered.candidate_name||"ACL Member"};
+  hallState=recovered.hall||{capacity:200,occupied:null,members:[],rooms:[]};
+  preloadCourseImages();
   if(hallState?.suspension){await renderCourseSuspension(hallState.suspension);return;}
   render();
   const pageParams=new URLSearchParams(location.search);if(pageParams.get("hall")==="1"){const hall=$("scpHallSection");hall.open=true;localStorage.setItem(detailsKey("visitors-hall"),"1");setTimeout(()=>hall.scrollIntoView({behavior:"smooth",block:"start"}),120)}
