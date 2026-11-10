@@ -189,11 +189,37 @@ export default {
         const roomLocked=quizRoom?.payload?.is_locked!==false;
         if(request.method==="POST"){
           let body;try{body=await request.json()}catch{return reply({error:"invalid_json"},400,origin)}
-          if(body?.action==="start"){
+          if(body?.action==="join"){
             if(admin)return reply({error:"admin_preview_only"},403,origin);
             if(roomLocked)return reply({error:"quiz_room_locked"},403,origin);
             const [ready]=await sql`SELECT settings FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
             if(!decodeQuizJson(ready?.settings,{})?.published)return reply({error:"quiz_not_released"},403,origin);
+            const [prior]=await sql`SELECT 1 FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
+            if(prior)return reply({error:"attempt_already_completed"},409,origin);
+            await sql`INSERT INTO public.acl_native_quiz_sessions(course_id,profile_id) VALUES (${courseId},${profileId}) ON CONFLICT(course_id,profile_id) DO NOTHING`;
+            return reply({success:true},200,origin);
+          }
+          if(body?.action==="start_all"){
+            if(!admin)return reply({error:"admin_required"},403,origin);
+            const [quiz]=await sql`SELECT settings FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
+            if(!quiz)return reply({error:"quiz_not_configured"},409,origin);
+            const settings=decodeQuizJson(quiz.settings,{});
+            if(settings.started)return reply({error:"quiz_already_started"},409,origin);
+            if(!settings.published)return reply({error:"publish_quiz_first"},409,origin);
+            settings.started=true;settings.started_at=new Date().toISOString();
+            await sql.begin(async tx=>{
+              await tx`UPDATE public.acl_native_quizzes SET settings=${sql.json(settings)},updated_at=now() WHERE course_id=${courseId}`;
+              await tx`UPDATE public.acl_native_quiz_sessions SET started_at=now() WHERE course_id=${courseId} AND terminated=false`;
+            });
+            return reply({success:true,started_at:settings.started_at},200,origin);
+          }
+          if(body?.action==="start"){
+            if(admin)return reply({error:"admin_preview_only"},403,origin);
+            if(roomLocked)return reply({error:"quiz_room_locked"},403,origin);
+            const [ready]=await sql`SELECT settings FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
+            const readySettings=decodeQuizJson(ready?.settings,{});
+            if(!readySettings.published)return reply({error:"quiz_not_released"},403,origin);
+            if(!readySettings.started)return reply({error:"waiting_for_administrator"},409,origin);
             const prior=await sql`SELECT 1 FROM public.acl_native_quiz_attempts WHERE course_id=${courseId} AND profile_id=${profileId}`;
             if(prior.length)return reply({error:"attempt_already_completed"},409,origin);
             const [session]=await sql`INSERT INTO public.acl_native_quiz_sessions(course_id,profile_id) VALUES (${courseId},${profileId}) ON CONFLICT(course_id,profile_id) DO UPDATE SET course_id=excluded.course_id RETURNING started_at,incidents,terminated`;
@@ -249,6 +275,7 @@ export default {
             const [quiz]=await sql`SELECT settings,questions FROM public.acl_native_quizzes WHERE course_id=${courseId}`;
             const settings=decodeQuizJson(quiz?.settings,{}),allQuestions=decodeQuizJson(quiz?.questions,[]);
             if(!settings.published)return reply({error:"quiz_not_released"},403,origin);
+            if(!settings.started)return reply({error:"waiting_for_administrator"},403,origin);
             if(roomLocked)return reply({error:"quiz_room_locked"},403,origin);
             const [session]=await sql`SELECT started_at,incidents,terminated FROM public.acl_native_quiz_sessions WHERE course_id=${courseId} AND profile_id=${profileId}`;
             if(!session)return reply({error:"quiz_not_started"},403,origin);
