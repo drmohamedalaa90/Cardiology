@@ -207,6 +207,13 @@ export default {
             const [session]=await sql`UPDATE public.acl_native_quiz_sessions SET incidents=incidents||jsonb_build_array(jsonb_build_object('kind',${kind},'at',now())),terminated=(jsonb_array_length(incidents)+1>=4) WHERE course_id=${courseId} AND profile_id=${profileId} AND terminated=false RETURNING incidents,terminated`;
             if(!session)return reply({error:"session_not_active"},409,origin);
             const count=session.incidents.length;
+            if(session.terminated){
+              const [record]=await sql`SELECT started_at FROM public.acl_native_quiz_sessions WHERE course_id=${courseId} AND profile_id=${profileId}`;
+              const duration=Math.max(0,Math.round((Date.now()-new Date(record.started_at).getTime())/1000));
+              await sql`INSERT INTO public.acl_native_quiz_attempts(course_id,profile_id,answers,score,total,violations,started_at,duration_seconds,correct_count,terminated,mistakes)
+                VALUES (${courseId},${profileId},'[]'::jsonb,0,0,${sql.json(session.incidents)},${record.started_at},${duration},0,true,'[]'::jsonb)
+                ON CONFLICT DO NOTHING`;
+            }
             return reply({count,terminated:session.terminated,penalty:count>=3?4:count>=2?1:0},200,origin);
           }
           if(body?.action==="save"){
