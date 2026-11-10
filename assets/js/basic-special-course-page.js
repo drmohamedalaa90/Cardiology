@@ -608,9 +608,14 @@ async function nativeQuizRequest(action,body){
  const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken")||(await supabaseClient.auth.getSession())?.data?.session?.access_token;
  if(!token)throw new Error("Please sign in again.");
  const url=nativeQuizApiBase+"?course="+encodeURIComponent(courseId);
- const response=await fetch(url,{method:action?"POST":"GET",headers:{Authorization:"Bearer "+token,...(action?{"Content-Type":"application/json"}:{})},...(action?{body:JSON.stringify({action,...body})}:{})});
+ let response;
+ try {
+   response=await fetch(url,{method:action?"POST":"GET",mode:"cors",headers:{Authorization:"Bearer "+token,...(action?{"Content-Type":"application/json"}:{})},...(action?{body:JSON.stringify({action,...body})}:{})});
+ } catch (error) {
+   throw new Error("Cannot connect to ACL quiz server. Check Cloudflare Worker deployment and CORS settings. ("+error.message+")");
+ }
  const result=await response.json().catch(()=>({error:"Invalid server response"}));
- if(!response.ok)throw new Error(result.error||"Quiz request failed");
+ if(!response.ok)throw new Error((result.error||"Quiz request failed")+" (HTTP "+response.status+")");
  return result;
 }
 function nqBody(){return document.getElementById("aclNativeQuizBody")}
@@ -619,7 +624,7 @@ async function loadNativeQuiz(){
  try{nativeQuiz=await nativeQuizRequest();renderNativeQuiz()}
  catch(error){nqMessage("Quiz unavailable: "+error.message)}
 }
-function nqButton(text,action){return '<button type="button" data-nq="'+action+'" style="background:#805709;color:white;border:0;border-radius:10px;padding:11px 17px;margin:6px 8px 6px 0;cursor:pointer;font-weight:700">'+text+'</button>'}
+function nqButton(text,action){return '<button type="button" data-nq="'+action+'" style="background:#74152d;color:white;border:0;border-radius:10px;padding:11px 17px;margin:6px 8px 6px 0;cursor:pointer;font-weight:700">'+text+'</button>'}
 function renderNativeQuiz(){
  const root=nqBody();if(!root||!nativeQuiz)return;
  if(nativeQuiz.attempt){nqMessage("Completed · Score: "+nativeQuiz.attempt.score+" / "+nativeQuiz.attempt.total);return}
