@@ -31,8 +31,8 @@ async function legacySession() {
       app_metadata:{provider:"acl_legacy"}, email:profile.email || ""
     }};
   } catch {
-    sessionStorage.removeItem("aclLegacyToken");localStorage.removeItem("aclLegacyToken");
-    sessionStorage.removeItem("aclLegacyProfile");localStorage.removeItem("aclLegacyProfile");
+    // A network outage or temporary API failure is not a logout.
+    // Keep the token for retry; server-side authorization remains mandatory.
     return null;
   }
 }
