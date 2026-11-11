@@ -60,15 +60,31 @@ async function populateMember(header){
  try{
    const {supabaseClient}=await import("./supabase-client.js");
    const {data}=await supabaseClient.auth.getSession();
-   const u=data?.session?.user;
+   let u=data?.session?.user;
    if(!u||!header.isConnected)return;
+   // Resolve the linked ACL identity from the authenticated API, not a
+   // provider-specific role (which may be "authenticated" for administrators).
+   let verifiedRole="";
+   try {
+     const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken")||data?.session?.access_token;
+     if(token){
+       const response=await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/auth/me",{headers:{Authorization:"Bearer "+token},cache:"no-store",signal:AbortSignal.timeout(10000)});
+       if(response.ok){
+         const identity=await response.json();
+         if(identity.authenticated&&identity.linked&&identity.profile?.id){
+           verifiedRole=String(identity.profile.role||"").toLowerCase();
+           u={...u,id:identity.profile.id,email:identity.profile.email||u.email};
+         }
+       }
+     }
+   }catch(error){console.warn("ACL header identity verification unavailable",error);}
    let profile=null;
    try{const r=await supabaseClient.from("profiles").select("display_name,full_name,avatar_url,role").eq("id",u.id).maybeSingle();profile=r.data;}catch(error){console.warn("ACL header profile",error);}
    const name=profile?.display_name||profile?.full_name||u.user_metadata?.display_name||u.user_metadata?.full_name||u.email?.split("@")[0]||"Member";
    const photo=profile?.avatar_url||u.user_metadata?.avatar_url||u.user_metadata?.picture||"";
    const nameNode=header.querySelector("[data-acl-name]"),roleNode=header.querySelector("[data-acl-role]"),avatar=header.querySelector("[data-acl-avatar]");
    if(nameNode)nameNode.textContent=name;
-   if(roleNode)roleNode.textContent=(profile?.role||u.role)==="admin"?"Administrator":"Basic learner";
+   if(roleNode)roleNode.textContent=(verifiedRole||profile?.role||u.role)==="admin"?"Administrator":"Basic learner";
    if(avatar){
      const fallback=()=>{avatar.textContent=String(name).split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase()||"ACL";};
      if(photo){
