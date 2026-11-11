@@ -38,7 +38,7 @@ function path(){const result=[],done=new Set(),byId=new Map(questions.map(q=>[q.
 function seconds(){return started?Math.floor((Date.now()-started)/1000):0}
 function tick(){const t=seconds();$("clock").textContent=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0")}
 function start(){if(!started){started=Date.now();timer=setInterval(tick,1000)}}
-function restart(){clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};tick()}
+function restart(){if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};tick()}
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}return !!k&&value===k}
 function slots(){$("slots").innerHTML=images.map((x,i)=>'<button class="slot '+(slot===i?"current":"")+'" data-slot="'+i+'">ECG '+String(i+1).padStart(2,"0")+(x?" ✓":"")+'</button>').join("");document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{slot=+b.dataset.slot;restart();render();build()})}
 function render(){
@@ -47,14 +47,39 @@ function render(){
  const qs=path(),q=qs[index];if(!q){finish();return}
  $("stepLabel").textContent="STEP "+q.number;$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
  $("progress").innerHTML=qs.map((x,i)=>'<i class="'+(i<index?"done":i===index?"now":"")+'"></i>').join("");
- if(q.type==="number"){$("choices").innerHTML='<label>Heart rate (bpm) <input id="numericAnswer" type="number" inputmode="decimal" step="any" placeholder="Enter rate" value="'+esc(selected)+'"></label>';$("numericAnswer").oninput=e=>{selected=e.target.value;start();$("next").disabled=!selected}}
- else{$("choices").innerHTML=q.options.map(o=>'<button class="btn answer '+(selected===o?"selected":"")+'" data-answer="'+esc(o)+'">'+esc(o)+'</button>').join("");document.querySelectorAll("[data-answer]").forEach(b=>b.onclick=()=>{if(checked)return;selected=b.dataset.answer;start();document.querySelectorAll("[data-answer]").forEach(x=>x.classList.toggle("selected",x===b));$("next").disabled=false})}
- $("feedback").className="hidden";$("back").disabled=index===0;$("next").disabled=!selected;$("next").textContent=mode==="practice"?"Check answer":"Next / Submit";
+ if(q.type==="number"){$("choices").innerHTML='<label>Heart rate (bpm) <input id="numericAnswer" type="number" inputmode="decimal" step="any" placeholder="Enter rate" value="'+esc(selected)+'"></label>';$("numericAnswer").oninput=e=>{selected=e.target.value;start();$("next").disabled=!selected};$("numericAnswer").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();submitAnswer()}}}
+ else{$("choices").innerHTML=q.options.map(o=>'<button class="btn answer '+(selected===o?"selected":"")+'" data-answer="'+esc(o)+'">'+esc(o)+'</button>').join("");document.querySelectorAll("[data-answer]").forEach(b=>b.onclick=()=>{if(checked)return;selected=b.dataset.answer;start();submitAnswer()})}
+ $("feedback").className="hidden";$("back").disabled=index===0;$("next").classList.toggle("hidden",q.type!=="number");$("next").disabled=!selected;$("next").textContent="Submit rate";
 }
 $("upload").onchange=e=>{const f=e.target.files?.[0];if(!f)return;if(!f.type.startsWith("image/")||f.size>12e6)return alert("Please upload an image smaller than 12 MB.");if(images[slot])URL.revokeObjectURL(images[slot]);images[slot]=URL.createObjectURL(f);restart();render()};
 for(const m of ["practice","test"])$(m).onclick=()=>{mode=m;$("practice").className=m==="practice"?"btn active":"btn secondary";$("test").className=m==="test"?"btn active":"btn secondary";restart();render()};
 $("reset").onclick=$("again").onclick=()=>{restart();render()};
 $("back").onclick=()=>{if(index>0){index--;selected=answers[path()[index]?.id]||"";checked=false;render()}};
-$("next").onclick=()=>{const q=path()[index];if(!q||!selected)return;if(mode==="practice"&&!checked){const k=keys[slot][q.id];if(k===undefined||k===""||(q.type==="number"&&(k?.min===""||k?.max===""||!k))){$("feedback").className="feedback bad";$("feedback").textContent="Admin must configure the correct answer or numeric range for this ECG.";return}if(!correct(q,selected)){$("feedback").className="feedback bad";$("feedback").textContent="Not quite. Review the ECG and try again.";return}checked=true;$("feedback").className="feedback";$("feedback").textContent="Correct — next step unlocked.";$("next").textContent="Next step";return}answers[q.id]=selected;index++;selected="";checked=false;render()};
+function submitAnswer(){
+ const q=path()[index];if(!q||selected==="")return;
+ const value=selected;
+ if(mode==="practice"){
+   const k=keys[slot][q.id];
+   if(k===undefined||k===""||(q.type==="number"&&(!k||k.min===""||k.max===""||k.min===undefined||k.max===undefined))){
+     $("feedback").className="feedback bad";$("feedback").textContent="Admin must configure the answer key or rate range for this ECG.";return;
+   }
+   if(!correct(q,value)){
+     $("feedback").className="feedback bad";$("feedback").textContent="Not quite. Review the ECG and choose again.";selected="";if(q.type==="number"){$("numericAnswer").value="";$("next").disabled=true}return;
+   }
+ }
+ answers[q.id]=value;index++;selected="";checked=false;render();
+}
+$("next").onclick=submitAnswer;
+function openEcgPeek(){
+ if(!images[slot])return;
+ $("peekEcgImage").src=images[slot];$("peekEcgNumber").textContent=String(slot+1).padStart(2,"0");
+ $("ecgPeekModal").classList.remove("hidden");document.body.classList.add("ecg-peek-open");$("backToQuestion").focus();
+}
+function closeEcgPeek(){
+ $("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open");$("peekEcg").focus();
+}
+$("peekEcg").onclick=openEcgPeek;
+$("backToQuestion").onclick=closeEcgPeek;
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ecgPeekModal").classList.contains("hidden"))closeEcgPeek()});
 function finish(){clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");const qs=path(),score=qs.filter(q=>correct(q,answers[q.id])).length;$("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(seconds()/60)+"m "+seconds()%60+"s · "+(mode==="test"?"Preview score: "+score+" / "+qs.length:"Completed "+qs.length+" questions");$("result").textContent=qs.map(q=>q.number+" "+q.title+": "+(answers[q.id]||"Not answered")+(mode==="test"?" | Key: "+JSON.stringify(keys[slot][q.id]??"Not configured"):"")).join("\n")}
 window.addEventListener("acl-ecg-access-ready",build);render();build();
