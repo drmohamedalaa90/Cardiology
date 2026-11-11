@@ -24,3 +24,170 @@
 .acl-ecg-error{font-size:12px!important;color:#ad2533!important;margin:8px 0 0!important}
 .acl-quiz-entry-card.ecg.is-locked{border-color:#e8a6ac}
 @media(max-width:780px){.acl-quiz-entry-grid{grid-template-columns:1fr;gap:14px}.acl-quiz-entry-card{min-height:290px;padding:25px 18px}.acl-quiz-entry-card h3{font-size:25px}}
+
+/* Quiz Room viewport-fit modal (other course rooms retain their own scrolling).
+   Remove BOTH internal scrollbars while keeping the cards, status and actions visible. */
+body.acl-quiz-room-open{overflow:hidden!important}
+#scpRoomModal.scp-quiz-room-theme{
+  padding:clamp(7px,1.5vw,18px);
+  box-sizing:border-box;
+  overflow:hidden;
+  overscroll-behavior:contain;
+}
+#scpRoomModal.scp-quiz-room-theme .scp-room-stage{
+  box-sizing:border-box;
+  width:min(1120px,100%);
+  height:min(670px,calc(100vh - 26px));
+  height:min(670px,calc(100dvh - 26px));
+  max-height:none;
+  min-width:0;
+  min-height:0;
+  overflow:hidden!important;
+  scrollbar-width:none;
+}
+#scpRoomModal.scp-quiz-room-theme .scp-room-stage::-webkit-scrollbar{display:none}
+#scpRoomModal.scp-quiz-room-theme .scp-room-interior{
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-height:0;
+  min-width:0;
+  padding:clamp(12px,2.6vh,28px);
+  overflow:hidden;
+}
+#scpRoomModal.scp-quiz-room-theme .scp-room-title{
+  flex:0 0 auto;
+  min-width:0;
+  padding-right:clamp(80px,14vw,130px);
+}
+#scpRoomModal.scp-quiz-room-theme .scp-room-title h2{
+  max-width:none;
+  font-size:clamp(23px,3.7vw,40px);
+  line-height:1.15;
+  margin:6px 0 clamp(10px,2.6vh,22px);
+}
+#scpRoomModal.scp-quiz-room-theme #scpRoomItems{
+  display:flex;
+  flex:1 1 auto;
+  min-height:0;
+  min-width:0;
+  width:100%;
+  overflow:hidden;
+}
+#scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:stretch;
+  gap:clamp(10px,1.8vw,20px);
+  width:100%;
+  height:100%;
+  min-height:0;
+  min-width:0;
+}
+#scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card{
+  height:100%;
+  min-height:0;
+  min-width:0;
+  padding:clamp(12px,2.3vw,26px);
+  border-radius:clamp(15px,2vw,22px);
+  overflow:hidden;
+}
+#scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card h3{
+  font-size:clamp(19px,2.35vw,32px);
+  line-height:1.13;
+  margin:clamp(5px,1.4vh,12px) 0 clamp(6px,1.4vh,13px);
+  overflow-wrap:break-word;
+}
+#scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card p{
+  font-size:clamp(11px,1.25vw,16px);
+  line-height:1.36;
+  margin:3px 0 clamp(7px,1.6vh,13px);
+}
+#scpRoomModal.scp-quiz-room-theme .acl-entry-graphic{
+  font-size:clamp(22px,3.6vw,42px);
+}
+#scpRoomModal.scp-quiz-room-theme .acl-entry-link{
+  flex:0 0 auto;
+  min-height:clamp(37px,6.3vh,56px);
+  padding:8px 10px;
+  font-size:clamp(11px,1.22vw,15px);
+}
+#scpRoomModal.scp-quiz-room-theme .acl-ecg-access-row{
+  margin:0 0 clamp(5px,1.4vh,12px);
+  min-height:0;
+  gap:6px;
+}
+#scpRoomModal.scp-quiz-room-theme .acl-ecg-status{
+  font-size:clamp(9px,1vw,11px);
+  padding:5px 10px;
+}
+#scpRoomModal.scp-quiz-room-theme .acl-ecg-admin-lock{
+  min-height:30px;
+  padding:6px 9px;
+  font-size:clamp(10px,1vw,12px);
+}
+#scpRoomModal.scp-quiz-room-theme .acl-ecg-error{
+  margin:3px 0 0!important;
+  font-size:10px!important;
+}
+@media(max-width:700px) and (orientation:portrait){
+ #scpRoomModal.scp-quiz-room-theme .scp-room-stage{
+   width:100%;
+   height:calc(100vh - 14px);
+   height:calc(100dvh - 14px);
+ }
+ #scpRoomModal.scp-quiz-room-theme .scp-room-interior{padding:clamp(9px,2vw,16px)}
+ #scpRoomModal.scp-quiz-room-theme .scp-room-title h2{
+   font-size:clamp(21px,5.7vw,29px);
+   margin:2px 0 clamp(7px,1.5vh,12px);
+ }
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-grid{
+   grid-template-columns:minmax(0,1fr);
+   grid-template-rows:repeat(2,minmax(0,1fr));
+   gap:clamp(7px,1.4vh,12px);
+ }
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card{
+   padding:clamp(9px,1.8vh,16px);
+ }
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card h3{
+   font-size:clamp(17px,4.5vw,24px);
+   margin:5px 0 6px;
+ }
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card p{
+   font-size:clamp(11px,2.65vw,13px);
+   margin:2px 0 7px;
+ }
+ #scpRoomModal.scp-quiz-room-theme .acl-entry-graphic{font-size:clamp(22px,4.5vh,30px)}
+ #scpRoomModal.scp-quiz-room-theme .acl-entry-link{font-size:12px;min-height:40px}
+}
+@media(max-height:560px){
+ #scpRoomModal.scp-quiz-room-theme .scp-room-stage{
+   height:calc(100vh - 12px);
+   height:calc(100dvh - 12px);
+ }
+ #scpRoomModal.scp-quiz-room-theme .scp-room-interior{padding:9px}
+ #scpRoomModal.scp-quiz-room-theme .scp-room-title h2{
+   font-size:clamp(19px,4vh,25px);
+   margin:0 0 7px;
+ }
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card{padding:8px 12px}
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card h3{font-size:clamp(15px,3.5vh,21px);margin:3px 0}
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card p{font-size:11px;margin:2px 0 5px}
+ #scpRoomModal.scp-quiz-room-theme .acl-entry-graphic{font-size:22px}
+ #scpRoomModal.scp-quiz-room-theme .acl-entry-link{min-height:34px;padding:6px;font-size:11px}
+ #scpRoomModal.scp-quiz-room-theme .acl-ecg-access-row{margin-bottom:5px}
+ #scpRoomModal.scp-quiz-room-theme .acl-ecg-admin-lock{min-height:26px;padding:4px 7px}
+}
+@media(max-height:420px){
+ #scpRoomModal.scp-quiz-room-theme .acl-entry-graphic{display:none}
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card p{font-size:10px;line-height:1.2}
+ #scpRoomModal.scp-quiz-room-theme .scp-room-title h2{margin-bottom:4px}
+}
+@media(max-width:700px) and (orientation:landscape){
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-grid{
+   grid-template-columns:repeat(2,minmax(0,1fr));
+   grid-template-rows:minmax(0,1fr);
+ }
+ #scpRoomModal.scp-quiz-room-theme .acl-quiz-entry-card h3{font-size:clamp(15px,3vw,20px)}
+}
