@@ -117,19 +117,19 @@
         });
         if(response.ok){
           const identity=await response.json();
-          if(identity.authenticated===true&&identity.linked===true&&identity.profile?.role==="admin"){
+          if(identity.authenticated===true&&identity.linked===true&&(identity.profile?.role==="admin"||identity.profile?.payload?.role==="admin")){
             const role=document.getElementById("basicAccountRole");
             const link=document.getElementById("basicAdminMembers");
             if(role)role.textContent="Administrator";
             if(link)link.hidden=false;
             const name=document.getElementById("basicUserName");
-            if(name&&(!name.textContent||name.textContent==="Member"))name.textContent=identity.profile.full_name||identity.profile.display_name||identity.profile.email?.split("@")[0]||"Administrator";
+            if(name&&(!name.textContent||name.textContent==="Member"))name.textContent=identity.profile.full_name||identity.profile.payload?.full_name||identity.profile.display_name||identity.profile.payload?.display_name||identity.profile.email?.split("@")[0]||"Administrator";
           }
         }
       }
     }catch(error){console.warn("ACL admin header check unavailable",error)}
   </script>
-  <script type="module" src="assets/js/basic-home.js?v=29"></script>
+  <script type="module" src="assets/js/basic-home.js?v=33"></script>
   <script type="module" src="assets/js/basic-special-courses.js?v=4"></script>
   <script type="module" src="assets/js/basic-module-manager.js?v=2"></script>
 </body>
