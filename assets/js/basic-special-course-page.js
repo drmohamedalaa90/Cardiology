@@ -391,6 +391,7 @@ function openRoom(id) {
   $("scpRoomModal").classList.toggle("scp-quiz-room-theme", /quiz\s*room/i.test(String(session?.title || "")));
   $("scpRoomModal").hidden = false;
   document.body.classList.add("scp-modal-open");
+  document.body.classList.toggle("acl-quiz-room-open",isQuizRoom);
   requestAnimationFrame(() => $("scpRoomModal").classList.add("is-open"));
   $("scpRoomModal").querySelectorAll("[data-edit-item]").forEach(button => button.onclick = () => openItem((state.items || []).find(item => item.id === button.dataset.editItem),id,true));
   document.querySelectorAll("[data-delete-item]").forEach(button => button.onclick = async () => {
@@ -416,6 +417,7 @@ setInterval(()=>void pollRoomCalls(),1500);
 function closeRoom() {
   $("scpRoomModal").classList.remove("is-open");
   document.body.classList.remove("scp-modal-open");
+  document.body.classList.remove("acl-quiz-room-open");
   setTimeout(() => { $("scpRoomModal").hidden = true; }, 260);
 }
 
