@@ -9,7 +9,7 @@ body.acl-standard-header-active .acl-standard-header{
  top:0!important;left:0!important;right:0!important;
  width:100%!important;
  box-sizing:border-box;
- z-index:2500!important;
+ z-index:1000!important;
  min-height:74px;
 }
 .acl-standard-header,.acl-standard-header *{box-sizing:border-box}
