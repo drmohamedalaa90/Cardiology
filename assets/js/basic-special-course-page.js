@@ -366,7 +366,7 @@ function openRoom(id) {
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${Number(session.session_number)===5?"":flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
 
   // Two independently styled routes. The ECG Lab has a separate admin lock.
-  const isQuizRoom=/quiz\\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5;
+  const isQuizRoom=/quiz\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5;
   if(isQuizRoom){
     const arenaUrl="acl-quiz-arena.html?course="+encodeURIComponent(courseId);
     $("scpRoomItems").innerHTML=`<div class="acl-quiz-entry-grid" aria-label="Quiz Room activities">
