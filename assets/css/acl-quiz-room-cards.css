@@ -1,5 +1,5 @@
 /* Quiz Room: two independently controlled entry cards. */
-.acl-quiz-entry-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;width:100%;align-items:stretch}
+.acl-quiz-entry-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;width:100%;align-items:stretch}
 .acl-quiz-entry-card{position:relative;min-width:0;min-height:360px;padding:30px 24px 26px;border-radius:23px;display:flex;flex-direction:column;justify-content:space-between;text-align:center;box-sizing:border-box;box-shadow:0 16px 40px rgba(47,30,10,.12)}
 .acl-quiz-entry-card h3{margin:12px 0 16px;font-size:clamp(24px,2.7vw,34px);line-height:1.18;letter-spacing:.015em}
 .acl-quiz-entry-card p{margin:8px 0 18px;line-height:1.6;font-size:clamp(13px,1.4vw,16px)}
