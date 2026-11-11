@@ -57,7 +57,7 @@
         <span id="basicAvatar" class="basic-avatar">ACL</span>
         <span class="basic-user-copy">
           <strong id="basicUserName">Member</strong>
-          <small>Basic learner</small>
+          <small id="basicAccountRole">Basic learner</small>
         </span>
       </a>
       <button class="basic-refresh-link" id="basicRefreshPage" type="button" aria-label="Refresh page" title="Refresh page"><span aria-hidden="true">↻</span></button>
@@ -104,7 +104,32 @@
   <div id="specialPasscodeModal" class="special-passcode-modal" hidden><section class="special-passcode-dialog" role="dialog" aria-modal="true" aria-labelledby="specialPasscodeTitle"><h2 id="specialPasscodeTitle">Special course</h2><p>Enter the course passcode to unlock this module.</p><form id="specialPasscodeForm"><input id="specialPasscodeModule" type="hidden"><fieldset class="special-gender"><legend>First, choose your character</legend><label><input type="radio" name="specialGender" value="male" required><span class="special-gender-person male">●</span><b>Male</b></label><label><input type="radio" name="specialGender" value="female" required><span class="special-gender-person female">●</span><b>Female</b></label></fieldset><input id="specialPasscodeInput" type="password" autocomplete="one-time-code" placeholder="Course passcode" required><div id="specialPasscodeStatus" class="special-passcode-status" aria-live="polite"></div><div class="special-passcode-actions"><button id="specialPasscodeCancel" class="special-passcode-cancel" type="button">Cancel</button><button id="specialPasscodeSubmit" class="special-passcode-submit" type="submit">Enter course</button></div></form><div id="specialSeatReveal" class="special-seat-reveal" hidden><span>YOUR THEATER SEAT</span><strong id="specialSeatNumber">001</strong><p>Securing your seat… entering in <b id="specialSeatCountdown">5</b> seconds</p></div></section></div>
 
   <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>
-  <script type="module" src="assets/js/basic-home.js?v=28"></script>
+  <script type="module">
+    // Independent role presentation; never grant admin rights from a saved label.
+    import {supabaseClient} from "./assets/js/supabase-client.js?v=20261111-role";
+    try {
+      const {data}=await supabaseClient.auth.getSession();
+      const session=data?.session;
+      const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken")||session?.access_token;
+      if(token){
+        const response=await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/auth/me",{
+          headers:{Authorization:"Bearer "+token},cache:"no-store",signal:AbortSignal.timeout(12000)
+        });
+        if(response.ok){
+          const identity=await response.json();
+          if(identity.authenticated===true&&identity.linked===true&&identity.profile?.role==="admin"){
+            const role=document.getElementById("basicAccountRole");
+            const link=document.getElementById("basicAdminMembers");
+            if(role)role.textContent="Administrator";
+            if(link)link.hidden=false;
+            const name=document.getElementById("basicUserName");
+            if(name&&(!name.textContent||name.textContent==="Member"))name.textContent=identity.profile.full_name||identity.profile.display_name||identity.profile.email?.split("@")[0]||"Administrator";
+          }
+        }
+      }
+    }catch(error){console.warn("ACL admin header check unavailable",error)}
+  </script>
+  <script type="module" src="assets/js/basic-home.js?v=29"></script>
   <script type="module" src="assets/js/basic-special-courses.js?v=4"></script>
   <script type="module" src="assets/js/basic-module-manager.js?v=2"></script>
 </body>
