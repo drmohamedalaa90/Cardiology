@@ -157,8 +157,14 @@ async function resumeSignedInSession(){
       const response=await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/auth/me",{headers:{Authorization:"Bearer "+legacyToken}});
       const result=await response.json();
       if(response.ok&&result.authenticated&&result.linked){openACL();return}
-    }catch{}
-    sessionStorage.removeItem("aclLegacyToken");localStorage.removeItem("aclLegacyToken");
+    }catch{
+      // Offline or API outage: retain credentials for the next retry.
+      status.textContent="Connection unavailable. Your saved session is preserved.";
+      return;
+    }
+    // An invalid or expired token cannot authorize access, but do not erase
+    // it on an ambiguous response or temporary server error.
+    status.textContent="Session verification is required. Please sign in if prompted.";
   }
   try{
     const result=await supabaseClient.auth.getSession();
