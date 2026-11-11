@@ -275,6 +275,76 @@ function renderAttendance(session) {
     panel.insertAdjacentHTML("beforeend",`<button class="scp-review-attendance-button" data-member-attendance-review type="button">Review my attendance status</button>`);panel.querySelector("[data-member-attendance-review]")?.addEventListener("click",()=>openAttendanceReview(session.id));$("scpCheckIn")?.addEventListener("click",async e=>{e.currentTarget.disabled=true;try{const pos=room.location_required?await browserLocation():{};await hallAction("check_in",{attendance_slot:slot,session_id:session.id,...pos});await refreshHall();renderAttendance(session)}catch(error){e.currentTarget.disabled=false;e.currentTarget.textContent=error.message||"Could not check in"}});$("scpCheckOut")?.addEventListener("click",async e=>{e.currentTarget.disabled=true;try{await hallAction("check_out",{session_id:session.id});await refreshHall();renderAttendance(session)}catch(error){e.currentTarget.disabled=false;e.currentTarget.textContent=error.message||"Could not check out"}})
   }else panel.innerHTML='<div class="scp-attendance-warning">Your theater seat is required before attendance can be recorded.</div>';
 }
+// Independent ECG Lab lock is stored in the existing native quiz settings JSON.
+// Saving always includes the freshest quiz questions/settings to avoid deleting them.
+async function nativeQuizAccess(action="",data={}){
+  const path="/learning/native-quiz?course="+encodeURIComponent(courseId||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c");
+  const tokens=await aclCourseTokens();
+  if(!tokens.length)throw new Error("Please sign in to ACL first.");
+  let lastError="Not authorized";
+  for(const token of tokens){
+    let response;
+    try{
+      response=await fetch(aclCourseApiBase+path,{method:action?"POST":"GET",headers:{Authorization:"Bearer "+token,...(action?{"Content-Type":"application/json"}:{})},...(action?{body:JSON.stringify({action,...data})}:{}) ,cache:"no-store",signal:AbortSignal.timeout(15000)});
+    }catch(error){throw new Error("Cannot reach the ACL server: "+error.message)}
+    const json=await response.json().catch(()=>({}));
+    if(response.ok)return json;
+    lastError=json.error||"HTTP "+response.status;
+    if(response.status!==401)break;
+  }
+  throw new Error(String(lastError));
+}
+function paintEcgAccess(remote){
+  const card=$("aclEcgCard"),link=$("aclEcgGo"),pill=$("aclEcgStatus"),button=$("aclEcgLockToggle"),error=$("aclEcgError");
+  if(!card||!link||!pill||!button||!error)return;
+  const locked=remote?.settings?.ecg_locked===true;
+  const admin=!!state?.admin&&remote?.admin===true;
+  card.classList.toggle("is-locked",locked);
+  pill.className="acl-ecg-status "+(locked?"locked":"open");
+  pill.textContent=locked?"🔒 LOCKED":"● OPEN";
+  if(locked&&!admin){link.removeAttribute("href");link.setAttribute("aria-disabled","true");link.textContent="ECG INTERPRETATION LOCKED"; }
+  else {link.href="acl-ecg-interpretation.html?course="+encodeURIComponent(courseId||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c");link.removeAttribute("aria-disabled");link.textContent=locked?"ADMIN PREVIEW ECG LAB →":"ENTER ECG LAB →";}
+  button.hidden=!admin;
+  button.disabled=false;
+  button.textContent=locked?"🔓 Unlock ECG Lab":"🔒 Lock ECG Lab";
+  error.textContent="";
+  if(admin){
+    button.onclick=async()=>{
+      button.disabled=true;
+      error.textContent="Saving access…";
+      try{
+        const latest=await nativeQuizAccess();
+        if(latest.admin!==true||!Array.isArray(latest.questions)||!latest.settings)throw new Error("Administrator access or quiz data could not be verified.");
+        const lockNext=latest.settings.ecg_locked!==true;
+        await nativeQuizAccess("save",{settings:{...latest.settings,ecg_locked:lockNext},questions:latest.questions});
+        const verified=await nativeQuizAccess();
+        if(verified.settings?.ecg_locked!==lockNext)throw new Error("The server did not preserve the ECG lock setting. No change has been confirmed.");
+        if(card.isConnected)paintEcgAccess(verified);
+      }catch(e){
+        error.textContent="Could not change ECG access: "+e.message;
+        button.disabled=false;
+      }
+    };
+  }
+}
+async function refreshEcgAccess(roomId){
+  const card=$("aclEcgCard");
+  if(!card)return;
+  try{
+    const remote=await nativeQuizAccess();
+    if(!card.isConnected||activeSessionId!==roomId)return;
+    if(!remote.settings)throw new Error("Quiz settings were not returned.");
+    paintEcgAccess(remote);
+  }catch(e){
+    if(!card.isConnected||activeSessionId!==roomId)return;
+    $("aclEcgStatus").textContent="ACCESS UNAVAILABLE";
+    $("aclEcgGo").removeAttribute("href");
+    $("aclEcgGo").setAttribute("aria-disabled","true");
+    $("aclEcgGo").textContent="ECG LAB UNAVAILABLE";
+    $("aclEcgError").textContent=e.message;
+  }
+}
+
 function openRoom(id) {
   const session = sessions().find(entry => entry.id === id);
   if (!session) return;
@@ -295,11 +365,23 @@ function openRoom(id) {
   const flashAlbum=`<details class="scp-flashcard-section" data-persist-details="room:${id}:flashcards"><summary><span>▣</span><strong>View flashcards</strong><small>${flashcards.length?`${flashcards.length} photo${flashcards.length===1?"":"s"}`:"Coming soon"}</small></summary>${flashcards.length?`<div class="scp-flashcard-album">${flashcards.map((item,index)=>`<button type="button" data-album-index="${index}"><img src="${esc(item.url||'assets/images/acl-header-mark.svg')}" alt="${esc(item.title)}" loading="lazy" onerror="this.onerror=null;this.src='assets/images/acl-share-preview-20261024.png'"><span>${esc(item.title||`Flashcard ${index+1}`)}</span>${state.admin?`<i data-edit-item="${item.id}">Edit</i>`:""}</button>`).join("")}</div>`:`<div class="scp-flashcard-empty">${state.admin?'<button id="scpAddFlashcards" type="button">+ Upload lecture flashcards</button>':'Lecture flashcards have not been uploaded yet.'}</div>`}</details>`;
   $("scpRoomItems").innerHTML=items.length?`${videos.length?`<details class="scp-video-section" data-persist-details="room:${id}:videos"><summary><span>▶</span><strong>Watch the videos</strong><small>${videos.length} video${videos.length===1?"":"s"}</small></summary><div class="scp-video-list">${videos.map(itemCard).join("")}</div></details>`:""}${Number(session.session_number)===5?"":flashAlbum}${others.map(itemCard).join("")}`:`<div class="scp-room-empty"><span>✦</span><strong>This room is ready.</strong><p>Course content will be added here.</p>${state.admin?'<button id="scpRoomAddItem" type="button">+ Add the first content box</button>':""}</div>`;
 
-  // ACL-native quiz; do not embed a second webpage.
+  // Two independently styled routes. The ECG Lab has a separate admin lock.
   const isQuizRoom=/quiz\s*room/i.test(String(session.title||"")) || Number(session.session_number)===5;
   if(isQuizRoom){
     const arenaUrl="acl-quiz-arena.html?course="+encodeURIComponent(courseId);
-    $("scpRoomItems").innerHTML='<section class="acl-native-quiz" style="background:linear-gradient(140deg,#5b102b,#270c20);border:2px solid #c8a059;border-radius:20px;padding:30px;color:white;text-align:center"><h3 style="font-size:clamp(24px,4vw,38px);color:#ffe3a0">◆ ACL QUIZ ARENA ◆</h3><p style="color:#f5dce4">Four choices · Individual timer · Integrity rules</p><div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center"><a href="'+arenaUrl+'" class="scp-quiz-arena-link" style="display:inline-block;margin-top:15px;padding:15px 26px;border-radius:12px;background:#e5b85a;color:#321022;text-decoration:none;font-weight:900">ENTER QUIZ ARENA →</a><a href="acl-ecg-interpretation.html" style="display:inline-block;margin-top:15px;padding:15px 26px;border-radius:12px;background:#dff4ff;color:#163a55;text-decoration:none;font-weight:900">♥ INTERACTIVE ECG INTERPRETATION →</a></div></section>';
+    $("scpRoomItems").innerHTML=`<div class="acl-quiz-entry-grid" aria-label="Quiz Room activities">
+      <article class="acl-quiz-entry-card quiz">
+        <div><div class="acl-entry-graphic" aria-hidden="true">◆</div><h3>ACL QUIZ ARENA</h3><p>Four choices · Individual timer · Integrity rules</p></div>
+        <a href="${arenaUrl}" class="acl-entry-link">ENTER QUIZ ARENA →</a>
+      </article>
+      <article class="acl-quiz-entry-card ecg" id="aclEcgCard">
+        <div><div class="acl-entry-graphic" aria-hidden="true">♥</div><h3>INTERACTIVE ECG INTERPRETATION</h3><p>10 ECGs · Step-by-step interpretation · Practice &amp; Test</p></div>
+        <div><div class="acl-ecg-access-row"><span id="aclEcgStatus" class="acl-ecg-status" role="status">CHECKING ACCESS…</span><button id="aclEcgLockToggle" class="acl-ecg-admin-lock" type="button" hidden>Lock ECG Lab</button></div>
+        <a id="aclEcgGo" class="acl-entry-link" aria-disabled="true">CHECKING ACCESS…</a>
+        <p class="acl-ecg-error" id="aclEcgError" role="alert"></p></div>
+      </article>
+    </div>`;
+    void refreshEcgAccess(id);
   }
   $("bmForum").hidden=isQuizRoom;
   if(isQuizRoom)$("bmForum").open=false;
