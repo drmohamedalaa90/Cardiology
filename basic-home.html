@@ -76,7 +76,7 @@
         <span id="basicAvatar" class="basic-avatar">ACL</span>
         <span class="basic-user-copy">
           <strong id="basicUserName">Member</strong>
-          <small>Basic learner</small>
+          <small id="basicAccountRole">Basic learner</small>
         </span>
       </a>
       <button class="basic-refresh-link" id="basicRefreshPage" type="button" aria-label="Refresh page" title="Refresh page"><span aria-hidden="true">↻</span></button>
@@ -408,7 +408,29 @@
   <div id="specialPasscodeModal" class="special-passcode-modal" hidden><section class="special-passcode-dialog" role="dialog" aria-modal="true" aria-labelledby="specialPasscodeTitle"><h2 id="specialPasscodeTitle">Special course</h2><p>Enter the course passcode to unlock this module.</p><form id="specialPasscodeForm"><input id="specialPasscodeModule" type="hidden"><fieldset class="special-gender"><legend>First, choose your character</legend><label><input type="radio" name="specialGender" value="male" required><span class="special-gender-person male">●</span><b>Male</b></label><label><input type="radio" name="specialGender" value="female" required><span class="special-gender-person female">●</span><b>Female</b></label></fieldset><input id="specialPasscodeInput" type="password" autocomplete="one-time-code" placeholder="Course passcode" required><div id="specialPasscodeStatus" class="special-passcode-status" aria-live="polite"></div><div class="special-passcode-actions"><button id="specialPasscodeCancel" class="special-passcode-cancel" type="button">Cancel</button><button id="specialPasscodeSubmit" class="special-passcode-submit" type="submit">Enter course</button></div></form><div id="specialSeatReveal" class="special-seat-reveal" hidden><span>YOUR THEATER SEAT</span><strong id="specialSeatNumber">001</strong><p>Securing your seat… entering in <b id="specialSeatCountdown">5</b> seconds</p></div></section></div>
 
   <div class="basic-level-modal-home" id="basicLevelModalHome" hidden><section class="basic-level-dialog-home" role="dialog" aria-modal="true" aria-labelledby="basicLevelTitleHome"><div class="basic-level-icon-home">◆</div><h2 id="basicLevelTitleHome">Expert Edition</h2><p>This edition is not available for your level.</p><button type="button" id="basicLevelCloseHome">Continue Basic Edition</button></section></div>
-  <script type="module" src="assets/js/basic-home.js?v=31"></script>
+  <script type="module">
+    import {supabaseClient} from "./assets/js/supabase-client.js";
+    try{
+      const {data}=await supabaseClient.auth.getSession();
+      const session=data?.session;
+      const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken")||session?.access_token;
+      if(token){
+        const res=await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/auth/me",{headers:{Authorization:"Bearer "+token},cache:"no-store",signal:AbortSignal.timeout(12000)});
+        if(res.ok){
+          const identity=await res.json();
+          if(identity.authenticated===true&&identity.linked===true&&identity.profile?.role==="admin"){
+            const role=document.getElementById("basicAccountRole");
+            const members=document.getElementById("basicAdminMembers");
+            const name=document.getElementById("basicUserName");
+            if(role)role.textContent="Administrator";
+            if(members)members.hidden=false;
+            if(name)name.textContent=identity.profile.full_name||identity.profile.display_name||identity.profile.email?.split("@")[0]||"Administrator";
+          }
+        }
+      }
+    }catch(error){console.warn("ACL homepage admin verification unavailable",error)}
+  </script>
+  <script type="module" src="assets/js/basic-home.js?v=32"></script>
   <script type="module" src="assets/js/basic-special-courses.js?v=8"></script>
   <script type="module" src="assets/js/basic-module-manager.js?v=2"></script>
 <script type="module" src="assets/js/official-list.js?v=1"></script><!-- ECG COURSE QUICK ACCESS --><script>(function(){const id='acl-ecg-quick-access-card';function mount(){if(document.getElementById(id))return;const target=document.querySelector('main.basic-shell')||document.querySelector('main');if(!target)return;const card=document.createElement('div');card.id=id;card.style.cssText='background:linear-gradient(115deg,#fffaf0,#fff0c4);color:#6b4300;padding:22px;border:1px solid #e9bc57;border-radius:24px;margin:18px 0;box-shadow:0 12px 30px rgba(124,84,11,.10)';card.innerHTML='<div style="font-size:12px;letter-spacing:2px;color:#9d6100;font-weight:800">SPECIAL COURSE · QUICK ACCESS</div><h2 style="color:#704500;margin:10px 0">ECG Demystified</h2><p style="color:#7a5b2a">Continue to your ECG Demystified course, sessions, learning materials and assessments.</p><a href="basic-special-course.html?course=basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c" style="display:inline-block;background:#d49a26;color:#fff;padding:14px 24px;border-radius:12px;text-decoration:none;font-weight:900">OPEN COURSE →</a>';target.insertBefore(card,target.firstChild)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();setTimeout(mount,1500)})();</script>
