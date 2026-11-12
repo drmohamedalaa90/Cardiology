@@ -299,13 +299,19 @@ function renderEcgStepReview(){
    return (q.title||q.text)+": "+fmt(answer);
  };
  const pWaveSummary=()=>{
-  let present=null;
+  // The parent presence answer is authoritative. Never overwrite it with
+  // a conditional subquestion or interpret a non-Yes multi-choice value as No.
+  const presenceQuestion=rows.find(q=>{
+   const wording=String(q.text||"").trim().toLowerCase();
+   return /^(?:are\s+)?p[ -]?waves?\s+(?:present|absent)\s*\??$/.test(wording)
+    || /^(?:is\s+there\s+)?(?:a\s+)?p[ -]?wave\s+present\s*\??$/.test(wording);
+  });
+  const presenceValue=presenceQuestion?String(answers[presenceQuestion.id]??"").trim().toLowerCase():null;
+  const present=presenceValue==="yes"?true:presenceValue==="no"?false:null;
   const normal=new Set();
   for(const q of rows){
-   const wording=String(q.text||"").toLowerCase();
-   const answer=answers[q.id];
-   if(/p.wave.*present|present.*p.wave/.test(wording)){present=String(answer).toLowerCase()==="yes";continue;}
-   const selected=Array.isArray(answer)?answer:[answer];
+   if(q===presenceQuestion)continue;
+   const selected=Array.isArray(answers[q.id])?answers[q.id]:[answers[q.id]];
    for(const item of selected){
     const value=String(item??"").toLowerCase().trim();
     for(const feature of ["location","axis","morphology","amplitude","duration"]){
@@ -314,9 +320,10 @@ function renderEcgStepReview(){
    }
   }
   if(present===false)return "P waves are absent.";
-  if(present!==true)return null;
   const features=["location","axis","morphology","amplitude","duration"].filter(v=>normal.has(v));
-  return "P waves are present"+(features.length?" with normal "+features.join(", "):"")+".";
+  if(present===true)return "P waves are present"+(features.length?" with normal "+features.join(", "):"")+".";
+  // Do not invent absence when the presence question is missing or ambiguous.
+  return null;
  };
  const comment=String(group)==="5"?(ecgPrSummary(rows,answers)||rows.map(q=>statement(q)).join(", ")+"."):String(group)==="4"?(pWaveSummary()||rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+"."):rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
  const mistakes=rows.filter(q=>stepTiming[q.id]?.correct!==true);
