@@ -78,6 +78,15 @@
 .ecg-peek-modal .ecg-peek-qback{position:fixed!important;left:50%;top:50%;z-index:10002;touch-action:none;cursor:grab;user-select:none}
 .ecg-peek-modal .ecg-peek-qback:active{cursor:grabbing}
 
+
+/* Compact colour-coded ECG steps; keep step header readable above sticky ECG reference. */
+.ecg-question-card>.top{position:sticky!important;top:0!important;z-index:65!important;background:linear-gradient(110deg,#f8fcff 80%,#eaf5ff)!important;border-radius:14px;padding:8px 10px 12px!important;box-shadow:0 5px 15px #153b5917}
+.ecg-step-actions #stepLabel{min-width:0!important;min-height:0!important;padding:8px 12px!important;border-radius:12px!important;font-size:clamp(15px,1.35vw,19px)!important;line-height:1.2!important;box-shadow:0 3px 10px #19395720!important;white-space:nowrap}
+.ecg-step-actions #stepLabel[data-step-group="red"]{background:linear-gradient(135deg,#ae1735,#e64c5d)!important}
+.ecg-step-actions #stepLabel[data-step-group="green"]{background:linear-gradient(135deg,#116a39,#23a966)!important}
+.ecg-step-actions #stepLabel[data-step-group="blue"]{background:linear-gradient(135deg,#075aa5,#169fe0)!important}
+.ecg-step-actions #stepLabel[data-step-group="orange"]{background:linear-gradient(135deg,#ca551b,#f19a37)!important}
+@media(max-width:650px){.ecg-question-card>.top{padding:7px 8px 11px!important;padding-right:8px!important}.ecg-step-actions #stepLabel{font-size:15px!important;padding:7px 10px!important}.ecg-step-actions{gap:6px!important}.ecg-question-card>.top{padding-top:52px!important}}
 </style></head>
 <body><div id="aclPullRefresh" role="status" aria-live="polite">↓ Pull to refresh</div><section id="ecgAccessGate" class="panel" role="status" aria-live="polite"><h2 id="ecgAccessTitle">Checking ECG Lab access…</h2><p id="ecgAccessMessage" class="access-message">Verifying your ACL membership and administrator access settings.</p><a id="ecgBackCourse" class="btn secondary" style="display:inline-block;text-decoration:none;margin-top:8px" href="basic-special-course.html">← Return to Quiz Room</a></section><main id="ecgLabMain" hidden><a id="ecgLegacyBack" class="btn secondary" href="basic-special-course.html" style="display:inline-block;text-decoration:none;margin-bottom:16px">← Back to Quiz Room</a>
 <div class="top"><div><h1 class="ecg-premium-title"><span class="ecg-title-pulse" aria-hidden="true">♥</span><span>ECG <em>Interpretation</em> Lab</span></h1></div><div class="tabs"><button class="btn active ecg-mode-practice" id="practice" type="button">✦ Practice Mode</button><button class="btn secondary ecg-mode-soon" id="test" type="button" disabled aria-disabled="true" title="Test Mode will be available soon">♛ Test Mode <small>Coming soon</small></button></div></div>
