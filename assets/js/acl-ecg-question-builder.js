@@ -497,7 +497,7 @@ let ecgImagesLoading=null;
 async function restoreEcgImages(){try{const data=await attemptRequest("GET");for(const c of data.cases||[]){const n=Number(c.case_number)-1;if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&!images[n])images[n]=c.image_data;}if(images[slot])render();else slots();}catch(e){console.warn("ECG images could not be restored",e)}}window.addEventListener("acl-ecg-access-ready",()=>{ecgImagesLoading=restoreEcgImages()});ecgImagesLoading=restoreEcgImages();
 async function encodeEcgImage(file){const source=await createImageBitmap(file);try{const maxWidth=2200,maxHeight=1500,ratio=Math.min(1,maxWidth/source.width,maxHeight/source.height),canvas=document.createElement("canvas");canvas.width=Math.round(source.width*ratio);canvas.height=Math.round(source.height*ratio);const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0,canvas.width,canvas.height);let data=canvas.toDataURL("image/jpeg",.9);if(data.length>2400000)data=canvas.toDataURL("image/jpeg",.77);if(data.length>2400000)throw Error("ECG image is too large to save. Please reduce its resolution.");return data;}finally{source.close?.()}}
 function isEcgCompleted(n){return !admin()&&attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0)}
-function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>availableEcgCases.has(n)&&unlockedEcg.includes(n)&&!isEcgCompleted(n)&&(ecgRetryAllowed||!attemptHistory.some(a=>Number(a.case_number)===n)))||null}
+function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>availableEcgCases.has(n)&&unlockedEcg.includes(n)&&!attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0)&&(ecgRetryAllowed||!attemptHistory.some(a=>Number(a.case_number)===n)))||null}
 
 function previousEcgReports(){try{return JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]").filter(x=>x&&Array.isArray(x.steps))}catch{return []}}
 function parseEcgStoredComment(value){
@@ -1117,7 +1117,7 @@ function showEcgCompletionHero(report,passed){
 
  let next=document.getElementById("ecgCompletionNext");if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.className="btn";next.type="button";banner.after(next)}
  const nextUnlocked=passed?nextAvailableEcg():null;
- next.hidden=!nextUnlocked;next.disabled=!nextUnlocked;next.textContent=nextUnlocked?"Continue to ECG "+String(nextUnlocked).padStart(2,"0")+" →":"🔒 Next ECG not available";
+ next.hidden=!passed;next.disabled=!nextUnlocked;next.textContent=nextUnlocked?"Continue to ECG "+String(nextUnlocked).padStart(2,"0")+" →":"🔒 Next ECG · Not uploaded yet";if(!nextUnlocked)next.classList.add("ecg-next-unavailable");else next.classList.remove("ecg-next-unavailable");
  next.onclick=()=>{const n=nextAvailableEcg();if(!n)return;ecgAttemptOpened=false;restart();slot=n-1;render();document.getElementById("ecgCaseStage")?.scrollIntoView({behavior:"smooth",block:"start"})};
  const again=$("again");panel.classList.toggle("ecg-retry-disabled",!admin()&&!ecgRetryAllowed);if(again){again.hidden=!admin()&&(!!passed||!ecgRetryAllowed);again.textContent=passed&&admin()?"↻ Try this ECG again (admin)":"↻ Restart interpretation"}
  if(!document.getElementById("ecgCompletionCSS")){const css=document.createElement("style");css.id="ecgCompletionCSS";css.textContent=`
@@ -1139,6 +1139,7 @@ function showEcgCompletionHero(report,passed){
  #complete.ecg-completion-passed #again,#complete.ecg-retry-disabled #again{display:none!important}
  #complete #summary{display:none}
  #ecgCompletionNext{margin:4px 0 14px;background:#087c53;color:#fff;font-weight:800}
+ #ecgCompletionNext.ecg-next-unavailable{background:#e6eef4;color:#657d8b;cursor:not-allowed;box-shadow:none}
  #complete.ecg-completion-passed #result{border:1px solid #b5e8c9;background:#e9faf0;color:#096439;border-radius:13px;padding:13px 16px}
  .ecg-history-heading{font-size:clamp(21px,2.5vw,28px);margin:25px 0 4px;color:#103e60}
  .ecg-history-sub{color:#617c91;margin:0 0 15px}
