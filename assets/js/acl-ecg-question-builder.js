@@ -24,12 +24,12 @@ function edit(i){
  const get=f=>el.querySelector('[data-f="'+f+'"]').value.trim();
  el.querySelector("[data-save]").onclick=()=>{
  const type=get("type"),opts=type==="leads"?ECG_LEADS:get("options").split("\n").map(s=>s.trim()).filter(Boolean),parent=get("parent"),multi=el.querySelector('[data-f="multi"]').checked;
- if(!get("number")||!get("text")||(type!=="number"&&(opts.length<2||new Set(opts).size!==opts.length))||(parent&&!get("trigger"))){el.querySelector("[data-error]").textContent="Provide a number, question, at least two unique choices, and a trigger for subquestions.";return}
+ if(!get("number")||!get("text")||(type!=="number"&&(opts.length<2||new Set(opts).size!==opts.length))||(parent&&!get("trigger"))){el.querySelector("[data-error]").textContent=!get("number")?"Enter a step number.":!get("text")?"Enter the question text.":parent&&!get("trigger")?"Enter the parent-answer trigger (e.g. Yes).":"Provide at least two unique choices.";return}
  let p=parent,seen=new Set([q.id]);while(p){if(seen.has(p)){el.querySelector("[data-error]").textContent="Circular dependencies are not allowed.";return}seen.add(p);p=questions.find(x=>x.id===p)?.parent||""}
  if(type!=="number"&&new Set(opts).size!==opts.length){el.querySelector("[data-error]").textContent="Choices must be unique.";return}
  questions[i]={...q,number:get("number"),title:get("title"),text:get("text"),type,multi:multi&&type!=="number",options:type!=="number"?opts:[],unit:get("unit").trim(),inputLabel:get("inputLabel"),placeholder:get("placeholder"),parent,trigger:get("trigger")};save();restart();render();build();
  };
- el.querySelector('[data-f="type"]').onchange=()=>{const leads=el.querySelector('[data-f="type"]').value==="leads";if(leads)el.querySelector('[data-f="options"]').value=ECG_LEADS.join("\\n");};
+ el.querySelector('[data-f="type"]').onchange=()=>{const leads=el.querySelector('[data-f="type"]').value==="leads";if(leads)el.querySelector('[data-f="options"]').value=ECG_LEADS.join("\n");};
  el.querySelector("[data-child]").onclick=()=>{const c=binary("q"+Date.now(),"New subquestion","Enter question",q.id,q.options[0]||"Yes");c.number=q.number+".1";questions.splice(i+1,0,c);save();restart();render();build();edit(i+1)};
  el.querySelector("[data-remove]").onclick=()=>{if(!confirm("Delete this question?"))return;questions.splice(i,1);questions.forEach(x=>{if(x.parent===q.id){x.parent="";x.trigger=""}});keys.forEach(k=>delete k[q.id]);save();restart();render();build()};
  el.querySelector("[data-cancel]").onclick=()=>build();
