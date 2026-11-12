@@ -424,12 +424,14 @@ function path(){
  }
  return result;
 }
-function seconds(){return started?Math.floor((Date.now()-started)/1000):0}
+let ecgFinalSubmittedAt=0,ecgFinishInProgress=false;
+function seconds(){return started?Math.floor(((ecgFinalSubmittedAt||Date.now())-started)/1000):0}
+function freezeEcgAttemptClock(){if(ecgFinalSubmittedAt||!started)return;ecgFinalSubmittedAt=Date.now();clearInterval(timer);timer=null;tick();}
 function tick(){const t=seconds();const time=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");$("clock").textContent=time;const previewClock=$("ecgReadyClock");if(previewClock)previewClock.textContent="⏱ "+time;}
 function start(){if(!started){started=Date.now();stepEnteredAt=started;timer=setInterval(tick,1000);tick()}}
 function recordStep(q,isCorrect){if(!q||stepRecorded.has(q.id))return;const now=Date.now();stepTiming[q.id]={id:q.id,number:q.number,title:q.title,seconds:Math.max(0,Math.round((now-(stepEnteredAt||started||now))/1000)),correct:isCorrect,answer:answers[q.id]??""};stepRecorded.add(q.id);stepEnteredAt=now;}
 let ecgStepReview=null;
-function restart(){emergencyDiagnosis=null;emergencyPending=null;closeEmergencyDialog();$("complete").querySelector("h2").textContent="Interpretation complete";ecgStepReview=null;failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};stepTiming={};stepRecorded=new Set();stepEnteredAt=0;tick()}
+function restart(){ecgFinalSubmittedAt=0;ecgFinishInProgress=false;emergencyDiagnosis=null;emergencyPending=null;closeEmergencyDialog();$("complete").querySelector("h2").textContent="Interpretation complete";ecgStepReview=null;failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};stepTiming={};stepRecorded=new Set();stepEnteredAt=0;tick()}
 
 let emergencyDiagnosis=null,emergencyPending=null;
 const emergencyLabels={vf:"Ventricular fibrillation",arrest:"Cardiac arrest rhythm (asystole / PEA suspected)",stemi:"ST-elevation myocardial infarction (STEMI)"};
@@ -955,6 +957,8 @@ function submitAnswer(){
  checked=true;answers[q.id]=value;
  const isCorrect=correct(q,value);recordStep(q,isCorrect);updateLiveComment();showAnswerFeedback(isCorrect);
  if(!isCorrect)wrongCount++;
+ // Lock the duration on submission of the final eligible question, not after result rendering.
+ if(!path()[index+1])freezeEcgAttemptClock();
  setTimeout(()=>{const finishedGroup=ecgGroupOf(q);index++;const nextQuestion=path()[index];selected="";checked=false;stepEnteredAt=Date.now();if(!nextQuestion||ecgGroupOf(nextQuestion)!==finishedGroup){ecgStepReview={group:finishedGroup,next:nextQuestion||null};}render();if(!ecgStepReview)scrollEcgToActiveQuestion();},750);
 }
 $("next").onclick=submitAnswer;
@@ -971,8 +975,9 @@ $("backToQuestion").onclick=closeEcgPeek;
 $("ecgPeekModal").addEventListener("click",e=>{if(e.target===$("ecgPeekModal")||e.target===$("ecgPeekModal").querySelector(".ecg-peek-image"))closeEcgPeek()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ecgPeekModal").classList.contains("hidden"))closeEcgPeek()});
 async function finish(){
+ if(ecgFinishInProgress)return;ecgFinishInProgress=true;freezeEcgAttemptClock();
  document.getElementById("ecgIntro").hidden=true;document.getElementById("ecgSelector").hidden=true;
- clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");syncEcgReference();
+ clearInterval(timer);timer=null;$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");syncEcgReference();
  const duration=elapsedAtFailure??seconds();
  const completedSteps=Object.values(stepTiming);const scoreLocal=completedSteps.filter(x=>x.correct).length;const report={case_number:slot+1,mode,created_at:new Date().toISOString(),duration_seconds:duration,score:scoreLocal,total:completedSteps.length,steps:completedSteps,emergency_diagnosis:emergencyDiagnosis,commentary:[...(emergencyDiagnosis==="stemi"?["Immediate diagnosis: STEMI suspected — continued full ECG interpretation."]:[]),...Array.from(document.querySelectorAll("#ecgLiveComment .ecg-comment-line")).map(el=>el.textContent.trim())]};
  try{const history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]");history.unshift(report);localStorage.setItem("acl-ecg-step-reports-v1",JSON.stringify(history.slice(0,200)));}catch(e){console.warn("Could not persist local ECG report",e)}
@@ -1201,17 +1206,24 @@ function renderAttemptReport(report){
  panel.innerHTML='<h3>⚡ Your ECG interpretation breakdown</h3><p class="ecg-result-subtitle">ECG '+String(report.case_number).padStart(2,"0")+' · ⏱ '+fmtDuration(report.duration_seconds)+' · '+report.score+'/'+report.total+' correct</p><div class="ecg-result-grid">'+stepCards+'</div>';
 
  const shareActions=document.createElement("div");shareActions.className="ecg-report-actions";
- shareActions.innerHTML='<div class="ecg-signing-panel"><label for="ecgCandidateSignature">✒️ Sign your ECG interpretation (English name)</label><input id="ecgCandidateSignature" type="text" maxlength="70" autocomplete="name" placeholder="Your name in English" aria-describedby="ecgSignatureHelp"><small id="ecgSignatureHelp">Your name will appear as a handwritten-style signature on the exported image.</small></div><button type="button" class="btn" id="ecgExportResult">📷 Export signed ECG report</button>';
- if(!document.getElementById("ecgSigningPanelStyles")){
-  const style=document.createElement("style");style.id="ecgSigningPanelStyles";
-  style.textContent='.ecg-report-actions{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin:12px 0 22px}.ecg-signing-panel{display:grid;gap:6px;flex:1 1 270px;background:#edf7fc;padding:14px;border:1px solid #c6deed;border-radius:13px}.ecg-signing-panel label{font-weight:800;color:#174767}.ecg-signing-panel input{background:white;min-height:44px;font-size:16px;padding:10px;border-radius:9px;border:1px solid #aac8df}.ecg-signing-panel small{font-size:12px;color:#57728a}.ecg-report-actions .btn{min-height:46px}';
-  document.head.appendChild(style);
- }
+ shareActions.innerHTML='<button type="button" class="btn" id="ecgExportResult">✒️ Sign &amp; export report</button>';
  panel.prepend(shareActions);
- const signInput=shareActions.querySelector("#ecgCandidateSignature");
- const createResultImage=()=>createEcgResultImage(report,signInput.value);
- const exportFile=async()=>{const blob=await createResultImage();if(!blob)throw Error("Image export failed");return new File([blob],"ACL-ECG-"+report.case_number+"-result.png",{type:"image/png"})};
- shareActions.querySelector("#ecgExportResult").onclick=async()=>{try{const file=await exportFile(),url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000)}catch(e){alert(e.message)}};
+ shareActions.querySelector("#ecgExportResult").onclick=async()=>{
+  const signature=await openEcgSignaturePopup(report.case_number);
+  if(signature===null)return;
+  const button=shareActions.querySelector("#ecgExportResult"),label=button.textContent;
+  button.disabled=true;button.textContent="Preparing report…";
+  try{
+   const blob=await createEcgResultImage(report,signature);
+   if(!blob)throw Error("Report unavailable");
+   const url=URL.createObjectURL(blob),link=document.createElement("a");
+   link.href=url;link.download="ACL-ECG-"+String(report.case_number).padStart(2,"0")+"-signed-report.png";
+   document.body.appendChild(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),10000);
+  }catch(error){alert(error.message||"Export unsuccessful")}
+  finally{button.textContent=label;button.disabled=false}
+ };
+
  if(admin()){
   const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0";
   const reset=document.createElement("button");reset.type="button";reset.className="btn secondary";reset.textContent="↺ Reset local attempt history (admin)";
