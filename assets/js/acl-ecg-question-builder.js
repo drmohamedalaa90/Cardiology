@@ -411,7 +411,64 @@ function tick(){const t=seconds();const time=String(Math.floor(t/60)).padStart(2
 function start(){if(!started){started=Date.now();stepEnteredAt=started;timer=setInterval(tick,1000);tick()}}
 function recordStep(q,isCorrect){if(!q||stepRecorded.has(q.id))return;const now=Date.now();stepTiming[q.id]={id:q.id,number:q.number,title:q.title,seconds:Math.max(0,Math.round((now-(stepEnteredAt||started||now))/1000)),correct:isCorrect,answer:answers[q.id]??""};stepRecorded.add(q.id);stepEnteredAt=now;}
 let ecgStepReview=null;
-function restart(){ecgStepReview=null;failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};stepTiming={};stepRecorded=new Set();stepEnteredAt=0;tick()}
+function restart(){emergencyDiagnosis=null;emergencyPending=null;closeEmergencyDialog();$("complete").querySelector("h2").textContent="Interpretation complete";ecgStepReview=null;failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};stepTiming={};stepRecorded=new Set();stepEnteredAt=0;tick()}
+
+let emergencyDiagnosis=null,emergencyPending=null;
+const emergencyLabels={vf:"Ventricular fibrillation",arrest:"Cardiac arrest rhythm (asystole / PEA suspected)",stemi:"ST-elevation myocardial infarction (STEMI)"};
+function closeEmergencyDialog(){
+ const dialog=$("ecgEmergencyModal");if(dialog)dialog.hidden=true;
+ const confirmBox=$("ecgEmergencyConfirm");if(confirmBox)confirmBox.hidden=true;
+ emergencyPending=null;
+}
+function stopForEmergency(diagnosis){
+ clearInterval(timer);timer=null;
+ $("questionPanel").classList.add("hidden");
+ $("complete").classList.remove("hidden");
+ $("complete").querySelector("h2").textContent="Emergency diagnosis submitted";
+ document.getElementById("ecgIntro").hidden=true;
+ document.getElementById("ecgSelector").hidden=true;
+ const record={case_number:slot+1,diagnosis,mode,created_at:new Date().toISOString(),duration_seconds:seconds(),scored:false,status:"ended_early"};
+ try{
+   const prior=JSON.parse(localStorage.getItem("acl-ecg-emergency-episodes-v1")||"[]");
+   prior.unshift(record);
+   localStorage.setItem("acl-ecg-emergency-episodes-v1",JSON.stringify(prior.slice(0,100)));
+ }catch(err){console.warn("Emergency result was not stored locally",err)}
+ $("summary").textContent="ECG "+(slot+1)+" · "+emergencyLabels[diagnosis];
+ $("result").textContent="Scenario ended early. Emergency diagnosis recorded on this device; no full-interpretation score or progression unlock is awarded.";
+ $("ecgAttemptReport")?.remove();
+ $("ecgCompletionBanner")?.remove();
+ syncEcgReference();
+}
+(function wireEmergencyDialog(){
+ const launch=$("ecgEmergencyLaunch"),dialog=$("ecgEmergencyModal"),confirmBox=$("ecgEmergencyConfirm");
+ if(!launch||!dialog||!confirmBox)return;
+ launch.addEventListener("click",()=>{
+  if(!ecgAttemptOpened||index!==0||Object.keys(answers).length||emergencyDiagnosis)return;
+  dialog.hidden=false;confirmBox.hidden=true;$("ecgEmergencyClose").focus();
+ });
+ $("ecgEmergencyClose").addEventListener("click",closeEmergencyDialog);
+ $("ecgEmergencyCancel").addEventListener("click",()=>{emergencyPending=null;confirmBox.hidden=true});
+ dialog.addEventListener("click",e=>{if(e.target===dialog)closeEmergencyDialog()});
+ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!dialog.hidden)closeEmergencyDialog()});
+ dialog.querySelectorAll("[data-ecg-emergency]").forEach(button=>button.addEventListener("click",()=>{
+  emergencyPending=button.dataset.ecgEmergency;
+  $("ecgEmergencyConfirmText").textContent=emergencyPending==="stemi"?"Submit STEMI as your immediate impression and continue the normal ECG questions?":"Submit "+emergencyLabels[emergencyPending]+" and end this scenario without a complete-interpretation score?";
+  confirmBox.hidden=false;
+  $("ecgEmergencySubmit").textContent=emergencyPending==="stemi"?"Confirm & continue":"Confirm & end scenario";
+  $("ecgEmergencySubmit").focus();
+ }));
+ $("ecgEmergencySubmit").addEventListener("click",()=>{
+  if(!ecgAttemptOpened||index!==0||Object.keys(answers).length||emergencyDiagnosis||!emergencyLabels[emergencyPending])return;
+  const diagnosis=emergencyPending;
+  start();emergencyDiagnosis=diagnosis;closeEmergencyDialog();
+  if(diagnosis==="stemi"){
+   let note=$("ecgEmergencyNotice");
+   if(!note){note=document.createElement("p");note.id="ecgEmergencyNotice";note.style.cssText="padding:12px;border-left:5px solid #bd3045;background:#fff1ee;color:#853344;border-radius:9px;font-weight:700";$("progress").insertAdjacentElement("afterend",note)}
+   note.textContent="🚨 Immediate impression submitted: STEMI suspected. Continue the full ECG interpretation.";
+   render();
+  }else stopForEmergency(diagnosis);
+ });
+})();
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}if(q.multi)return Array.isArray(k)&&Array.isArray(value)&&value.length===k.length&&value.every(x=>k.includes(x));return !!k&&value===k}
 const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let unlockedEcg=[1],attemptHistory=[],wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")")}return data;}async function refreshAttemptProgress(){try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];attemptHistory=data.attempts||[];slots();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];slots();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());void refreshAttemptProgress();
 let ecgImagesLoading=null;
@@ -564,6 +621,7 @@ function render(){
  const ready=!!images[slot]&&questions.length>0;$("questionPanel").classList.toggle("hidden",!ready);$("complete").classList.add("hidden");if(!ready){syncEcgReference();return;}
  syncEcgReference();
  const qs=path(),q=qs[index];
+ if($("ecgEmergencyLaunch"))$("ecgEmergencyLaunch").hidden=!(q&&index===0&&!Object.keys(answers).length&&!emergencyDiagnosis&&!ecgStepReview);
  const reviewBox=document.getElementById("ecgStepReviewBox");if(reviewBox)reviewBox.hidden=!ecgStepReview;
  if(ecgStepReview){renderEcgStepReview();return;}
  if(!q){finish();return}
@@ -744,7 +802,7 @@ async function finish(){
  document.getElementById("ecgIntro").hidden=true;document.getElementById("ecgSelector").hidden=true;
  clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");syncEcgReference();
  const duration=elapsedAtFailure??seconds();
- const completedSteps=Object.values(stepTiming);const scoreLocal=completedSteps.filter(x=>x.correct).length;const report={case_number:slot+1,mode,created_at:new Date().toISOString(),duration_seconds:duration,score:scoreLocal,total:completedSteps.length,steps:completedSteps,commentary:Array.from(document.querySelectorAll("#ecgLiveComment .ecg-comment-line")).map(el=>el.textContent.trim())};
+ const completedSteps=Object.values(stepTiming);const scoreLocal=completedSteps.filter(x=>x.correct).length;const report={case_number:slot+1,mode,created_at:new Date().toISOString(),duration_seconds:duration,score:scoreLocal,total:completedSteps.length,steps:completedSteps,emergency_diagnosis:emergencyDiagnosis,commentary:[...(emergencyDiagnosis==="stemi"?["Immediate diagnosis: STEMI suspected — continued full ECG interpretation."]:[]),...Array.from(document.querySelectorAll("#ecgLiveComment .ecg-comment-line")).map(el=>el.textContent.trim())]};
  try{const history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]");history.unshift(report);localStorage.setItem("acl-ecg-step-reports-v1",JSON.stringify(history.slice(0,200)));}catch(e){console.warn("Could not persist local ECG report",e)}
  $("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(duration/60)+"m "+duration%60+"s";
  $("result").textContent="Saving your complete ECG interpretation securely…";renderAttemptReport(report);showEcgCompletionHero(report,false);
