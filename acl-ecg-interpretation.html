@@ -216,6 +216,93 @@
 .ecg-quick-modal textarea{box-sizing:border-box;width:100%;font:inherit;font-size:16px;min-height:110px;border-radius:11px;border:1px solid #b8d6e7;background:#fff;padding:13px;resize:vertical}
 .ecg-quick-footer{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px}
 .ecg-quick-error{color:#b72a45;min-height:18px}
+
+/* ECG DEMYSTIFIED — award screen (reference-driven redesign) */
+#complete:has(#ecgCompletionBanner){background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;overflow:visible!important}
+#complete:has(#ecgCompletionBanner)>h2,
+#complete:has(#ecgCompletionBanner)>#result{display:none!important}
+#complete #ecgCompletionBanner{
+ isolation:isolate;position:relative!important;overflow:hidden!important;
+ padding:22px 28px 30px!important;margin:0 0 16px!important;
+ border:1px solid #2265a3!important;border-radius:20px!important;
+ color:white!important;text-align:center!important;
+ background:
+ radial-gradient(ellipse at 50% 7%,#25458c 0%,transparent 41%),
+ radial-gradient(ellipse at 5% 62%,#1d468e 0%,transparent 33%),
+ radial-gradient(ellipse at 93% 56%,#224b98 0%,transparent 33%),
+ linear-gradient(135deg,#00152f 0%,#062758 48%,#031735 100%)!important;
+ box-shadow:inset 0 0 75px #245bb650,0 15px 45px #061b3960!important;
+}
+#complete #ecgCompletionBanner::before{
+ content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+ background:repeating-linear-gradient(116deg,transparent 0,transparent 125px,#4798ff09 130px,transparent 180px);
+}
+#complete #ecgCompletionBanner .ecg-victory-head{display:flex;align-items:start;justify-content:space-between;gap:10px;position:relative;z-index:2}
+#complete #ecgCompletionBanner .ecg-victory-brand{text-align:left;font-weight:950;font-size:14px;letter-spacing:1px;color:#fff;text-shadow:0 0 7px #64aaff}
+#complete #ecgCompletionBanner .ecg-victory-brand small{display:block;font-size:11px;letter-spacing:2px;color:#60caff;margin-top:3px}
+#complete #ecgCompletionBanner .ecg-victory-confetti-corner{color:#ffcd4f;font-size:25px;letter-spacing:15px;opacity:.9}
+#complete #ecgCompletionBanner .ecg-victory-scene{position:relative;display:grid;grid-template-columns:minmax(110px,1fr) minmax(0,4fr) minmax(108px,1fr);align-items:center;gap:12px;min-height:280px;z-index:1}
+#complete #ecgCompletionBanner .ecg-victory-heart{width:min(100%,170px);justify-self:start;filter:drop-shadow(0 0 18px #f42f6090);opacity:.95}
+#complete #ecgCompletionBanner .ecg-victory-heart svg{width:100%;height:auto}
+#complete #ecgCompletionBanner .ecg-victory-center{min-width:0;position:relative}
+#complete #ecgCompletionBanner .ecg-victory-trophy{height:122px;margin:0 auto -8px;filter:drop-shadow(0 0 15px #ffae4c70)}
+#complete #ecgCompletionBanner .ecg-victory-trophy svg{height:100%;max-width:180px}
+#complete #ecgCompletionBanner .ecg-victory-encouragement{font-size:85px}
+#complete #ecgCompletionBanner .ecg-victory-ribbon{display:table;margin:0 auto 4px;padding:6px 32px;max-width:100%;background:linear-gradient(90deg,#8e0c25,#e52b39 30%,#ed4852 50%,#b31430 90%);border:1px solid #fc7076;transform:rotate(-2deg);box-shadow:0 4px 15px #7f0f2b70,0 0 15px #f84a4f45;color:white;font-weight:1000;font-size:clamp(14px,2vw,23px);letter-spacing:.6px;text-shadow:0 2px 2px #480219;border-radius:7px}
+#complete #ecgCompletionBanner h2.ecg-victory-title{font-size:clamp(22px,3.4vw,52px)!important;line-height:1.14!important;color:#f9fcff!important;font-weight:950!important;letter-spacing:.1px;margin:15px 0 8px!important;text-shadow:0 3px 12px #021126,0 0 15px #9bbfff55}
+#complete #ecgCompletionBanner h2.ecg-victory-title em{font-style:normal;color:#ffd85e;text-shadow:0 0 15px #f8b737a0}
+#complete #ecgCompletionBanner .ecg-victory-time{display:table;margin:4px auto 7px;padding:5px 30px;border:2px solid #ffd779;border-radius:100px;color:white;background:#0c203df0;box-shadow:0 0 18px #ffbd4f77;font-style:italic;font-size:clamp(17px,2.5vw,28px);font-weight:850}
+#complete #ecgCompletionBanner p.ecg-victory-subtitle{color:#fff!important;font-size:clamp(14px,1.6vw,20px);font-style:italic;margin:8px 0 10px!important}
+#complete #ecgCompletionBanner .ecg-victory-scoreseal{width:clamp(90px,12vw,157px);height:clamp(105px,13vw,175px);justify-self:center;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;background:radial-gradient(circle at 50% 30%,#1f4b7a,#06152e 68%);border:5px double #ffe27f;outline:3px solid #c58c29;border-radius:36% 36% 42% 42%;box-shadow:0 0 25px #e6b54999,0 0 5px #fff6cf inset;color:#ffe38a;text-shadow:0 2px 5px #000;font-weight:950}
+#complete #ecgCompletionBanner .ecg-victory-scoreseal strong{font-size:clamp(23px,3.1vw,43px);line-height:1}
+#complete #ecgCompletionBanner .ecg-victory-scoreseal small{font-size:clamp(9px,1vw,14px);padding:4px 5px;background:#ffe38b;color:#192039;transform:rotate(-3deg)}
+#complete #ecgCompletionBanner .ecg-victory-stats{display:flex;justify-content:center;gap:clamp(9px,2vw,25px);flex-wrap:wrap;margin:8px 0 24px!important}
+#complete #ecgCompletionBanner .ecg-victory-stat{min-width:140px;display:grid;gap:7px;justify-items:center;padding:11px 20px;border-radius:19px;text-align:center;background:linear-gradient(135deg,#0c4274,#00345f);border:2px solid #27cdff;box-shadow:inset 0 0 14px #00baff30,0 0 12px #138dda66}
+#complete #ecgCompletionBanner .ecg-victory-stat span{font-size:12px;font-weight:850;letter-spacing:.6px}
+#complete #ecgCompletionBanner .ecg-victory-stat strong{font-size:clamp(20px,2.8vw,34px);line-height:1;color:white;text-shadow:0 2px 8px #083550}
+#complete #ecgCompletionBanner .ecg-victory-stat-green{border-color:#50e9b0;background:linear-gradient(135deg,#005b50,#067a60);box-shadow:0 0 16px #10cf9480}
+#complete #ecgCompletionBanner .ecg-victory-stat-purple{border-color:#b68aff;background:linear-gradient(135deg,#2b286d,#613e9d);box-shadow:0 0 16px #a783fc70}
+#complete #ecgCompletionBanner .ecg-victory-track{position:relative;max-width:990px;margin:5px auto 23px;height:25px;border:3px solid #ffe17d;border-radius:99px;background:#162846;box-shadow:0 0 18px #ffcc5280,0 0 7px #56e4bd inset;overflow:visible}
+#complete #ecgCompletionBanner .ecg-victory-track>span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#31dcb5,#82f078 45%,#f6dd44 98%);box-shadow:0 0 9px #6ce889;transition:width .65s ease}
+#complete #ecgCompletionBanner .ecg-victory-track b{position:absolute;right:-2px;top:50%;transform:translateY(-50%);background:#101f30;color:white;border:2px solid #ffda73;box-shadow:0 0 9px #ffd46b;border-radius:99px;padding:7px 11px;font-size:17px;line-height:1}
+#complete #ecgCompletionBanner p.ecg-victory-review{max-width:960px;box-sizing:border-box;margin:0 auto 21px!important;border:2px solid #ffdb72;border-radius:17px;padding:16px 20px;color:white!important;font-size:clamp(13px,1.35vw,18px);font-style:italic;line-height:1.5;background:linear-gradient(110deg,#374360cc,#111b38d9,#344465bb);box-shadow:0 0 18px #d9ac535c}
+#complete #ecgCompletionBanner p.ecg-victory-review strong{color:#ffe074}
+#complete #ecgCompletionBanner .ecg-victory-actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:14px;position:relative;z-index:3}
+#complete #ecgCompletionBanner .ecg-victory-actions .ecg-victory-btn{display:inline-flex;align-items:center;justify-content:center;min-height:56px;min-width:170px;border-radius:999px!important;padding:12px 26px!important;font-size:clamp(13px,1.3vw,17px)!important;font-weight:850!important;white-space:normal;line-height:1.25;box-shadow:0 0 10px #5c99fd77;background:linear-gradient(180deg,#124f8b,#001a3e);border:2px solid #60acff;color:white}
+#complete #ecgCompletionBanner .ecg-victory-actions .ecg-victory-next:not(:disabled){color:#101b2d!important;background:linear-gradient(#fff2ac,#fcb928)!important;border:2px solid #ffe896!important;box-shadow:0 0 17px #ffca5080}
+#complete #ecgCompletionBanner .ecg-victory-actions .ecg-victory-btn:disabled{background:#18345b!important;border-color:#627fa1!important;color:#b0c4da!important;box-shadow:none!important;cursor:not-allowed}
+#complete.ecg-completion-passed:not(.ecg-retry-disabled) #ecgCompletionBanner #again:not([hidden]){display:inline-flex!important}
+#complete #ecgCompletionBanner .ecg-victory-actions .ecg-victory-btn[hidden]{display:none!important}
+#complete #ecgCompletionBanner .ecg-victory-confetti{position:absolute;left:6%;right:6%;top:10px;pointer-events:none;color:#ffdd69;font-size:19px;letter-spacing:clamp(12px,4vw,47px);opacity:.75;z-index:-1}
+#complete #ecgCompletionBanner .ecg-victory-confetti i{color:#f25e8d;font-style:normal}
+@media(max-width:850px){
+ #complete #ecgCompletionBanner{padding:17px 15px 23px!important}
+ #complete #ecgCompletionBanner .ecg-victory-scene{grid-template-columns:90px minmax(0,1fr) 90px;min-height:235px;gap:5px}
+ #complete #ecgCompletionBanner .ecg-victory-scoreseal{border-width:3px;outline-width:2px}
+ #complete #ecgCompletionBanner .ecg-victory-trophy{height:100px}
+ #complete #ecgCompletionBanner .ecg-victory-stat{min-width:95px;padding:9px 12px}
+}
+@media(max-width:560px){
+ #complete #ecgCompletionBanner .ecg-victory-brand{font-size:11px}
+ #complete #ecgCompletionBanner .ecg-victory-scene{grid-template-columns:1fr;min-height:0}
+ #complete #ecgCompletionBanner .ecg-victory-heart{display:none}
+ #complete #ecgCompletionBanner .ecg-victory-scoreseal{position:absolute;right:-3px;top:8px;width:65px;height:73px;min-width:0;font-size:11px;opacity:.85}
+ #complete #ecgCompletionBanner .ecg-victory-scoreseal strong{font-size:18px}
+ #complete #ecgCompletionBanner .ecg-victory-scoreseal small{font-size:8px;padding:2px}
+ #complete #ecgCompletionBanner .ecg-victory-center{padding-top:3px}
+ #complete #ecgCompletionBanner .ecg-victory-trophy{height:100px}
+ #complete #ecgCompletionBanner .ecg-victory-ribbon{font-size:13px;padding:5px 14px}
+ #complete #ecgCompletionBanner h2.ecg-victory-title{font-size:clamp(20px,6.1vw,30px)!important}
+ #complete #ecgCompletionBanner .ecg-victory-stats{gap:7px;margin:9px 0 18px!important}
+ #complete #ecgCompletionBanner .ecg-victory-stat{min-width:0;flex:1 1 80px;padding:9px 5px;border-radius:12px}
+ #complete #ecgCompletionBanner .ecg-victory-stat span{font-size:9px}
+ #complete #ecgCompletionBanner .ecg-victory-stat strong{font-size:17px}
+ #complete #ecgCompletionBanner .ecg-victory-track{margin-bottom:17px}
+ #complete #ecgCompletionBanner p.ecg-victory-review{padding:12px 10px}
+ #complete #ecgCompletionBanner .ecg-victory-actions{gap:8px}
+ #complete #ecgCompletionBanner .ecg-victory-actions .ecg-victory-btn{flex:1 1 130px;min-width:0;min-height:48px;padding:10px!important;font-size:12px!important}
+}
+@media(prefers-reduced-motion:reduce){#complete #ecgCompletionBanner .ecg-victory-track span{transition:none!important}}
 </style></head>
 <body><div id="aclPullRefresh" role="status" aria-live="polite">↓ Pull to refresh</div><section id="ecgAccessGate" class="panel" role="status" aria-live="polite"><h2 id="ecgAccessTitle">Checking ECG Lab access…</h2><p id="ecgAccessMessage" class="access-message">Verifying your ACL membership and administrator access settings.</p><a id="ecgBackCourse" class="btn secondary" style="display:inline-block;text-decoration:none;margin-top:8px" href="basic-special-course.html">← Return to Quiz Room</a></section><main id="ecgLabMain" hidden><a id="ecgLegacyBack" class="btn secondary" href="basic-special-course.html" style="display:inline-block;text-decoration:none;margin-bottom:16px">← Back to Quiz Room</a>
 <div class="top"><div><h1 class="ecg-premium-title"><span class="ecg-title-pulse" aria-hidden="true">♥</span><a class="ecg-title-home" href="acl-ecg-interpretation.html" aria-label="Return to ECG Interpretation Lab homepage" title="Return to ECG Lab homepage">ECG <em>Interpretation</em> Lab</a></h1><div class="ecg-admin-mini-wrap" id="ecgAdminMiniWrap" hidden><button type="button" id="ecgAdminMini" class="ecg-admin-mini" aria-label="ECG Lab admin tools" aria-expanded="false" aria-controls="ecgAdminMiniMenu" title="ECG Lab admin tools">⚙️</button><div class="ecg-admin-mini-menu" id="ecgAdminMiniMenu" hidden><button type="button" id="ecgAdminMiniQuestions">✎ General Questions</button><button type="button" id="ecgAdminMiniImages">🫀 ECG Images &amp; Correct Answers</button></div></div><button type="button" id="ecgAdminResultsStandalone" class="ecg-admin-results-standalone" title="Member results and attempt settings" aria-label="Member results and attempt settings" hidden>👥 <span>Members</span></button></div><div class="tabs"><button class="btn active ecg-mode-practice" id="practice" type="button" disabled aria-disabled="true" title="Practice Mode is active">✦ Practice Mode</button><button class="btn secondary ecg-mode-soon" id="test" type="button" disabled aria-disabled="true" title="Test Mode will be available soon">♛ Test Mode <small>Coming soon</small></button></div></div>
