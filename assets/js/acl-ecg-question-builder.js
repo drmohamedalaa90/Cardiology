@@ -166,7 +166,8 @@ function build(){
     if(field==="type"&&el.value==="number"){q.options=[];q.multi=false}
     if(field==="parent"){q.trigger=q.parent?q.trigger:"";const parent=flowDraft.find(x=>x.id===q.parent);if(parent&&parent.options.length&&!q.trigger)q.trigger=parent.options[0]}
     flowSetDirty();
-    if(["parent","type","options","number","title","text"].includes(field))build();
+    // Do not rebuild on each keystroke: replacing the textarea loses focus after one letter.
+    if(["parent","type","options","number","title"].includes(field))build();
    };
    el.addEventListener(["parent","type","options","number","title"].includes(field)?"change":"input",onChange);
   });
