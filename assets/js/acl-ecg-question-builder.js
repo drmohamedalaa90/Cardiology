@@ -496,7 +496,19 @@ function isEcgCompleted(n){return !admin()&&attemptHistory.some(a=>Number(a.case
 function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!isEcgCompleted(n))||null}
 
 function previousEcgReports(){try{return JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]").filter(x=>x&&Array.isArray(x.steps))}catch{return []}}
-function cleanEcgComment(value){return String(value||"").replace(/^\\s*(?:Step\\s+\\d+[a-z]?|\\d{1,2})\\s*[.)-]?\\s*/i,"").trim()}
+function parseEcgStoredComment(value){
+ const raw=String(value??"").trim();
+ // Strip the label but never the initial letter of the clinical sentence:
+ // "Step 1Electrodes" -> "Electrodes", "✓ Step 2Rhythm" -> "Rhythm".
+ const label=/^(?:[✓✔✕✗]\s*)?[Ss]tep\s*(\d{1,2})/;
+ const match=raw.match(label);
+ if(!match)return {step:null,text:raw};
+ const number=Number(match[1]);
+ let text=raw.slice(match[0].length).replace(/^[a-z](?=\s|[:.)–—-]|$)/,"").replace(/^\s*[:.)–—-]?\s*/,"").trim();
+ text=text.replace(/\s+([,.;!?])/g,"$1").replace(/,\s*,+/g,", ").replace(/\s{2,}/g," ");
+ return {step:number,text};
+}
+function cleanEcgComment(value){return parseEcgStoredComment(value).text}
 function ensureEcgHistoryLayout(){
  if(document.getElementById("ecgHistoryLayoutFix"))return;
  const style=document.createElement("style");style.id="ecgHistoryLayoutFix";
@@ -539,9 +551,7 @@ function renderPreviousEcgResults(){
   if(!stepGroups.has(n))stepGroups.set(n,[]);
   stepGroups.get(n).push(detail);
  }
- const oldPrefix=/^(?:[✓✔✕✗]\s*)?Step\s*\d{1,2}(?:[a-z](?=\s|[:.)–—-]|$))?\s*[:.)–—-]?\s*/i;
- const stripOldPrefix=text=>String(text).replace(oldPrefix,"").trim()
-  .replace(/\s+([,.;!?])/g,"$1").replace(/,\s*,+/g,", ").replace(/\s{2,}/g," ");
+ const stripOldPrefix=text=>parseEcgStoredComment(text).text;
  // Special annotations have no numerical Step and should not displace the nine interpretation lines.
  const special=normalizedComments.filter(raw=>!/^Step\s*\d/i.test(raw));
  const comments=normalizedComments.filter(raw=>/^Step\s*\d/i.test(raw));
@@ -1004,12 +1014,12 @@ async function createEcgResultImage(report,signatureValue){
   const rawComments=Array.isArray(report.commentary)?report.commentary:[];
   const special=rawComments.filter(raw=>!/^\s*(?:✓|✕|✔|✗)?\s*Step\s*\d+/i.test(String(raw)));
   const numbered=rawComments.map((raw,i)=>{
-   const match=String(raw).match(/\bStep\s*(\d+[a-z]?)/i);
-   return {raw:String(raw),step:match?.[1]||"",index:i};
-  }).filter(row=>row.step).sort((a,b)=>Number.parseInt(a.step,10)-Number.parseInt(b.step,10)||a.index-b.index);
-  const rows=numbered.map(({raw,step})=>{
-   let normalized=cleanEcgComment(raw).replace(/^\s*(?:✓|✕|✔|✗)\s*/,"").replace(/^\s*Step\s*\d+[a-z]?\s*:?\s*/i,"").trim();
-   normalized=normalized.replace(/,\s*,/g,", ").replace(/\s+([,.;])/g,"$1").replace(/\s{2,}/g," ").replace(/\.{2,}/g,".").replace(/,\s*\./g,".");
+   const parsed=parseEcgStoredComment(raw);
+   return {raw:String(raw),parsed,index:i};
+  }).filter(row=>Number.isInteger(row.parsed.step)).sort((a,b)=>a.parsed.step-b.parsed.step||a.index-b.index);
+  const rows=numbered.map(({parsed})=>{
+   const step=String(parsed.step);
+   const normalized=parsed.text;
    const lines=wrapText(normalized,W-2*pad-175,18);
    const h=Math.max(62,lines.length*27+27);
    const wrong=report.steps?.some(item=>String(item.number||"").match(/^\d+/)?.[0]===step&&item.correct===false)||false;
