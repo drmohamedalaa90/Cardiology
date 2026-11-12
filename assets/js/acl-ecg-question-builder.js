@@ -562,9 +562,30 @@ function renderPreviousEcgResults(){
   return '<div class="ecg-history-comment-row'+(raw?"":" ecg-history-missing")+'"><span class="ecg-history-comment-main"><strong class="ecg-history-step-label">Step '+n+':</strong><span class="ecg-history-comment-text">'+esc(comment)+'</span></span><b class="'+(wrong?"ecg-history-wrong":"")+'">'+result+'</b><time>'+(details.length?"⏱ "+fmtDuration(time):"—")+'</time></div>';
  }).join("");
 
- return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 You interpreted this ECG with 100% accuracy</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small></div></div><details><summary>View full ECG, commentary and detailed timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
+ return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 You interpreted this ECG with 100% accuracy</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small><button type="button" class="btn secondary ecg-history-export" data-ecg-history-export="'+n+'">📷 Export report again</button></div></div><details><summary>View full ECG, commentary and detailed timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div><div class="ecg-history-sign"><label>✒️ Signature (English name, optional)<input type="text" maxlength="70" autocomplete="name" placeholder="Your English name" data-ecg-history-sign="'+n+'"></label><button type="button" class="btn ecg-history-export" data-ecg-history-export="'+n+'">📷 Export signed report</button></div></div></details></article>'
  }).join("");
- if(!document.getElementById("ecgHistoryCommentCSS")){const css=document.createElement("style");css.id="ecgHistoryCommentCSS";css.textContent='.ecg-history-comment-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 80px;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid #e1eaf2;color:#183e5a;line-height:1.55}.ecg-history-comment-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;min-width:0}.ecg-history-step-label{display:inline-block;white-space:nowrap;color:#0d5985;font-weight:800;flex:none}.ecg-history-comment-text{min-width:0;overflow-wrap:break-word;word-break:normal}.ecg-history-comment-row b{color:#087b49;font-size:13px}.ecg-history-comment-row b.ecg-history-wrong{color:#c52649}.ecg-history-comment-row time{font-size:13px;color:#45647d}.ecg-history-missing{background:#fff9eb;color:#896c40}.ecg-history-special{color:#ad3e52;font-weight:700}@media(max-width:540px){.ecg-history-comment-row{grid-template-columns:minmax(0,1fr) auto;padding:12px 9px;gap:7px}.ecg-history-comment-row time{grid-column:2;justify-self:end}}';document.head.append(css)}
+ // Export from a previous completed attempt without restarting it or changing saved progress.
+ area.querySelectorAll("[data-ecg-history-export]").forEach(button=>button.addEventListener("click",async()=>{
+  const caseNumber=Number(button.dataset.ecgHistoryExport);
+  const report=byCase.get(caseNumber);
+  if(!report)return;
+  const card=button.closest(".ecg-history-card");
+  const signature=card?.querySelector("[data-ecg-history-sign]")?.value||"";
+  const original=button.textContent;button.disabled=true;button.textContent="Preparing image…";
+  try{
+   const blob=await createEcgResultImage(report,signature);
+   if(!blob)throw Error("Could not prepare image");
+   const url=URL.createObjectURL(blob),link=document.createElement("a");
+   link.href=url;link.download="ACL-ECG-"+String(caseNumber).padStart(2,"0")+"-signed-report.png";
+   document.body.appendChild(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),10000);
+  }catch(error){
+   const details=card?.querySelector("details");if(details)details.open=true;
+   card?.querySelector("[data-ecg-history-sign]")?.focus();
+   alert(error.message||"Could not export this report.");
+  }finally{button.textContent=original;button.disabled=false}
+ }));
+ if(!document.getElementById("ecgHistoryCommentCSS")){const css=document.createElement("style");css.id="ecgHistoryCommentCSS";css.textContent='.ecg-history-export{margin-top:10px;font-size:13px;padding:8px 12px}.ecg-history-sign{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin-top:18px;padding:15px;background:#eef7fc;border:1px solid #cfe3ee;border-radius:13px}.ecg-history-sign label{display:grid;gap:5px;flex:1 1 235px;font-weight:750;color:#18476c}.ecg-history-sign input{width:100%;min-width:0;box-sizing:border-box;min-height:43px;background:white;font-size:16px}.ecg-history-sign .btn{min-height:43px}.ecg-history-card .ecg-history-summary{flex-wrap:wrap}.ecg-history-comment-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 80px;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid #e1eaf2;color:#183e5a;line-height:1.55}.ecg-history-comment-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;min-width:0}.ecg-history-step-label{display:inline-block;white-space:nowrap;color:#0d5985;font-weight:800;flex:none}.ecg-history-comment-text{min-width:0;overflow-wrap:break-word;word-break:normal}.ecg-history-comment-row b{color:#087b49;font-size:13px}.ecg-history-comment-row b.ecg-history-wrong{color:#c52649}.ecg-history-comment-row time{font-size:13px;color:#45647d}.ecg-history-missing{background:#fff9eb;color:#896c40}.ecg-history-special{color:#ad3e52;font-weight:700}@media(max-width:540px){.ecg-history-comment-row{grid-template-columns:minmax(0,1fr) auto;padding:12px 9px;gap:7px}.ecg-history-comment-row time{grid-column:2;justify-self:end}}';document.head.append(css)}
 }
 
 function slots(){
@@ -951,44 +972,12 @@ function showEcgCompletionHero(report,passed){
  `;document.head.appendChild(css)}
 }
 function fmtDuration(sec){sec=Number(sec)||0;return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")}
-function renderAttemptReport(report){
- let history=[];try{history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]")}catch{}
- const panel=$("ecgAttemptReport")||document.createElement("section");panel.id="ecgAttemptReport";panel.style.cssText="margin-top:20px;overflow-x:auto";if(!panel.isConnected)$("complete").append(panel);
- const commentaryById={
- "1a":a=>a==="Yes"?"The ECG is well calibrated (25 mm/sec and 10 mm/mV).":"The ECG calibration is abnormal.",
- "1b":a=>a==="Yes"?"Electrodes are correctly placed.":"Possible incorrect electrode placement.",
- "1c":a=>a==="Yes"?"Recording quality is good, without significant interference.":"Recording quality is suboptimal.",
- "2a":a=>a==="Yes"?"The rhythm is regular.":"The rhythm is irregular.",
- "2b":a=>"Heart rate: "+a+" bpm.",
- "3":a=>"QRS axis: "+a+".",
- "4a":a=>a==="Yes"?"P waves are present.":"P waves are absent.",
- "4b":a=>a==="Yes"?"P-wave morphology is normal.":"P-wave morphology is abnormal."
- };
- const interpretation=(s)=>{const a=String(s.answer??"");if(s.id&&commentaryById[s.id])return commentaryById[s.id](a);const key=String(s.number??"");if(commentaryById[key])return commentaryById[key](a);return s.title+": "+a+(a&&!/[.!?]$/.test(a)?".":"")};
- const lines=report.steps.map((s,i)=>'<tr class="'+(s.correct?'':'ecg-step-wrong')+'"><td><strong>Step '+esc(s.number)+'</strong><small>'+esc(s.title)+'</small></td><td>'+esc(interpretation(s))+'</td><td><span class="'+(s.correct?'ecg-step-ok':'ecg-step-no')+'">'+(s.correct?'✓ Correct':'✕ Incorrect')+'</span><small>⏱ '+fmtDuration(s.seconds)+'</small></td></tr>').join("");
- if(!document.getElementById("ecgStepCommentStyle")){
-  const style=document.createElement("style");style.id="ecgStepCommentStyle";style.textContent='.ecg-comment-table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}.ecg-comment-table th{text-align:left;color:#45657e;font-size:13px;padding:8px}.ecg-comment-table td{padding:13px 10px;background:#f2f8fc;border-top:1px solid #dbe8f1;border-bottom:1px solid #dbe8f1;vertical-align:top;overflow-wrap:anywhere}.ecg-comment-table td:first-child{width:25%;border-left:4px solid #0879b9;border-radius:12px 0 0 12px}.ecg-comment-table td:nth-child(2){width:53%;line-height:1.5}.ecg-comment-table td:last-child{width:22%;border-right:1px solid #dbe8f1;border-radius:0 12px 12px 0}.ecg-comment-table small{display:block;color:#5c7587;font-size:12px;margin-top:5px}.ecg-step-ok{color:#087448;font-weight:750}.ecg-step-no{color:#bd2045;font-weight:750}.ecg-comment-table .ecg-step-wrong td{background:#fff0f2;border-color:#f1c9d1}.ecg-comment-table .ecg-step-wrong td:first-child{border-left-color:#c01c42}@media(max-width:540px){.ecg-comment-table th,.ecg-comment-table td{padding:9px 6px;font-size:12px}.ecg-comment-table td:nth-child(2){font-size:13px}.ecg-comment-table small{font-size:11px}}';
-  document.head.appendChild(style);
- }
- panel.innerHTML='<h3>Step-by-step ECG interpretation</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><table class="ecg-comment-table"><thead><tr><th>Step</th><th>Your ECG comment</th><th>Result / Time</th></tr></thead><tbody>'+lines+'</tbody></table>';
-
- const shareActions=document.createElement("div");shareActions.className="ecg-report-actions";
- shareActions.innerHTML='<div class="ecg-signing-panel"><label for="ecgCandidateSignature">✒️ Sign your ECG interpretation (English name)</label><input id="ecgCandidateSignature" type="text" maxlength="70" autocomplete="name" placeholder="Your name in English" aria-describedby="ecgSignatureHelp"><small id="ecgSignatureHelp">Your name will appear as a handwritten-style signature on the exported image.</small></div><button type="button" class="btn" id="ecgExportResult">📷 Export signed ECG report</button>';
- if(!document.getElementById("ecgSigningPanelStyles")){
-  const style=document.createElement("style");style.id="ecgSigningPanelStyles";
-  style.textContent='.ecg-report-actions{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin:12px 0 22px}.ecg-signing-panel{display:grid;gap:6px;flex:1 1 270px;background:#edf7fc;padding:14px;border:1px solid #c6deed;border-radius:13px}.ecg-signing-panel label{font-weight:800;color:#174767}.ecg-signing-panel input{background:white;min-height:44px;font-size:16px;padding:10px;border-radius:9px;border:1px solid #aac8df}.ecg-signing-panel small{font-size:12px;color:#57728a}.ecg-report-actions .btn{min-height:46px}';
-  document.head.appendChild(style);
- }
- panel.prepend(shareActions);
- const signInput=shareActions.querySelector("#ecgCandidateSignature");
- const createResultImage=async()=>{
+async function createEcgResultImage(report,signatureValue){
   const W=1120,pad=76;
-  const sig=signInput.value.trim().replace(/\s+/g," ");
+  const sig=String(signatureValue||"").trim().replace(/\s+/g," ");
   if(sig&&!/^[A-Za-z][A-Za-z .'-]{0,69}$/.test(sig)){
-   signInput.setCustomValidity("Please use English letters for your signature.");
-   signInput.reportValidity();signInput.focus();throw Error("Signature must contain English letters only.");
+   throw Error("Please enter a signature using English letters only.");
   }
-  signInput.setCustomValidity("");
   const ecg=images[report.case_number-1];
   const image=await new Promise(resolve=>{if(!ecg)return resolve(null);const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>resolve(null);im.src=ecg});
   const imgW=W-2*pad,imgH=image?Math.min(230,Math.round(image.height/image.width*imgW)):0;
@@ -1071,7 +1060,39 @@ function renderAttemptReport(report){
   }else text("Unsigned",pad,height-footerH+88,20,"#8a9dad",500);
   text("ACL ECG Interpretation Lab",W-pad-245,height-66,15,"#67869a",700);
   return new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+}
+
+function renderAttemptReport(report){
+ let history=[];try{history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]")}catch{}
+ const panel=$("ecgAttemptReport")||document.createElement("section");panel.id="ecgAttemptReport";panel.style.cssText="margin-top:20px;overflow-x:auto";if(!panel.isConnected)$("complete").append(panel);
+ const commentaryById={
+ "1a":a=>a==="Yes"?"The ECG is well calibrated (25 mm/sec and 10 mm/mV).":"The ECG calibration is abnormal.",
+ "1b":a=>a==="Yes"?"Electrodes are correctly placed.":"Possible incorrect electrode placement.",
+ "1c":a=>a==="Yes"?"Recording quality is good, without significant interference.":"Recording quality is suboptimal.",
+ "2a":a=>a==="Yes"?"The rhythm is regular.":"The rhythm is irregular.",
+ "2b":a=>"Heart rate: "+a+" bpm.",
+ "3":a=>"QRS axis: "+a+".",
+ "4a":a=>a==="Yes"?"P waves are present.":"P waves are absent.",
+ "4b":a=>a==="Yes"?"P-wave morphology is normal.":"P-wave morphology is abnormal."
  };
+ const interpretation=(s)=>{const a=String(s.answer??"");if(s.id&&commentaryById[s.id])return commentaryById[s.id](a);const key=String(s.number??"");if(commentaryById[key])return commentaryById[key](a);return s.title+": "+a+(a&&!/[.!?]$/.test(a)?".":"")};
+ const lines=report.steps.map((s,i)=>'<tr class="'+(s.correct?'':'ecg-step-wrong')+'"><td><strong>Step '+esc(s.number)+'</strong><small>'+esc(s.title)+'</small></td><td>'+esc(interpretation(s))+'</td><td><span class="'+(s.correct?'ecg-step-ok':'ecg-step-no')+'">'+(s.correct?'✓ Correct':'✕ Incorrect')+'</span><small>⏱ '+fmtDuration(s.seconds)+'</small></td></tr>').join("");
+ if(!document.getElementById("ecgStepCommentStyle")){
+  const style=document.createElement("style");style.id="ecgStepCommentStyle";style.textContent='.ecg-comment-table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}.ecg-comment-table th{text-align:left;color:#45657e;font-size:13px;padding:8px}.ecg-comment-table td{padding:13px 10px;background:#f2f8fc;border-top:1px solid #dbe8f1;border-bottom:1px solid #dbe8f1;vertical-align:top;overflow-wrap:anywhere}.ecg-comment-table td:first-child{width:25%;border-left:4px solid #0879b9;border-radius:12px 0 0 12px}.ecg-comment-table td:nth-child(2){width:53%;line-height:1.5}.ecg-comment-table td:last-child{width:22%;border-right:1px solid #dbe8f1;border-radius:0 12px 12px 0}.ecg-comment-table small{display:block;color:#5c7587;font-size:12px;margin-top:5px}.ecg-step-ok{color:#087448;font-weight:750}.ecg-step-no{color:#bd2045;font-weight:750}.ecg-comment-table .ecg-step-wrong td{background:#fff0f2;border-color:#f1c9d1}.ecg-comment-table .ecg-step-wrong td:first-child{border-left-color:#c01c42}@media(max-width:540px){.ecg-comment-table th,.ecg-comment-table td{padding:9px 6px;font-size:12px}.ecg-comment-table td:nth-child(2){font-size:13px}.ecg-comment-table small{font-size:11px}}';
+  document.head.appendChild(style);
+ }
+ panel.innerHTML='<h3>Step-by-step ECG interpretation</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><table class="ecg-comment-table"><thead><tr><th>Step</th><th>Your ECG comment</th><th>Result / Time</th></tr></thead><tbody>'+lines+'</tbody></table>';
+
+ const shareActions=document.createElement("div");shareActions.className="ecg-report-actions";
+ shareActions.innerHTML='<div class="ecg-signing-panel"><label for="ecgCandidateSignature">✒️ Sign your ECG interpretation (English name)</label><input id="ecgCandidateSignature" type="text" maxlength="70" autocomplete="name" placeholder="Your name in English" aria-describedby="ecgSignatureHelp"><small id="ecgSignatureHelp">Your name will appear as a handwritten-style signature on the exported image.</small></div><button type="button" class="btn" id="ecgExportResult">📷 Export signed ECG report</button>';
+ if(!document.getElementById("ecgSigningPanelStyles")){
+  const style=document.createElement("style");style.id="ecgSigningPanelStyles";
+  style.textContent='.ecg-report-actions{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin:12px 0 22px}.ecg-signing-panel{display:grid;gap:6px;flex:1 1 270px;background:#edf7fc;padding:14px;border:1px solid #c6deed;border-radius:13px}.ecg-signing-panel label{font-weight:800;color:#174767}.ecg-signing-panel input{background:white;min-height:44px;font-size:16px;padding:10px;border-radius:9px;border:1px solid #aac8df}.ecg-signing-panel small{font-size:12px;color:#57728a}.ecg-report-actions .btn{min-height:46px}';
+  document.head.appendChild(style);
+ }
+ panel.prepend(shareActions);
+ const signInput=shareActions.querySelector("#ecgCandidateSignature");
+ const createResultImage=()=>createEcgResultImage(report,signInput.value);
  const exportFile=async()=>{const blob=await createResultImage();if(!blob)throw Error("Image export failed");return new File([blob],"ACL-ECG-"+report.case_number+"-result.png",{type:"image/png"})};
  shareActions.querySelector("#ecgExportResult").onclick=async()=>{try{const file=await exportFile(),url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000)}catch(e){alert(e.message)}};
  if(admin()){
