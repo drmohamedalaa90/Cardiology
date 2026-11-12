@@ -18,13 +18,13 @@ function build(){
 function edit(i){
  const q=questions[i],el=$("edit-"+i);
  el.className="ecg-build-editor";
- el.innerHTML='<label>Number<input data-f="number" value="'+esc(q.number)+'"></label><label>Title<input data-f="title" value="'+esc(q.title)+'"></label><label>Question<textarea data-f="text">'+esc(q.text)+'</textarea></label><label>Type<select data-f="type"><option value="choice" '+(q.type==="choice"?"selected":"")+'>Choices / Yes-No</option><option value="number" '+(q.type==="number"?"selected":"")+'>Number with range</option></select></label><label>Choices (one per line)<textarea data-f="options">'+esc(q.options.join("\n"))+'</textarea></label><label>Show as subquestion after<select data-f="parent"><option value="">Always show</option>'+questions.filter(x=>x.id!==q.id).map(x=>'<option value="'+esc(x.id)+'" '+(q.parent===x.id?"selected":"")+'>'+esc(x.number+" "+x.title)+'</option>').join("")+'</select></label><label>Only when answer equals<input data-f="trigger" value="'+esc(q.trigger)+'" placeholder="e.g. Yes or No"></label><div class="ecg-builder-actions"><button class="btn" data-save>Save</button><button class="btn secondary" data-child>+ Subquestion</button><button class="btn secondary" data-remove>Delete</button><button class="btn secondary" data-cancel>Cancel</button></div><p data-error class="muted small"></p>';
+ el.innerHTML='<label>Number<input data-f="number" value="'+esc(q.number)+'"></label><label>Title<input data-f="title" value="'+esc(q.title)+'"></label><label>Question<textarea data-f="text">'+esc(q.text)+'</textarea></label><label>Type<select data-f="type"><option value="choice" '+(q.type==="choice"?"selected":"")+'>Choices / Yes-No</option><option value="number" '+(q.type==="number"?"selected":"")+'>Number with range</option></select></label><label>Numeric answer unit (e.g. bpm, ms, small squares, mmHg)<input data-f="unit" value="'+esc(q.unit|| (q.id==="2b"?"bpm":""))+'" placeholder="Unit shown beside the answer"></label><label>Numeric input label<input data-f="inputLabel" value="'+esc(q.inputLabel||"")+'" placeholder="e.g. PR interval"></label><label>Numeric placeholder<input data-f="placeholder" value="'+esc(q.placeholder||"")+'" placeholder="e.g. Enter duration"></label><label>Choices (one per line)<textarea data-f="options">'+esc(q.options.join("\n"))+'</textarea></label><label>Show as subquestion after<select data-f="parent"><option value="">Always show</option>'+questions.filter(x=>x.id!==q.id).map(x=>'<option value="'+esc(x.id)+'" '+(q.parent===x.id?"selected":"")+'>'+esc(x.number+" "+x.title)+'</option>').join("")+'</select></label><label>Only when answer equals<input data-f="trigger" value="'+esc(q.trigger)+'" placeholder="e.g. Yes or No"></label><div class="ecg-builder-actions"><button class="btn" data-save>Save</button><button class="btn secondary" data-child>+ Subquestion</button><button class="btn secondary" data-remove>Delete</button><button class="btn secondary" data-cancel>Cancel</button></div><p data-error class="muted small"></p>';
  const get=f=>el.querySelector('[data-f="'+f+'"]').value.trim();
  el.querySelector("[data-save]").onclick=()=>{
  const type=get("type"),opts=get("options").split("\n").map(s=>s.trim()).filter(Boolean),parent=get("parent");
  if(!get("number")||!get("text")||(type==="choice"&&(opts.length<2||new Set(opts).size!==opts.length))||(parent&&!get("trigger"))){el.querySelector("[data-error]").textContent="Provide a number, question, at least two unique choices, and a trigger for subquestions.";return}
  let p=parent,seen=new Set([q.id]);while(p){if(seen.has(p)){el.querySelector("[data-error]").textContent="Circular dependencies are not allowed.";return}seen.add(p);p=questions.find(x=>x.id===p)?.parent||""}
- questions[i]={...q,number:get("number"),title:get("title"),text:get("text"),type,options:type==="choice"?opts:[],parent,trigger:get("trigger")};save();restart();render();build();
+ questions[i]={...q,number:get("number"),title:get("title"),text:get("text"),type,options:type==="choice"?opts:[],unit:get("unit"),inputLabel:get("inputLabel"),placeholder:get("placeholder"),parent,trigger:get("trigger")};save();restart();render();build();
  };
  el.querySelector("[data-child]").onclick=()=>{const c=binary("q"+Date.now(),"New subquestion","Enter question",q.id,q.options[0]||"Yes");c.number=q.number+".1";questions.splice(i+1,0,c);save();restart();render();build();edit(i+1)};
  el.querySelector("[data-remove]").onclick=()=>{if(!confirm("Delete this question?"))return;questions.splice(i,1);questions.forEach(x=>{if(x.parent===q.id){x.parent="";x.trigger=""}});keys.forEach(k=>delete k[q.id]);save();restart();render();build()};
@@ -65,7 +65,7 @@ function updateLiveComment(){
  if(answers["3"]!==undefined)statements.push("QRS axis: "+answers["3"]+".");
  yes("4a","P waves are present.","P waves are absent.");
  yes("4b","P-wave morphology is normal.","Abnormal P-wave morphology.");
- for(const q of questions){if(["1a","1b","1c","2a","2b","3","4a","4b"].includes(q.id))continue;if(answers[q.id]!==undefined)statements.push(q.title+": "+answers[q.id]+".")}
+ for(const q of questions){if(["1a","1b","1c","2a","2b","3","4a","4b"].includes(q.id))continue;if(answers[q.id]!==undefined)statements.push(q.title+": "+answers[q.id]+(q.type==="number"&&q.unit?" "+q.unit:"")+".")}
  target.innerHTML=statements.length?statements.map((line,i)=>'<div class="ecg-comment-line"><span class="ecg-comment-index">'+String(i+1).padStart(2,"0")+'</span><span>'+esc(line)+'</span></div>').join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
 }
 // Candidate-controlled ECG reference: sticky above the question or available on demand.
@@ -114,10 +114,10 @@ function render(){
  const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
  $("stepLabel").textContent="STEP "+q.number;$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
  $("progress").innerHTML=qs.map((x,i)=>'<i class="'+(i<index?"done":i===index?"now":"")+'"></i>').join("");
- if(q.type==="number"){$("choices").innerHTML='<label>Heart rate (bpm) <input id="numericAnswer" type="number" inputmode="decimal" step="any" placeholder="Enter rate" value="'+esc(selected)+'"></label>';$("numericAnswer").oninput=e=>{selected=e.target.value;start();$("next").disabled=!selected};$("numericAnswer").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();submitAnswer()}}}
+ if(q.type==="number"){$("choices").innerHTML='<label class="ecg-numeric-label">'+esc(q.inputLabel||q.title)+' <span class="ecg-numeric-unit">'+esc(q.unit||"")+'</span> <input id="numericAnswer" type="number" inputmode="decimal" step="any" placeholder="'+esc(q.placeholder||"Enter value")+'" value="'+esc(selected)+'"></label>';$("numericAnswer").oninput=e=>{selected=e.target.value;start();$("next").disabled=!selected};$("numericAnswer").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();submitAnswer()}}}
  else{$("choices").innerHTML=q.options.map(o=>'<button class="btn answer '+(selected===o?"selected":"")+'" data-answer="'+esc(o)+'">'+esc(o)+'</button>').join("");document.querySelectorAll("[data-answer]").forEach(b=>b.onclick=()=>{if(checked)return;selected=b.dataset.answer;start();submitAnswer()})}
  updateLiveComment();
- $("feedback").className="hidden";$("next").classList.toggle("hidden",q.type!=="number");$("next").disabled=!selected;$("next").textContent="Submit rate";
+ $("feedback").className="hidden";$("next").classList.toggle("hidden",q.type!=="number");$("next").disabled=!selected;$("next").textContent="Submit answer";
 }
 $("upload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;if(!f.type.startsWith("image/")||f.size>12e6)return alert("Please upload an image smaller than 12 MB.");if(!admin())return alert("Only an administrator can upload ECG recordings.");const target=slot,notice=$("ecgImageSaveStatus");notice.textContent="🟠 Preparing ECG image…";try{const data=await encodeEcgImage(f);images[target]=data;restart();render();notice.textContent="🟠 Saving ECG image to Neon…";await attemptRequest("POST",{action:"save_image",case_number:target+1,image_data:data});notice.textContent="🟢 ECG image saved to Neon · "+new Date().toLocaleTimeString();}catch(err){notice.textContent="🔴 ECG image not saved: "+err.message+" · Keep this page open and retry upload.";console.error(err)}};
 for(const m of ["practice","test"])$(m).onclick=()=>{if(m==="test")return;ecgAttemptOpened=false;mode=m;$("practice").className=m==="practice"?"btn active":"btn secondary";$("test").className=m==="test"?"btn active":"btn secondary";restart();render()};
@@ -175,10 +175,67 @@ function fmtDuration(sec){sec=Number(sec)||0;return String(Math.floor(sec/60)).p
 function renderAttemptReport(report){
  let history=[];try{history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]")}catch{}
  const panel=$("ecgAttemptReport")||document.createElement("section");panel.id="ecgAttemptReport";panel.style.cssText="margin-top:20px;overflow-x:auto";if(!panel.isConnected)$("complete").append(panel);
- const rows=[...report.steps].sort((a,b)=>questions.findIndex(q=>String(q.number)===String(a.number))-questions.findIndex(q=>String(q.number)===String(b.number))).map(x=>{const n=parseInt(x.number,10),tone=n<=3?"red":n<=5?"green":n<=7?"blue":"orange";return '<div class="ecg-report-card ecg-report-'+tone+'"><strong>STEP '+esc(x.number)+'</strong><span>'+esc(x.title)+'</span><time>⏱ '+fmtDuration(x.seconds)+'</time><b class="'+(x.correct?'correct':'missed')+'">'+(x.correct?'✓ Correct':'✕ Missed')+'</b></div>'}).join("");
- if(!document.getElementById("ecgReportCardsCSS")){const style=document.createElement("style");style.id="ecgReportCardsCSS";style.textContent='.ecg-report-cards{display:grid;gap:10px;margin:16px 0 22px}.ecg-report-card{--accent:#ca2848;--tint:#fff0f3;display:grid;grid-template-columns:110px minmax(0,1fr) 95px 115px;align-items:center;border:1px solid var(--accent);border-left:6px solid var(--accent);border-radius:12px;background:var(--tint);overflow:hidden;color:#15334b}.ecg-report-green{--accent:#17833d;--tint:#edfaef}.ecg-report-blue{--accent:#0875bd;--tint:#eaf6ff}.ecg-report-orange{--accent:#e67629;--tint:#fff2e8}.ecg-report-card>*{padding:14px 12px}.ecg-report-card>*+*{border-left:1px solid #cad7e1}.ecg-report-card strong{color:var(--accent)}.ecg-report-card time{font-variant-numeric:tabular-nums;white-space:nowrap}.ecg-report-card b{text-align:center;white-space:nowrap}.ecg-report-card .correct{color:#15813c}.ecg-report-card .missed{color:#bd2338}@media(max-width:600px){.ecg-report-card{grid-template-columns:80px minmax(0,1fr) 85px}.ecg-report-card>*{padding:10px 7px;font-size:13px}.ecg-report-card b{grid-column:2/4;border-top:1px solid #cad7e1;border-left:0;text-align:right}}';document.head.appendChild(style)}
+ const grouped=new Map();
+ for(const step of report.steps){const group=String(parseInt(step.number,10)||step.number);if(!grouped.has(group))grouped.set(group,[]);grouped.get(group).push(step)}
+ const rows=Array.from(grouped,([group,items])=>{
+  const n=Number(group),tone=n<=3?"red":n<=5?"green":n<=7?"blue":"orange";
+  const complete=items.every(x=>x.correct),total=items.reduce((sum,x)=>sum+(Number(x.seconds)||0),0);
+  return '<div class="ecg-tree-group ecg-tree-'+tone+'"><div class="ecg-tree-root"><span class="ecg-tree-bubble">'+esc(group)+'</span><strong>'+items.length+' assessment'+(items.length===1?'':'s')+'</strong><time>⏱ '+fmtDuration(total)+'</time><b>'+(complete?'✓ Completed':'✕ Incomplete')+'</b></div><div class="ecg-tree-branches">'+items.map(x=>'<div class="ecg-tree-branch"><span class="ecg-tree-dot"></span><span>'+esc(x.title)+'</span><time>'+fmtDuration(x.seconds)+'</time><b>'+(x.correct?'✓ Correct':'✕ Incorrect')+'</b></div>').join('')+'</div></div>'
+ }).join("");
+ if(!document.getElementById("ecgTreeStyle")){
+  const style=document.createElement("style");style.id="ecgTreeStyle";style.textContent=`
+ .ecg-report-cards{display:grid;gap:10px;margin:14px 0 18px}
+ .ecg-tree-group{--tone:#b7193e;--shade:#fff2f5;border:1px solid #d9e3eb;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 3px 10px #0d29450a}
+ .ecg-tree-green{--tone:#086b3a;--shade:#effaf3}.ecg-tree-blue{--tone:#075a9d;--shade:#eef7ff}.ecg-tree-orange{--tone:#b34e0b;--shade:#fff5e9}
+ .ecg-tree-root{display:grid;grid-template-columns:45px minmax(0,1fr) 85px 110px;align-items:center;gap:9px;padding:7px 13px;background:var(--shade);color:#173951;font-size:13px}
+ .ecg-tree-bubble{display:grid;place-items:center;width:35px;height:35px;border-radius:50%;background:var(--tone);color:white;font-weight:850;font-size:17px;box-shadow:0 3px 9px #0c243527}
+ .ecg-tree-root time,.ecg-tree-branch time{font-variant-numeric:tabular-nums}
+ .ecg-tree-root>b{color:var(--tone);text-align:right}
+ .ecg-tree-branches{margin-left:30px;padding:2px 10px 5px 18px;border-left:2px solid var(--tone)}
+ .ecg-tree-branch{display:grid;grid-template-columns:10px minmax(0,1fr) 85px 110px;align-items:center;gap:9px;min-height:31px;padding:3px 6px;border-bottom:1px solid #e7edf2;color:#26445a;font-size:13px}
+ .ecg-tree-branch:last-child{border-bottom:0}.ecg-tree-dot{width:8px;height:8px;border-radius:50%;background:var(--tone);margin-left:-24px}.ecg-tree-branch b{text-align:right;color:#147947}
+ .ecg-numeric-label{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap}.ecg-numeric-unit{font-size:13px;color:#42647d}
+ .ecg-report-actions{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}.ecg-report-actions button{border-radius:11px}
+ @media(max-width:540px){.ecg-tree-root{grid-template-columns:40px 1fr 65px;gap:4px;padding:7px}.ecg-tree-root>b{grid-column:2/4;text-align:left}.ecg-tree-branch{grid-template-columns:9px 1fr 55px;gap:4px}.ecg-tree-branch b{grid-column:2/4;text-align:left}.ecg-tree-branches{margin-left:24px;padding-left:12px}}
+ `;document.head.appendChild(style)
+ }
  const compare=history.map((a,i)=>'<tr><td>'+(i+1)+'</td><td>ECG '+esc(a.case_number)+'</td><td>'+esc(a.mode)+'</td><td>'+esc(new Date(a.created_at).toLocaleString())+'</td><td>'+fmtDuration(a.duration_seconds)+'</td><td>'+esc(a.score)+'/'+esc(a.total)+'</td></tr>').join("");
  panel.innerHTML='<h3>Step-by-step performance report</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><div class="ecg-report-cards">'+rows+'</div><h3 style="margin-top:22px">Compare your ECG attempts</h3><p class="muted small">All locally recorded attempts, including ECG 1, 2, 3 and later cases. Detailed timings are saved in this browser.</p><table class="ecg-report-table"><thead><tr><th>Attempt</th><th>ECG</th><th>Mode</th><th>Date</th><th>Total time</th><th>Correct steps</th></tr></thead><tbody>'+compare+'</tbody></table>';
+
+ const shareActions=document.createElement("div");shareActions.className="ecg-report-actions";
+ shareActions.innerHTML='<button type="button" class="btn" id="ecgExportResult">📷 Export beautiful result image</button><button type="button" class="btn secondary" id="ecgShareResult">↗ Share result</button><button type="button" class="btn secondary" id="ecgWhatsAppResult">WhatsApp</button>';
+ panel.prepend(shareActions);
+ const createResultImage=async()=>{
+  const W=1100,pad=64,groups=Array.from(grouped);
+  const height=345+groups.reduce((h,[g,steps])=>h+75+steps.length*37+12,0)+100;
+  const canvas=document.createElement("canvas");canvas.width=W*2;canvas.height=height*2;const ctx=canvas.getContext("2d");ctx.scale(2,2);
+  const round=(x,y,w,h,r,fill)=>{ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()};
+  const txt=(value,x,y,size,color="#15344d",weight=500)=>{ctx.fillStyle=color;ctx.font=weight+" "+size+"px system-ui,Arial";ctx.fillText(String(value),x,y)};
+  round(0,0,W,height,0,"#edf4fa");round(30,30,W-60,height-60,24,"#fff");
+  const gradient=ctx.createLinearGradient(0,0,W,0);gradient.addColorStop(0,"#073a63");gradient.addColorStop(1,"#097db5");round(30,30,W-60,180,24,gradient);
+  txt("ACL  |  ECG DEMYSTIFIED",pad,90,22,"#c5eaff",800);
+  txt("ECG INTERPRETATION REPORT",pad,145,35,"#fff",850);
+  txt("ECG "+report.case_number+"  •  "+report.mode.toUpperCase(),pad,191,18,"#e3f5ff",650);
+  txt(report.score+"/"+report.total+" correct",pad,267,29,"#0c557e",800);
+  txt("Total time  "+fmtDuration(report.duration_seconds),W-360,266,22,"#224b67",650);
+  txt(new Date(report.created_at).toLocaleString(),pad,303,16,"#658198");
+  let y=340;
+  for(const [g,steps] of groups){
+   const n=Number(g),tone=n<=3?"#a80f34":n<=5?"#086a3b":n<=7?"#064f91":"#a64b08";
+   const boxH=75+steps.length*37;round(pad,y,W-2*pad,boxH,14,"#f6f9fc");
+   round(pad+15,y+12,45,45,23,tone);txt(g,pad+29,y+43,24,"#fff",800);
+   txt("STEP "+g,pad+78,y+41,20,tone,800);
+   txt(fmtDuration(steps.reduce((z,x)=>z+(+x.seconds||0),0)),W-180,y+41,17,"#31516b",650);
+   let sy=y+80;for(const step of steps){txt("•  "+step.title,pad+86,sy,16,"#28465d",550);txt(fmtDuration(step.seconds),W-230,sy,16,"#28465d");txt(step.correct?"✓":"✕",W-125,sy,20,step.correct?"#087b46":"#bf2840",800);sy+=37}
+   y+=boxH+12;
+  }
+  txt("Learning through every attempt  •  Mohamed Alaa",pad,height-69,17,"#678397",600);
+  return new Promise(resolve=>canvas.toBlob(blob=>resolve(blob),"image/png"));
+ };
+ const exportFile=async()=>{const blob=await createResultImage();if(!blob)throw Error("Image export failed");return new File([blob],"ACL-ECG-"+report.case_number+"-result.png",{type:"image/png"})};
+ shareActions.querySelector("#ecgExportResult").onclick=async()=>{try{const file=await exportFile(),url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000)}catch(e){alert(e.message)}};
+ shareActions.querySelector("#ecgShareResult").onclick=async()=>{try{const file=await exportFile();if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:"My ACL ECG result"})}else{const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);alert("Image saved. You can attach it to WhatsApp or another app.")}}catch(e){if(e.name!=="AbortError")alert(e.message)}};
+ shareActions.querySelector("#ecgWhatsAppResult").onclick=async()=>{const file=await exportFile();if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:"ACL ECG result"})}catch(e){if(e.name!=="AbortError")alert(e.message)}}else{shareActions.querySelector("#ecgExportResult").click();window.open("https://wa.me/?text="+encodeURIComponent("My ACL ECG Lab result: ECG "+report.case_number+" • "+report.score+"/"+report.total+" correct • "+fmtDuration(report.duration_seconds)+". I have attached my result image."),"_blank","noopener")}};
  if(admin()){
   const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0";
   const reset=document.createElement("button");reset.type="button";reset.className="btn secondary";reset.textContent="↺ Reset local attempt history (admin)";
