@@ -157,12 +157,12 @@ async function finish(){
  document.getElementById("ecgIntro").hidden=true;document.getElementById("ecgSelector").hidden=true;
  clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");syncEcgReference();
  const duration=elapsedAtFailure??seconds();
- const completedSteps=Object.values(stepTiming);const scoreLocal=completedSteps.filter(x=>x.correct).length;const report={case_number:slot+1,mode,created_at:new Date().toISOString(),duration_seconds:duration,score:scoreLocal,total:completedSteps.length,steps:completedSteps};
+ const completedSteps=Object.values(stepTiming);const scoreLocal=completedSteps.filter(x=>x.correct).length;const report={case_number:slot+1,mode,created_at:new Date().toISOString(),duration_seconds:duration,score:scoreLocal,total:completedSteps.length,steps:completedSteps,commentary:Array.from(document.querySelectorAll("#ecgLiveComment .ecg-comment-line")).map(el=>el.textContent.trim())};
  try{const history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]");history.unshift(report);localStorage.setItem("acl-ecg-step-reports-v1",JSON.stringify(history.slice(0,200)));}catch(e){console.warn("Could not persist local ECG report",e)}
  $("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(duration/60)+"m "+duration%60+"s";
  $("result").textContent=failedAttempt?"Incorrect answer — saving failed attempt…":"Saving your attempt securely…";renderAttemptReport(report);
  try{
-  const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:slot+1,mode,answers,duration_seconds:duration,mistakes:wrongCount});
+  const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:slot+1,mode,answers,duration_seconds:duration,mistakes:wrongCount,step_details:report.steps,commentary:report.commentary});
   const passed=!failedAttempt&&saved.passed;
   if(passed&&saved.unlocked_next&&!unlockedEcg.includes(saved.unlocked_next))unlockedEcg.push(saved.unlocked_next);
   attemptHistory.unshift({case_number:slot+1,score:saved.score,total:saved.total});
@@ -187,8 +187,37 @@ function renderAttemptReport(report){
  }
 
 }
-async function retrySaveAttempt(report){const button=$("retryEcgSave");if(button){button.disabled=true;button.textContent="Saving…"}try{const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:report.case_number,mode:report.mode,answers,duration_seconds:report.duration_seconds,mistakes:wrongCount});$("result").textContent="✓ Attempt saved to Neon · "+saved.score+"/"+saved.total+(saved.passed?" · ECG completed. Proceed to the next ECG.":"");await refreshAttemptProgress()}catch(error){$("result").textContent="⚠ Still not saved: "+error.message+" · Your local report is preserved."}}
-window.addEventListener("acl-ecg-access-ready",build);render();build();
+async function retrySaveAttempt(report){const button=$("retryEcgSave");if(button){button.disabled=true;button.textContent="Saving…"}try{const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:report.case_number,mode:report.mode,answers,duration_seconds:report.duration_seconds,mistakes:wrongCount,step_details:report.steps,commentary:report.commentary||[]});$("result").textContent="✓ Attempt saved to Neon · "+saved.score+"/"+saved.total+(saved.passed?" · ECG completed. Proceed to the next ECG.":"");await refreshAttemptProgress()}catch(error){$("result").textContent="⚠ Still not saved: "+error.message+" · Your local report is preserved."}}
+
+// Administrator-only Neon ECG attempt management; no access for candidates.
+async function openEcgAdminAttempts(){
+ if(!admin())return;
+ let overlay=document.getElementById("ecgAdminAttemptsModal");
+ if(!overlay){
+  overlay=document.createElement("div");overlay.id="ecgAdminAttemptsModal";
+  overlay.style.cssText="position:fixed;inset:0;z-index:99999;background:#061d35b8;display:grid;place-items:center;padding:12px";
+  overlay.innerHTML='<section role="dialog" aria-modal="true" aria-label="ECG member attempts" style="background:white;border-radius:20px;width:min(1100px,98vw);max-height:92vh;overflow:auto;padding:22px;color:#153550"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2>🫀 ECG attempts — All members</h2><button class="btn secondary" id="ecgAdminClose">✕ Close</button></div><div id="ecgAdminData">Loading...</div><div style="margin-top:16px"><button class="btn secondary" id="ecgAdminResetAll">Reset ALL ECG trial attempts</button></div></section>';
+  document.body.appendChild(overlay);
+  overlay.querySelector("#ecgAdminClose").onclick=()=>overlay.remove();
+  overlay.addEventListener("click",e=>{if(e.target===overlay)overlay.remove()});
+  overlay.querySelector("#ecgAdminResetAll").onclick=async()=>{if(prompt('Type RESET ECG TRIAL ATTEMPTS to erase all members\' ECG trial attempts and unlock progress again:')!=="RESET ECG TRIAL ATTEMPTS")return;try{await attemptRequest("POST",{action:"admin_reset_attempts",profile_id:"all",confirm:"RESET ECG TRIAL ATTEMPTS"});await refreshAttemptProgress();await openEcgAdminAttempts()}catch(e){alert("Reset failed: "+e.message)}};
+ }
+ const body=overlay.querySelector("#ecgAdminData");body.textContent="Loading all members’ ECG attempts from Neon…";
+ try{
+  const data=await attemptRequest("POST",{action:"admin_list_attempts"});
+  const rows=data.attempts||[];
+  body.innerHTML='<p>'+rows.length+' recorded attempts · Click Details to view timings, answers and commentary.</p><div style="overflow-x:auto"><table class="ecg-report-table" style="width:100%"><thead><tr><th>Member</th><th>ECG</th><th>Completed</th><th>Time</th><th>Score</th><th>Actions</th></tr></thead><tbody>'+rows.map((a,i)=>'<tr><td>'+esc(a.member_name||a.profile_id)+'</td><td>'+esc(a.case_number)+'</td><td>'+esc(new Date(a.completed_at).toLocaleString())+'</td><td>'+fmtDuration(a.duration_seconds)+'</td><td>'+esc(a.score)+'/'+esc(a.total)+'</td><td><button class="btn secondary" data-details="'+i+'">Details</button> <button class="btn secondary" data-member-reset="'+i+'">Reset member</button></td></tr>').join("")+'</tbody></table></div><div id="ecgAdminDetail" style="margin-top:20px"></div>';
+  body.querySelectorAll("[data-details]").forEach(b=>b.onclick=()=>{const a=rows[Number(b.dataset.details)];const detail=body.querySelector("#ecgAdminDetail");detail.innerHTML='<h3>'+esc(a.member_name||a.profile_id)+' · ECG '+esc(a.case_number)+'</h3><h4>Step timings and outcomes</h4>'+((a.step_details||[]).map(x=>'<p>'+esc(x.number)+' · '+esc(x.title)+' · '+fmtDuration(x.seconds)+' · '+(x.correct?'✓ Correct':'✕ Incorrect')+'</p>').join("")||'<p>Legacy attempt: detailed timings unavailable.</p>')+'<h4>ECG commentary</h4>'+((a.commentary||[]).map(x=>'<p>'+esc(x)+'</p>').join("")||'<p>Commentary not recorded for this attempt.</p>')+'<h4>Answers</h4><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(JSON.stringify(a.answers||{},null,2))+'</pre>';detail.scrollIntoView({behavior:"smooth",block:"nearest"})});
+  body.querySelectorAll("[data-member-reset]").forEach(b=>b.onclick=async()=>{const a=rows[Number(b.dataset.memberReset)];if(prompt('Reset all ECG trial attempts for '+(a.member_name||a.profile_id)+'? Type RESET ECG TRIAL ATTEMPTS:')!=="RESET ECG TRIAL ATTEMPTS")return;try{await attemptRequest("POST",{action:"admin_reset_attempts",profile_id:a.profile_id,confirm:"RESET ECG TRIAL ATTEMPTS"});await refreshAttemptProgress();await openEcgAdminAttempts()}catch(e){alert("Reset failed: "+e.message)}});
+ }catch(e){body.textContent="Unable to load Neon attempt history: "+e.message}
+}
+function mountEcgAdminAttempts(){
+ if(!admin()||document.getElementById("ecgAdminAttemptsButton"))return;
+ const button=document.createElement("button");button.id="ecgAdminAttemptsButton";button.type="button";button.className="btn secondary";button.textContent="📊 All members’ ECG attempts";button.onclick=openEcgAdminAttempts;
+ const editor=document.getElementById("builder");if(editor)editor.parentElement.insertBefore(button,editor);
+}
+
+window.addEventListener("acl-ecg-access-ready",()=>{build();mountEcgAdminAttempts()});render();build();mountEcgAdminAttempts();
 
 // The ECG held by the doctor is the sole visible case-launch control.
 const ecgStartButton=document.getElementById("ecgStart");
