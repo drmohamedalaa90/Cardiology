@@ -605,6 +605,49 @@ function openEcgSignaturePopup(caseNumber){
  });
 }
 
+function openEcgClinicalReview(report){
+ document.getElementById("ecgClinicalReviewOverlay")?.remove();
+ const review=report.review||{},status=review.status||"pending",canEdit=admin();
+ const popup=document.createElement("div");popup.id="ecgClinicalReviewOverlay";
+ popup.innerHTML='<section class="ecg-clinical-review-dialog" role="dialog" aria-modal="true" aria-labelledby="ecgReviewTitle">'+
+ '<button type="button" class="ecg-review-close" aria-label="Close">✕</button>'+
+ '<div class="ecg-review-eyebrow">ECG '+String(report.case_number).padStart(2,"0")+' · CLINICAL VALIDATION</div>'+
+ '<h2 id="ecgReviewTitle">Final ECG diagnosis</h2>'+
+ '<p class="ecg-review-diagnosis">'+esc(report.final_diagnosis||"Not recorded")+'</p>'+
+ (report.extra_notes?'<h3>Additional notes</h3><p class="ecg-review-diagnosis">'+esc(report.extra_notes)+'</p>':'')+
+ '<p class="ecg-review-current">'+(status==="validated"?"✅ Validated by Dr. Mohamed Alaa":status==="needs_revision"?"🔄 Needs revision":"🕒 Awaiting validation by Dr. Mohamed Alaa")+'</p>'+
+ (review.feedback?'<h3>Dr. Mohamed Alaa’s comments</h3><p class="ecg-review-feedback-text">'+esc(review.feedback)+'</p>':'')+
+ (canEdit?'<form id="ecgClinicalReviewForm"><label>Review decision<select id="ecgClinicalStatus"><option value="pending">Pending</option><option value="validated">✓ Validated</option><option value="needs_revision">↻ Needs revision</option></select></label><label>Your comments<textarea id="ecgClinicalFeedback" rows="3" maxlength="2000" placeholder="Write your review or corrections"></textarea></label><button class="btn" type="submit">Save clinical review</button><p class="ecg-review-error" role="alert"></p></form>':'')+
+ '</section>';
+ document.body.appendChild(popup);
+ if(!document.getElementById("ecgClinicalReviewCSS")){
+  const style=document.createElement("style");style.id="ecgClinicalReviewCSS";
+  style.textContent='#ecgClinicalReviewOverlay{position:fixed;inset:0;z-index:190000;display:grid;place-items:center;padding:16px;background:#082842b8;backdrop-filter:blur(4px)}.ecg-clinical-review-dialog{position:relative;width:min(100%,580px);max-height:90dvh;overflow:auto;box-sizing:border-box;padding:27px;background:#f8fcff;color:#174360;border:1px solid #b7d6e9;border-radius:20px;box-shadow:0 20px 55px #081d3a55}.ecg-review-close{position:absolute;top:15px;right:15px;background:#e4f1fa;border:0;border-radius:9px;padding:10px;cursor:pointer}.ecg-review-eyebrow{color:#0879ae;font-size:12px;font-weight:850;letter-spacing:1.5px}.ecg-clinical-review-dialog h2{color:#123c5a;margin:10px 0 18px}.ecg-clinical-review-dialog h3{color:#1c6285;margin:16px 0 6px;font-size:15px}.ecg-review-diagnosis,.ecg-review-feedback-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;padding:14px;border-radius:12px;background:#edf6fc}.ecg-review-current{border-radius:9px;background:#e3f1f7;color:#155c7c;padding:11px;font-weight:800}.ecg-clinical-review-dialog form{display:grid;gap:12px;margin-top:17px}.ecg-clinical-review-dialog label{display:grid;gap:6px;font-weight:750}.ecg-clinical-review-dialog select,.ecg-clinical-review-dialog textarea{box-sizing:border-box;width:100%;font:inherit;background:#fff;padding:11px;border:1px solid #b8d6e7;border-radius:10px}.ecg-clinical-review-dialog form .btn{justify-self:start}.ecg-validation-link{display:block;margin:12px 0 7px;background:#eaf6fc;border:1px solid #b6dae9;border-radius:10px;padding:10px 13px;color:#075b83;font-weight:800;cursor:pointer;text-align:left}.ecg-validation-link:hover{background:#d5ecfa}.ecg-review-error{color:#bd294a;margin:0}@media(max-width:540px){.ecg-clinical-review-dialog{padding:19px}}';
+  document.head.appendChild(style);
+ }
+ const previousFocus=document.activeElement;
+ const close=()=>{popup.remove();document.removeEventListener("keydown",onKey);previousFocus?.focus?.()};
+ const onKey=e=>{if(e.key==="Escape"){e.preventDefault();close()}};
+ document.addEventListener("keydown",onKey);
+ popup.querySelector(".ecg-review-close").addEventListener("click",close);
+ popup.addEventListener("click",e=>{if(e.target===popup)close()});
+ popup.querySelector(".ecg-review-close").focus();
+ const form=popup.querySelector("form");
+ if(form){
+  form.querySelector("#ecgClinicalStatus").value=status;
+  form.querySelector("#ecgClinicalFeedback").value=review.feedback||"";
+  form.addEventListener("submit",async e=>{
+   e.preventDefault();if(!report.attempt_id)return;
+   const button=form.querySelector("button"),message=form.querySelector(".ecg-review-error");
+   button.disabled=true;button.textContent="Saving…";message.textContent="";
+   try{
+    await attemptRequest("POST",{action:"admin_review_diagnosis",attempt_id:report.attempt_id,status:form.querySelector("#ecgClinicalStatus").value,feedback:form.querySelector("#ecgClinicalFeedback").value});
+    close();await refreshAttemptProgress();
+   }catch(error){message.textContent=error.message;button.disabled=false;button.textContent="Save clinical review"}
+  });
+ }
+}
+
 function renderPreviousEcgResults(){
  ensureEcgHistoryLayout();
  const intro=document.getElementById("ecgIntro");if(!intro)return;
