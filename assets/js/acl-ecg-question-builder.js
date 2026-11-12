@@ -237,16 +237,34 @@ let failedAttempt=false,elapsedAtFailure=null;
 function ecgGroupOf(q){return String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"")}
 function scrollEcgToActiveQuestion(){
  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const panel=document.getElementById("questionPanel");
   const question=document.getElementById("question");
-  if(!question||!document.getElementById("questionPanel")||document.getElementById("questionPanel").classList.contains("hidden"))return;
-  const fixedReference=document.getElementById("ecgQuestionReference");
-  let clearance=Math.min(340,Math.max(190,window.innerHeight*.33));
-  if(fixedReference&&getComputedStyle(fixedReference).position==="sticky"){
-   const rect=fixedReference.getBoundingClientRect();
-   if(rect.top>=0&&rect.top<window.innerHeight*.5)clearance=Math.max(clearance,Math.min(rect.bottom+24,window.innerHeight*.55));
+  const choices=document.getElementById("choices");
+  if(!panel||panel.classList.contains("hidden")||!question||!choices)return;
+  const reference=document.getElementById("ecgQuestionReference");
+  let topLimit=16;
+  if(reference&&getComputedStyle(reference).position==="sticky"){
+   const rect=reference.getBoundingClientRect();
+   if(rect.top>=0&&rect.top<window.innerHeight)topLimit=Math.max(topLimit,rect.bottom+12);
   }
-  const target=question.getBoundingClientRect().top+window.scrollY-clearance;
-  window.scrollTo({top:Math.max(0,target),behavior:"smooth"});
+  const qRect=question.getBoundingClientRect(),choiceRect=choices.getBoundingClientRect();
+  const bottomLimit=window.innerHeight-24;
+  // Never scroll just to expose the commentary. Only move when the question
+  // or its answer controls are clipped by the usable viewport.
+  if(qRect.top>=topLimit&&choiceRect.bottom<=bottomLimit)return;
+  const available=bottomLimit-topLimit;
+  const contentHeight=choiceRect.bottom-qRect.top;
+  let delta;
+  if(contentHeight<=available){
+   delta=qRect.top-topLimit;
+  }else if(qRect.top<topLimit||qRect.top>bottomLimit-90){
+   delta=qRect.top-topLimit;
+  }else if(choiceRect.top>bottomLimit-70){
+   delta=choiceRect.top-(bottomLimit-70);
+  }else{
+   return; // Tall choice grids remain user-scrollable without jumping to commentary.
+  }
+  if(Math.abs(delta)>8)window.scrollTo({top:Math.max(0,window.scrollY+delta),behavior:"smooth"});
  }));
 }
 function renderEcgStepReview(){
