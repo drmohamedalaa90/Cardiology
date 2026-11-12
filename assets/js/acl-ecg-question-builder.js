@@ -46,7 +46,8 @@ function seconds(){return started?Math.floor((Date.now()-started)/1000):0}
 function tick(){const t=seconds();const time=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");$("clock").textContent=time;const previewClock=$("ecgReadyClock");if(previewClock)previewClock.textContent="⏱ "+time;}
 function start(){if(!started){started=Date.now();stepEnteredAt=started;timer=setInterval(tick,1000);tick()}}
 function recordStep(q,isCorrect){if(!q||stepRecorded.has(q.id))return;const now=Date.now();stepTiming[q.id]={id:q.id,number:q.number,title:q.title,seconds:Math.max(0,Math.round((now-(stepEnteredAt||started||now))/1000)),correct:isCorrect,answer:answers[q.id]??""};stepRecorded.add(q.id);stepEnteredAt=now;}
-function restart(){failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};stepTiming={};stepRecorded=new Set();stepEnteredAt=0;tick()}
+let ecgStepReview=null;
+function restart(){ecgStepReview=null;failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};stepTiming={};stepRecorded=new Set();stepEnteredAt=0;tick()}
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}if(q.multi)return Array.isArray(k)&&Array.isArray(value)&&value.length===k.length&&value.every(x=>k.includes(x));return !!k&&value===k}
 const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let unlockedEcg=[1],attemptHistory=[],wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")")}return data;}async function refreshAttemptProgress(){try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];attemptHistory=data.attempts||[];slots();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];slots();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());void refreshAttemptProgress();
 let ecgImagesLoading=null;
@@ -182,7 +183,10 @@ function render(){
  slots();$("imageArea").innerHTML=images[slot]?'<img alt="Uploaded ECG" src="'+images[slot]+'">':'<span class="muted">Upload an ECG image to begin.</span>';
  const ready=!!images[slot]&&questions.length>0;$("questionPanel").classList.toggle("hidden",!ready);$("complete").classList.add("hidden");if(!ready){syncEcgReference();return;}
  syncEcgReference();
- const qs=path(),q=qs[index];if(!q){finish();return}
+ const qs=path(),q=qs[index];
+ const reviewBox=document.getElementById("ecgStepReviewBox");if(reviewBox)reviewBox.hidden=!ecgStepReview;
+ if(ecgStepReview){renderEcgStepReview();return;}
+ if(!q){finish();return}
  const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
  let previousGroup=document.getElementById("ecgPreviousGroup");
  if(!previousGroup){previousGroup=document.createElement("div");previousGroup.id="ecgPreviousGroup";$("question").parentElement.parentElement.insertBefore(previousGroup,$("question").parentElement);}
@@ -230,6 +234,30 @@ $("reset").onclick=$("again").onclick=()=>{if(!admin()&&isEcgCompleted(slot+1)){
 
 function showAnswerFeedback(isCorrect){const panel=$("questionPanel");panel.classList.remove("ecg-result-correct","ecg-result-wrong");void panel.offsetWidth;panel.classList.add(isCorrect?"ecg-result-correct":"ecg-result-wrong");document.querySelectorAll("#choices [data-answer]").forEach(button=>{if(button.dataset.answer===selected){button.classList.add("selected",isCorrect?"ecg-choice-correct":"ecg-choice-wrong");button.setAttribute("aria-label",button.textContent+(isCorrect?" — correct":" — incorrect"));}});$("feedback").className="feedback ecg-answer-animated "+(isCorrect?"good":"bad");$("feedback").innerHTML=isCorrect?'<span class="ecg-feedback-icon">✓</span><strong>Correct!</strong>':'<span class="ecg-feedback-icon">✕</span><strong>Incorrect!</strong><small>Continue interpreting the remaining ECG steps. Your complete report will show all correct and incorrect answers.</small>';document.querySelectorAll("[data-answer]").forEach(button=>button.disabled=true);$("next").disabled=true;}
 let failedAttempt=false,elapsedAtFailure=null;
+function ecgGroupOf(q){return String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"")}
+function renderEcgStepReview(){
+ const group=ecgStepReview?.group;if(!group)return;
+ const panel=$("questionPanel");
+ let box=document.getElementById("ecgStepReviewBox");
+ if(!box){box=document.createElement("section");box.id="ecgStepReviewBox";panel.appendChild(box)}
+ box.hidden=false;
+ const rows=questions.filter(q=>ecgGroupOf(q)===group&&Object.prototype.hasOwnProperty.call(answers,q.id));
+ const good=rows.filter(q=>stepTiming[q.id]?.correct).length;
+ const label=rows[0]?.title||"ECG interpretation";
+ const fmt=v=>Array.isArray(v)?(v.length?v.join(", "):"None"):typeof v==="object"&&v!==null?"From "+v.min+" to "+v.max:String(v??"None");
+ box.innerHTML='<div class="ecg-review-heading"><span class="ecg-review-icon">'+(good===rows.length?"✓":"✎")+'</span><div><small>STEP '+esc(group)+' COMPLETED</small><h2>'+esc(label)+' · '+good+'/'+rows.length+' correct</h2><p>Review your interpretation before continuing.</p></div></div>'+
+ rows.map(q=>{const ok=stepTiming[q.id]?.correct===true;return '<article class="ecg-review-row '+(ok?"ecg-review-ok":"ecg-review-bad")+'"><div class="ecg-review-row-head"><strong>Step '+esc(q.number)+' · '+esc(q.title)+'</strong><b>'+(ok?"✓ Correct":"✕ Incorrect")+'</b></div><div class="ecg-review-question">'+esc(q.text)+'</div><div><span>Your answer:</span> '+esc(fmt(answers[q.id]))+'</div>'+(ok?"":'<div class="ecg-review-correction"><strong>Correct answer:</strong> '+esc(fmt(keys[slot]?.[q.id]))+'</div>')+'</article>'}).join("")+
+ '<button type="button" class="ecg-review-continue" id="ecgReviewContinue">Continue to '+(ecgStepReview.next?"Step "+esc(ecgGroupOf(ecgStepReview.next)):"final ECG results")+' →</button>';
+ document.getElementById("ecgReviewContinue").onclick=()=>{ecgStepReview=null;box.hidden=true;stepEnteredAt=Date.now();render();requestAnimationFrame(()=>document.getElementById("stepLabel")?.scrollIntoView({behavior:"smooth",block:"center"}))};
+ $("choices").innerHTML="";$("question").textContent="";$("stepLabel").textContent="STEP "+group+" · Review";$("feedback").className="hidden";$("next").classList.add("hidden");$("progress").querySelectorAll("i").forEach(x=>{});
+ box.scrollIntoView({behavior:"smooth",block:"center"});
+}
+(function addEcgStepReviewStyles(){
+ if(document.getElementById("ecgStepReviewStyles"))return;
+ const style=document.createElement("style");style.id="ecgStepReviewStyles";
+ style.textContent='#ecgStepReviewBox{margin:20px 0;padding:22px;border-radius:22px;border:1px solid #b7d9ed;background:linear-gradient(145deg,#f0f9ff,#fff);box-shadow:0 12px 30px #0b467214}#ecgStepReviewBox[hidden]{display:none!important}.ecg-review-heading{display:flex;align-items:center;gap:16px;margin-bottom:20px;color:#123b5b}.ecg-review-icon{display:grid;place-items:center;width:58px;height:58px;flex-shrink:0;border-radius:18px;background:#0875b9;color:white;font-size:30px;font-weight:800}.ecg-review-heading small{letter-spacing:2px;font-weight:800;color:#0875b9}.ecg-review-heading h2{margin:5px 0;font-size:clamp(20px,3vw,28px)}.ecg-review-heading p{margin:0;color:#617b8c}.ecg-review-row{padding:15px 18px;border-radius:13px;margin:10px 0;background:#e9f8f1;border-left:5px solid #118b57;color:#183b53;line-height:1.55}.ecg-review-row.ecg-review-bad{background:#fff0f2;border-left-color:#cf2449}.ecg-review-row-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.ecg-review-row-head b{color:#128653}.ecg-review-bad .ecg-review-row-head b{color:#c32249}.ecg-review-question{font-weight:650;margin:5px 0}.ecg-review-correction{margin-top:8px;padding:9px 12px;border-radius:8px;background:#fff;color:#146044}.ecg-review-continue{display:block;margin:22px 0 0 auto;border:0;border-radius:12px;padding:15px 24px;background:#0874b8;color:#fff;font-weight:800;font-size:16px;cursor:pointer}@media(max-width:600px){#ecgStepReviewBox{padding:14px}.ecg-review-continue{width:100%}}';
+ document.head.appendChild(style);
+})();
 function submitAnswer(){
  const q=path()[index];if(!q||(Array.isArray(selected)?selected.length===0:selected==="")||checked||submitting)return;
  const value=Array.isArray(selected)?[...selected]:selected,k=keys[slot][q.id];
@@ -239,7 +267,7 @@ function submitAnswer(){
  checked=true;answers[q.id]=value;
  const isCorrect=correct(q,value);recordStep(q,isCorrect);updateLiveComment();showAnswerFeedback(isCorrect);
  if(!isCorrect)wrongCount++;
- setTimeout(()=>{index++;selected="";checked=false;stepEnteredAt=Date.now();render();requestAnimationFrame(()=>{const active=document.getElementById("question");if(!active)return;const top=active.getBoundingClientRect().top+window.scrollY-155;window.scrollTo({top:Math.max(0,top),behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});});},750);
+ setTimeout(()=>{const finishedGroup=ecgGroupOf(q);index++;const nextQuestion=path()[index];selected="";checked=false;stepEnteredAt=Date.now();if(!nextQuestion||ecgGroupOf(nextQuestion)!==finishedGroup){ecgStepReview={group:finishedGroup,next:nextQuestion||null};}render();if(!ecgStepReview)requestAnimationFrame(()=>{const active=document.getElementById("question");if(!active)return;const top=active.getBoundingClientRect().top+window.scrollY-155;window.scrollTo({top:Math.max(0,top),behavior:"smooth"});});},750);
 }
 $("next").onclick=submitAnswer;
 function openEcgPeek(){
