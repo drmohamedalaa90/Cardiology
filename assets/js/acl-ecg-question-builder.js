@@ -83,6 +83,7 @@ function closeEcgPeek(){
 }
 $("peekEcg").onclick=openEcgPeek;
 $("backToQuestion").onclick=closeEcgPeek;
+$("ecgPeekModal").addEventListener("click",e=>{if(e.target===$("ecgPeekModal")||e.target===$("ecgPeekModal").querySelector(".ecg-peek-image"))closeEcgPeek()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ecgPeekModal").classList.contains("hidden"))closeEcgPeek()});
 async function finish(){
  clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");
