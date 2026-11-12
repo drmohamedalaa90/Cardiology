@@ -1,0 +1,11 @@
+/* ACL universal pull-to-refresh: mobile, top-of-page only; preserve in-progress forms. */
+(()=>{'use strict';if(window.__aclPullRefresh)return;window.__aclPullRefresh=true;
+const coarse=matchMedia('(pointer:coarse)').matches;if(!coarse)return;
+const style=document.createElement('style');style.textContent='#acl-ptr{position:fixed;z-index:2147483000;top:env(safe-area-inset-top,0px);left:50%;transform:translate(-50%,-110%);border-radius:0 0 18px 18px;background:#0d3857;color:#fff;padding:10px 18px;box-shadow:0 6px 18px #0003;font:600 13px system-ui;pointer-events:none;transition:transform .18s;white-space:nowrap}#acl-ptr.visible{transform:translate(-50%,0)}';document.head.append(style);
+const badge=document.createElement('div');badge.id='acl-ptr';badge.setAttribute('role','status');badge.setAttribute('aria-live','polite');badge.textContent='↓ Pull to refresh';document.body.append(badge);
+let y=0,active=false,armed=false,delta=0;const atTop=()=>window.scrollY<=2&&document.scrollingElement?.scrollTop<=2;const editable=el=>!!el?.closest?.('input,textarea,select,[contenteditable],.modal,[role="dialog"]');const show=(txt)=>{badge.textContent=txt;badge.classList.add('visible')};const hide=()=>{badge.classList.remove('visible')};
+document.addEventListener('touchstart',e=>{if(e.touches.length!==1||!atTop()||editable(e.target)){active=false;return}active=true;armed=false;delta=0;y=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchmove',e=>{if(!active||e.touches.length!==1)return;delta=e.touches[0].clientY-y;if(!atTop()||delta<0){active=false;hide();return}if(delta>16){armed=delta>=95;show(armed?'↻ Release to refresh':'↓ Pull to refresh')}},{passive:true});
+document.addEventListener('touchend',()=>{if(!active)return;active=false;if(!armed){hide();return}show('↻ Refreshing…');document.dispatchEvent(new CustomEvent('acl:before-refresh'));window.location.reload()},{passive:true});
+document.addEventListener('touchcancel',()=>{active=false;hide()},{passive:true});
+})();
