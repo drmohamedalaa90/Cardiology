@@ -245,7 +245,7 @@ function renderAttemptReport(report){
  let history=[];try{history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]")}catch{}
  const panel=$("ecgAttemptReport")||document.createElement("section");panel.id="ecgAttemptReport";panel.style.cssText="margin-top:20px;overflow-x:auto";if(!panel.isConnected)$("complete").append(panel);
  const commentaryById={
- "1a":a=>"The ECG is well calibrated (25 mm/sec and 10 mm/mV).",
+ "1a":a=>a==="Yes"?"The ECG is well calibrated (25 mm/sec and 10 mm/mV).":"The ECG calibration is abnormal.",
  "1b":a=>a==="Yes"?"Electrodes are correctly placed.":"Possible incorrect electrode placement.",
  "1c":a=>a==="Yes"?"Recording quality is good, without significant interference.":"Recording quality is suboptimal.",
  "2a":a=>a==="Yes"?"The rhythm is regular.":"The rhythm is irregular.",
@@ -266,7 +266,7 @@ function renderAttemptReport(report){
  shareActions.innerHTML='<button type="button" class="btn" id="ecgExportResult">📷 Export beautiful result image</button><button type="button" class="btn secondary" id="ecgShareResult">↗ Share result</button><button type="button" class="btn secondary" id="ecgWhatsAppResult">WhatsApp</button>';
  panel.prepend(shareActions);
  const createResultImage=async()=>{
-  const W=1100,pad=64,groups=Array.from(grouped);
+  const W=1100,pad=64,grouped=new Map();for(const step of report.steps){const group=String(parseInt(step.number,10)||step.number);if(!grouped.has(group))grouped.set(group,[]);grouped.get(group).push(step)}const groups=Array.from(grouped);
   const height=345+groups.reduce((h,[g,steps])=>h+75+steps.length*37+12,0)+100;
   const canvas=document.createElement("canvas");canvas.width=W*2;canvas.height=height*2;const ctx=canvas.getContext("2d");ctx.scale(2,2);
   const round=(x,y,w,h,r,fill)=>{ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()};
