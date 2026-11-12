@@ -38,9 +38,10 @@ function path(){const result=[],done=new Set(),byId=new Map(questions.map(q=>[q.
 function seconds(){return started?Math.floor((Date.now()-started)/1000):0}
 function tick(){const t=seconds();$("clock").textContent=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0")}
 function start(){if(!started){started=Date.now();timer=setInterval(tick,1000)}}
-function restart(){if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};tick()}
+function restart(){wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};tick()}
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}return !!k&&value===k}
-function slots(){$("slots").innerHTML=images.map((x,i)=>'<button class="slot '+(slot===i?"current":"")+'" data-slot="'+i+'">ECG '+String(i+1).padStart(2,"0")+(x?" ✓":"")+'</button>').join("");document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{slot=+b.dataset.slot;document.getElementById("ecgCaseStage").hidden=false;restart();render();build();document.getElementById("ecgCaseStage").scrollIntoView({behavior:"smooth",block:"start"})})}
+const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let unlockedEcg=[1],attemptHistory=[],wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||"HTTP "+response.status);return data;}async function refreshAttemptProgress(){try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];attemptHistory=data.attempts||[];slots();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];slots();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());void refreshAttemptProgress();
+function slots(){$("slots").innerHTML=images.map((x,i)=>'<button class="slot '+(slot===i?"current":"")+'" data-slot="'+i+'">ECG '+String(i+1).padStart(2,"0")+(unlockedEcg.includes(i+1)?"":" 🔒")+(attemptHistory.some(a=>a.case_number===i+1&&a.score===a.total&&a.total>0)?" ✓":"")+(x?" 📄":"")+'</button>').join("");document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{const chosen=+b.dataset.slot;if(!unlockedEcg.includes(chosen+1)){alert("Complete ECG "+String(chosen).padStart(2,"0")+" with all answers correct to unlock this ECG.");return;}slot=chosen;document.getElementById("ecgCaseStage").hidden=false;restart();render();build();document.getElementById("ecgCaseStage").scrollIntoView({behavior:"smooth",block:"start"})})}
 function render(){
  slots();$("imageArea").innerHTML=images[slot]?'<img alt="Uploaded ECG" src="'+images[slot]+'">':'<span class="muted">Upload an ECG image to begin.</span>';
  const ready=!!images[slot]&&questions.length>0;$("questionPanel").classList.toggle("hidden",!ready);$("complete").classList.add("hidden");if(!ready)return;
@@ -63,7 +64,7 @@ function submitAnswer(){
    if(k===undefined||k===""||(q.type==="number"&&(!k||k.min===""||k.max===""||k.min===undefined||k.max===undefined))){
      $("feedback").className="feedback bad";$("feedback").textContent="Admin must configure the answer key or rate range for this ECG.";return;
    }
-   if(!correct(q,value)){
+   if(!correct(q,value)){wrongCount++;
      $("feedback").className="feedback bad";$("feedback").textContent="Not quite. Review the ECG and choose again.";selected="";if(q.type==="number"){$("numericAnswer").value="";$("next").disabled=true}return;
    }
  }
@@ -81,7 +82,7 @@ function closeEcgPeek(){
 $("peekEcg").onclick=openEcgPeek;
 $("backToQuestion").onclick=closeEcgPeek;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ecgPeekModal").classList.contains("hidden"))closeEcgPeek()});
-function finish(){clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");const qs=path(),score=qs.filter(q=>correct(q,answers[q.id])).length;$("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(seconds()/60)+"m "+seconds()%60+"s · "+(mode==="test"?"Preview score: "+score+" / "+qs.length:"Completed "+qs.length+" questions");$("result").textContent=qs.map(q=>q.number+" "+q.title+": "+(answers[q.id]||"Not answered")+(mode==="test"?" | Key: "+JSON.stringify(keys[slot][q.id]??"Not configured"):"")).join("\n")}
+async function finish(){clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");const qs=path(),score=qs.filter(q=>correct(q,answers[q.id])).length;const duration=seconds();$("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(seconds()/60)+"m "+seconds()%60+"s · "+(mode==="test"?"Preview score: "+score+" / "+qs.length:"Completed "+qs.length+" questions");$("result").textContent=qs.map(q=>q.number+" "+q.title+": "+(answers[q.id]||"Not answered")+(mode==="test"?" | Key: "+JSON.stringify(keys[slot][q.id]??"Not configured"):"")).join("\n")}
 window.addEventListener("acl-ecg-access-ready",build);render();build();
 
 // Keep the case workspace collapsed until an ECG is selected.
