@@ -106,18 +106,29 @@ function slots(){
 }
 function updateLiveComment(){
  const target=document.getElementById("ecgLiveComment");if(!target)return;
- const statements=[];
- const yes=(id,positive,negative)=>{if(answers[id]!==undefined)statements.push(answers[id]==="Yes"?positive:negative)};
- yes("1a","The ECG is well calibrated (25 mm/sec and 10 mm/mV).","ECG calibration is abnormal or incorrect.");
- yes("1b","Electrodes are correctly placed.","Possible incorrect electrode placement.");
- yes("1c","Recording quality is good, with no significant interference.","Recording quality is suboptimal or interference is present.");
- yes("2a","The rhythm is regular.","The rhythm is irregular.");
- if(answers["2b"]!==undefined)statements.push("Heart rate: "+answers["2b"]+" bpm.");
- if(answers["3"]!==undefined)statements.push("QRS axis: "+answers["3"]+".");
- yes("4a","P waves are present.","P waves are absent.");
- yes("4b","P-wave morphology is normal.","Abnormal P-wave morphology.");
- for(const q of questions){if(["1a","1b","1c","2a","2b","3","4a","4b"].includes(q.id))continue;if(answers[q.id]!==undefined)statements.push(q.title+": "+(Array.isArray(answers[q.id])?answers[q.id].join(", "):answers[q.id])+(q.type==="number"&&q.unit?" "+q.unit:"")+".")}
- target.innerHTML=statements.length?statements.map((line,i)=>'<div class="ecg-comment-line"><span class="ecg-comment-index">Step '+esc(questions.filter(q=>answers[q.id]!==undefined)[i]?.number??String(i+1))+'</span><span>'+esc(line)+'</span></div>').join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
+ const phrases={
+ "1a":v=>v==="Yes"?"The ECG is well calibrated (25 mm/sec and 10 mm/mV).":"ECG calibration is abnormal or incorrect.",
+ "1b":v=>v==="Yes"?"Electrodes are correctly placed.":"Possible incorrect electrode placement.",
+ "1c":v=>v==="Yes"?"Recording quality is good, with no significant interference.":"Recording quality is suboptimal or interference is present.",
+ "2a":v=>v==="Yes"?"The rhythm is regular.":"The rhythm is irregular.",
+ "2b":v=>"Heart rate: "+v+" bpm.",
+ "3":v=>"QRS axis: "+v+".",
+ "4a":v=>v==="Yes"?"P waves are present.":"P waves are absent.",
+ "4b":v=>v==="Yes"?"P-wave morphology is normal.":"Abnormal P-wave morphology."
+ };
+ const completed=Object.keys(answers).map(id=>questions.find(q=>q.id===id)).filter(Boolean);
+ const statements=completed.map(q=>{
+  const v=answers[q.id],line=phrases[q.id]?phrases[q.id](v):q.title+": "+(Array.isArray(v)?v.join(", "):v)+(q.type==="number"&&q.unit?" "+q.unit:"")+".";
+  const status=stepTiming[q.id]?.correct;
+  return '<div class="ecg-comment-line '+(status===false?"ecg-comment-incorrect":status===true?"ecg-comment-correct":"")+'"><span class="ecg-comment-index">Step '+esc(q.number)+'</span><span>'+esc(line)+'</span></div>';
+ });
+ target.innerHTML=statements.length?statements.join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
+}
+function ensureEcgCommentStyles(){
+ if(document.getElementById("ecgCommentStatusStyles"))return;
+ const style=document.createElement("style");style.id="ecgCommentStatusStyles";
+ style.textContent="#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect{background:#fff0f1!important;border-left:4px solid #cf2449!important;color:#9d1734!important;padding-left:10px;border-radius:7px}#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect .ecg-comment-index{color:#bb1c40!important}#ecgLiveComment .ecg-comment-line.ecg-comment-correct{border-left:4px solid #138650!important;padding-left:10px;border-radius:7px}#stepTitle{display:none!important}#stepLabel.ecg-step-with-title{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;max-width:100%;white-space:normal}#stepLabel .ecg-step-name{font-size:.72em;font-weight:650;opacity:.98}";
+ document.head.appendChild(style);
 }
 // Candidate-controlled ECG reference: sticky above the question or available on demand.
 let ecgReferenceMode=localStorage.getItem("acl-ecg-reference-mode")==="demand"?"demand":"fixed";
@@ -154,6 +165,7 @@ function syncEcgReference(){
  if(images[slot]&&reference.querySelector("#ecgReferenceImage").getAttribute("src")!==images[slot])reference.querySelector("#ecgReferenceImage").src=images[slot];
 }
 function render(){
+ ensureEcgCommentStyles();
  renderPreviousEcgResults();
  document.getElementById("ecgIntro").hidden=ecgAttemptOpened;
  document.getElementById("ecgSelector").hidden=ecgAttemptOpened;
@@ -164,7 +176,7 @@ function render(){
  syncEcgReference();
  const qs=path(),q=qs[index];if(!q){finish();return}
  const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
- $("stepLabel").textContent="STEP "+q.number;$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
+ $("stepLabel").classList.add("ecg-step-with-title");$("stepLabel").innerHTML="<span>STEP "+esc(q.number)+"</span><span class=\"ecg-step-name\">"+esc(q.title)+"</span>";$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
  $("progress").innerHTML=qs.map((x,i)=>'<i class="'+(i<index?"done":i===index?"now":"")+'"></i>').join("");
  if(q.multi&&q.type!=="number"){$("choices").innerHTML='<div class="ecg-lead-grid" style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;width:100%">'+q.options.map(o=>'<label class="ecg-lead-option" style="border:1px solid #b8d0e2;border-radius:12px;padding:12px 5px;text-align:center;cursor:pointer"><input type="checkbox" value="'+esc(o)+'"> '+esc(o)+'</label>').join("")+'</div>';$("choices").querySelectorAll('input').forEach(input=>input.onchange=()=>{selected=Array.from($("choices").querySelectorAll('input:checked')).map(x=>x.value);$("next").disabled=!selected.length;start()});}
  else if(q.type==="number"){$("choices").innerHTML='<label class="ecg-numeric-label">'+esc(q.inputLabel||q.title)+' <input id="numericAnswer" type="number" inputmode="decimal" step="any" placeholder="'+esc(q.placeholder||"Enter value")+'" value="'+esc(selected)+'"> <span class="ecg-numeric-unit">'+esc(q.unit||"")+'</span></label>';$("numericAnswer").oninput=e=>{selected=e.target.value;start();$("next").disabled=!selected};$("numericAnswer").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();submitAnswer()}}}
@@ -184,8 +196,8 @@ function submitAnswer(){
  if(k===undefined||k===""||(q.multi&&(!Array.isArray(k)||!k.length))||(q.type==="number"&&(!k||k.min===""||k.max===""||k.min===undefined||k.max===undefined))){
   $("feedback").className="feedback bad";$("feedback").textContent="Answer key unavailable. Ask the administrator to configure this ECG.";return;
  }
- checked=true;answers[q.id]=value;updateLiveComment();
- const isCorrect=correct(q,value);recordStep(q,isCorrect);showAnswerFeedback(isCorrect);
+ checked=true;answers[q.id]=value;
+ const isCorrect=correct(q,value);recordStep(q,isCorrect);updateLiveComment();showAnswerFeedback(isCorrect);
  if(!isCorrect)wrongCount++;
  setTimeout(()=>{index++;selected="";checked=false;stepEnteredAt=Date.now();render()},750);
 }
