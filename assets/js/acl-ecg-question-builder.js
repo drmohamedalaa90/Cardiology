@@ -490,7 +490,7 @@ function stopForEmergency(diagnosis){
  });
 })();
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}if(q.multi)return Array.isArray(k)&&Array.isArray(value)&&value.length===k.length&&value.every(x=>k.includes(x));return !!k&&value===ecgResolvedKey(q)}
-const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let unlockedEcg=[1],attemptHistory=[],ecgProgressVerified=false,ecgRetryAllowed=true,wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")")}return data;}async function refreshAttemptProgress(){ecgProgressVerified=false;renderPreviousEcgResults();try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];attemptHistory=Array.isArray(data.attempts)?data.attempts:[];ecgRetryAllowed=data.retry_allowed!==false;ecgProgressVerified=true;slots();renderPreviousEcgResults();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];attemptHistory=[];ecgProgressVerified=false;slots();renderPreviousEcgResults();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());window.addEventListener("acl-ecg-attempts-reset",()=>{attemptHistory=[];unlockedEcg=[1];ecgProgressVerified=false;renderPreviousEcgResults();void refreshAttemptProgress();});void refreshAttemptProgress();
+const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let unlockedEcg=[1],attemptHistory=[],ecgProgressVerified=false,ecgProgressChecked=false,ecgRetryAllowed=true,wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")")}return data;}async function refreshAttemptProgress(){ecgProgressVerified=false;ecgProgressChecked=false;renderPreviousEcgResults();try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];attemptHistory=Array.isArray(data.attempts)?data.attempts:[];ecgRetryAllowed=data.retry_allowed!==false;ecgProgressVerified=true;slots();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];attemptHistory=[];ecgProgressVerified=false;slots();}finally{ecgProgressChecked=true;renderPreviousEcgResults();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());window.addEventListener("acl-ecg-attempts-reset",()=>{attemptHistory=[];unlockedEcg=[1];ecgProgressVerified=false;renderPreviousEcgResults();void refreshAttemptProgress();});void refreshAttemptProgress();
 let ecgImagesLoading=null;
 async function restoreEcgImages(){try{const data=await attemptRequest("GET");for(const c of data.cases||[]){const n=Number(c.case_number)-1;if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&!images[n])images[n]=c.image_data;}if(images[slot])render();else slots();}catch(e){console.warn("ECG images could not be restored",e)}}window.addEventListener("acl-ecg-access-ready",()=>{ecgImagesLoading=restoreEcgImages()});ecgImagesLoading=restoreEcgImages();
 async function encodeEcgImage(file){const source=await createImageBitmap(file);try{const maxWidth=2200,maxHeight=1500,ratio=Math.min(1,maxWidth/source.width,maxHeight/source.height),canvas=document.createElement("canvas");canvas.width=Math.round(source.width*ratio);canvas.height=Math.round(source.height*ratio);const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0,canvas.width,canvas.height);let data=canvas.toDataURL("image/jpeg",.9);if(data.length>2400000)data=canvas.toDataURL("image/jpeg",.77);if(data.length>2400000)throw Error("ECG image is too large to save. Please reduce its resolution.");return data;}finally{source.close?.()}}
@@ -516,6 +516,11 @@ function ensureEcgHistoryLayout(){
  const style=document.createElement("style");style.id="ecgHistoryLayoutFix";
  style.textContent=`
  #ecgPreviousResults{width:100%;max-width:1100px;margin:20px auto;min-width:0}
+ #ecgPreviousResults .ecg-results-return-header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+ #ecgPreviousResults .ecg-results-return-header .ecg-history-heading{margin:5px 0}
+ #ecgPreviousResults .ecg-return-start{background:#087cba;color:#fff;border-radius:12px;padding:12px 17px}
+ #ecgPreviousResults .ecg-history-score{color:#a15925;font-weight:800}
+ #ecgPreviousResults .ecg-history-score.perfect{color:#08794d}
  #ecgPreviousResults .ecg-history-card{display:block;max-width:100%;min-width:0;overflow:hidden;background:#fff;border:1px solid #c7deed;border-radius:16px;margin:14px 0;box-shadow:0 8px 24px #113c5c0d}
  #ecgPreviousResults .ecg-history-summary{display:flex;align-items:center;gap:16px;padding:16px;min-width:0}
  #ecgPreviousResults .ecg-history-summary>img{display:block!important;flex:0 0 150px!important;width:150px!important;max-width:150px!important;height:105px!important;max-height:105px!important;object-fit:contain!important;border-radius:10px}
@@ -601,13 +606,27 @@ function renderPreviousEcgResults(){
  ensureEcgHistoryLayout();
  const intro=document.getElementById("ecgIntro");if(!intro)return;
  let area=document.getElementById("ecgPreviousResults");if(!area){area=document.createElement("section");area.id="ecgPreviousResults";intro.insertAdjacentElement("afterend",area)}
- const byCase=new Map();for(const r of previousEcgReports()){const n=Number(r.case_number);if(!byCase.has(n))byCase.set(n,r)}
- // Local browser copies are only previews, NEVER proof that a member still owns an ECG completion.
- // After an admin resets members in Neon, the stale localStorage report must disappear.
- const serverCompleted=new Set(ecgProgressVerified?attemptHistory.filter(a=>Number(a.total)>0&&Number(a.score)===Number(a.total)).map(a=>Number(a.case_number)):[]);
- const completed=[...byCase.values()].filter(r=>serverCompleted.has(Number(r.case_number))&&Number(r.score)===Number(r.total)&&Number(r.total)>0).sort((a,b)=>a.case_number-b.case_number);
- area.hidden=!completed.length;if(!completed.length){area.innerHTML="";return}
- area.innerHTML='<h3 class="ecg-history-heading">🏆 Your previous ECG results</h3><p class="ecg-history-sub">Review your completed ECGs and interpretations.</p>'+completed.map(r=>{
+ // Show only completed attempts verified in Neon. Local browser drafts cannot resurrect a reset.
+ const byCase=new Map();
+ if(ecgProgressVerified){
+  for(const a of attemptHistory){
+   const n=Number(a.case_number);
+   if(!Number.isInteger(n)||n<1||n>10||byCase.has(n)||!Number(a.total))continue;
+   byCase.set(n,{
+    case_number:n,score:Number(a.score)||0,total:Number(a.total)||0,
+    duration_seconds:Number(a.duration_seconds)||0,
+    steps:Array.isArray(a.step_details)?a.step_details:[],
+    commentary:Array.isArray(a.commentary)?a.commentary:[]
+   });
+  }
+ }
+ const completed=[...byCase.values()].sort((a,b)=>a.case_number-b.case_number);
+ const hasHistory=completed.length>0;
+ // Returning candidates see their report instead of the introductory image.
+ if(!ecgAttemptOpened)intro.hidden=!ecgProgressChecked||hasHistory;
+ area.hidden=!hasHistory;if(!hasHistory){area.innerHTML="";return}
+ const upcoming=nextAvailableEcg();
+ area.innerHTML='<div class="ecg-results-return-header"><div><h3 class="ecg-history-heading">🫀 Your ECG results</h3><p class="ecg-history-sub">Your submitted interpretations</p></div>'+(upcoming?'<button class="btn ecg-return-start" type="button" id="ecgReturnStart">▶ '+(completed.some(x=>x.case_number===upcoming)?'Repeat':'Start')+' ECG '+String(upcoming).padStart(2,"0")+'</button>':'')+'</div>'+completed.map(r=>{
  const n=Number(r.case_number),img=images[n-1];
 
  // The saved commentary consists of one completed sentence per interpretation step.
@@ -643,8 +662,10 @@ function renderPreviousEcgResults(){
   return '<div class="ecg-history-comment-row'+(raw?"":" ecg-history-missing")+'"><span class="ecg-history-comment-main"><strong class="ecg-history-step-label">Step '+n+':</strong><span class="ecg-history-comment-text">'+esc(comment)+'</span></span><b class="'+(wrong?"ecg-history-wrong":"")+'">'+result+'</b><time>'+(details.length?"⏱ "+fmtDuration(time):"—")+'</time></div>';
  }).join("");
 
- return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 You interpreted this ECG with 100% accuracy</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small><button type="button" class="btn secondary ecg-history-export" data-ecg-history-export="'+n+'">✒️ Sign and export report</button></div></div><details><summary>View full ECG, commentary and detailed timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
+ return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Submitted</strong><p class="ecg-history-score '+(r.score===r.total?"perfect":"")+'">'+(r.score===r.total?'🏆 Perfect interpretation':'✓ Score: '+r.score+'/'+r.total+' · '+Math.max(0,r.total-r.score)+' incorrect')+'</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small><button type="button" class="btn secondary ecg-history-export" data-ecg-history-export="'+n+'">✒️ Sign and export report</button></div></div><details><summary>View commentary, ECG and timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
  }).join("");
+ // Continue with the next eligible ECG without revealing the introductory photograph.
+ area.querySelector("#ecgReturnStart")?.addEventListener("click",()=>document.getElementById("ecgStart")?.click());
  // Export from a previous completed attempt without restarting it or changing saved progress.
  area.querySelectorAll("[data-ecg-history-export]").forEach(button=>button.addEventListener("click",async()=>{
   const caseNumber=Number(button.dataset.ecgHistoryExport);
@@ -787,7 +808,7 @@ function syncEcgReference(){
 function render(){
  ensureEcgCommentStyles();
  renderPreviousEcgResults();
- document.getElementById("ecgIntro").hidden=ecgAttemptOpened;
+ document.getElementById("ecgIntro").hidden=ecgAttemptOpened||!ecgProgressChecked||(ecgProgressVerified&&attemptHistory.some(a=>Number(a.total)>0));
  document.getElementById("ecgSelector").hidden=ecgAttemptOpened;
  $("questionPanel").classList.toggle("hidden",!ecgAttemptOpened);
  if(!ecgAttemptOpened){$("complete").classList.add("hidden");syncEcgReference();return;}
