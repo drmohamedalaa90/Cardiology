@@ -192,14 +192,19 @@ function showEcgCompletionHero(report,passed){
  renderPreviousEcgResults();
  panel.classList.toggle("ecg-completion-passed",!!passed);
  let banner=document.getElementById("ecgCompletionBanner");if(!banner){banner=document.createElement("div");banner.id="ecgCompletionBanner";panel.prepend(banner)}
- banner.innerHTML='<div class="ecg-completion-kicker">✦ '+(passed?'ECG MASTERED':'INTERPRETATION FINISHED')+'</div><h2>'+(passed?'🏆 Outstanding! ECG '+report.case_number+' completed.':'Your ECG interpretation is complete')+'</h2><p>'+(passed?'You achieved a perfect interpretation. Your progress has been saved and you are ready for your next challenge.':'Your result and step-by-step review are ready below.')+'</p><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+fmtDuration(report.duration_seconds)+'</span></div>';
+ const incorrect=report.steps.find(x=>!x.correct);
+ const mastered=!!passed;
+ const heading=mastered?"🏆 You mastered ECG "+report.case_number+" in "+fmtDuration(report.duration_seconds)+"!":incorrect?"💪 Don't give up!":"Your ECG interpretation is complete";
+ const subtitle=mastered?"Perfect interpretation — every assessment correct. Outstanding work!":incorrect?"You stopped at Step "+incorrect.number+" — "+incorrect.title+". Try again!":"Your interpretation report is ready below.";
+ banner.innerHTML='<div class="ecg-completion-art" aria-hidden="true">'+(mastered?'🏆 ✨ 🎉':incorrect?'💪 🫀':'🫀 ✨')+'</div><div class="ecg-completion-kicker">✦ '+(mastered?'ECG MASTERED':incorrect?'KEEP PRACTISING':'INTERPRETATION FINISHED')+'</div><h2>'+esc(heading)+'</h2><p>'+esc(subtitle)+'</p><div class="ecg-completion-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+(report.total?Math.round(report.score/report.total*100):0)+'"><span style="width:'+(report.total?Math.round(report.score/report.total*100):0)+'%"></span></div><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+fmtDuration(report.duration_seconds)+'</span></div>';
+
  let next=document.getElementById("ecgCompletionNext");if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.className="btn";next.type="button";banner.after(next)}
  next.hidden=!passed;next.textContent="Continue to next ECG →";
  next.onclick=()=>{ecgAttemptOpened=false;restart();const n=nextAvailableEcg();if(n)slot=n-1;render();document.getElementById("ecgCaseStage")?.scrollIntoView({behavior:"smooth",block:"start"})};
  const again=$("again");if(again){again.hidden=!!passed&&!admin();again.textContent=passed&&admin()?"↻ Try this ECG again (admin)":"↻ Restart interpretation"}
  if(!document.getElementById("ecgCompletionCSS")){const css=document.createElement("style");css.id="ecgCompletionCSS";css.textContent=`
  #ecgCompletionBanner{background:linear-gradient(125deg,#063957,#076ca8);border-radius:19px;color:white;padding:24px;margin-bottom:14px;box-shadow:0 12px 25px #0a4a7524}
- #ecgCompletionBanner h2{color:white;font-size:clamp(23px,3vw,34px);margin:9px 0}
+ #ecgCompletionBanner{position:relative;overflow:hidden;background:linear-gradient(125deg,#083956,#087a9d 55%,#095078)}\n #complete.ecg-completion-passed #ecgCompletionBanner{background:linear-gradient(125deg,#064a48,#078363 60%,#0b5876)}\n .ecg-completion-art{font-size:clamp(32px,6vw,54px);letter-spacing:8px;animation:ecg-celebrate 1.6s ease-in-out infinite alternate}\n @keyframes ecg-celebrate{from{transform:translateY(0) scale(1)}to{transform:translateY(-5px) scale(1.04)}}\n .ecg-completion-meter{height:12px;border-radius:99px;background:#ffffff40;overflow:hidden;margin-top:18px}.ecg-completion-meter span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7cebc5,#fff2a3);transition:width .5s ease}\n @media(prefers-reduced-motion:reduce){.ecg-completion-art{animation:none}}\n #ecgCompletionBanner h2{color:white;font-size:clamp(23px,3vw,34px);margin:9px 0}
  #ecgCompletionBanner p{color:#e2f5ff;margin:6px 0}
  .ecg-completion-kicker{font-size:12px;letter-spacing:2px;font-weight:850;color:#a9e9ff}
  .ecg-completion-metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
@@ -253,8 +258,25 @@ function renderAttemptReport(report){
  @media(max-width:540px){.ecg-tree-root{grid-template-columns:40px 1fr 65px;gap:4px;padding:7px}.ecg-tree-root>b{grid-column:2/4;text-align:left}.ecg-tree-branch{grid-template-columns:9px 1fr 55px;gap:4px}.ecg-tree-branch b{grid-column:2/4;text-align:left}.ecg-tree-branches{margin-left:24px;padding-left:12px}}
  `;document.head.appendChild(style)
  }
- const compare=history.map((a,i)=>'<tr><td>'+(i+1)+'</td><td>ECG '+esc(a.case_number)+'</td><td>'+esc(a.mode)+'</td><td>'+esc(new Date(a.created_at).toLocaleString())+'</td><td>'+fmtDuration(a.duration_seconds)+'</td><td>'+esc(a.score)+'/'+esc(a.total)+'</td></tr>').join("");
- panel.innerHTML='<h3>Step-by-step performance report</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><div class="ecg-report-cards">'+rows+'</div><h3 style="margin-top:22px">Compare your ECG attempts</h3><p class="muted small">All locally recorded attempts, including ECG 1, 2, 3 and later cases. Detailed timings are saved in this browser.</p><table class="ecg-report-table"><thead><tr><th>Attempt</th><th>ECG</th><th>Mode</th><th>Date</th><th>Total time</th><th>Correct steps</th></tr></thead><tbody>'+compare+'</tbody></table>';
+
+ const commentForStep=x=>{
+  const value=String(x.answer??"");
+  const yes=value==="Yes";
+  const descriptions={
+   "1a":yes?"The ECG is well calibrated at 25 mm/sec and 10 mm/mV.":"The ECG calibration is abnormal.",
+   "1b":yes?"The electrodes are correctly placed.":"Possible electrode misplacement is identified.",
+   "1c":yes?"The recording quality is good, without significant interference.":"The recording has poor quality or significant interference.",
+   "2a":yes?"The rhythm is regular.":"The rhythm is irregular.",
+   "2b":"The heart rate is "+value+" bpm.",
+   "3":"The QRS axis is "+value+".",
+   "4a":yes?"P waves are present.":"P waves are absent.",
+   "4b":yes?"P-wave morphology is normal.":"P-wave morphology is abnormal."
+  };
+  return descriptions[x.id]||x.title+": "+value+(x.type==="number"&&x.unit?" "+x.unit:"")+".";
+ };
+ const stepRows=report.steps.map((x,i)=>'<tr><td><strong>Step '+esc(x.number||i+1)+'</strong><small>'+esc(x.title)+'</small></td><td>'+esc(commentForStep(x))+'</td><td class="'+(x.correct?'ecg-step-ok':'ecg-step-wrong')+'">'+(x.correct?'✓':'✕')+'</td></tr>').join("");
+ panel.innerHTML='<h3>Step-by-step performance report</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><div class="ecg-report-cards">'+rows+'</div><h3 style="margin-top:22px">Your ECG interpretation — step by step</h3><p class="muted small">Your answers are converted into an ECG comment, arranged in interpretation order.</p><div class="ecg-comment-table-wrap"><table class="ecg-comment-table"><thead><tr><th>Step</th><th>Your interpretation comment</th><th>✓</th></tr></thead><tbody>'+stepRows+'</tbody></table></div>';
+ if(!document.getElementById("ecgCommentTableStyle")){const style=document.createElement("style");style.id="ecgCommentTableStyle";style.textContent='.ecg-comment-table-wrap{overflow-x:auto;border:1px solid #d1e3ed;border-radius:16px}.ecg-comment-table{border-collapse:collapse;width:100%;min-width:0}.ecg-comment-table th{background:#e8f4fc;color:#123e5c;text-align:left;padding:12px}.ecg-comment-table td{padding:12px;border-top:1px solid #e3edf3;vertical-align:top;line-height:1.5}.ecg-comment-table td:first-child{width:24%;color:#174b70}.ecg-comment-table td:first-child small{display:block;color:#698092;font-size:12px}.ecg-comment-table td:last-child{width:36px;text-align:center;font-weight:900}.ecg-step-ok{color:#087a49}.ecg-step-wrong{color:#c12646}@media(max-width:540px){.ecg-comment-table th,.ecg-comment-table td{padding:9px 7px;font-size:13px}.ecg-comment-table td:first-child{width:27%}}';document.head.appendChild(style)}
 
  const shareActions=document.createElement("div");shareActions.className="ecg-report-actions";
  shareActions.innerHTML='<button type="button" class="btn" id="ecgExportResult">📷 Export beautiful result image</button><button type="button" class="btn secondary" id="ecgShareResult">↗ Share result</button><button type="button" class="btn secondary" id="ecgWhatsAppResult">WhatsApp</button>';
