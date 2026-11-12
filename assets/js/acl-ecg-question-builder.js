@@ -235,6 +235,20 @@ $("reset").onclick=$("again").onclick=()=>{if(!admin()&&isEcgCompleted(slot+1)){
 function showAnswerFeedback(isCorrect){const panel=$("questionPanel");panel.classList.remove("ecg-result-correct","ecg-result-wrong");void panel.offsetWidth;panel.classList.add(isCorrect?"ecg-result-correct":"ecg-result-wrong");document.querySelectorAll("#choices [data-answer]").forEach(button=>{if(button.dataset.answer===selected){button.classList.add("selected",isCorrect?"ecg-choice-correct":"ecg-choice-wrong");button.setAttribute("aria-label",button.textContent+(isCorrect?" — correct":" — incorrect"));}});$("feedback").className="feedback ecg-answer-animated "+(isCorrect?"good":"bad");$("feedback").innerHTML=isCorrect?'<span class="ecg-feedback-icon">✓</span><strong>Correct!</strong>':'<span class="ecg-feedback-icon">✕</span><strong>Incorrect!</strong><small>Continue interpreting the remaining ECG steps. Your complete report will show all correct and incorrect answers.</small>';document.querySelectorAll("[data-answer]").forEach(button=>button.disabled=true);$("next").disabled=true;}
 let failedAttempt=false,elapsedAtFailure=null;
 function ecgGroupOf(q){return String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"")}
+function scrollEcgToActiveQuestion(){
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const question=document.getElementById("question");
+  if(!question||!document.getElementById("questionPanel")||document.getElementById("questionPanel").classList.contains("hidden"))return;
+  const fixedReference=document.getElementById("ecgQuestionReference");
+  let clearance=Math.min(340,Math.max(190,window.innerHeight*.33));
+  if(fixedReference&&getComputedStyle(fixedReference).position==="sticky"){
+   const rect=fixedReference.getBoundingClientRect();
+   if(rect.top>=0&&rect.top<window.innerHeight*.5)clearance=Math.max(clearance,Math.min(rect.bottom+24,window.innerHeight*.55));
+  }
+  const target=question.getBoundingClientRect().top+window.scrollY-clearance;
+  window.scrollTo({top:Math.max(0,target),behavior:"smooth"});
+ }));
+}
 function renderEcgStepReview(){
  const group=ecgStepReview?.group;if(!group)return;
  const panel=$("questionPanel");
@@ -266,7 +280,7 @@ function renderEcgStepReview(){
  '<article class="ecg-review-row '+(allCorrect?"ecg-review-ok":"ecg-review-bad")+'"><div class="ecg-review-row-head"><strong>Step '+esc(group)+'</strong><b>'+(allCorrect?"✓ Correct":"✕ "+mistakes.length+" incorrect")+'</b></div><div class="ecg-review-question">'+esc(comment)+'</div></article>'+
  (mistakes.length?'<div class="ecg-review-corrections"><strong>Corrections</strong>'+mistakes.map(q=>'<div class="ecg-review-correction"><b>'+esc(q.text)+'</b><br>Your answer: '+esc(fmt(answers[q.id]))+' · Correct answer: '+esc(fmt(keys[slot]?.[q.id]))+'</div>').join("")+'</div>':"")+
  '<button type="button" class="ecg-review-continue" id="ecgReviewContinue">Continue to '+(ecgStepReview.next?"Step "+esc(ecgGroupOf(ecgStepReview.next)):"final ECG results")+' →</button>';
- document.getElementById("ecgReviewContinue").onclick=()=>{ecgStepReview=null;box.hidden=true;stepEnteredAt=Date.now();render();requestAnimationFrame(()=>document.getElementById("stepLabel")?.scrollIntoView({behavior:"smooth",block:"center"}))};
+ document.getElementById("ecgReviewContinue").onclick=()=>{ecgStepReview=null;box.hidden=true;stepEnteredAt=Date.now();render();scrollEcgToActiveQuestion()};
  $("choices").innerHTML="";$("question").textContent="";$("stepLabel").textContent="STEP "+group+" · Review";$("feedback").className="hidden";$("next").classList.add("hidden");$("progress").querySelectorAll("i").forEach(x=>{});
  box.scrollIntoView({behavior:"smooth",block:"center"});
 }
@@ -285,7 +299,7 @@ function submitAnswer(){
  checked=true;answers[q.id]=value;
  const isCorrect=correct(q,value);recordStep(q,isCorrect);updateLiveComment();showAnswerFeedback(isCorrect);
  if(!isCorrect)wrongCount++;
- setTimeout(()=>{const finishedGroup=ecgGroupOf(q);index++;const nextQuestion=path()[index];selected="";checked=false;stepEnteredAt=Date.now();if(!nextQuestion||ecgGroupOf(nextQuestion)!==finishedGroup){ecgStepReview={group:finishedGroup,next:nextQuestion||null};}render();if(!ecgStepReview)requestAnimationFrame(()=>{const active=document.getElementById("question");if(!active)return;const top=active.getBoundingClientRect().top+window.scrollY-155;window.scrollTo({top:Math.max(0,top),behavior:"smooth"});});},750);
+ setTimeout(()=>{const finishedGroup=ecgGroupOf(q);index++;const nextQuestion=path()[index];selected="";checked=false;stepEnteredAt=Date.now();if(!nextQuestion||ecgGroupOf(nextQuestion)!==finishedGroup){ecgStepReview={group:finishedGroup,next:nextQuestion||null};}render();if(!ecgStepReview)scrollEcgToActiveQuestion();},750);
 }
 $("next").onclick=submitAnswer;
 function openEcgPeek(){
