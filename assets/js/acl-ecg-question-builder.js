@@ -81,15 +81,15 @@ function syncEcgReference(){
   panel.parentElement.insertBefore(reference,panel);
   const style=document.createElement("style");style.textContent=`
 #ecgQuestionReference{margin:0 0 16px;border:1px solid #bdd8e9;border-radius:16px;background:#f8fcff;overflow:visible;box-shadow:0 6px 20px #123b5a0d}
-#ecgQuestionReference.ecg-ref-fixed{position:sticky;top:8px;z-index:15}
+#ecgQuestionReference.ecg-ref-fixed{position:sticky;top:0;z-index:15;max-height:min(29vh,245px);overflow:hidden}
 .ecg-ref-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;flex-wrap:wrap;color:#103554}
 .ecg-ref-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ecg-ref-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px}
 .ecg-ref-toggle input{width:18px;height:18px;accent-color:#0872ba}
 #ecgReferenceView{background:#e2f2fd;border:1px solid #b2d7f0;border-radius:10px;padding:9px 13px;color:#064b79;font-weight:700;cursor:pointer}
 #ecgReferenceBody{display:flex;justify-content:center;padding:0 10px 10px}
-#ecgReferenceImage{display:block;max-width:100%;width:auto;max-height:min(32vh,270px);object-fit:contain;border-radius:8px;cursor:zoom-in}
+#ecgReferenceImage{display:block;max-width:100%;width:auto;max-height:min(20vh,180px);object-fit:contain;border-radius:8px;cursor:zoom-in}
 #ecgQuestionReference.ecg-ref-demand #ecgReferenceBody{display:none}\n#ecgQuestionReference.ecg-ref-demand{position:static}
-@media(max-width:650px){#ecgQuestionReference.ecg-ref-fixed{top:0}#ecgReferenceImage{max-height:23vh}.ecg-ref-toolbar{font-size:13px}.ecg-ref-toggle{font-size:12px}}
+@media(max-width:650px){#ecgQuestionReference.ecg-ref-fixed{top:0;max-height:22vh}#ecgReferenceImage{max-height:15vh}.ecg-ref-toolbar{font-size:13px}.ecg-ref-toggle{font-size:12px}}
 `;document.head.appendChild(style);
   reference.querySelector("#ecgReferenceView").addEventListener("click",()=>openEcgPeek());
   reference.querySelector("#ecgReferenceImage").addEventListener("click",()=>openEcgPeek());
@@ -112,7 +112,7 @@ function render(){
  syncEcgReference();
  const qs=path(),q=qs[index];if(!q){finish();return}
  const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
- $("stepLabel").textContent="STEP "+q.number;$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
+ $("stepLabel").textContent="STEP "+q.number;$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
  $("progress").innerHTML=qs.map((x,i)=>'<i class="'+(i<index?"done":i===index?"now":"")+'"></i>').join("");
  if(q.type==="number"){$("choices").innerHTML='<label>Heart rate (bpm) <input id="numericAnswer" type="number" inputmode="decimal" step="any" placeholder="Enter rate" value="'+esc(selected)+'"></label>';$("numericAnswer").oninput=e=>{selected=e.target.value;start();$("next").disabled=!selected};$("numericAnswer").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();submitAnswer()}}}
  else{$("choices").innerHTML=q.options.map(o=>'<button class="btn answer '+(selected===o?"selected":"")+'" data-answer="'+esc(o)+'">'+esc(o)+'</button>').join("");document.querySelectorAll("[data-answer]").forEach(b=>b.onclick=()=>{if(checked)return;selected=b.dataset.answer;start();submitAnswer()})}
@@ -250,7 +250,7 @@ if(ecgReadyBegin)ecgReadyBegin.addEventListener("click",()=>{
  ecgAttemptOpened=true;
  const next=nextEcgNumber();
  const button=document.querySelector('[data-slot="'+(next-1)+'"]');
- if(button){button.click();document.getElementById("questionPanel")?.scrollIntoView({behavior:"smooth",block:"start"});}
+ if(button){button.click();document.getElementById("ecgQuestionReference")?.scrollIntoView({behavior:"smooth",block:"start"});}
 });
 (function enableEcgPullRefresh(){
  const indicator=document.getElementById("aclPullRefresh");if(!indicator)return;
