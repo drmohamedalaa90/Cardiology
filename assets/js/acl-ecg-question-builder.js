@@ -1150,6 +1150,17 @@ async function createEcgResultImage(report,signatureValue){
    const wrong=report.steps?.some(item=>String(item.number||"").match(/^\d+/)?.[0]===step&&item.correct===false)||false;
    return {step,lines,h,wrong};
   });
+  // Step 10 is an unscored clinical interpretation requiring instructor validation.
+  const diagnosis=String(report.final_diagnosis||report.answers?._final_diagnosis||"").trim();
+  const extra=String(report.extra_notes||report.answers?._extra_notes||"").trim();
+  if(diagnosis){
+   const lines=wrapText("Final diagnosis: "+diagnosis,W-2*pad-175,18);
+   rows.push({step:"10",lines,h:Math.max(62,lines.length*27+27),wrong:false});
+   if(extra){
+    const notesLines=wrapText("Additional notes: "+extra,W-2*pad-175,18);
+    rows.push({step:"10",lines:notesLines,h:Math.max(62,notesLines.length*27+27),wrong:false});
+   }
+  }
   const headerH=138,statsH=81,ecgBlockH=imgH?imgH+47:0;
   const notesH=special.length?special.length*40+18:0;
   const rowH=rows.reduce((sum,r)=>sum+r.h+8,0);
