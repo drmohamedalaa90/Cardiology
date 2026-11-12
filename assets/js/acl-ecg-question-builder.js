@@ -242,11 +242,29 @@ function renderEcgStepReview(){
  if(!box){box=document.createElement("section");box.id="ecgStepReviewBox";panel.appendChild(box)}
  box.hidden=false;
  const rows=questions.filter(q=>ecgGroupOf(q)===group&&Object.prototype.hasOwnProperty.call(answers,q.id));
- const good=rows.filter(q=>stepTiming[q.id]?.correct).length;
+ const good=rows.filter(q=>stepTiming[q.id]?.correct===true).length;
+ const allCorrect=rows.length>0&&good===rows.length;
  const label=rows[0]?.title||"ECG interpretation";
  const fmt=v=>Array.isArray(v)?(v.length?v.join(", "):"None"):typeof v==="object"&&v!==null?"From "+v.min+" to "+v.max:String(v??"None");
- box.innerHTML='<div class="ecg-review-heading"><span class="ecg-review-icon">'+(good===rows.length?"✓":"✎")+'</span><div><small>STEP '+esc(group)+' COMPLETED</small><h2>'+esc(label)+' · '+good+'/'+rows.length+' correct</h2><p>Review your interpretation before continuing.</p></div></div>'+
- rows.map(q=>{const ok=stepTiming[q.id]?.correct===true;return '<article class="ecg-review-row '+(ok?"ecg-review-ok":"ecg-review-bad")+'"><div class="ecg-review-row-head"><strong>Step '+esc(q.number)+' · '+esc(q.title)+'</strong><b>'+(ok?"✓ Correct":"✕ Incorrect")+'</b></div><div class="ecg-review-question">'+esc(q.text)+'</div><div><span>Your answer:</span> '+esc(fmt(answers[q.id]))+'</div>'+(ok?"":'<div class="ecg-review-correction"><strong>Correct answer:</strong> '+esc(fmt(keys[slot]?.[q.id]))+'</div>')+'</article>'}).join("")+
+ const statement=q=>{
+   const answer=answers[q.id], key=keys[slot]?.[q.id];
+   const yes=String(answer).toLowerCase()==="yes";
+   const title=String(q.title||"").toLowerCase(),prompt=String(q.text||"").toLowerCase();
+   if(q.type==="number")return (q.title||q.text)+": "+fmt(answer)+(q.unit?" "+q.unit:"");
+   if(q.type==="leads"||q.multi)return (q.title||q.text)+": "+fmt(answer);
+   if(yes&&/calibrat/.test(title+" "+prompt))return "The ECG is well calibrated (25 mm/sec and 10 mm/mV)";
+   if(!yes&&/calibrat/.test(title+" "+prompt))return "ECG calibration is abnormal or incorrect";
+   if(yes&&/electrode/.test(title+" "+prompt))return "Electrodes are correctly placed";
+   if(!yes&&/electrode/.test(title+" "+prompt))return "Possible incorrect electrode placement";
+   if(yes&&/recording quality|interference/.test(title+" "+prompt))return "Recording quality is good, without significant interference";
+   if(!yes&&/recording quality|interference/.test(title+" "+prompt))return "Recording quality is poor or affected by interference";
+   return (q.title||q.text)+": "+fmt(answer);
+ };
+ const comment=rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
+ const mistakes=rows.filter(q=>stepTiming[q.id]?.correct!==true);
+ box.innerHTML='<div class="ecg-review-heading"><span class="ecg-review-icon">'+(allCorrect?"✓":"!")+'</span><div><small>STEP '+esc(group)+' COMPLETED</small><h2>'+esc(label)+'</h2><p>'+good+'/'+rows.length+' correct · Review your interpretation before continuing.</p></div></div>'+
+ '<article class="ecg-review-row '+(allCorrect?"ecg-review-ok":"ecg-review-bad")+'"><div class="ecg-review-row-head"><strong>Step '+esc(group)+'</strong><b>'+(allCorrect?"✓ Correct":"✕ "+mistakes.length+" incorrect")+'</b></div><div class="ecg-review-question">'+esc(comment)+'</div></article>'+
+ (mistakes.length?'<div class="ecg-review-corrections"><strong>Corrections</strong>'+mistakes.map(q=>'<div class="ecg-review-correction"><b>'+esc(q.text)+'</b><br>Your answer: '+esc(fmt(answers[q.id]))+' · Correct answer: '+esc(fmt(keys[slot]?.[q.id]))+'</div>').join("")+'</div>':"")+
  '<button type="button" class="ecg-review-continue" id="ecgReviewContinue">Continue to '+(ecgStepReview.next?"Step "+esc(ecgGroupOf(ecgStepReview.next)):"final ECG results")+' →</button>';
  document.getElementById("ecgReviewContinue").onclick=()=>{ecgStepReview=null;box.hidden=true;stepEnteredAt=Date.now();render();requestAnimationFrame(()=>document.getElementById("stepLabel")?.scrollIntoView({behavior:"smooth",block:"center"}))};
  $("choices").innerHTML="";$("question").textContent="";$("stepLabel").textContent="STEP "+group+" · Review";$("feedback").className="hidden";$("next").classList.add("hidden");$("progress").querySelectorAll("i").forEach(x=>{});
