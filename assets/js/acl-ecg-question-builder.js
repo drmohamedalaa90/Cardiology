@@ -72,10 +72,10 @@ function submitAnswer(){
      $("feedback").className="feedback bad";$("feedback").textContent="Admin must configure the answer key or rate range for this ECG.";return;
    }
    if(!correct(q,value)){wrongCount++;
-     $("feedback").className="feedback bad";$("feedback").textContent="Not quite. Review the ECG and choose again.";selected="";if(q.type==="number"){$("numericAnswer").value="";$("next").disabled=true}return;
+     $("feedback").className="feedback bad ecg-answer-animated";$("feedback").textContent="✕ Incorrect — try again";selected="";if(q.type==="number"){$("numericAnswer").value="";$("next").disabled=true}return;
    }
  }
- answers[q.id]=value;index++;selected="";checked=false;render();
+ answers[q.id]=value;if(mode==="practice"){$("feedback").className="feedback ecg-answer-animated";$("feedback").textContent="✓ Correct!";document.querySelectorAll("[data-answer]").forEach(b=>b.disabled=true);setTimeout(()=>{index++;selected="";checked=false;render()},650)}else{index++;selected="";checked=false;render()}
 }
 $("next").onclick=submitAnswer;
 function openEcgPeek(){
