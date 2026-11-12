@@ -115,12 +115,28 @@ window.addEventListener("acl-ecg-access-ready",build);render();build();
 
 // The ECG held by the doctor is the sole visible case-launch control.
 const ecgStartButton=document.getElementById("ecgStart");
+const ecgReadyOverlay=document.getElementById("ecgReadyOverlay");
+const ecgReadyImage=document.getElementById("ecgReadyImage");
+const ecgReadyBegin=document.getElementById("ecgReadyBegin");
+const ecgReadyClose=document.getElementById("ecgReadyClose");
+let readyReturnFocus=null;
+function closeReadyPreview(){if(!ecgReadyOverlay)return;ecgReadyOverlay.hidden=true;document.body.style.overflow="";readyReturnFocus?.focus?.();}
+if(ecgReadyClose)ecgReadyClose.addEventListener("click",closeReadyPreview);
+if(ecgReadyOverlay)ecgReadyOverlay.addEventListener("click",e=>{if(e.target===ecgReadyOverlay)closeReadyPreview()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ecgReadyOverlay&&!ecgReadyOverlay.hidden){e.stopPropagation();closeReadyPreview()}});
 if(ecgStartButton)ecgStartButton.onclick=()=>{
+ const next=Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0))||Math.max(1,...unlockedEcg);
+ const preview=images[next-1];
+ if(!preview){alert("This ECG recording is not available yet.");return;}
+ readyReturnFocus=ecgStartButton;ecgReadyImage.src=preview;ecgReadyImage.alt="ECG "+String(next).padStart(2,"0")+" recording";ecgReadyOverlay.hidden=false;document.body.style.overflow="hidden";ecgReadyBegin.focus();
+};
+if(ecgReadyBegin)ecgReadyBegin.addEventListener("click",()=>{
+ ecgReadyOverlay.hidden=true;document.body.style.overflow="";
  ecgAttemptOpened=true;
  const next=Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0))||Math.max(1,...unlockedEcg);
  const button=document.querySelector('[data-slot="'+(next-1)+'"]');
  if(button){button.click();document.getElementById("questionPanel")?.scrollIntoView({behavior:"smooth",block:"start"});}
-};
+});
 (function enableEcgPullRefresh(){
  const indicator=document.getElementById("aclPullRefresh");if(!indicator)return;
  let startY=0,tracking=false,pull=0;
