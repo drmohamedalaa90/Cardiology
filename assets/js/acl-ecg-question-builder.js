@@ -127,7 +127,7 @@ function updateLiveComment(){
 function ensureEcgCommentStyles(){
  if(document.getElementById("ecgCommentStatusStyles"))return;
  const style=document.createElement("style");style.id="ecgCommentStatusStyles";
- style.textContent="#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect{background:#fff0f1!important;border-left:4px solid #cf2449!important;color:#9d1734!important;padding-left:10px;border-radius:7px}#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect .ecg-comment-index{color:#bb1c40!important}#ecgLiveComment .ecg-comment-line.ecg-comment-correct{border-left:4px solid #138650!important;padding-left:10px;border-radius:7px}#stepTitle{display:none!important}#stepLabel.ecg-step-with-title{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;max-width:100%;white-space:normal}#stepLabel .ecg-step-name{font-size:1em;font-weight:750;opacity:1}";
+ style.textContent="#progress i.ecg-progress-wrong{background:#d21f49!important;border-color:#d21f49!important}#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect{background:#fff0f1!important;border-left:4px solid #cf2449!important;color:#9d1734!important;padding-left:10px;border-radius:7px}#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect .ecg-comment-index{color:#bb1c40!important}#ecgLiveComment .ecg-comment-line.ecg-comment-correct{border-left:4px solid #138650!important;padding-left:10px;border-radius:7px}#stepTitle{display:none!important}#stepLabel.ecg-step-with-title{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;max-width:100%;white-space:normal}#stepLabel .ecg-step-name{font-size:1em;font-weight:750;opacity:1}";
  document.head.appendChild(style);
 }
 // Candidate-controlled ECG reference: sticky above the question or available on demand.
@@ -177,7 +177,7 @@ function render(){
  const qs=path(),q=qs[index];if(!q){finish();return}
  const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
  $("stepLabel").classList.add("ecg-step-with-title");$("stepLabel").innerHTML="<span>STEP "+esc(q.number)+"</span><span class=\"ecg-step-name\">"+esc(q.title)+"</span>";$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
- $("progress").innerHTML=qs.map((x,i)=>'<i class="'+(i<index?"done":i===index?"now":"")+'"></i>').join("");
+ $("progress").innerHTML=qs.map((x,i)=>'<i class="'+(i<index?(stepTiming[x.id]?.correct===false?"ecg-progress-wrong":"done"):i===index?"now":"")+'"></i>').join("");
  if(q.multi&&q.type!=="number"){
   if(!document.getElementById("ecgLeadTileStyles")){
    const s=document.createElement("style");s.id="ecgLeadTileStyles";s.textContent=`
