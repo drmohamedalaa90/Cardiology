@@ -99,54 +99,6 @@
 #ecgIntro .ecg-doctor-photo-button:before,#ecgIntro .ecg-doctor-photo-button:after{display:none!important}
 #ecgIntro .ecg-doctor-photo-button img{pointer-events:none}
 @media(max-width:600px){#ecgIntro .ecg-start-primary{width:calc(100% - 20px);padding:13px 12px}}
-
-/* ECG Lab homepage layout cleanup: one CTA, image beneath, aligned controls. */
-#ecgLabMain{width:100%;max-width:1160px;margin:0 auto;min-width:0}
-#ecgLabMain>.top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin:8px 0 18px}
-#ecgLabMain>.top>div{min-width:0}
-#ecgLabMain .ecg-premium-title{margin:0;line-height:1.18;overflow-wrap:break-word}
-#ecgIntro.ecg-photo-hero{
- display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;
- width:100%!important;max-width:980px!important;margin:12px auto 20px!important;gap:16px!important;
- padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important;
- min-height:0!important;grid-template-columns:none!important
-}
-#ecgIntro .ecg-start-primary{
- box-sizing:border-box!important;position:relative!important;inset:auto!important;order:0!important;
- flex:none!important;width:min(100%,470px)!important;min-height:58px!important;padding:14px 22px!important;
- border-radius:16px!important;background:linear-gradient(110deg,#0871b4,#0999c7)!important;
- font-size:clamp(16px,2.2vw,21px)!important;font-weight:800!important;
- color:#fff!important;text-shadow:none!important;white-space:normal!important;
- box-shadow:0 8px 20px rgba(6,85,136,.2)!important;cursor:pointer!important
-}
-#ecgIntro .ecg-doctor-photo-button{
- box-sizing:border-box!important;order:1!important;display:block!important;width:100%!important;max-width:980px!important;
- height:auto!important;max-height:none!important;min-height:0!important;overflow:hidden!important;
- border-radius:20px!important;line-height:0!important;padding:0!important;margin:0!important;
- background:#eff6fb!important;box-shadow:0 4px 20px rgba(19,61,93,.09)!important;
- isolation:auto!important;transform:none!important;cursor:default!important
-}
-#ecgIntro .ecg-doctor-photo-button img{
- display:block!important;width:100%!important;max-width:100%!important;height:auto!important;max-height:none!important;
- min-height:0!important;aspect-ratio:auto!important;object-fit:contain!important;object-position:center!important;
- margin:0!important;padding:0!important;border-radius:20px!important;pointer-events:none!important
-}
-#ecgIntro .ecg-doctor-photo-button:before,
-#ecgIntro .ecg-doctor-photo-button:after,
-#ecgIntro .ecg-start-prompt,
-#ecgIntro .ecg-intro-copy{display:none!important}
-#ecgAdminLaunch.ecg-admin-launch{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;max-width:980px;margin:12px auto 24px}
-#ecgAdminLaunch[hidden]{display:none!important}
-#ecgAdminLaunch .btn{min-height:44px;border-radius:12px;white-space:normal}
-@media(max-width:700px){
- #ecgLabMain>.top{align-items:flex-start;flex-direction:column}
- #ecgLabMain .ecg-premium-title{font-size:clamp(23px,6vw,34px)!important}
- #ecgIntro.ecg-photo-hero{gap:12px!important;margin:12px auto 16px!important}
- #ecgIntro .ecg-start-primary{width:100%!important;min-height:54px!important}
- #ecgIntro .ecg-doctor-photo-button,#ecgIntro .ecg-doctor-photo-button img{border-radius:13px!important}
- #ecgAdminLaunch.ecg-admin-launch{justify-content:stretch}
- #ecgAdminLaunch .btn{flex:1 1 180px}
-}
 </style></head>
 <body><div id="aclPullRefresh" role="status" aria-live="polite">↓ Pull to refresh</div><section id="ecgAccessGate" class="panel" role="status" aria-live="polite"><h2 id="ecgAccessTitle">Checking ECG Lab access…</h2><p id="ecgAccessMessage" class="access-message">Verifying your ACL membership and administrator access settings.</p><a id="ecgBackCourse" class="btn secondary" style="display:inline-block;text-decoration:none;margin-top:8px" href="basic-special-course.html">← Return to Quiz Room</a></section><main id="ecgLabMain" hidden><a id="ecgLegacyBack" class="btn secondary" href="basic-special-course.html" style="display:inline-block;text-decoration:none;margin-bottom:16px">← Back to Quiz Room</a>
 <div class="top"><div><h1 class="ecg-premium-title"><span class="ecg-title-pulse" aria-hidden="true">♥</span><a class="ecg-title-home" href="acl-ecg-interpretation.html" aria-label="Return to ECG Interpretation Lab homepage" title="Return to ECG Lab homepage">ECG <em>Interpretation</em> Lab</a></h1></div><div class="tabs"><button class="btn active ecg-mode-practice" id="practice" type="button">✦ Practice Mode</button><button class="btn secondary ecg-mode-soon" id="test" type="button" disabled aria-disabled="true" title="Test Mode will be available soon">♛ Test Mode <small>Coming soon</small></button></div></div>
