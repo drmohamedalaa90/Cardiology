@@ -108,4 +108,4 @@ async function finish(){
 window.addEventListener("acl-ecg-access-ready",build);render();build();
 
 // Keep the case workspace collapsed until an ECG is selected.
-const ecgStartButton=document.getElementById("ecgStart");if(ecgStartButton)ecgStartButton.onclick=()=>document.getElementById("ecgSelector").scrollIntoView({behavior:"smooth",block:"start"});
+const ecgStartButton=document.getElementById("ecgStart");if(ecgStartButton)ecgStartButton.onclick=()=>{const target=unlockedEcg.includes(slot+1)?slot:Math.max(0,(unlockedEcg[0]||1)-1);const button=document.querySelector(`[data-slot="${target}"]`);if(button)button.click();else document.getElementById("ecgSelector").scrollIntoView({behavior:"smooth",block:"start"});};
