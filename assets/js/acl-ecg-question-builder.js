@@ -490,7 +490,25 @@ function stopForEmergency(diagnosis){
  });
 })();
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}if(q.multi)return Array.isArray(k)&&Array.isArray(value)&&value.length===k.length&&value.every(x=>k.includes(x));return !!k&&value===ecgResolvedKey(q)}
-const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let availableEcgCases=new Set(),unlockedEcg=[1],attemptHistory=[],ecgProgressVerified=false,ecgProgressChecked=false,ecgRetryAllowed=true,wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")")}return data;}async function refreshAttemptProgress(){
+const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let availableEcgCases=new Set(),unlockedEcg=[1],attemptHistory=[],ecgProgressVerified=false,ecgProgressChecked=false,ecgRetryAllowed=true,wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){
+ const t=attemptToken();if(!t)throw Error("Sign in required");
+ const options={method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"};
+ let response;
+ try{response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),options)}
+ catch(e){
+  // Retry a temporary network/CORS failure once without clearing verified data.
+  await new Promise(resolve=>setTimeout(resolve,650));
+  try{response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),options)}
+  catch{throw Error("ECG server is currently unreachable. Saved ECG recordings and attempts are preserved in Neon; reconnect and refresh.")}
+ }
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok){
+  const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");
+  throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")");
+ }
+ return data;
+}
+async function refreshAttemptProgress(){
  const previouslyVerified=ecgProgressVerified;
  ecgProgressChecked=false;
  // Keep already-verified results visible during refresh; avoid flashing empty cards.
