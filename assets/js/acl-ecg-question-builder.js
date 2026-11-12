@@ -82,7 +82,21 @@ function closeEcgPeek(){
 $("peekEcg").onclick=openEcgPeek;
 $("backToQuestion").onclick=closeEcgPeek;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ecgPeekModal").classList.contains("hidden"))closeEcgPeek()});
-async function finish(){clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");const qs=path(),score=qs.filter(q=>correct(q,answers[q.id])).length;const duration=seconds();$("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(seconds()/60)+"m "+seconds()%60+"s · "+(mode==="test"?"Preview score: "+score+" / "+qs.length:"Completed "+qs.length+" questions");$("result").textContent=qs.map(q=>q.number+" "+q.title+": "+(answers[q.id]||"Not answered")+(mode==="test"?" | Key: "+JSON.stringify(keys[slot][q.id]??"Not configured"):"")).join("\n")}
+async function finish(){
+ clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");
+ const duration=seconds();
+ $("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(duration/60)+"m "+duration%60+"s";
+ $("result").textContent="Saving your attempt securely…";
+ try{
+  const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:slot+1,mode,answers,duration_seconds:duration,mistakes:wrongCount});
+  const passed=saved.passed;
+  if(passed&&saved.unlocked_next&&!unlockedEcg.includes(saved.unlocked_next))unlockedEcg.push(saved.unlocked_next);
+  attemptHistory.unshift({case_number:slot+1,score:saved.score,total:saved.total});
+  slots();
+  $("summary").textContent+=" · Score "+saved.score+"/"+saved.total;
+  $("result").textContent=passed?"✓ Attempt saved to Neon. Next ECG unlocked.":"Attempt saved to Neon. All questions must be correct on the attempt to unlock the next ECG.";
+ }catch(error){$("result").textContent="⚠ Attempt not saved: "+error.message+". Progress remains locked. Retry when connected.";}
+}
 window.addEventListener("acl-ecg-access-ready",build);render();build();
 
 // Keep the case workspace collapsed until an ECG is selected.
