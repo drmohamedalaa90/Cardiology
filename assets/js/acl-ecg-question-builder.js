@@ -42,7 +42,8 @@ function recordStep(q,isCorrect){if(!q||stepRecorded.has(q.id))return;const now=
 function restart(){failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};stepTiming={};stepRecorded=new Set();stepEnteredAt=0;tick()}
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}return !!k&&value===k}
 const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let unlockedEcg=[1],attemptHistory=[],wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||"HTTP "+response.status);return data;}async function refreshAttemptProgress(){try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];attemptHistory=data.attempts||[];slots();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];slots();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());void refreshAttemptProgress();
-async function restoreEcgImages(){try{const data=await attemptRequest("GET");for(const c of data.cases||[]){const n=Number(c.case_number)-1;if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&!images[n])images[n]=c.image_data;}if(images[slot])render();else slots();}catch(e){console.warn("ECG images could not be restored",e)}}window.addEventListener("acl-ecg-access-ready",()=>void restoreEcgImages());void restoreEcgImages();
+let ecgImagesLoading=null;
+async function restoreEcgImages(){try{const data=await attemptRequest("GET");for(const c of data.cases||[]){const n=Number(c.case_number)-1;if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&!images[n])images[n]=c.image_data;}if(images[slot])render();else slots();}catch(e){console.warn("ECG images could not be restored",e)}}window.addEventListener("acl-ecg-access-ready",()=>{ecgImagesLoading=restoreEcgImages()});ecgImagesLoading=restoreEcgImages();
 async function encodeEcgImage(file){const source=await createImageBitmap(file);try{const maxWidth=2200,maxHeight=1500,ratio=Math.min(1,maxWidth/source.width,maxHeight/source.height),canvas=document.createElement("canvas");canvas.width=Math.round(source.width*ratio);canvas.height=Math.round(source.height*ratio);const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0,canvas.width,canvas.height);let data=canvas.toDataURL("image/jpeg",.9);if(data.length>2400000)data=canvas.toDataURL("image/jpeg",.77);if(data.length>2400000)throw Error("ECG image is too large to save. Please reduce its resolution.");return data;}finally{source.close?.()}}
 function slots(){
  $("slots").innerHTML=images.map((x,i)=>{const locked=!unlockedEcg.includes(i+1),done=attemptHistory.some(a=>Number(a.case_number)===i+1&&a.score===a.total&&a.total>0);
@@ -50,7 +51,24 @@ function slots(){
  return '<button type="button" class="slot '+(slot===i?"current ":"")+(locked?"ecg-locked ":"")+(x?"ecg-has-image":"")+'" data-slot="'+i+'" aria-label="ECG '+(i+1)+(locked?", locked":"")+'"><span class="ecg-tile-art">'+preview+(locked?'<span class="ecg-tile-lock">🔒</span>':x?'<span class="ecg-tile-saved">✓ Saved</span>':'')+'</span><span class="ecg-tile-title">ECG '+String(i+1).padStart(2,"0")+(done?" ✓":"")+'</span></button>'}).join("");
  document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{const chosen=+b.dataset.slot;if(!unlockedEcg.includes(chosen+1)){alert("Complete ECG "+String(chosen).padStart(2,"0")+" with all answers correct to unlock this ECG.");return;}slot=chosen;document.getElementById("ecgCaseStage").hidden=false;if(!(ecgAttemptOpened&&started))restart();render();build();document.getElementById("ecgCaseStage").scrollIntoView({behavior:"smooth",block:"start"})})
 }
+function updateLiveComment(){
+ const target=document.getElementById("ecgLiveComment");if(!target)return;
+ const statements=[];
+ const yes=(id,positive,negative)=>{if(answers[id]!==undefined)statements.push(answers[id]==="Yes"?positive:negative)};
+ yes("1a","The ECG is well calibrated (25 mm/sec and 10 mm/mV).","ECG calibration is abnormal or incorrect.");
+ yes("1b","Electrodes are correctly placed.","Possible incorrect electrode placement.");
+ yes("1c","Recording quality is good, with no significant interference.","Recording quality is suboptimal or interference is present.");
+ yes("2a","The rhythm is regular.","The rhythm is irregular.");
+ if(answers["2b"]!==undefined)statements.push("Heart rate: "+answers["2b"]+" bpm.");
+ if(answers["3"]!==undefined)statements.push("QRS axis: "+answers["3"]+".");
+ yes("4a","P waves are present.","P waves are absent.");
+ yes("4b","P-wave morphology is normal.","Abnormal P-wave morphology.");
+ for(const q of questions){if(["1a","1b","1c","2a","2b","3","4a","4b"].includes(q.id))continue;if(answers[q.id]!==undefined)statements.push(q.title+": "+answers[q.id]+".")}
+ target.innerHTML=statements.length?statements.map((line,i)=>'<div class="ecg-comment-line"><span class="ecg-comment-index">'+String(i+1).padStart(2,"0")+'</span><span>'+esc(line)+'</span></div>').join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
+}
 function render(){
+ document.getElementById("ecgIntro").hidden=ecgAttemptOpened;
+ document.getElementById("ecgSelector").hidden=ecgAttemptOpened;
  $("questionPanel").classList.toggle("hidden",!ecgAttemptOpened);
  if(!ecgAttemptOpened){$("complete").classList.add("hidden");return;}
  slots();$("imageArea").innerHTML=images[slot]?'<img alt="Uploaded ECG" src="'+images[slot]+'">':'<span class="muted">Upload an ECG image to begin.</span>';
@@ -61,6 +79,7 @@ function render(){
  $("progress").innerHTML=qs.map((x,i)=>'<i class="'+(i<index?"done":i===index?"now":"")+'"></i>').join("");
  if(q.type==="number"){$("choices").innerHTML='<label>Heart rate (bpm) <input id="numericAnswer" type="number" inputmode="decimal" step="any" placeholder="Enter rate" value="'+esc(selected)+'"></label>';$("numericAnswer").oninput=e=>{selected=e.target.value;start();$("next").disabled=!selected};$("numericAnswer").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();submitAnswer()}}}
  else{$("choices").innerHTML=q.options.map(o=>'<button class="btn answer '+(selected===o?"selected":"")+'" data-answer="'+esc(o)+'">'+esc(o)+'</button>').join("");document.querySelectorAll("[data-answer]").forEach(b=>b.onclick=()=>{if(checked)return;selected=b.dataset.answer;start();submitAnswer()})}
+ updateLiveComment();
  $("feedback").className="hidden";$("next").classList.toggle("hidden",q.type!=="number");$("next").disabled=!selected;$("next").textContent="Submit rate";
 }
 $("upload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;if(!f.type.startsWith("image/")||f.size>12e6)return alert("Please upload an image smaller than 12 MB.");if(!admin())return alert("Only an administrator can upload ECG recordings.");const target=slot,notice=$("ecgImageSaveStatus");notice.textContent="🟠 Preparing ECG image…";try{const data=await encodeEcgImage(f);images[target]=data;restart();render();notice.textContent="🟠 Saving ECG image to Neon…";await attemptRequest("POST",{action:"save_image",case_number:target+1,image_data:data});notice.textContent="🟢 ECG image saved to Neon · "+new Date().toLocaleTimeString();}catch(err){notice.textContent="🔴 ECG image not saved: "+err.message+" · Keep this page open and retry upload.";console.error(err)}};
@@ -75,7 +94,7 @@ function submitAnswer(){
  if(k===undefined||k===""||(q.type==="number"&&(!k||k.min===""||k.max===""||k.min===undefined||k.max===undefined))){
   $("feedback").className="feedback bad";$("feedback").textContent="Answer key unavailable. Ask the administrator to configure this ECG.";return;
  }
- checked=true;answers[q.id]=value;
+ checked=true;answers[q.id]=value;updateLiveComment();
  const isCorrect=correct(q,value);recordStep(q,isCorrect);showAnswerFeedback(isCorrect);
  if(!isCorrect){
   wrongCount++;failedAttempt=true;elapsedAtFailure=seconds();clearInterval(timer);timer=null;
@@ -98,6 +117,7 @@ $("backToQuestion").onclick=closeEcgPeek;
 $("ecgPeekModal").addEventListener("click",e=>{if(e.target===$("ecgPeekModal")||e.target===$("ecgPeekModal").querySelector(".ecg-peek-image"))closeEcgPeek()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ecgPeekModal").classList.contains("hidden"))closeEcgPeek()});
 async function finish(){
+ document.getElementById("ecgIntro").hidden=true;document.getElementById("ecgSelector").hidden=true;
  clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");
  const duration=elapsedAtFailure??seconds();
  const completedSteps=Object.values(stepTiming);const scoreLocal=completedSteps.filter(x=>x.correct).length;const report={case_number:slot+1,mode,created_at:new Date().toISOString(),duration_seconds:duration,score:scoreLocal,total:completedSteps.length,steps:completedSteps};
@@ -136,16 +156,33 @@ function closeReadyPreview(){if(!ecgReadyOverlay)return;restart();ecgReadyOverla
 if(ecgReadyClose)ecgReadyClose.addEventListener("click",closeReadyPreview);
 if(ecgReadyOverlay)ecgReadyOverlay.addEventListener("click",e=>{if(e.target===ecgReadyOverlay)closeReadyPreview()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ecgReadyOverlay&&!ecgReadyOverlay.hidden){e.stopPropagation();closeReadyPreview()}});
-if(ecgStartButton)ecgStartButton.onclick=()=>{
- const next=Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0))||Math.max(1,...unlockedEcg);
- const preview=images[next-1];
- if(!preview){alert("This ECG recording is not available yet.");return;}
- readyReturnFocus=ecgStartButton;restart();start();ecgReadyImage.src=preview;ecgReadyImage.alt="ECG "+String(next).padStart(2,"0")+" recording";ecgReadyOverlay.hidden=false;document.body.style.overflow="hidden";ecgReadyBegin.focus();
-};
+let ecgLaunchPending=false;
+function nextEcgNumber(){return Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0))||Math.max(1,...unlockedEcg)}
+async function openPreparedEcg(){
+ if(ecgLaunchPending)return;ecgLaunchPending=true;
+ const preparing=document.getElementById("ecgPreparingOverlay");
+ if(preparing)preparing.hidden=false;
+ try{
+  if(ecgImagesLoading)await ecgImagesLoading;
+  if(!images[nextEcgNumber()-1]){ecgImagesLoading=restoreEcgImages();await ecgImagesLoading}
+  const next=nextEcgNumber(),preview=images[next-1];
+  if(!preview)throw Error("ECG "+String(next).padStart(2,"0")+" is not uploaded yet. Please ask the administrator to upload it.");
+  await new Promise((resolve,reject)=>{const img=new Image();img.onload=resolve;img.onerror=()=>reject(Error("ECG image could not be loaded. Please check the connection and try again."));img.src=preview});
+  readyReturnFocus=ecgStartButton;restart();slot=next-1;
+  ecgReadyImage.src=preview;ecgReadyImage.alt="ECG "+String(next).padStart(2,"0")+" recording";
+  ecgReadyOverlay.hidden=false;document.body.style.overflow="hidden";start();ecgReadyBegin.focus();
+ }catch(error){
+  const message=document.getElementById("ecgPreparingMessage");
+  if(message)message.textContent=error.message;
+  await new Promise(resolve=>setTimeout(resolve,1700));
+  if(message)message.textContent="Preparing your ECG recording and timer…";
+ }finally{if(preparing)preparing.hidden=true;ecgLaunchPending=false}
+}
+if(ecgStartButton)ecgStartButton.onclick=()=>void openPreparedEcg();
 if(ecgReadyBegin)ecgReadyBegin.addEventListener("click",()=>{
  ecgReadyOverlay.hidden=true;document.body.style.overflow="";
  ecgAttemptOpened=true;
- const next=Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0))||Math.max(1,...unlockedEcg);
+ const next=nextEcgNumber();
  const button=document.querySelector('[data-slot="'+(next-1)+'"]');
  if(button){button.click();document.getElementById("questionPanel")?.scrollIntoView({behavior:"smooth",block:"start"});}
 });
