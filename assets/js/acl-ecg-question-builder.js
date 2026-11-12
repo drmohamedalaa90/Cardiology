@@ -266,12 +266,12 @@ function renderEcgStepReview(){
    const title=String(q.title||"").toLowerCase(),prompt=String(q.text||"").toLowerCase();
    if(q.type==="number")return (q.title||q.text)+": "+fmt(answer)+(q.unit?" "+q.unit:"");
    if(q.type==="leads"||q.multi)return (q.title||q.text)+": "+fmt(answer);
-   if(yes&&/calibrat/.test(title+" "+prompt))return "The ECG is well calibrated (25 mm/sec and 10 mm/mV)";
-   if(!yes&&/calibrat/.test(title+" "+prompt))return "ECG calibration is abnormal or incorrect";
-   if(yes&&/electrode/.test(title+" "+prompt))return "Electrodes are correctly placed";
-   if(!yes&&/electrode/.test(title+" "+prompt))return "Possible incorrect electrode placement";
-   if(yes&&/recording quality|interference/.test(title+" "+prompt))return "Recording quality is good, without significant interference";
-   if(!yes&&/recording quality|interference/.test(title+" "+prompt))return "Recording quality is poor or affected by interference";
+   // Classify each question by its own wording, not the shared step title.
+   // A parent title can mention calibration for every Step 1 subquestion.
+   const wording=prompt||title;
+   if(/electrode|lead placement|leads correctly placed/.test(wording))return yes?"Electrodes are correctly placed":"Possible incorrect electrode placement";
+   if(/recording quality|interference|baseline quality|signal quality/.test(wording))return yes?"Recording quality is good, with no significant interference":"Recording quality is suboptimal or interference is present";
+   if(/calibrat|voltage and time|paper speed/.test(wording))return yes?"The ECG is well calibrated (25 mm/sec and 10 mm/mV)":"ECG calibration is abnormal or incorrect";
    return (q.title||q.text)+": "+fmt(answer);
  };
  const comment=rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
