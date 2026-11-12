@@ -42,8 +42,8 @@ async function init(){
    status("⚠️ Browser and Neon drafts both exist. Export JSON before syncing; Save Now will overwrite Neon draft.");
   }else status("🟢 Neon connected · edits will save automatically");
   enabled=true;
-  // Do not overwrite existing Neon cases merely by opening the page.
-  // A first-time browser draft may be synced explicitly via Save Now.
+  // Initial migration: when Neon has no ECG cases, preserve and upload the existing browser draft.
+  if(local&&!remoteHasCases)schedule();
  }catch(e){status("🔴 Neon unavailable: "+e.message+" · Browser draft retained");}
 }
 window.aclEcgSaveNow=()=>{if(!enabled){status("🔴 Neon is not connected");return Promise.resolve();}dirty=true;clearTimeout(timer);timer=null;return flush();};
