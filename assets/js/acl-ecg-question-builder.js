@@ -40,7 +40,7 @@ function tick(){const t=seconds();$("clock").textContent=String(Math.floor(t/60)
 function start(){if(!started){started=Date.now();timer=setInterval(tick,1000)}}
 function restart(){if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};tick()}
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}return !!k&&value===k}
-function slots(){$("slots").innerHTML=images.map((x,i)=>'<button class="slot '+(slot===i?"current":"")+'" data-slot="'+i+'">ECG '+String(i+1).padStart(2,"0")+(x?" ✓":"")+'</button>').join("");document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{slot=+b.dataset.slot;restart();render();build()})}
+function slots(){$("slots").innerHTML=images.map((x,i)=>'<button class="slot '+(slot===i?"current":"")+'" data-slot="'+i+'">ECG '+String(i+1).padStart(2,"0")+(x?" ✓":"")+'</button>').join("");document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{slot=+b.dataset.slot;document.getElementById("ecgCaseStage").hidden=false;restart();render();build();document.getElementById("ecgCaseStage").scrollIntoView({behavior:"smooth",block:"start"})})}
 function render(){
  slots();$("imageArea").innerHTML=images[slot]?'<img alt="Uploaded ECG" src="'+images[slot]+'">':'<span class="muted">Upload an ECG image to begin.</span>';
  const ready=!!images[slot]&&questions.length>0;$("questionPanel").classList.toggle("hidden",!ready);$("complete").classList.add("hidden");if(!ready)return;
@@ -83,3 +83,6 @@ $("backToQuestion").onclick=closeEcgPeek;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ecgPeekModal").classList.contains("hidden"))closeEcgPeek()});
 function finish(){clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");const qs=path(),score=qs.filter(q=>correct(q,answers[q.id])).length;$("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(seconds()/60)+"m "+seconds()%60+"s · "+(mode==="test"?"Preview score: "+score+" / "+qs.length:"Completed "+qs.length+" questions");$("result").textContent=qs.map(q=>q.number+" "+q.title+": "+(answers[q.id]||"Not answered")+(mode==="test"?" | Key: "+JSON.stringify(keys[slot][q.id]??"Not configured"):"")).join("\n")}
 window.addEventListener("acl-ecg-access-ready",build);render();build();
+
+// Keep the case workspace collapsed until an ECG is selected.
+const ecgStartButton=document.getElementById("ecgStart");if(ecgStartButton)ecgStartButton.onclick=()=>document.getElementById("ecgSelector").scrollIntoView({behavior:"smooth",block:"start"});
