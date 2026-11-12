@@ -50,7 +50,28 @@ function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>un
 
 function previousEcgReports(){try{return JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]").filter(x=>x&&Array.isArray(x.steps))}catch{return []}}
 function cleanEcgComment(value){return String(value||"").replace(/^\\s*\\d{1,2}\\s*[.)-]?\\s*/,"").trim()}
+function ensureEcgHistoryLayout(){
+ if(document.getElementById("ecgHistoryLayoutFix"))return;
+ const style=document.createElement("style");style.id="ecgHistoryLayoutFix";
+ style.textContent=`
+ #ecgPreviousResults{width:100%;max-width:1100px;margin:20px auto;min-width:0}
+ #ecgPreviousResults .ecg-history-card{display:block;max-width:100%;min-width:0;overflow:hidden;background:#fff;border:1px solid #c7deed;border-radius:16px;margin:14px 0;box-shadow:0 8px 24px #113c5c0d}
+ #ecgPreviousResults .ecg-history-summary{display:flex;align-items:center;gap:16px;padding:16px;min-width:0}
+ #ecgPreviousResults .ecg-history-summary>img{display:block!important;flex:0 0 150px!important;width:150px!important;max-width:150px!important;height:105px!important;max-height:105px!important;object-fit:contain!important;border-radius:10px}
+ #ecgPreviousResults .ecg-history-summary>div{flex:1;min-width:0}
+ #ecgPreviousResults .ecg-history-summary strong{font-size:18px;color:#0b426b}
+ #ecgPreviousResults .ecg-history-summary p{font-weight:750;color:#08794d;margin:8px 0}
+ #ecgPreviousResults .ecg-history-summary small{color:#58758a}
+ #ecgPreviousResults .ecg-history-card details{display:block;border-top:1px solid #e0eaf2}
+ #ecgPreviousResults .ecg-history-card summary{display:list-item;cursor:pointer;background:#edf7ff;padding:14px 18px;font-weight:750;color:#07679d}
+ #ecgPreviousResults .ecg-history-expanded{padding:18px;min-width:0;overflow:hidden}
+ #ecgPreviousResults .ecg-history-full{display:block!important;width:auto!important;max-width:100%!important;height:auto!important;max-height:65vh!important;object-fit:contain!important;margin:0 auto 18px}
+ #ecgPreviousResults .ecg-history-comments{max-width:100%;overflow-wrap:anywhere}
+ @media(max-width:540px){#ecgPreviousResults .ecg-history-summary>img{flex-basis:95px!important;width:95px!important;max-width:95px!important;height:80px!important}#ecgPreviousResults .ecg-history-summary strong{font-size:15px}}
+ `;document.head.appendChild(style);
+}
 function renderPreviousEcgResults(){
+ ensureEcgHistoryLayout();
  const intro=document.getElementById("ecgIntro");if(!intro)return;
  let area=document.getElementById("ecgPreviousResults");if(!area){area=document.createElement("section");area.id="ecgPreviousResults";intro.insertAdjacentElement("afterend",area)}
  const byCase=new Map();for(const r of previousEcgReports()){const n=Number(r.case_number);if(!byCase.has(n))byCase.set(n,r)}
