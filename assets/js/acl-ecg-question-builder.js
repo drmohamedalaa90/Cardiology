@@ -47,6 +47,19 @@ async function restoreEcgImages(){try{const data=await attemptRequest("GET");for
 async function encodeEcgImage(file){const source=await createImageBitmap(file);try{const maxWidth=2200,maxHeight=1500,ratio=Math.min(1,maxWidth/source.width,maxHeight/source.height),canvas=document.createElement("canvas");canvas.width=Math.round(source.width*ratio);canvas.height=Math.round(source.height*ratio);const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0,canvas.width,canvas.height);let data=canvas.toDataURL("image/jpeg",.9);if(data.length>2400000)data=canvas.toDataURL("image/jpeg",.77);if(data.length>2400000)throw Error("ECG image is too large to save. Please reduce its resolution.");return data;}finally{source.close?.()}}
 function isEcgCompleted(n){return attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0)}
 function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!isEcgCompleted(n))||null}
+
+function previousEcgReports(){try{return JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]").filter(x=>x&&Array.isArray(x.steps))}catch{return []}}
+function renderPreviousEcgResults(){
+ const intro=document.getElementById("ecgIntro");if(!intro)return;
+ let area=document.getElementById("ecgPreviousResults");if(!area){area=document.createElement("section");area.id="ecgPreviousResults";intro.insertAdjacentElement("afterend",area)}
+ const byCase=new Map();for(const r of previousEcgReports()){const n=Number(r.case_number);if(!byCase.has(n))byCase.set(n,r)}
+ const completed=[...byCase.values()].filter(r=>Number(r.score)===Number(r.total)&&Number(r.total)>0).sort((a,b)=>a.case_number-b.case_number);
+ area.hidden=ecgAttemptOpened||!completed.length;if(!completed.length){area.innerHTML="";return}
+ area.innerHTML='<h3 class="ecg-history-heading">🏆 Your completed ECG interpretations</h3><p class="ecg-history-sub">Your recordings, commentary and timings are always here to review.</p>'+completed.map(r=>{
+ const n=Number(r.case_number),img=images[n-1],comments=(r.commentary||[]).map(c=>'<li>'+esc(c)+'</li>').join("");
+ return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 '+r.score+'/'+r.total+' correct &nbsp; ⏱ '+fmtDuration(r.duration_seconds)+'</p><small>'+esc((r.commentary||[]).slice(0,2).join(" "))+'</small></div></div><details><summary>View full ECG, commentary and detailed timings ⌄</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><ol>'+comments+'</ol><h4>Step timings</h4>'+(r.steps||[]).map(x=>'<div class="ecg-history-step"><span>'+esc(x.title)+'</span><time>'+fmtDuration(x.seconds)+'</time><b>'+(x.correct?'✓ Correct':'✕ Missed')+'</b></div>').join("")+'</div></details></article>'
+ }).join("");
+}
 function slots(){
  $("slots").innerHTML=images.map((x,i)=>{const locked=!unlockedEcg.includes(i+1),done=isEcgCompleted(i+1);
  const preview=x?'<img class="ecg-tile-preview" src="'+x+'" alt="ECG '+(i+1)+' recording" loading="lazy">':'<span class="ecg-tile-empty" aria-hidden="true">ECG not uploaded</span>';
@@ -103,6 +116,7 @@ function syncEcgReference(){
  if(images[slot]&&reference.querySelector("#ecgReferenceImage").getAttribute("src")!==images[slot])reference.querySelector("#ecgReferenceImage").src=images[slot];
 }
 function render(){
+ renderPreviousEcgResults();
  document.getElementById("ecgIntro").hidden=ecgAttemptOpened;
  document.getElementById("ecgSelector").hidden=ecgAttemptOpened;
  $("questionPanel").classList.toggle("hidden",!ecgAttemptOpened);
@@ -121,7 +135,7 @@ function render(){
 }
 $("upload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;if(!f.type.startsWith("image/")||f.size>12e6)return alert("Please upload an image smaller than 12 MB.");if(!admin())return alert("Only an administrator can upload ECG recordings.");const target=slot,notice=$("ecgImageSaveStatus");notice.textContent="🟠 Preparing ECG image…";try{const data=await encodeEcgImage(f);images[target]=data;restart();render();notice.textContent="🟠 Saving ECG image to Neon…";await attemptRequest("POST",{action:"save_image",case_number:target+1,image_data:data});notice.textContent="🟢 ECG image saved to Neon · "+new Date().toLocaleTimeString();}catch(err){notice.textContent="🔴 ECG image not saved: "+err.message+" · Keep this page open and retry upload.";console.error(err)}};
 for(const m of ["practice","test"])$(m).onclick=()=>{if(m==="test")return;ecgAttemptOpened=false;mode=m;$("practice").className=m==="practice"?"btn active":"btn secondary";$("test").className=m==="test"?"btn active":"btn secondary";restart();render()};
-$("reset").onclick=$("again").onclick=()=>{restart();render()};
+$("reset").onclick=$("again").onclick=()=>{if(isEcgCompleted(slot+1)){ecgAttemptOpened=false;restart();const n=nextAvailableEcg();if(n)slot=n-1;render();return}restart();render()};
 
 function showAnswerFeedback(isCorrect){const panel=$("questionPanel");panel.classList.remove("ecg-result-correct","ecg-result-wrong");void panel.offsetWidth;panel.classList.add(isCorrect?"ecg-result-correct":"ecg-result-wrong");document.querySelectorAll("#choices [data-answer]").forEach(button=>{if(button.dataset.answer===selected){button.classList.add("selected",isCorrect?"ecg-choice-correct":"ecg-choice-wrong");button.setAttribute("aria-label",button.textContent+(isCorrect?" — correct":" — incorrect"));}});$("feedback").className="feedback ecg-answer-animated "+(isCorrect?"good":"bad");$("feedback").innerHTML=isCorrect?'<span class="ecg-feedback-icon">✓</span><strong>Correct!</strong>':'<span class="ecg-feedback-icon">✕</span><strong>Incorrect!</strong><small>Attempt ended. Start a new attempt to try again.</small>';document.querySelectorAll("[data-answer]").forEach(button=>button.disabled=true);$("next").disabled=true;}
 let failedAttempt=false,elapsedAtFailure=null;
@@ -160,16 +174,55 @@ async function finish(){
  const completedSteps=Object.values(stepTiming);const scoreLocal=completedSteps.filter(x=>x.correct).length;const report={case_number:slot+1,mode,created_at:new Date().toISOString(),duration_seconds:duration,score:scoreLocal,total:completedSteps.length,steps:completedSteps,commentary:Array.from(document.querySelectorAll("#ecgLiveComment .ecg-comment-line")).map(el=>el.textContent.trim())};
  try{const history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]");history.unshift(report);localStorage.setItem("acl-ecg-step-reports-v1",JSON.stringify(history.slice(0,200)));}catch(e){console.warn("Could not persist local ECG report",e)}
  $("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(duration/60)+"m "+duration%60+"s";
- $("result").textContent=failedAttempt?"Incorrect answer — saving failed attempt…":"Saving your attempt securely…";renderAttemptReport(report);
+ $("result").textContent=failedAttempt?"Incorrect answer — saving failed attempt…":"Saving your attempt securely…";renderAttemptReport(report);showEcgCompletionHero(report,false);
  try{
   const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:slot+1,mode,answers,duration_seconds:duration,mistakes:wrongCount,step_details:report.steps,commentary:report.commentary});
   const passed=!failedAttempt&&saved.passed;
+  showEcgCompletionHero(report,passed);
   if(passed&&saved.unlocked_next&&!unlockedEcg.includes(saved.unlocked_next))unlockedEcg.push(saved.unlocked_next);
   attemptHistory.unshift({case_number:slot+1,score:saved.score,total:saved.total});
   slots();
   $("summary").textContent+=" · Score "+saved.score+"/"+saved.total;
-  $("result").textContent=passed?"✓ 100% correct! This ECG is now completed and cannot be repeated. Proceed to the next ECG.":failedAttempt?"✕ Incorrect answer. Attempt closed and saved to Neon. Start a new attempt to retry.":"Attempt saved to Neon. Complete all questions correctly to unlock the next ECG.";
+  $("result").textContent=passed?"Wonderful work! Your perfect interpretation has been saved. Review your detailed report below, then continue to the next ECG.":failedAttempt?"Your attempt has been recorded. Review the report and try again.":"Your attempt has been saved. Keep practising to achieve a perfect interpretation.";
  }catch(error){$("result").innerHTML="⚠ Attempt not saved to Neon: "+esc(error.message)+". Your step-by-step report remains available locally. <button type=\"button\" class=\"btn\" id=\"retryEcgSave\">↻ Retry saving</button>";$("retryEcgSave").onclick=()=>retrySaveAttempt(report);}
+}
+
+function showEcgCompletionHero(report,passed){
+ const panel=$("complete");if(!panel)return;
+ panel.classList.toggle("ecg-completion-passed",!!passed);
+ let banner=document.getElementById("ecgCompletionBanner");if(!banner){banner=document.createElement("div");banner.id="ecgCompletionBanner";panel.prepend(banner)}
+ banner.innerHTML='<div class="ecg-completion-kicker">✦ '+(passed?'ECG MASTERED':'INTERPRETATION FINISHED')+'</div><h2>'+(passed?'🏆 Outstanding! ECG '+report.case_number+' completed.':'Your ECG interpretation is complete')+'</h2><p>'+(passed?'You achieved a perfect interpretation. Your progress has been saved and you are ready for your next challenge.':'Your result and step-by-step review are ready below.')+'</p><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+fmtDuration(report.duration_seconds)+'</span></div>';
+ let next=document.getElementById("ecgCompletionNext");if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.className="btn";next.type="button";banner.after(next)}
+ next.hidden=!passed;next.textContent="Continue to next ECG →";
+ next.onclick=()=>{ecgAttemptOpened=false;restart();const n=nextAvailableEcg();if(n)slot=n-1;render();document.getElementById("ecgCaseStage")?.scrollIntoView({behavior:"smooth",block:"start"})};
+ const again=$("again");if(again)again.hidden=!!passed;
+ if(!document.getElementById("ecgCompletionCSS")){const css=document.createElement("style");css.id="ecgCompletionCSS";css.textContent=`
+ #ecgCompletionBanner{background:linear-gradient(125deg,#063957,#076ca8);border-radius:19px;color:white;padding:24px;margin-bottom:14px;box-shadow:0 12px 25px #0a4a7524}
+ #ecgCompletionBanner h2{color:white;font-size:clamp(23px,3vw,34px);margin:9px 0}
+ #ecgCompletionBanner p{color:#e2f5ff;margin:6px 0}
+ .ecg-completion-kicker{font-size:12px;letter-spacing:2px;font-weight:850;color:#a9e9ff}
+ .ecg-completion-metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+ .ecg-completion-metrics span{background:#ffffff24;border:1px solid #ffffff55;border-radius:11px;padding:10px 14px;font-weight:750}
+ #complete.ecg-completion-passed #again{display:none!important}
+ #complete #summary{display:none}
+ #ecgCompletionNext{margin:4px 0 14px;background:#087c53;color:#fff;font-weight:800}
+ #complete.ecg-completion-passed #result{border:1px solid #b5e8c9;background:#e9faf0;color:#096439;border-radius:13px;padding:13px 16px}
+ .ecg-history-heading{font-size:clamp(21px,2.5vw,28px);margin:25px 0 4px;color:#103e60}
+ .ecg-history-sub{color:#617c91;margin:0 0 15px}
+ .ecg-history-card{background:white;border:1px solid #c7deed;border-radius:16px;overflow:hidden;margin:12px 0;box-shadow:0 8px 24px #113c5c0d}
+ .ecg-history-summary{display:flex;align-items:center;gap:16px;padding:14px}
+ .ecg-history-summary img{width:165px;max-width:35%;height:110px;object-fit:contain;border-radius:10px;background:#f4f8fb}
+ .ecg-history-summary strong{font-size:18px;color:#0b426b}
+ .ecg-history-summary p{font-weight:750;color:#08794d;margin:8px 0}
+ .ecg-history-summary small{color:#58758a}
+ .ecg-history-card details{border-top:1px solid #e0eaf2}
+ .ecg-history-card summary{cursor:pointer;background:#edf7ff;padding:13px 17px;font-weight:750;color:#07679d}
+ .ecg-history-expanded{padding:18px}.ecg-history-full{display:block;max-width:100%;max-height:65vh;object-fit:contain;margin:0 auto}
+ .ecg-history-expanded ol{line-height:1.8;color:#21455f}
+ .ecg-history-step{display:grid;grid-template-columns:1fr 80px 90px;gap:8px;border-bottom:1px solid #e5edf4;padding:8px 2px;font-size:13px}
+ .ecg-history-step b{color:#087b48;text-align:right}
+ @media(max-width:550px){.ecg-history-summary img{width:100px;height:90px}.ecg-history-summary strong{font-size:15px}.ecg-history-summary{gap:10px;padding:10px}}
+ `;document.head.appendChild(css)}
 }
 function fmtDuration(sec){sec=Number(sec)||0;return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")}
 function renderAttemptReport(report){
@@ -244,7 +297,7 @@ function renderAttemptReport(report){
  }
 
 }
-async function retrySaveAttempt(report){const button=$("retryEcgSave");if(button){button.disabled=true;button.textContent="Saving…"}try{const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:report.case_number,mode:report.mode,answers,duration_seconds:report.duration_seconds,mistakes:wrongCount,step_details:report.steps,commentary:report.commentary||[]});$("result").textContent="✓ Attempt saved to Neon · "+saved.score+"/"+saved.total+(saved.passed?" · ECG completed. Proceed to the next ECG.":"");await refreshAttemptProgress()}catch(error){$("result").textContent="⚠ Still not saved: "+error.message+" · Your local report is preserved."}}
+async function retrySaveAttempt(report){const button=$("retryEcgSave");if(button){button.disabled=true;button.textContent="Saving…"}try{const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:report.case_number,mode:report.mode,answers,duration_seconds:report.duration_seconds,mistakes:wrongCount,step_details:report.steps,commentary:report.commentary||[]});$("result").textContent="✓ Attempt saved to Neon · "+saved.score+"/"+saved.total+(saved.passed?" · ECG completed. Proceed to the next ECG.":"");await refreshAttemptProgress();if(saved.passed)showEcgCompletionHero(report,true)}catch(error){$("result").textContent="⚠ Still not saved: "+error.message+" · Your local report is preserved."}}
 
 // Administrator-only Neon ECG attempt management; no access for candidates.
 async function openEcgAdminAttempts(){
