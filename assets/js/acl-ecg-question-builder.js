@@ -176,7 +176,7 @@ function render(){
  syncEcgReference();
  const qs=path(),q=qs[index];if(!q){finish();return}
  const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
- $("stepLabel").classList.add("ecg-step-with-title");$("stepLabel").innerHTML="<span>STEP "+esc(q.number)+"</span><span class=\"ecg-step-name\">"+esc(q.title)+"</span>";$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
+ $("stepLabel").classList.add("ecg-step-with-title");$("stepLabel").innerHTML="<span>STEP "+esc(q.number)+"</span><span class=\"ecg-step-name\">"+esc(q.title)+"</span>";$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;let multiHint=document.getElementById("ecgMultiChoiceHint");if(!multiHint){multiHint=document.createElement("div");multiHint.id="ecgMultiChoiceHint";multiHint.style.cssText="font-size:13px;color:#637d91;margin:5px 0 14px;font-weight:500";$("question").insertAdjacentElement("afterend",multiHint)}multiHint.textContent=q.multi?"More than one choice is allowed.":"";multiHint.hidden=!q.multi;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
  const groupKey=x=>String(x.number||"").match(/^\\d+/)?.[0]||String(x.number||"");
  const groupNames=[...new Set(qs.map(groupKey))];
  const currentGroup=groupKey(q);
@@ -190,13 +190,13 @@ function render(){
  if(q.multi&&q.type!=="number"){
   if(!document.getElementById("ecgLeadTileStyles")){
    const s=document.createElement("style");s.id="ecgLeadTileStyles";s.textContent=`
-   #choices .ecg-lead-grid{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:10px!important;width:100%}
-   #choices .ecg-lead-option{position:relative;display:flex;align-items:center;justify-content:center;min-height:60px;padding:12px 5px;border:2px solid #b9d2e5;border-radius:14px;background:#fff;color:#173d59;font-weight:750;font-size:18px;cursor:pointer;user-select:none;transition:background .16s,border-color .16s,box-shadow .16s,transform .16s}
+   #choices .ecg-lead-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))!important;gap:12px!important;width:100%}
+   #choices .ecg-lead-option{position:relative;display:flex;align-items:center;justify-content:center;min-height:66px;padding:12px 16px;min-width:0;overflow-wrap:anywhere;text-align:center;line-height:1.3;border:2px solid #b9d2e5;border-radius:14px;background:#fff;color:#173d59;font-weight:750;font-size:18px;cursor:pointer;user-select:none;transition:background .16s,border-color .16s,box-shadow .16s,transform .16s}
    #choices .ecg-lead-option:hover{border-color:#1683c8;background:#eef8ff;transform:translateY(-1px)}
    #choices .ecg-lead-option:has(input:checked){background:linear-gradient(145deg,#0877bf,#07528c);border-color:#06578e;color:white;box-shadow:0 5px 15px #006ba32e}
    #choices .ecg-lead-option:has(input:focus-visible){outline:3px solid #f6b93b;outline-offset:3px}
    #choices .ecg-lead-option input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
-   @media(max-width:650px){#choices .ecg-lead-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}#choices .ecg-lead-option{min-height:55px;font-size:16px}}
+   @media(max-width:650px){#choices .ecg-lead-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}#choices .ecg-lead-option{min-height:55px;font-size:16px}}
    `;document.head.appendChild(s);
   }
   $("choices").innerHTML='<div class="ecg-lead-grid">'+q.options.map(o=>'<label class="ecg-lead-option"><input type="checkbox" value="'+esc(o)+'" '+(Array.isArray(selected)&&selected.includes(o)?"checked":"")+'><span>'+esc(o)+'</span></label>').join("")+'</div>';
