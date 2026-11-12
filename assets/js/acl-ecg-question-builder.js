@@ -49,17 +49,21 @@ function isEcgCompleted(n){return !admin()&&attemptHistory.some(a=>Number(a.case
 function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!isEcgCompleted(n))||null}
 
 function previousEcgReports(){try{return JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]").filter(x=>x&&Array.isArray(x.steps))}catch{return []}}
+function cleanEcgComment(value){return String(value||"").replace(/^\\s*\\d{1,2}\\s*[.)-]?\\s*/,"").trim()}
 function renderPreviousEcgResults(){
  const intro=document.getElementById("ecgIntro");if(!intro)return;
  let area=document.getElementById("ecgPreviousResults");if(!area){area=document.createElement("section");area.id="ecgPreviousResults";intro.insertAdjacentElement("afterend",area)}
  const byCase=new Map();for(const r of previousEcgReports()){const n=Number(r.case_number);if(!byCase.has(n))byCase.set(n,r)}
  const completed=[...byCase.values()].filter(r=>Number(r.score)===Number(r.total)&&Number(r.total)>0).sort((a,b)=>a.case_number-b.case_number);
  area.hidden=!completed.length;if(!completed.length){area.innerHTML="";return}
- area.innerHTML='<h3 class="ecg-history-heading">🏆 Your previous ECG results</h3><p class="ecg-history-sub">Your recordings, commentary and timings are always here to review.</p>'+completed.map(r=>{
- const n=Number(r.case_number),img=images[n-1],comments=(r.commentary||[]).map(c=>'<li>'+esc(c)+'</li>').join("");
- return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 '+r.score+'/'+r.total+' correct &nbsp; ⏱ '+fmtDuration(r.duration_seconds)+'</p><small>'+esc((r.commentary||[]).slice(0,2).join(" "))+'</small></div></div><details><summary>View full ECG, commentary and detailed timings ⌄</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><ol>'+comments+'</ol><h4>Step timings</h4>'+(r.steps||[]).map(x=>'<div class="ecg-history-step"><span>'+esc(x.title)+'</span><time>'+fmtDuration(x.seconds)+'</time><b>'+(x.correct?'✓ Correct':'✕ Missed')+'</b></div>').join("")+'</div></details></article>'
+ area.innerHTML='<h3 class="ecg-history-heading">🏆 Your previous ECG results</h3><p class="ecg-history-sub">Review your completed ECGs and interpretations.</p>'+completed.map(r=>{
+ const n=Number(r.case_number),img=images[n-1];
+ const lines=(r.commentary||[]).map((c,i)=>{const step=r.steps?.[i];return '<div class="ecg-history-comment-row"><span>'+esc(cleanEcgComment(c))+'</span><b class="'+(step?.correct===false?'ecg-history-wrong':'')+'">'+(step?.correct===false?'✕ Incorrect':'✓ Correct')+'</b><time>⏱ '+fmtDuration(step?.seconds||0)+'</time></div>'}).join("");
+ return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 You interpreted this ECG with 100% accuracy</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small></div></div><details><summary>View full ECG, commentary and detailed timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
  }).join("");
+ if(!document.getElementById("ecgHistoryCommentCSS")){const css=document.createElement("style");css.id="ecgHistoryCommentCSS";css.textContent='.ecg-history-comment-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 80px;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid #e1eaf2;color:#183e5a}.ecg-history-comment-row b{color:#087b49;font-size:13px}.ecg-history-comment-row b.ecg-history-wrong{color:#c52649}.ecg-history-comment-row time{font-size:13px;color:#45647d}@media(max-width:540px){.ecg-history-comment-row{grid-template-columns:1fr auto}.ecg-history-comment-row time{grid-column:2}}';document.head.append(css)}
 }
+
 function slots(){
  $("slots").innerHTML=images.map((x,i)=>{const locked=!admin()&&!unlockedEcg.includes(i+1),done=attemptHistory.some(a=>Number(a.case_number)===i+1&&Number(a.score)===Number(a.total)&&Number(a.total)>0);
  const preview=x?'<img class="ecg-tile-preview" src="'+x+'" alt="ECG '+(i+1)+' recording" loading="lazy">':'<span class="ecg-tile-empty" aria-hidden="true">ECG not uploaded</span>';
@@ -192,13 +196,9 @@ function showEcgCompletionHero(report,passed){
  renderPreviousEcgResults();
  panel.classList.toggle("ecg-completion-passed",!!passed);
  let banner=document.getElementById("ecgCompletionBanner");if(!banner){banner=document.createElement("div");banner.id="ecgCompletionBanner";panel.prepend(banner)}
- const incorrect=report.steps.find(x=>!x.correct);
+ const wrong=report.steps.find(x=>!x.correct);
  const mastered=!!passed;
- const heading=mastered?"🏆 You mastered ECG "+report.case_number+" in "+fmtDuration(report.duration_seconds)+"!":incorrect?"💪 Don't give up!":"Your ECG interpretation is complete";
- const subtitle=mastered?"Perfect interpretation — every assessment correct. Outstanding work!":incorrect?"You stopped at Step "+incorrect.number+" — "+incorrect.title+". Try again!":"Your interpretation report is ready below.";
- const wrong=report.steps.find(s=>!s.correct);
- const mastered=!!passed;
- const message=mastered?'You mastered this ECG in '+fmtDuration(report.duration_seconds)+' minutes!':wrong?'Don’t give up! You stopped at Step '+esc(wrong.number)+' — '+esc(wrong.title)+'. Try again!':'Your interpretation has finished. Review your answers and try again!';
+ const message=mastered?"You interpreted this ECG with 100% accuracy!":wrong?"Keep practising — review "+wrong.title+" and try again.":"Your ECG interpretation is complete.";
  banner.innerHTML='<div class="ecg-hero-glow"></div><div class="ecg-hero-graphic" aria-hidden="true">'+(mastered?'🏆':'💪')+'</div><div class="ecg-completion-kicker">✦ '+(mastered?'ECG MASTERED':'KEEP LEARNING')+'</div><h2>'+message+'</h2><p>'+(mastered?'Perfect interpretation — every assessment was correct.':'Every attempt is progress. Review the highlighted step before your next attempt.')+'</p><div class="ecg-completion-meter" role="img" aria-label="'+report.score+' of '+report.total+' assessments correct"><div style="width:'+Math.max(0,Math.min(100,100*report.score/Math.max(1,report.total)))+'%"></div></div><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+fmtDuration(report.duration_seconds)+'</span></div>';
 
  let next=document.getElementById("ecgCompletionNext");if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.className="btn";next.type="button";banner.after(next)}
@@ -263,39 +263,30 @@ function renderAttemptReport(report){
  panel.innerHTML='<h3>Step-by-step ECG interpretation</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><table class="ecg-comment-table"><thead><tr><th>Step</th><th>Your ECG comment</th><th>Result / Time</th></tr></thead><tbody>'+lines+'</tbody></table>';
 
  const shareActions=document.createElement("div");shareActions.className="ecg-report-actions";
- shareActions.innerHTML='<button type="button" class="btn" id="ecgExportResult">📷 Export beautiful result image</button><button type="button" class="btn secondary" id="ecgShareResult">↗ Share result</button><button type="button" class="btn secondary" id="ecgWhatsAppResult">WhatsApp</button>';
+ shareActions.innerHTML='<button type="button" class="btn" id="ecgExportResult">📷 Export as image</button>';
  panel.prepend(shareActions);
  const createResultImage=async()=>{
-  const W=1100,pad=64,grouped=new Map();for(const step of report.steps){const group=String(parseInt(step.number,10)||step.number);if(!grouped.has(group))grouped.set(group,[]);grouped.get(group).push(step)}const groups=Array.from(grouped);
-  const height=345+groups.reduce((h,[g,steps])=>h+75+steps.length*37+12,0)+100;
+  const W=1100,pad=60,comments=report.commentary||[],lineH=43,ecg=images[report.case_number-1];
+  const image=await new Promise(resolve=>{if(!ecg)return resolve(null);const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>resolve(null);im.src=ecg});
+  const imgH=image?Math.min(470,Math.round(image.height/image.width*(W-2*pad))):0;
+  const height=340+imgH+comments.length*lineH+100;
   const canvas=document.createElement("canvas");canvas.width=W*2;canvas.height=height*2;const ctx=canvas.getContext("2d");ctx.scale(2,2);
-  const round=(x,y,w,h,r,fill)=>{ctx.fillStyle=fill;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()};
-  const txt=(value,x,y,size,color="#15344d",weight=500)=>{ctx.fillStyle=color;ctx.font=weight+" "+size+"px system-ui,Arial";ctx.fillText(String(value),x,y)};
-  round(0,0,W,height,0,"#edf4fa");round(30,30,W-60,height-60,24,"#fff");
-  const gradient=ctx.createLinearGradient(0,0,W,0);gradient.addColorStop(0,"#073a63");gradient.addColorStop(1,"#097db5");round(30,30,W-60,180,24,gradient);
-  txt("ACL  |  ECG DEMYSTIFIED",pad,90,22,"#c5eaff",800);
-  txt("ECG INTERPRETATION REPORT",pad,145,35,"#fff",850);
-  txt("ECG "+report.case_number+"  •  "+report.mode.toUpperCase(),pad,191,18,"#e3f5ff",650);
-  txt(report.score+"/"+report.total+" correct",pad,267,29,"#0c557e",800);
-  txt("Total time  "+fmtDuration(report.duration_seconds),W-360,266,22,"#224b67",650);
-  txt(new Date(report.created_at).toLocaleString(),pad,303,16,"#658198");
-  let y=340;
-  for(const [g,steps] of groups){
-   const n=Number(g),tone=n<=3?"#a80f34":n<=5?"#086a3b":n<=7?"#064f91":"#a64b08";
-   const boxH=75+steps.length*37;round(pad,y,W-2*pad,boxH,14,"#f6f9fc");
-   round(pad+15,y+12,45,45,23,tone);txt(g,pad+29,y+43,24,"#fff",800);
-   txt("STEP "+g,pad+78,y+41,20,tone,800);
-   txt(fmtDuration(steps.reduce((z,x)=>z+(+x.seconds||0),0)),W-180,y+41,17,"#31516b",650);
-   let sy=y+80;for(const step of steps){txt("•  "+step.title,pad+86,sy,16,"#28465d",550);txt(fmtDuration(step.seconds),W-230,sy,16,"#28465d");txt(step.correct?"✓":"✕",W-125,sy,20,step.correct?"#087b46":"#bf2840",800);sy+=37}
-   y+=boxH+12;
-  }
-  txt("Learning through every attempt  •  Mohamed Alaa",pad,height-69,17,"#678397",600);
-  return new Promise(resolve=>canvas.toBlob(blob=>resolve(blob),"image/png"));
+  const rect=(x,y,w,h,color)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h)};
+  const txt=(v,x,y,size,color="#15344d",weight=500)=>{ctx.fillStyle=color;ctx.font=weight+" "+size+"px Arial,sans-serif";ctx.fillText(String(v),x,y)};
+  rect(0,0,W,height,"#f0f6fb");rect(28,28,W-56,height-56,"#ffffff");rect(28,28,W-56,174,"#073c61");
+  txt("CARDIOLOGY LEAGUE  |  ECG DEMYSTIFIED",pad,86,22,"#c7e8fa",700);
+  txt("ECG "+report.case_number+" — INTERPRETATION RESULT",pad,139,32,"#ffffff",800);
+  txt(Math.round(100*report.score/Math.max(1,report.total))+"% accuracy",pad,255,30,"#08754a",800);
+  txt("Time: "+fmtDuration(report.duration_seconds),W-325,255,23,"#164461",700);
+  let y=300;
+  if(image){ctx.drawImage(image,pad,y,W-2*pad,imgH);y+=imgH+38}
+  txt("YOUR ECG COMMENTARY",pad,y,23,"#073c61",800);y+=38;
+  for(let i=0;i<comments.length;i++){const step=report.steps?.[i];txt(step?.correct===false?"✕":"✓",pad,y,20,step?.correct===false?"#c32648":"#08794c",800);txt(cleanEcgComment(comments[i]),pad+36,y,17,"#173a55",500);y+=lineH}
+  txt("Mohamed Alaa  •  ACL ECG Interpretation Lab",pad,height-57,16,"#59758c",600);
+  return new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
  };
  const exportFile=async()=>{const blob=await createResultImage();if(!blob)throw Error("Image export failed");return new File([blob],"ACL-ECG-"+report.case_number+"-result.png",{type:"image/png"})};
  shareActions.querySelector("#ecgExportResult").onclick=async()=>{try{const file=await exportFile(),url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000)}catch(e){alert(e.message)}};
- shareActions.querySelector("#ecgShareResult").onclick=async()=>{try{const file=await exportFile();if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:"My ACL ECG result"})}else{const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);alert("Image saved. You can attach it to WhatsApp or another app.")}}catch(e){if(e.name!=="AbortError")alert(e.message)}};
- shareActions.querySelector("#ecgWhatsAppResult").onclick=async()=>{const file=await exportFile();if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:"ACL ECG result"})}catch(e){if(e.name!=="AbortError")alert(e.message)}}else{shareActions.querySelector("#ecgExportResult").click();window.open("https://wa.me/?text="+encodeURIComponent("My ACL ECG Lab result: ECG "+report.case_number+" • "+report.score+"/"+report.total+" correct • "+fmtDuration(report.duration_seconds)+". I have attached my result image."),"_blank","noopener")}};
  if(admin()){
   const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0";
   const reset=document.createElement("button");reset.type="button";reset.className="btn secondary";reset.textContent="↺ Reset local attempt history (admin)";
