@@ -299,16 +299,9 @@ function renderEcgStepReview(){
    return (q.title||q.text)+": "+fmt(answer);
  };
  const pWaveSummary=()=>{
-  // The parent presence answer is authoritative. Never overwrite it with
-  // a conditional subquestion or interpret a non-Yes multi-choice value as No.
-  const presenceQuestion=rows.find(q=>{
-   const wording=String(q.text||"").trim().toLowerCase();
-   return /^(?:are\s+)?p[ -]?waves?\s+(?:present|absent)\s*\??$/.test(wording)
-    || /^(?:is\s+there\s+)?(?:a\s+)?p[ -]?wave\s+present\s*\??$/.test(wording);
-  });
+  const presenceQuestion=rows.find(q=>/p[ -]?waves?\\s+present/i.test(String(q.text||"")) && !/axis|morphology|amplitude|duration|location/i.test(String(q.text||"")));
   const presenceValue=presenceQuestion?String(answers[presenceQuestion.id]??"").trim().toLowerCase():null;
-  const present=presenceValue==="yes"?true:presenceValue==="no"?false:null;
-  const normal=new Set();
+  const normal=new Set(),abnormal=new Set();
   for(const q of rows){
    if(q===presenceQuestion)continue;
    const selected=Array.isArray(answers[q.id])?answers[q.id]:[answers[q.id]];
@@ -316,14 +309,24 @@ function renderEcgStepReview(){
     const value=String(item??"").toLowerCase().trim();
     for(const feature of ["location","axis","morphology","amplitude","duration"]){
      if(value==="normal "+feature)normal.add(feature);
+     if(value==="abnormal "+feature)abnormal.add(feature);
     }
    }
   }
-  if(present===false)return "P waves are absent.";
   const features=["location","axis","morphology","amplitude","duration"].filter(v=>normal.has(v));
-  if(present===true)return "P waves are present"+(features.length?" with normal "+features.join(", "):"")+".";
-  // Do not invent absence when the presence question is missing or ambiguous.
-  return null;
+  const issues=["location","axis","morphology","amplitude","duration"].filter(v=>abnormal.has(v));
+  // Preserve all recorded subquestion findings, even when the parent is No.
+  // This prevents a completed three-part assessment being collapsed into
+  // the misleading single sentence "P waves are absent".
+  const details=[];
+  if(features.length)details.push("normal "+features.join(", "));
+  if(issues.length)details.push("abnormal "+issues.join(", "));
+  if(presenceValue==="yes")return "P waves are present"+(details.length?" with "+details.join("; "):"")+".";
+  if(presenceValue==="no")return details.length
+    ?"P-wave presence was answered No; additional findings: "+details.join("; ")+"."
+    :"P waves are absent.";
+  if(details.length)return "P-wave assessment: "+details.join("; ")+".";
+  return rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
  };
  const comment=String(group)==="5"?(ecgPrSummary(rows,answers)||rows.map(q=>statement(q)).join(", ")+"."):String(group)==="4"?(pWaveSummary()||rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+"."):rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
  const mistakes=rows.filter(q=>stepTiming[q.id]?.correct!==true);
