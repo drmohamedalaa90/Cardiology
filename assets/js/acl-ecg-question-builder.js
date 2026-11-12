@@ -110,5 +110,19 @@ async function finish(){
 }
 window.addEventListener("acl-ecg-access-ready",build);render();build();
 
-// Keep the case workspace collapsed until an ECG is selected.
-const ecgStartButton=document.getElementById("ecgStart");if(ecgStartButton)ecgStartButton.onclick=()=>{const target=unlockedEcg.includes(slot+1)?slot:Math.max(0,(unlockedEcg[0]||1)-1);const button=document.querySelector(`[data-slot="${target}"]`);if(button)button.click();else document.getElementById("ecgSelector").scrollIntoView({behavior:"smooth",block:"start"});};
+// The ECG held by the doctor is the sole visible case-launch control.
+const ecgStartButton=document.getElementById("ecgStart");
+if(ecgStartButton)ecgStartButton.onclick=()=>{
+ const next=Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0))||Math.max(1,...unlockedEcg);
+ const button=document.querySelector('[data-slot="'+(next-1)+'"]');
+ if(button){button.click();document.getElementById("ecgCaseStage")?.scrollIntoView({behavior:"smooth",block:"start"});}
+};
+(function enableEcgPullRefresh(){
+ const indicator=document.getElementById("aclPullRefresh");if(!indicator)return;
+ let startY=0,tracking=false,pull=0;
+ const scrollTop=()=>Math.max(document.scrollingElement?.scrollTop||0,window.scrollY||0);
+ document.addEventListener("touchstart",e=>{tracking=e.touches.length===1&&scrollTop()<3&&!document.body.classList.contains("ecg-peek-open");startY=e.touches[0]?.clientY||0;pull=0;},{passive:true});
+ document.addEventListener("touchmove",e=>{if(!tracking)return;pull=Math.max(0,(e.touches[0]?.clientY||0)-startY);if(pull>25){indicator.classList.add("visible");indicator.textContent=pull>=95?"↻ Release to refresh":"↓ Pull to refresh";}else indicator.classList.remove("visible");},{passive:true});
+ document.addEventListener("touchend",()=>{if(tracking&&pull>=95&&scrollTop()<3){indicator.textContent="↻ Refreshing…";window.location.reload();}else indicator.classList.remove("visible");tracking=false;pull=0;},{passive:true});
+ document.addEventListener("touchcancel",()=>{tracking=false;pull=0;indicator.classList.remove("visible");},{passive:true});
+})();
