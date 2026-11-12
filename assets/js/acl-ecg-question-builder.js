@@ -1158,13 +1158,52 @@ function showEcgCompletionHero(report,passed){
     :mistakes<=8
      ?{icon:"💪",kicker:"KEEP PRACTISING",headline:"Keep going — practice makes progress!",detail:"You made "+mistakes+" mistakes. Revise the key ECG concepts and try again."}
      :{icon:"🌱",kicker:"NEVER GIVE UP",headline:"Never lose hope — it's all about practice!",detail:"Every attempt builds your ECG interpretation skills. Review the steps and keep practising."};
- banner.innerHTML='<div class="ecg-hero-glow"></div><div class="ecg-hero-graphic" aria-hidden="true">'+feedback.icon+'</div><div class="ecg-completion-kicker">✦ '+feedback.kicker+'</div><h2>'+esc(feedback.headline)+'</h2><p>'+esc(feedback.detail)+'</p><p class="ecg-review-disclaimer">🩺 Your final diagnosis and additional comments will still be reviewed and validated by Dr. Mohamed Alaa.</p><div class="ecg-completion-meter" role="img" aria-label="'+report.score+' of '+report.total+' assessments correct"><div style="width:'+Math.max(0,Math.min(100,100*report.score/Math.max(1,report.total)))+'%"></div></div><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+duration+'</span></div>';
+ const percentage=Math.max(0,Math.min(100,Math.round(100*Number(report.score||0)/Math.max(1,Number(report.total||0)))));
+ const caseLabel=String(report.case_number).padStart(2,"0");
+ const heartSvg='<svg viewBox="0 0 230 290" aria-hidden="true" focusable="false"><defs><radialGradient id="ecgVictoryHeart" cx=".34" cy=".32" r=".85"><stop stop-color="#ff7291"/><stop offset=".5" stop-color="#c42b58"/><stop offset="1" stop-color="#55143d"/></radialGradient><filter id="ecgVictoryGlow"><feGaussianBlur stdDeviation="5"/></filter></defs><path d="M112 268C65 214 14 146 21 93 26 45 82 30 112 72c32-48 88-24 92 22 6 56-53 128-92 174Z" fill="url(#ecgVictoryHeart)" stroke="#ff7894" stroke-width="3"/><path d="M9 150h42l16-25 16 54 18-101 23 136 14-65h82" stroke="#3de6ff" stroke-width="11" fill="none" filter="url(#ecgVictoryGlow)" opacity=".85"/><path d="M9 150h42l16-25 16 54 18-101 23 136 14-65h82" stroke="#e5fcff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+ const trophySvg='<svg viewBox="0 0 210 170" aria-hidden="true" focusable="false"><defs><linearGradient id="ecgVictoryGold" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#fff7a5"/><stop offset=".26" stop-color="#ffc329"/><stop offset=".58" stop-color="#b46a0d"/><stop offset=".79" stop-color="#ffe879"/><stop offset="1" stop-color="#c47a06"/></linearGradient></defs><path d="M49 27h111v57c0 47-24 65-55 65S49 131 49 84Z" fill="url(#ecgVictoryGold)" stroke="#fff4a6" stroke-width="4"/><path d="M49 40H24c-6 53 10 67 49 68M160 40h25c6 53-10 67-49 68" fill="none" stroke="#f9c24f" stroke-width="12" stroke-linecap="round"/><path d="M105 145v12m-28 4h56" stroke="#edab25" stroke-width="11" stroke-linecap="round"/><path d="m105 48 9 19 22 3-16 16 4 23-19-11-19 11 4-23-16-16 22-3Z" fill="#fff1a0" stroke="#b7710a" stroke-width="2"/></svg>';
+ const confetti='<span class="ecg-victory-confetti" aria-hidden="true">✦ <i>◆</i> ✨ <i>✦</i> ◆ ✨</span>';
+ banner.innerHTML='<div class="ecg-victory-head"><span class="ecg-victory-brand">▣ ECG DEMYSTIFIED <small>BASIC EDITION</small></span><span class="ecg-victory-confetti-corner" aria-hidden="true">✦ ✧ ✦</span></div>'+
+ '<div class="ecg-victory-scene"><div class="ecg-victory-heart">'+heartSvg+'</div><div class="ecg-victory-center">'+
+ (mastered?'<div class="ecg-victory-trophy">'+trophySvg+'</div><div class="ecg-victory-ribbon">CONGRATULATIONS!</div>':'<div class="ecg-victory-trophy ecg-victory-encouragement" aria-hidden="true">'+feedback.icon+'</div><div class="ecg-victory-ribbon">'+esc(feedback.kicker)+'</div>')+
+ '<h2 class="ecg-victory-title">'+(mastered?'YOU <em>MASTERED</em> ECG '+caseLabel+'!':esc(feedback.headline))+'</h2>'+
+ '<div class="ecg-victory-time">⏱ '+esc(mastered?'in '+timeText:duration)+'</div>'+
+ '<p class="ecg-victory-subtitle">'+esc(feedback.detail)+'</p></div>'+
+ '<div class="ecg-victory-scoreseal" aria-label="'+percentage+' percent accuracy"><span>♛</span><strong>'+percentage+'%</strong><small>ACCURACY</small><span>★ ★ ★</span></div></div>'+
+ '<div class="ecg-victory-stats"><div class="ecg-victory-stat ecg-victory-stat-blue"><span>▤ ECG</span><strong>'+caseLabel+'</strong></div><div class="ecg-victory-stat ecg-victory-stat-green"><span>✓ CORRECT ANSWERS</span><strong>'+report.score+' / '+report.total+'</strong></div><div class="ecg-victory-stat ecg-victory-stat-purple"><span>◷ TIME</span><strong>'+duration+'</strong></div></div>'+
+ '<div class="ecg-victory-track" role="img" aria-label="'+percentage+'% accuracy"><span style="width:'+percentage+'%"></span><b>'+percentage+'%</b></div>'+
+ '<p class="ecg-victory-review">📝 Your final diagnosis and additional comments will still be reviewed and validated by <strong>Dr. Mohamed Alaa.</strong></p>'+
+ '<div class="ecg-victory-actions" id="ecgVictoryActions"></div>'+confetti;
 
- let next=document.getElementById("ecgCompletionNext");if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.className="btn";next.type="button";banner.after(next)}
+ const actions=banner.querySelector("#ecgVictoryActions");
+ const again=$("again");
+ panel.classList.toggle("ecg-retry-disabled",!admin()&&!ecgRetryAllowed);
+ if(again){
+  actions.appendChild(again);
+  again.className="btn ecg-victory-btn ecg-victory-retry";
+  again.hidden=!admin()&&(!!passed||!ecgRetryAllowed);
+  again.innerHTML="↻ &nbsp; Retry ECG "+caseLabel;
+ }
+ let reportButton=document.getElementById("ecgVictoryReport");
+ if(!reportButton){reportButton=document.createElement("button");reportButton.id="ecgVictoryReport";reportButton.type="button"}
+ reportButton.className="btn ecg-victory-btn ecg-victory-report";
+ reportButton.innerHTML="▤ &nbsp; View My Report";
+ actions.appendChild(reportButton);
+ reportButton.onclick=()=>{
+  const reportPanel=document.getElementById("ecgAttemptReport");
+  if(reportPanel){reportPanel.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"})}
+ };
+ let next=document.getElementById("ecgCompletionNext");
+ if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.type="button"}
+ next.className="btn ecg-victory-btn ecg-victory-next";
  const nextUnlocked=passed?nextAvailableEcg():null;
- next.hidden=!passed;next.disabled=!nextUnlocked;next.textContent=nextUnlocked?"Continue to ECG "+String(nextUnlocked).padStart(2,"0")+" →":"🔒 Next ECG";if(!nextUnlocked)next.classList.add("ecg-next-unavailable");else next.classList.remove("ecg-next-unavailable");
- next.onclick=()=>{const n=nextAvailableEcg();if(!n)return;ecgAttemptOpened=false;restart();slot=n-1;render();document.getElementById("ecgCaseStage")?.scrollIntoView({behavior:"smooth",block:"start"})};
- const again=$("again");panel.classList.toggle("ecg-retry-disabled",!admin()&&!ecgRetryAllowed);if(again){again.hidden=!admin()&&(!!passed||!ecgRetryAllowed);again.textContent=passed&&admin()?"↻ Try this ECG again (admin)":"↻ Restart interpretation"}
+ const validNext=nextUnlocked&&Number(nextUnlocked)>Number(report.case_number)?nextUnlocked:null;
+ next.hidden=!passed;
+ next.disabled=!validNext;
+ next.textContent=validNext?"▶  Continue to ECG "+String(validNext).padStart(2,"0")+"  →":"🔒 Next ECG";
+ next.classList.toggle("ecg-next-unavailable",!validNext);
+ actions.appendChild(next);
+ next.onclick=()=>{const n=nextAvailableEcg();if(!n||n<=Number(report.case_number))return;ecgAttemptOpened=false;restart();slot=n-1;render();document.getElementById("ecgCaseStage")?.scrollIntoView({behavior:"smooth",block:"start"})};
  if(!document.getElementById("ecgCompletionCSS")){const css=document.createElement("style");css.id="ecgCompletionCSS";css.textContent=`
  #ecgCompletionBanner{position:relative;overflow:hidden;background:linear-gradient(125deg,#063957,#076ca8);border-radius:19px;color:white;padding:24px;margin-bottom:14px;box-shadow:0 12px 25px #0a4a7524}
  #ecgCompletionBanner{scroll-margin-top:90px}
