@@ -143,6 +143,22 @@
 .ecg-member-score.bad{color:#b72a4b}
 .ecg-member-reset{border:1px solid #efb7c4;background:#fff3f5;color:#a92a49;border-radius:9px;font-size:12px;font-weight:800;padding:9px 10px;cursor:pointer}
 @media(max-width:650px){.ecg-retry-policy{grid-template-columns:1fr}.ecg-member-card{grid-template-columns:minmax(0,1fr) auto}.ecg-member-reset{grid-column:1/-1}.ecg-members-summary,.ecg-retry-policy{padding:13px}}
+
+/* Compact, sortable ECG member results table */
+.ecg-results-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ecg-results-top p{font-size:13px;margin:0;color:#63819a}
+.ecg-reset-all{padding:10px 14px;border:1px solid #edb0bd;color:#a42241;background:#fff0f3;border-radius:11px;font-weight:800;cursor:pointer}
+.ecg-reset-all:hover{background:#ffe2e9}.ecg-reset-all:disabled{opacity:.55;cursor:wait}
+.ecg-members-actions select{min-height:44px;padding:8px 12px;border:1px solid #c8dbe8;border-radius:10px;background:white;color:#17425e;max-width:220px}
+.ecg-table-scroll{overflow-x:auto;border-radius:13px;border:1px solid #d6e5ee;margin-top:10px}
+.ecg-results-table{width:100%;border-collapse:collapse;min-width:700px;font-size:13px;color:#163d5d}
+.ecg-results-table thead{background:#e6f3fc;color:#0d567d;position:sticky;top:0}
+.ecg-results-table th{text-align:left;padding:12px 11px;white-space:nowrap;font-weight:850}
+.ecg-results-table td{padding:10px 11px;border-top:1px solid #dceaf3;vertical-align:middle}
+.ecg-results-table tbody tr:nth-child(2n){background:#f4f9fd}.ecg-results-table tbody tr:hover{background:#eaf6fc}
+.ecg-table-name{font-weight:800}.ecg-table-score{color:#088258;font-weight:850;font-size:15px}
+.ecg-table-score.bad{color:#c22c4a}.ecg-results-table td small{display:block;color:#668097}
+.ecg-results-table td:last-child{text-align:right}.ecg-results-empty{text-align:center!important;color:#728ca0!important;padding:24px!important}
 </style></head>
 <body><div id="aclPullRefresh" role="status" aria-live="polite">↓ Pull to refresh</div><section id="ecgAccessGate" class="panel" role="status" aria-live="polite"><h2 id="ecgAccessTitle">Checking ECG Lab access…</h2><p id="ecgAccessMessage" class="access-message">Verifying your ACL membership and administrator access settings.</p><a id="ecgBackCourse" class="btn secondary" style="display:inline-block;text-decoration:none;margin-top:8px" href="basic-special-course.html">← Return to Quiz Room</a></section><main id="ecgLabMain" hidden><a id="ecgLegacyBack" class="btn secondary" href="basic-special-course.html" style="display:inline-block;text-decoration:none;margin-bottom:16px">← Back to Quiz Room</a>
 <div class="top"><div><h1 class="ecg-premium-title"><span class="ecg-title-pulse" aria-hidden="true">♥</span><a class="ecg-title-home" href="acl-ecg-interpretation.html" aria-label="Return to ECG Interpretation Lab homepage" title="Return to ECG Lab homepage">ECG <em>Interpretation</em> Lab</a></h1><div class="ecg-admin-mini-wrap" id="ecgAdminMiniWrap" hidden><button type="button" id="ecgAdminMini" class="ecg-admin-mini" aria-label="ECG Lab admin tools" aria-expanded="false" aria-controls="ecgAdminMiniMenu" title="ECG Lab admin tools">⚙️</button><div class="ecg-admin-mini-menu" id="ecgAdminMiniMenu" hidden><button type="button" id="ecgAdminMiniQuestions">✎ General Questions</button><button type="button" id="ecgAdminMiniImages">🫀 ECG Images &amp; Correct Answers</button><button type="button" id="ecgAdminMiniResults">👥 Member Results &amp; Attempt Settings</button></div></div></div><div class="tabs"><button class="btn active ecg-mode-practice" id="practice" type="button">✦ Practice Mode</button><button class="btn secondary ecg-mode-soon" id="test" type="button" disabled aria-disabled="true" title="Test Mode will be available soon">♛ Test Mode <small>Coming soon</small></button></div></div>
@@ -152,7 +168,7 @@
 
 </div></div>
 <div id="ecgQuestionsOverlay" class="ecg-admin-overlay" hidden><div class="ecg-admin-dialog" role="dialog" aria-modal="true" aria-labelledby="ecgQuestionsHeading"><header class="ecg-admin-head"><h2 id="ecgQuestionsHeading">General ECG Questions · All Recordings</h2><button type="button" class="btn secondary" id="ecgQuestionsClose">✕ Close</button></header><div id="ecgGeneralEditorMount"></div></div></div>
-<div id="ecgResultsOverlay" class="ecg-admin-overlay" hidden><div class="ecg-admin-dialog ecg-results-dialog" role="dialog" aria-modal="true" aria-labelledby="ecgResultsHeading"><header class="ecg-admin-head"><h2 id="ecgResultsHeading">👥 Member Results &amp; Attempts</h2><button class="btn secondary" type="button" id="ecgResultsClose">✕ Close</button></header><div class="ecg-results-management"><section class="ecg-retry-policy"><div><h3>🔁 Attempt rules</h3><p>Control whether members can repeat the same ECG after submitting an attempt.</p></div><label class="ecg-retry-switch"><input type="checkbox" id="ecgRetryToggle"><span>Allow repeat attempts</span></label><small id="ecgRetryStatus" aria-live="polite">Checking current policy…</small></section><section class="ecg-members-summary"><h3>📊 Submitted member results</h3><div class="ecg-members-actions"><input id="ecgMemberFilter" type="search" placeholder="Search member or ECG…" aria-label="Search member results"><button class="btn secondary" type="button" id="ecgResultsRefresh">↻ Refresh</button></div><p class="small muted" id="ecgResultsStatus" role="status">Loading member results…</p><div id="ecgMemberResultsList"></div></section></div></div></div><div class="ecg-review-overlay" id="ecgReviewOverlay" hidden><div class="ecg-review-dialog" role="dialog" aria-modal="true" aria-labelledby="ecgReviewTitle"><div class="ecg-review-head"><h2 id="ecgReviewTitle">ECG interpretation · Step-by-step approach</h2><button type="button" class="btn secondary" id="ecgReviewClose" aria-label="Close step-by-step approach">✕ Close</button></div><div class="ecg-review-image-wrap"><img class="ecg-review-image" src="https://pub-d3558230972a47369859250efa93e757.r2.dev/Ecg/Picture1.png" alt="Nine-step ECG interpretation approach reference diagram" loading="lazy"></div></div></div>
+<div id="ecgResultsOverlay" class="ecg-admin-overlay" hidden><div class="ecg-admin-dialog ecg-results-dialog" role="dialog" aria-modal="true" aria-labelledby="ecgResultsHeading"><header class="ecg-admin-head"><h2 id="ecgResultsHeading">👥 Member Results &amp; Attempts</h2><button class="btn secondary" type="button" id="ecgResultsClose">✕ Close</button></header><div class="ecg-results-management"><section class="ecg-retry-policy"><div><h3>🔁 Attempt rules</h3><p>Control whether members can repeat the same ECG after submitting an attempt.</p></div><label class="ecg-retry-switch"><input type="checkbox" id="ecgRetryToggle"><span>Allow repeat attempts</span></label><small id="ecgRetryStatus" aria-live="polite">Checking current policy…</small></section><section class="ecg-members-summary"><div class="ecg-results-top"><div><h3>📊 Submitted member results</h3><p class="muted">Filter and sort submitted ECG attempts.</p></div><button class="ecg-reset-all" id="ecgResetAll" type="button">🗑 Reset all attempts</button></div><div class="ecg-members-actions"><input id="ecgMemberFilter" type="search" placeholder="Search member or ECG…" aria-label="Search member results"><select id="ecgResultsCaseFilter" aria-label="Filter ECG number"><option value="">All ECGs</option></select><select id="ecgResultsSort" aria-label="Sort member results"><option value="recent">Newest first</option><option value="oldest">Oldest first</option><option value="high_score">Highest score</option><option value="low_score">Lowest score</option><option value="fastest">Fastest first</option><option value="slowest">Slowest first</option><option value="name">Member A–Z</option></select><button class="btn secondary" type="button" id="ecgResultsRefresh">↻ Refresh</button></div><p class="small muted" id="ecgResultsStatus" role="status">Loading member results…</p><div class="ecg-table-scroll"><table class="ecg-results-table"><thead><tr><th>Member</th><th>ECG</th><th>Score</th><th>Time</th><th>Submitted</th><th>Actions</th></tr></thead><tbody id="ecgMemberResultsList"></tbody></table></div></section></div></div></div><div class="ecg-review-overlay" id="ecgReviewOverlay" hidden><div class="ecg-review-dialog" role="dialog" aria-modal="true" aria-labelledby="ecgReviewTitle"><div class="ecg-review-head"><h2 id="ecgReviewTitle">ECG interpretation · Step-by-step approach</h2><button type="button" class="btn secondary" id="ecgReviewClose" aria-label="Close step-by-step approach">✕ Close</button></div><div class="ecg-review-image-wrap"><img class="ecg-review-image" src="https://pub-d3558230972a47369859250efa93e757.r2.dev/Ecg/Picture1.png" alt="Nine-step ECG interpretation approach reference diagram" loading="lazy"></div></div></div>
 <div id="ecgPreparingOverlay" class="ecg-preparing-overlay" hidden role="status" aria-live="polite"><div class="ecg-preparing-card"><div class="ecg-preparing-pulse" aria-hidden="true">♥</div><h2>Preparing your ECG Lab</h2><p id="ecgPreparingMessage">Preparing your ECG recording and timer…</p><div class="ecg-preparing-spinner" aria-hidden="true"></div></div></div><div id="ecgReadyOverlay" class="ecg-ready-overlay" hidden><div class="ecg-ready-dialog" role="dialog" aria-modal="true" aria-labelledby="ecgReadyTitle"><button type="button" id="ecgReadyClose" class="ecg-ready-close" aria-label="Close ECG preview">✕</button><h2 id="ecgReadyTitle">Your ECG is ready</h2><img id="ecgReadyImage" alt="Full ECG recording for interpretation"><div class="ecg-preview-clock" id="ecgReadyClock" role="timer" aria-label="Elapsed ECG interpretation time">⏱ 00:00</div><button type="button" id="ecgReadyBegin" class="btn ecg-ready-begin">Ready to start step by step?</button><p>You can view the ECG again at every step!</p></div></div><section class="panel ecg-question-card hidden" id="questionPanel"><div class="top"><div class="ecg-step-actions"><strong id="stepLabel">STEP 1A</strong><button class="btn secondary ecg-review-inline-btn" id="ecgReviewApproach" type="button" aria-haspopup="dialog">📋 Revise the step-by-step approach</button><button type="button" class="ecg-emergency-launch" id="ecgEmergencyLaunch" hidden>🚨 Emergency diagnosis</button></div><span class="ecg-question-meta"><span id="clock" class="ecg-question-timer" aria-label="Elapsed attempt time">00:00</span><span id="count">0 answered</span></span></div><div class="progress" id="progress"></div><div class="step" id="stepTitle">ECG Calibration</div><div class="ecg-question-head"><h2 id="question">Is the ECG correctly calibrated in terms of voltage and time?</h2><div id="feedback" class="hidden" role="status" aria-live="polite"></div><button type="button" class="btn secondary ecg-peek-btn" id="peekEcg" aria-label="View ECG"><svg viewBox="0 0 100 38" aria-hidden="true"><rect x="1" y="1" width="98" height="36" rx="5" fill="#fff4f5" stroke="#f0c9ce"/><path d="M1 10H99M1 20H99M1 30H99M15 1V37M30 1V37M45 1V37M60 1V37M75 1V37M90 1V37" stroke="#efc4cc" stroke-width=".6"/><path d="M3 21H16l5-4 5 8 6-20 7 31 5-15h12l5-4 5 8 6-20 7 31 5-15h15" stroke="#ba2548" stroke-width="2" fill="none" stroke-linejoin="round"/></svg><svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="#124e78" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="3"/></svg></button></div><p class="muted" id="hint"></p><div class="ecg-answer-entry"><div class="choices" id="choices"></div><button class="btn hidden ecg-inline-submit" id="next" disabled>Submit rate</button></div><details class="ecg-commentary-card" id="ecgCommentaryDetails" open><summary class="ecg-commentary-toggle">📝 Your ECG commentary <span class="ecg-commentary-collapse-label" aria-hidden="true"></span></summary><div id="ecgLiveComment" aria-live="polite"><p class="muted">Your ECG interpretation will appear here as you answer each step.</p></div></details></section>
 <div class="ecg-emergency-overlay" id="ecgEmergencyModal" role="dialog" aria-modal="true" aria-labelledby="ecgEmergencyHeading" hidden>
  <div class="ecg-emergency-dialog">
@@ -269,34 +285,59 @@ q.addEventListener('click',e=>{
  const course=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";
  const api="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab?course="+encodeURIComponent(course);
  const allowed=()=>window.aclEcgIsAdmin===true;
- const e=document.getElementById("ecgMemberResultsList"),filter=document.getElementById("ecgMemberFilter"),status=document.getElementById("ecgResultsStatus");
+ const tbody=document.getElementById("ecgMemberResultsList"),filter=document.getElementById("ecgMemberFilter"),status=document.getElementById("ecgResultsStatus");
+ const caseFilter=document.getElementById("ecgResultsCaseFilter"),sort=document.getElementById("ecgResultsSort");
+ const resetAll=document.getElementById("ecgResetAll");
  const toggle=document.getElementById("ecgRetryToggle"),retryStatus=document.getElementById("ecgRetryStatus");
  let attempts=[],busy=false;
  const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  async function call(method,body){
-  const t=token();if(!t)throw Error("Please sign in as admin again.");
+  const t=token();if(!t)throw Error("Please sign in as administrator again.");
   const res=await fetch(api,{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});
   const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.message||data.error||"Request failed ("+res.status+")");return data;
  }
+ const duration=r=>Math.max(0,Number(r.duration_seconds)||0);
+ const dateMs=r=>{const d=Date.parse(r.completed_at||r.started_at||"");return Number.isFinite(d)?d:0};
+ const rank=r=>Number(r.total)>0?Number(r.score||0)/Number(r.total):0;
  function render(){
-  const query=filter.value.trim().toLowerCase();
-  const matches=attempts.filter(r=>(String(r.member_name||"")+" "+String(r.case_number||"")+" "+String(r.profile_id||"")).toLowerCase().includes(query));
-  status.textContent=attempts.length+" submitted attempts · "+new Set(attempts.map(r=>r.profile_id)).size+" members · Showing "+matches.length;
-  e.innerHTML=matches.length?matches.map(r=>{
-   const score=Number(r.score)||0,total=Number(r.total)||0,sec=Math.max(0,Number(r.duration_seconds)||0);
+  const query=filter.value.trim().toLowerCase(),selectedCase=caseFilter.value;
+  const rows=attempts.filter(r=>{
+   if(selectedCase&&String(r.case_number)!==selectedCase)return false;
+   return (String(r.member_name||"")+" "+String(r.case_number||"")+" "+String(r.profile_id||"")).toLowerCase().includes(query);
+  });
+  const order=sort.value;
+  rows.sort((a,b)=>{
+   let delta=0;
+   if(order==="recent")delta=dateMs(b)-dateMs(a);
+   else if(order==="oldest")delta=dateMs(a)-dateMs(b);
+   else if(order==="high_score")delta=rank(b)-rank(a)||Number(b.score||0)-Number(a.score||0);
+   else if(order==="low_score")delta=rank(a)-rank(b)||Number(a.score||0)-Number(b.score||0);
+   else if(order==="fastest")delta=duration(a)-duration(b);
+   else if(order==="slowest")delta=duration(b)-duration(a);
+   else if(order==="name")delta=String(a.member_name||"").localeCompare(String(b.member_name||""));
+   return delta||dateMs(b)-dateMs(a);
+  });
+  status.textContent=attempts.length+" attempts · "+new Set(attempts.map(r=>r.profile_id)).size+" members · Showing "+rows.length;
+  tbody.innerHTML=rows.length?rows.map(r=>{
+   const score=Number(r.score)||0,total=Number(r.total)||0,sec=duration(r);
    const time=String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
-   const when=r.completed_at?new Date(r.completed_at).toLocaleString():"";
-   return '<article class="ecg-member-card"><div><span class="ecg-member-name">'+escape(r.member_name||"Member")+'</span><small>ECG '+escape(r.case_number)+' · '+escape(r.mode||"practice")+' · '+escape(when)+' · ⏱ '+time+'</small></div><span class="ecg-member-score '+(score<total?"bad":"")+'">'+score+'/'+total+'</span><button type="button" class="ecg-member-reset" data-member-reset="'+escape(r.profile_id)+'" data-member-name="'+escape(r.member_name||"Member")+'">Reset member</button></article>'
-  }).join(""):'<p class="muted">No matching attempts.</p>';
+   const when=r.completed_at?new Date(r.completed_at).toLocaleString():"—";
+   const percent=total?Math.round(100*score/total):0;
+   return '<tr><td class="ecg-table-name">'+escape(r.member_name||"Member")+'</td><td>ECG '+String(r.case_number).padStart(2,"0")+'</td><td><span class="ecg-table-score '+(score<total?"bad":"")+'">'+score+'/'+total+'</span><small>'+percent+'%</small></td><td>⏱ '+time+'</td><td>'+escape(when)+'</td><td><button type="button" class="ecg-member-reset" data-member-reset="'+escape(r.profile_id)+'" data-member-name="'+escape(r.member_name||"Member")+'">Reset member</button></td></tr>';
+  }).join(""):'<tr><td colspan="6" class="ecg-results-empty">No matching attempts.</td></tr>';
  }
  async function refresh(){
   if(!allowed())return;
   try{
-   status.textContent="Loading all member results…";
+   status.textContent="Loading member results…";
    const [data,settings]=await Promise.all([call("POST",{action:"admin_list_attempts"}),call("GET")]);
    if(settings.admin!==true)throw Error("Administrator access required");
    attempts=Array.isArray(data.attempts)?data.attempts:[];
-   toggle.checked=settings.retry_allowed!==false;retryStatus.textContent=toggle.checked?"✓ Members may repeat ECG attempts.":"🔒 Only one submitted attempt per ECG is allowed.";
+   const currentCase=caseFilter.value;
+   caseFilter.innerHTML='<option value="">All ECGs</option>'+[...new Set(attempts.map(r=>Number(r.case_number)).filter(Number.isInteger))].sort((a,b)=>a-b).map(n=>'<option value="'+n+'">ECG '+String(n).padStart(2,"0")+'</option>').join("");
+   if([...caseFilter.options].some(x=>x.value===currentCase))caseFilter.value=currentCase;
+   toggle.checked=settings.retry_allowed!==false;
+   retryStatus.textContent=toggle.checked?"✓ Repeat attempts enabled.":"🔒 One submitted attempt per ECG.";
    render();
   }catch(err){status.textContent="⚠ "+err.message;retryStatus.textContent="Unable to verify policy";toggle.disabled=true}
  }
@@ -305,22 +346,38 @@ q.addEventListener('click',e=>{
  document.getElementById("ecgResultsClose").addEventListener("click",close);
  overlay.addEventListener("click",ev=>{if(ev.target===overlay)close()});
  document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&!overlay.hidden)close()});
- filter.addEventListener("input",render);
+ filter.addEventListener("input",render);caseFilter.addEventListener("change",render);sort.addEventListener("change",render);
  document.getElementById("ecgResultsRefresh").addEventListener("click",()=>void refresh());
  toggle.addEventListener("change",async()=>{
-  if(busy||!allowed())return;const desired=toggle.checked;busy=true;toggle.disabled=true;retryStatus.textContent="Saving attempt policy to Neon…";
-  try{await call("POST",{action:"admin_set_retry_policy",retry_allowed:desired});
-   retryStatus.textContent=desired?"✓ Repeat attempts enabled for all members.":"🔒 Repeat attempts disabled for all members.";
-  }catch(err){toggle.checked=!desired;retryStatus.textContent="⚠ Could not save: "+err.message}finally{busy=false;toggle.disabled=false}
+  if(busy||!allowed())return;const desired=toggle.checked;busy=true;toggle.disabled=true;retryStatus.textContent="Saving attempt policy…";
+  try{await call("POST",{action:"admin_set_retry_policy",retry_allowed:desired});retryStatus.textContent=desired?"✓ Repeat attempts enabled.":"🔒 One submitted attempt per ECG."}
+  catch(err){toggle.checked=!desired;retryStatus.textContent="⚠ "+err.message}finally{busy=false;toggle.disabled=false}
  });
- e.addEventListener("click",async(ev)=>{
-  const button=ev.target.closest("[data-member-reset]");if(!button||!allowed())return;
-  const id=button.dataset.memberReset;
-  if(!id)return;
+ // This controls the ALL-members reset only when explicitly confirmed in the UI.
+ resetAll.addEventListener("click",async()=>{
+  if(!allowed()||busy)return;
+  if(!confirm("Reset ALL ECG attempts for ALL members in Neon? This cannot be undone and will also clear locally saved ECG attempt reports on THIS browser."))return;
+  const typed=prompt('Type RESET ALL ECG ATTEMPTS to confirm permanently clearing ALL member ECG attempts:');
+  if(typed!=="RESET ALL ECG ATTEMPTS")return;
+  busy=true;resetAll.disabled=true;status.textContent="Resetting all ECG attempts in Neon…";
+  try{
+   const outcome=await call("POST",{action:"admin_reset_attempts",profile_id:"all",confirm:"RESET ECG TRIAL ATTEMPTS"});
+   localStorage.removeItem("acl-ecg-step-reports-v1");
+   localStorage.removeItem("acl-ecg-emergency-episodes-v1");
+   attempts=[];filter.value="";caseFilter.value="";render();
+   status.textContent="✓ Reset completed. "+Number(outcome.deleted||0)+" Neon attempt-history rows cleared. Local reports on this device cleared.";
+   window.dispatchEvent(new CustomEvent("acl-ecg-attempts-reset"));
+  }catch(err){status.textContent="⚠ Reset unsuccessful: "+err.message}
+  finally{busy=false;resetAll.disabled=false}
+ });
+ tbody.addEventListener("click",async(ev)=>{
+  const button=ev.target.closest("[data-member-reset]");if(!button||!allowed()||busy)return;
+  const id=button.dataset.memberReset;if(!id)return;
   if(!confirm("Reset ALL ECG attempts for "+(button.dataset.memberName||"this member")+"? This removes their saved ECG progress from Neon."))return;
-  button.disabled=true;
+  busy=true;button.disabled=true;
   try{await call("POST",{action:"admin_reset_attempts",profile_id:id,confirm:"RESET ECG TRIAL ATTEMPTS"});await refresh()}
-  catch(err){alert("Could not reset attempts: "+err.message);button.disabled=false}
+  catch(err){alert("Could not reset attempts: "+err.message)}
+  finally{busy=false;button.disabled=false}
  });
 })();
 </script></body></html>
