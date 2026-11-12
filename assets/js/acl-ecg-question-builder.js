@@ -36,7 +36,7 @@ $("exportQuestions").onclick=()=>{const a=document.createElement("a");a.href=URL
 $("importQuestions").onchange=async e=>{const f=e.target.files?.[0];if(!f||f.size>1e6)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.questions)||d.questions.length>100||!Array.isArray(d.keys)||d.keys.length!==10||!d.questions.every(q=>q&&typeof q.id==="string"&&typeof q.text==="string"&&["choice","number"].includes(q.type)&&Array.isArray(q.options)))throw Error("Invalid question file");questions=d.questions;keys=d.keys;save();restart();render();build()}catch(err){alert(err.message)}e.target.value=""};
 function path(){const result=[],done=new Set(),byId=new Map(questions.map(q=>[q.id,q]));function walk(q){if(done.has(q.id))return;done.add(q.id);result.push(q);if(answers[q.id]!==undefined)questions.filter(c=>c.parent===q.id&&c.trigger===answers[q.id]).forEach(walk)}questions.filter(q=>!q.parent||!byId.has(q.parent)).forEach(walk);return result}
 function seconds(){return started?Math.floor((Date.now()-started)/1000):0}
-function tick(){const t=seconds();$("clock").textContent=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0")}
+function tick(){const t=seconds();const time=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");$("clock").textContent=time;const previewClock=$("ecgReadyClock");if(previewClock)previewClock.textContent="⏱ "+time;}
 function start(){if(!started){started=Date.now();stepEnteredAt=started;timer=setInterval(tick,1000);tick()}}
 function recordStep(q,isCorrect){if(!q||stepRecorded.has(q.id))return;const now=Date.now();stepTiming[q.id]={number:q.number,title:q.title,seconds:Math.max(0,Math.round((now-(stepEnteredAt||started||now))/1000)),correct:isCorrect,answer:answers[q.id]??""};stepRecorded.add(q.id);stepEnteredAt=now;}
 function restart(){failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};stepTiming={};stepRecorded=new Set();stepEnteredAt=0;tick()}
@@ -112,7 +112,7 @@ async function finish(){
   slots();
   $("summary").textContent+=" · Score "+saved.score+"/"+saved.total;
   $("result").textContent=passed?"✓ Attempt saved to Neon. Next ECG unlocked.":failedAttempt?"✕ Incorrect answer. Attempt closed and saved to Neon. Start a new attempt to retry.":"Attempt saved to Neon. Complete all questions correctly to unlock the next ECG.";
- }catch(error){$("result").textContent="⚠ Attempt not saved: "+error.message+". Progress remains locked. Retry when connected.";}
+ }catch(error){$("result").innerHTML="⚠ Attempt not saved to Neon: "+esc(error.message)+". Your step-by-step report remains available locally. <button type=\"button\" class=\"btn\" id=\"retryEcgSave\">↻ Retry saving</button>";$("retryEcgSave").onclick=()=>retrySaveAttempt(report);}
 }
 function fmtDuration(sec){sec=Number(sec)||0;return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")}
 function renderAttemptReport(report){
@@ -122,6 +122,7 @@ function renderAttemptReport(report){
  const compare=history.map((a,i)=>'<tr><td>'+(i+1)+'</td><td>ECG '+esc(a.case_number)+'</td><td>'+esc(a.mode)+'</td><td>'+esc(new Date(a.created_at).toLocaleString())+'</td><td>'+fmtDuration(a.duration_seconds)+'</td><td>'+esc(a.score)+'/'+esc(a.total)+'</td></tr>').join("");
  panel.innerHTML='<h3>Step-by-step performance report</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><table class="ecg-report-table"><thead><tr><th>Step</th><th>Assessment</th><th>Time</th><th>Outcome</th></tr></thead><tbody>'+rows+'</tbody></table><h3 style="margin-top:22px">Compare your ECG attempts</h3><p class="muted small">All locally recorded attempts, including ECG 1, 2, 3 and later cases. Detailed timings are saved in this browser.</p><table class="ecg-report-table"><thead><tr><th>Attempt</th><th>ECG</th><th>Mode</th><th>Date</th><th>Total time</th><th>Correct steps</th></tr></thead><tbody>'+compare+'</tbody></table>';
 }
+async function retrySaveAttempt(report){const button=$("retryEcgSave");if(button){button.disabled=true;button.textContent="Saving…"}try{const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:report.case_number,mode:report.mode,answers,duration_seconds:report.duration_seconds,mistakes:wrongCount});$("result").textContent="✓ Attempt saved to Neon · "+saved.score+"/"+saved.total;await refreshAttemptProgress()}catch(error){$("result").textContent="⚠ Still not saved: "+error.message+" · Your local report is preserved."}}
 window.addEventListener("acl-ecg-access-ready",build);render();build();
 
 // The ECG held by the doctor is the sole visible case-launch control.
