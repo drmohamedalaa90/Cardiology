@@ -97,6 +97,24 @@ function flowCss(){
  .ecg-flow-dragging{opacity:.45}
  .ecg-flow-drop-hint{outline:3px dashed #0b85bd!important;background:#d9f5ff!important}
  .ecg-flow-controls button{min-width:28px}
+ /* Keep all parent/child questions readable at every nesting depth. */
+ .ecg-flow-tree{min-width:0;overflow-x:hidden}
+ .ecg-flow-step,.ecg-flow-step-contents{min-width:0}
+ .ecg-flow-node-wrap,.ecg-flow-node-wrap.child{box-sizing:border-box;min-width:0;margin:7px 8px!important;padding-left:0!important;border-left:0!important}
+ .ecg-flow-node-wrap.child{margin-left:calc(8px + min(var(--flow-depth),3)*13px)!important}
+ .ecg-flow-node-wrap.child:before{content:"↳";left:-15px;top:10px;width:auto;height:auto;background:none;color:#2984b4;font-size:13px;font-weight:800}
+ .ecg-flow-node{box-sizing:border-box;min-width:0;max-width:100%;flex-wrap:wrap;align-items:flex-start;gap:6px!important;padding:9px!important}
+ .ecg-flow-node .flow-label{flex:1 1 145px;min-width:min(100%,125px)!important;overflow-wrap:normal;word-break:normal;white-space:normal}
+ .ecg-flow-node .flow-label strong,.ecg-flow-node .flow-label small{overflow-wrap:break-word!important;word-break:normal!important;white-space:normal!important;hyphens:none}
+ .ecg-flow-node .flow-label small{line-height:1.45}
+ .ecg-flow-controls{flex:0 0 auto;display:flex;gap:3px;margin-left:auto;align-self:flex-end}
+ .ecg-flow-controls button{font-size:13px;min-width:27px;padding:5px!important}
+ .ecg-flow-drag-handle{padding:4px 2px!important}
+ @media(max-width:650px){
+  .ecg-flow-node-wrap.child{margin-left:calc(7px + min(var(--flow-depth),3)*9px)!important}
+  .ecg-flow-node .flow-label{flex-basis:calc(100% - 78px)}
+  .ecg-flow-controls{width:100%;justify-content:flex-end}
+ }
  .ecg-flow-empty{text-align:center;padding:42px 16px;color:#627d93}
  .ecg-flow-savebar{position:sticky;bottom:0;z-index:12;background:#fff;border-top:1px solid #c7dce9;box-shadow:0 -8px 22px #123b5b16;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center;border-radius:12px;margin:12px 0}
  .ecg-flow-savebar .btn{min-width:180px;background:#0a8656}
@@ -238,9 +256,13 @@ function flowWireDragDrop(){
 
 function flowQuestionTree(){
  const seen=new Set(),byId=new Map(flowDraft.map(q=>[q.id,q]));
- const node=(q)=>{if(seen.has(q.id))return "";seen.add(q.id);
+ const node=(q,depth=0)=>{if(seen.has(q.id))return "";seen.add(q.id);
  const condition=q.parent&&q.trigger?'<span class="ecg-flow-condition">↳ If '+esc(q.trigger.replaceAll("|"," / "))+'</span>':q.parent?'<span class="ecg-flow-condition">↳ Any parent answer</span>':"";
- return '<div class="ecg-flow-node-wrap '+(q.parent?"child":"")+'"><div class="ecg-flow-node '+(flowEditing===q.id?"active":"")+'" data-flow-select="'+esc(q.id)+'"><span class="ecg-flow-drag-handle" data-flow-drag="'+esc(q.id)+'" draggable="true" title="Drag to reorder (hold Shift to nest under another question)" aria-label="Drag question">⠿</span><span class="flow-num">'+esc(q.number)+'</span><span class="flow-label"><strong>'+esc(q.title||q.text||"New question")+'</strong><small>'+esc(q.text||"")+'</small>'+condition+'</span><span class="ecg-flow-controls"><button type="button" data-flow-copy="'+esc(q.id)+'" title="Duplicate this question and children">⧉</button><button type="button" data-flow-up="'+esc(q.id)+'" title="Move up">↑</button><button type="button" data-flow-down="'+esc(q.id)+'" title="Move down">↓</button><button type="button" data-flow-child="'+esc(q.id)+'" title="Add child">↳+</button></span></div>'+flowDraft.filter(x=>x.parent===q.id).map(node).join("")+'</div>';
+ // Render each question as a FLAT sibling row; deep nested wrappers previously
+ // reduced text width until each letter appeared on a separate line.
+ const indent=Math.min(depth,3);
+ const row='<div class="ecg-flow-node-wrap '+(depth?"child":"")+'" style="--flow-depth:'+indent+'"><div class="ecg-flow-node '+(flowEditing===q.id?"active":"")+'" data-flow-select="'+esc(q.id)+'"><span class="ecg-flow-drag-handle" data-flow-drag="'+esc(q.id)+'" draggable="true" title="Drag to reorder (hold Shift to nest under another question)" aria-label="Drag question">⠿</span><span class="flow-num">'+esc(q.number)+'</span><span class="flow-label"><strong>'+esc(q.title||q.text||"New question")+'</strong><small>'+esc(q.text||"")+'</small>'+condition+'</span><span class="ecg-flow-controls"><button type="button" data-flow-copy="'+esc(q.id)+'" title="Duplicate this question and children">⧉</button><button type="button" data-flow-up="'+esc(q.id)+'" title="Move up">↑</button><button type="button" data-flow-down="'+esc(q.id)+'" title="Move down">↓</button><button type="button" data-flow-child="'+esc(q.id)+'" title="Add child">↳+</button></span></div></div>';
+ return row+flowDraft.filter(x=>x.parent===q.id).map(child=>node(child,depth+1)).join("");
  };
  const groups=new Map();flowDraft.forEach(q=>{const n=String(q.number).match(/^\\d+/)?.[0]||"?";if(!groups.has(n))groups.set(n,[])});
  flowDraft.filter(q=>!q.parent||!byId.has(q.parent)||String(byId.get(q.parent).number).match(/^\\d+/)?.[0]!==String(q.number).match(/^\\d+/)?.[0]).forEach(q=>{const n=String(q.number).match(/^\\d+/)?.[0]||"?";groups.get(n)?.push(q)});
