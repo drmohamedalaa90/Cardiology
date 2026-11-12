@@ -88,7 +88,7 @@ function syncEcgReference(){
 #ecgReferenceView{background:#e2f2fd;border:1px solid #b2d7f0;border-radius:10px;padding:9px 13px;color:#064b79;font-weight:700;cursor:pointer}
 #ecgReferenceBody{display:flex;justify-content:center;padding:0 10px 10px}
 #ecgReferenceImage{display:block;max-width:100%;width:auto;max-height:min(32vh,270px);object-fit:contain;border-radius:8px;cursor:zoom-in}
-#ecgQuestionReference.ecg-ref-demand #ecgReferenceBody{display:none}
+#ecgQuestionReference.ecg-ref-demand #ecgReferenceBody{display:none}\n#ecgQuestionReference.ecg-ref-demand{position:static}
 @media(max-width:650px){#ecgQuestionReference.ecg-ref-fixed{top:0}#ecgReferenceImage{max-height:23vh}.ecg-ref-toolbar{font-size:13px}.ecg-ref-toggle{font-size:12px}}
 `;document.head.appendChild(style);
   reference.querySelector("#ecgReferenceToggle").addEventListener("change",e=>{ecgReferenceMode=e.target.checked?"fixed":"demand";localStorage.setItem("acl-ecg-reference-mode",ecgReferenceMode);syncEcgReference()});
@@ -100,6 +100,7 @@ function syncEcgReference(){
  reference.classList.toggle("ecg-ref-demand",ecgReferenceMode==="demand");
  reference.querySelector("#ecgReferenceToggle").checked=ecgReferenceMode==="fixed";
  reference.querySelector("#ecgReferenceView").hidden=ecgReferenceMode==="fixed";
+ const peek=document.getElementById("peekEcg");if(peek)peek.hidden=ecgReferenceMode==="fixed";
  if(images[slot]&&reference.querySelector("#ecgReferenceImage").getAttribute("src")!==images[slot])reference.querySelector("#ecgReferenceImage").src=images[slot];
 }
 function render(){
@@ -111,7 +112,7 @@ function render(){
  const ready=!!images[slot]&&questions.length>0;$("questionPanel").classList.toggle("hidden",!ready);$("complete").classList.add("hidden");if(!ready){syncEcgReference();return;}
  syncEcgReference();
  const qs=path(),q=qs[index];if(!q){finish();return}
- const peekThumb=$("peekEcg");if(peekThumb){const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
+ const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
  $("stepLabel").textContent="STEP "+q.number;$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
  $("progress").innerHTML=qs.map((x,i)=>'<i class="'+(i<index?"done":i===index?"now":"")+'"></i>').join("");
  if(q.type==="number"){$("choices").innerHTML='<label>Heart rate (bpm) <input id="numericAnswer" type="number" inputmode="decimal" step="any" placeholder="Enter rate" value="'+esc(selected)+'"></label>';$("numericAnswer").oninput=e=>{selected=e.target.value;start();$("next").disabled=!selected};$("numericAnswer").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();submitAnswer()}}}
@@ -193,6 +194,32 @@ function closeReadyPreview(){if(!ecgReadyOverlay)return;restart();ecgReadyOverla
 if(ecgReadyClose)ecgReadyClose.addEventListener("click",closeReadyPreview);
 if(ecgReadyOverlay)ecgReadyOverlay.addEventListener("click",e=>{if(e.target===ecgReadyOverlay)closeReadyPreview()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ecgReadyOverlay&&!ecgReadyOverlay.hidden){e.stopPropagation();closeReadyPreview()}});
+// Ask for the preferred viewing layout before exposing the ECG or starting the clock.
+let ecgModeChoiceOverlay=null;
+function showEcgModeChoice(){
+ if(!ecgModeChoiceOverlay){
+  ecgModeChoiceOverlay=document.createElement("div");
+  ecgModeChoiceOverlay.id="ecgModeChoiceOverlay";
+  ecgModeChoiceOverlay.setAttribute("role","dialog");
+  ecgModeChoiceOverlay.setAttribute("aria-modal","true");
+  ecgModeChoiceOverlay.setAttribute("aria-label","Choose ECG viewing mode");
+  ecgModeChoiceOverlay.innerHTML='<div class="ecg-mode-choice-card"><h2>🫀 How would you like to view your ECG?</h2><p>Choose your preferred layout before beginning. You can change it during the attempt.</p><button type="button" data-ecg-mode="fixed"><strong>📌 Fixed ECG</strong><span>Keep the ECG visible above the questions while scrolling.</span></button><button type="button" data-ecg-mode="demand"><strong>👁 View on demand</strong><span>Open the ECG only when you need it.</span></button></div>';
+  const style=document.createElement("style");
+  style.textContent='#ecgModeChoiceOverlay{position:fixed;inset:0;z-index:99999;background:#09253dc9;display:grid;place-items:center;padding:18px}.ecg-mode-choice-card{width:min(100%,520px);background:#fff;border-radius:24px;padding:clamp(20px,5vw,34px);box-shadow:0 25px 75px #0005;color:#103554}.ecg-mode-choice-card h2{font-size:clamp(21px,4vw,28px);margin:0 0 12px}.ecg-mode-choice-card p{line-height:1.5;color:#527089}.ecg-mode-choice-card button{display:flex;flex-direction:column;text-align:left;gap:7px;width:100%;margin-top:13px;padding:18px;border:2px solid #c8dfef;border-radius:16px;background:#f5fbff;color:#103554;cursor:pointer;font-size:16px}.ecg-mode-choice-card button:hover,.ecg-mode-choice-card button:focus-visible{border-color:#0784ca;background:#e4f5ff}.ecg-mode-choice-card button span{font-size:14px;color:#526c80}';
+  document.head.appendChild(style);document.body.appendChild(ecgModeChoiceOverlay);
+  ecgModeChoiceOverlay.querySelectorAll("[data-ecg-mode]").forEach(button=>button.addEventListener("click",()=>{
+   ecgReferenceMode=button.dataset.ecgMode;
+   try{localStorage.setItem("acl-ecg-reference-mode",ecgReferenceMode)}catch(e){}
+   ecgModeChoiceOverlay.hidden=true;
+   ecgReadyOverlay.hidden=false;
+   document.body.style.overflow="hidden";
+   start();ecgReadyBegin.focus();
+  }));
+ }
+ ecgModeChoiceOverlay.hidden=false;
+ document.body.style.overflow="hidden";
+ ecgModeChoiceOverlay.querySelector('[data-ecg-mode="'+ecgReferenceMode+'"]')?.focus();
+}
 let ecgLaunchPending=false;
 function nextEcgNumber(){return nextAvailableEcg()}
 async function openPreparedEcg(){
@@ -210,7 +237,7 @@ async function openPreparedEcg(){
   await new Promise((resolve,reject)=>{const img=new Image();img.onload=resolve;img.onerror=()=>reject(Error("ECG image could not be loaded. Please check the connection and try again."));img.src=preview});
   readyReturnFocus=ecgStartButton;restart();slot=next-1;
   ecgReadyImage.src=preview;ecgReadyImage.alt="ECG "+String(next).padStart(2,"0")+" recording";
-  ecgReadyOverlay.hidden=false;document.body.style.overflow="hidden";start();ecgReadyBegin.focus();
+  showEcgModeChoice();
  }catch(error){
   const message=document.getElementById("ecgPreparingMessage");
   if(message)message.textContent=error.message;
