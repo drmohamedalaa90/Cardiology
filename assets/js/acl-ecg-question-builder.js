@@ -171,21 +171,17 @@ $("upload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;if(!f.ty
 for(const m of ["practice","test"])$(m).onclick=()=>{if(m==="test")return;ecgAttemptOpened=false;mode=m;$("practice").className=m==="practice"?"btn active":"btn secondary";$("test").className=m==="test"?"btn active":"btn secondary";restart();render()};
 $("reset").onclick=$("again").onclick=()=>{if(!admin()&&isEcgCompleted(slot+1)){ecgAttemptOpened=false;restart();const n=nextAvailableEcg();if(n)slot=n-1;render();return}restart();render()};
 
-function showAnswerFeedback(isCorrect){const panel=$("questionPanel");panel.classList.remove("ecg-result-correct","ecg-result-wrong");void panel.offsetWidth;panel.classList.add(isCorrect?"ecg-result-correct":"ecg-result-wrong");document.querySelectorAll("#choices [data-answer]").forEach(button=>{if(button.dataset.answer===selected){button.classList.add("selected",isCorrect?"ecg-choice-correct":"ecg-choice-wrong");button.setAttribute("aria-label",button.textContent+(isCorrect?" — correct":" — incorrect"));}});$("feedback").className="feedback ecg-answer-animated "+(isCorrect?"good":"bad");$("feedback").innerHTML=isCorrect?'<span class="ecg-feedback-icon">✓</span><strong>Correct!</strong>':'<span class="ecg-feedback-icon">✕</span><strong>Incorrect!</strong><small>Attempt ended. Start a new attempt to try again.</small>';document.querySelectorAll("[data-answer]").forEach(button=>button.disabled=true);$("next").disabled=true;}
+function showAnswerFeedback(isCorrect){const panel=$("questionPanel");panel.classList.remove("ecg-result-correct","ecg-result-wrong");void panel.offsetWidth;panel.classList.add(isCorrect?"ecg-result-correct":"ecg-result-wrong");document.querySelectorAll("#choices [data-answer]").forEach(button=>{if(button.dataset.answer===selected){button.classList.add("selected",isCorrect?"ecg-choice-correct":"ecg-choice-wrong");button.setAttribute("aria-label",button.textContent+(isCorrect?" — correct":" — incorrect"));}});$("feedback").className="feedback ecg-answer-animated "+(isCorrect?"good":"bad");$("feedback").innerHTML=isCorrect?'<span class="ecg-feedback-icon">✓</span><strong>Correct!</strong>':'<span class="ecg-feedback-icon">✕</span><strong>Incorrect!</strong><small>Continue interpreting the remaining ECG steps. Your complete report will show all correct and incorrect answers.</small>';document.querySelectorAll("[data-answer]").forEach(button=>button.disabled=true);$("next").disabled=true;}
 let failedAttempt=false,elapsedAtFailure=null;
 function submitAnswer(){
- const q=path()[index];if(!q||selected===""||checked||submitting||failedAttempt)return;
+ const q=path()[index];if(!q||selected===""||checked||submitting)return;
  const value=selected,k=keys[slot][q.id];
  if(k===undefined||k===""||(q.type==="number"&&(!k||k.min===""||k.max===""||k.min===undefined||k.max===undefined))){
   $("feedback").className="feedback bad";$("feedback").textContent="Answer key unavailable. Ask the administrator to configure this ECG.";return;
  }
  checked=true;answers[q.id]=value;updateLiveComment();
  const isCorrect=correct(q,value);recordStep(q,isCorrect);showAnswerFeedback(isCorrect);
- if(!isCorrect){
-  wrongCount++;failedAttempt=true;elapsedAtFailure=seconds();clearInterval(timer);timer=null;
-  setTimeout(()=>{finish()},1150);
-  return;
- }
+ if(!isCorrect)wrongCount++;
  setTimeout(()=>{index++;selected="";checked=false;stepEnteredAt=Date.now();render()},750);
 }
 $("next").onclick=submitAnswer;
@@ -208,16 +204,16 @@ async function finish(){
  const completedSteps=Object.values(stepTiming);const scoreLocal=completedSteps.filter(x=>x.correct).length;const report={case_number:slot+1,mode,created_at:new Date().toISOString(),duration_seconds:duration,score:scoreLocal,total:completedSteps.length,steps:completedSteps,commentary:Array.from(document.querySelectorAll("#ecgLiveComment .ecg-comment-line")).map(el=>el.textContent.trim())};
  try{const history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]");history.unshift(report);localStorage.setItem("acl-ecg-step-reports-v1",JSON.stringify(history.slice(0,200)));}catch(e){console.warn("Could not persist local ECG report",e)}
  $("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(duration/60)+"m "+duration%60+"s";
- $("result").textContent=failedAttempt?"Incorrect answer — saving failed attempt…":"Saving your attempt securely…";renderAttemptReport(report);showEcgCompletionHero(report,false);
+ $("result").textContent="Saving your complete ECG interpretation securely…";renderAttemptReport(report);showEcgCompletionHero(report,false);
  try{
   const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:slot+1,mode,answers,duration_seconds:duration,mistakes:wrongCount,step_details:report.steps,commentary:report.commentary});
-  const passed=!failedAttempt&&saved.passed;
+  const passed=wrongCount===0&&saved.passed;
   showEcgCompletionHero(report,passed);
   if(passed&&saved.unlocked_next&&!unlockedEcg.includes(saved.unlocked_next))unlockedEcg.push(saved.unlocked_next);
   attemptHistory.unshift({case_number:slot+1,score:saved.score,total:saved.total});
   slots();
   $("summary").textContent+=" · Score "+saved.score+"/"+saved.total;
-  $("result").textContent=passed?"Wonderful work! Your perfect interpretation has been saved. Review your detailed report below, then continue to the next ECG.":failedAttempt?"Your attempt has been recorded. Review the report and try again.":"Your attempt has been saved. Keep practising to achieve a perfect interpretation.";
+  $("result").textContent=passed?"Wonderful work! Your perfect interpretation has been saved. Review your detailed report below, then continue to the next ECG.":wrongCount>0?"Your full interpretation has been saved. Review the incorrect steps and try again.":"Your attempt has been saved. Keep practising to achieve a perfect interpretation.";
  }catch(error){$("result").innerHTML="⚠ Attempt not saved to Neon: "+esc(error.message)+". Your step-by-step report remains available locally. <button type=\"button\" class=\"btn\" id=\"retryEcgSave\">↻ Retry saving</button>";$("retryEcgSave").onclick=()=>retrySaveAttempt(report);}
 }
 
