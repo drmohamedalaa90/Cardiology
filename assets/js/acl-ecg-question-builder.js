@@ -1580,9 +1580,8 @@ async function openPreparedEcg(){
   await refreshAttemptProgress();
   const upcoming=nextEcgNumber();
   if(upcoming===null)throw Error(ecgRetryAllowed?"Congratulations! You have completed all available ECGs with 100% accuracy.":"No additional ECG attempt is available under the current one-attempt policy. Contact your administrator.");
-  if(ecgImagesLoading)await ecgImagesLoading;
-  if(!images[upcoming-1]){ecgImagesLoading=restoreEcgImages();await ecgImagesLoading}
-  const next=nextEcgNumber(),preview=images[next-1];
+  // refreshAttemptProgress() has already fetched the ECG image and verified availability.
+  const next=nextEcgNumber(),preview=next?images[next-1]:null;
   if(!preview)throw Error("ECG "+String(next).padStart(2,"0")+" is not uploaded yet. Please ask the administrator to upload it.");
   await new Promise((resolve,reject)=>{const img=new Image();img.onload=resolve;img.onerror=()=>reject(Error("ECG image could not be loaded. Please check the connection and try again."));img.src=preview});
   if(seq!==ecgLaunchSequence)return;
