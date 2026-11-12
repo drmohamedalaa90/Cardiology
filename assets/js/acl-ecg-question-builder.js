@@ -94,7 +94,7 @@ function syncEcgReference(){
   reference.querySelector("#ecgReferenceView").addEventListener("click",()=>openEcgPeek());
   reference.querySelector("#ecgReferenceImage").addEventListener("click",()=>openEcgPeek());
  }
- reference.hidden=!ecgAttemptOpened||!images[slot]||panel.classList.contains("hidden");
+ reference.hidden=!ecgAttemptOpened||!images[slot]||panel.classList.contains("hidden")||ecgReferenceMode==="demand";
  reference.classList.toggle("ecg-ref-fixed",ecgReferenceMode==="fixed");
  reference.classList.toggle("ecg-ref-demand",ecgReferenceMode==="demand");
  reference.querySelector("#ecgReferenceModeLabel").textContent="";
