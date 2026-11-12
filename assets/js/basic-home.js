@@ -85,7 +85,30 @@ function renderAvailable(modules,progress){
  updateBasicModuleCountdowns();
 }
 function renderLocked(rows){const host=$("basicLockedModules");if(!rows.length){host.innerHTML='<div class="basic-empty">All Basic Edition modules are unlocked. Excellent progress.</div>';return}host.innerHTML=rows.map(({module,previous,previousBest,adminHeld,reason},i)=>`<article class="basic-locked-card"><span class="basic-lock-icon" aria-hidden="true">🔒</span><div class="basic-locked-copy"><strong>${esc(module.title||"Basic module")}</strong><div class="basic-module-resource-line">${moduleResourceMarkup(module)}</div><small>${reason?esc(reason):adminHeld?"Locked by the ACL administrator. This module will be released when it is ready.":`Pass ${esc(previous?.title||"the previous module")} with more than ${PASS_MARK}%. ${previousBest===null?"No completed result yet.":`Current best: ${previousBest}%.`}`}</small></div></article>`).join("")}
-async function boot(){try{localStorage.setItem("aclSelectedEdition","basic");sessionStorage.setItem("aclSelectedEdition","basic")}catch{}const {data:{session},error}=await supabaseClient.auth.getSession();if(error)throw error;if(!session?.user){location.replace("login.html");return}const user=session.user;
+// iOS/Android PWAs may resume before their network/auth storage is ready.
+// Do not treat a transient null session as a deliberate sign-out.
+const aclWait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function aclRestoreHomeSession(){
+  let lastError=null;
+  for(let attempt=0;attempt<4;attempt++){
+    try{
+      const result=await supabaseClient.auth.getSession();
+      if(result.error)throw result.error;
+      if(result.data?.session?.user)return result.data.session;
+    }catch(error){lastError=error;}
+    if(attempt<3)await aclWait(500*(attempt+1));
+  }
+  const legacyToken=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");
+  if(legacyToken){
+    // Retain credentials and page while offline. Never show a false logged-in state.
+    const host=document.getElementById("basicAvailableModules");
+    if(host)host.innerHTML='<div class="basic-empty">Reconnecting to your ACL account… Your progress is safe. <button type="button" onclick="location.reload()">Retry connection</button></div>';
+    throw lastError||new Error("ACL session verification temporarily unavailable");
+  }
+  location.replace("login.html");
+  return null;
+}
+async function boot(){try{localStorage.setItem("aclSelectedEdition","basic");sessionStorage.setItem("aclSelectedEdition","basic")}catch{}const session=await aclRestoreHomeSession();if(!session)return;const user=session.user;
 let aclVerifiedAdmin=user.role==="admin";
 try{
  const token=sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken")||session.access_token;
