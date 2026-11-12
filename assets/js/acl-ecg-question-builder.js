@@ -490,11 +490,49 @@ function stopForEmergency(diagnosis){
  });
 })();
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}if(q.multi)return Array.isArray(k)&&Array.isArray(value)&&value.length===k.length&&value.every(x=>k.includes(x));return !!k&&value===ecgResolvedKey(q)}
-const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let availableEcgCases=new Set(),unlockedEcg=[1],attemptHistory=[],ecgProgressVerified=false,ecgProgressChecked=false,ecgRetryAllowed=true,wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")")}return data;}async function refreshAttemptProgress(){ecgProgressVerified=false;ecgProgressChecked=false;renderPreviousEcgResults();try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];
- availableEcgCases=new Set((data.cases||[]).filter(c=>typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&Array.isArray(c.questions)&&c.questions.length>0).map(c=>Number(c.case_number)));
- attemptHistory=Array.isArray(data.attempts)?data.attempts:[];ecgRetryAllowed=data.retry_allowed!==false;ecgProgressVerified=true;slots();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];availableEcgCases=new Set();attemptHistory=[];ecgProgressVerified=false;slots();}finally{ecgProgressChecked=true;renderPreviousEcgResults();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());window.addEventListener("acl-ecg-attempts-reset",()=>{attemptHistory=[];unlockedEcg=[1];ecgProgressVerified=false;renderPreviousEcgResults();void refreshAttemptProgress();});void refreshAttemptProgress();
-let ecgImagesLoading=null;
-async function restoreEcgImages(){try{const data=await attemptRequest("GET");for(const c of data.cases||[]){const n=Number(c.case_number)-1;if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&!images[n])images[n]=c.image_data;}if(images[slot])render();else slots();}catch(e){console.warn("ECG images could not be restored",e)}}window.addEventListener("acl-ecg-access-ready",()=>{ecgImagesLoading=restoreEcgImages()});ecgImagesLoading=restoreEcgImages();
+const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let availableEcgCases=new Set(),unlockedEcg=[1],attemptHistory=[],ecgProgressVerified=false,ecgProgressChecked=false,ecgRetryAllowed=true,wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")")}return data;}async function refreshAttemptProgress(){
+ const previouslyVerified=ecgProgressVerified;
+ ecgProgressChecked=false;
+ // Keep already-verified results visible during refresh; avoid flashing empty cards.
+ if(!previouslyVerified)renderPreviousEcgResults();
+ try{
+  const data=await attemptRequest("GET");
+  unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];
+  const cases=Array.isArray(data.cases)?data.cases:[];
+  // Restore the ECG images and availability from the SAME verified request.
+  // Previously, two simultaneous requests could race or fail independently.
+  availableEcgCases=new Set(cases.filter(c=>
+   typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&
+   Array.isArray(c.questions)&&c.questions.length>0&&
+   (admin()||c.published===true)
+  ).map(c=>Number(c.case_number)));
+  for(const c of cases){
+   const n=Number(c.case_number)-1;
+   if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/"))images[n]=c.image_data;
+  }
+  attemptHistory=Array.isArray(data.attempts)?data.attempts:[];
+  ecgRetryAllowed=data.retry_allowed!==false;
+  ecgProgressVerified=true;
+  slots();
+  if(!ecgAttemptOpened&&images[slot])syncEcgReference();
+ }catch(error){
+  console.warn("ECG progress request failed",error);
+  // Only keep results already verified during this page session, never unverified localStorage.
+  if(!previouslyVerified){
+   unlockedEcg=[1];availableEcgCases=new Set();attemptHistory=[];ecgProgressVerified=false;
+  }
+  slots();
+ }finally{
+  ecgProgressChecked=true;
+  renderPreviousEcgResults();
+ }
+}
+window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());
+window.addEventListener("acl-ecg-attempts-reset",()=>{
+ attemptHistory=[];unlockedEcg=[1];ecgProgressVerified=false;
+ renderPreviousEcgResults();void refreshAttemptProgress();
+});
+void refreshAttemptProgress();
 async function encodeEcgImage(file){const source=await createImageBitmap(file);try{const maxWidth=2200,maxHeight=1500,ratio=Math.min(1,maxWidth/source.width,maxHeight/source.height),canvas=document.createElement("canvas");canvas.width=Math.round(source.width*ratio);canvas.height=Math.round(source.height*ratio);const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0,canvas.width,canvas.height);let data=canvas.toDataURL("image/jpeg",.9);if(data.length>2400000)data=canvas.toDataURL("image/jpeg",.77);if(data.length>2400000)throw Error("ECG image is too large to save. Please reduce its resolution.");return data;}finally{source.close?.()}}
 function isEcgCompleted(n){return !admin()&&attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0)}
 function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>availableEcgCases.has(n)&&unlockedEcg.includes(n)&&!attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0)&&(ecgRetryAllowed||!attemptHistory.some(a=>Number(a.case_number)===n)))||null}
