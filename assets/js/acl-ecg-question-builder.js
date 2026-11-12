@@ -469,7 +469,7 @@ function stopForEmergency(diagnosis){
   }else stopForEmergency(diagnosis);
  });
 })();
-function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}if(q.multi)return Array.isArray(k)&&Array.isArray(value)&&value.length===k.length&&value.every(x=>k.includes(x));return !!k&&value===k}
+function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}if(q.multi)return Array.isArray(k)&&Array.isArray(value)&&value.length===k.length&&value.every(x=>k.includes(x));return !!k&&value===ecgResolvedKey(q)}
 const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let unlockedEcg=[1],attemptHistory=[],wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")")}return data;}async function refreshAttemptProgress(){try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];attemptHistory=data.attempts||[];slots();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];slots();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());void refreshAttemptProgress();
 let ecgImagesLoading=null;
 async function restoreEcgImages(){try{const data=await attemptRequest("GET");for(const c of data.cases||[]){const n=Number(c.case_number)-1;if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&!images[n])images[n]=c.image_data;}if(images[slot])render();else slots();}catch(e){console.warn("ECG images could not be restored",e)}}window.addEventListener("acl-ecg-access-ready",()=>{ecgImagesLoading=restoreEcgImages()});ecgImagesLoading=restoreEcgImages();
@@ -539,6 +539,35 @@ function ecgPrSummary(rows,answers){
  const interval=Number.isFinite(value)?value+" small squares ("+(Math.round(value*40*100)/100)+" ms)":null;
  return "PR interval"+(status?" is "+String(status).toLowerCase():"")+(interval?(status?" and measures ":" measures ")+interval:"")+".";
 }
+function ecgResolvedKey(q){
+ const raw=keys[slot]?.[q.id];
+ // Earlier question drafts stored Yes/No even after changing choices to Normal/Abnormal.
+ // Interpret the legacy key semantically, without rewriting any database values.
+ if(q.type==="choice"&&Array.isArray(q.options)&&q.options.includes("Normal")&&q.options.includes("Abnormal")){
+  if(raw==="Yes")return "Normal";
+  if(raw==="No")return "Abnormal";
+ }
+ return raw;
+}
+function ecgQuestionComment(q,answer){
+ const v=Array.isArray(answer)?answer.map(ecgReadableYesNo).join(", "):ecgReadableYesNo(answer);
+ const lower=String(v).trim().toLowerCase();
+ const yes=lower==="yes",no=lower==="no";
+ const wording=String(q.text||"").toLowerCase();
+ const title=String(q.title||"").trim();
+ if(String(q.number||"").match(/^\d+/)?.[0]==="6"){
+  if(/r.wave progression/.test(wording))return yes?"Normal R-wave progression":no?"Abnormal R-wave progression":("R-wave progression: "+v);
+  if(/pathological q wave/.test(wording)&&/lead/.test(wording))return "Pathological Q waves in "+v;
+  if(/pathological q wave/.test(wording))return yes?"Pathological Q waves present":no?"No pathological Q waves":"Pathological Q waves: "+v;
+  if(/normal duration|qrs duration/.test(wording))return yes||lower==="normal"?"Normal QRS duration":no||lower==="abnormal"?"Prolonged QRS duration":"QRS duration: "+v;
+  if(/qrs amplitude|voltage amplitude/.test(wording))return lower==="normal"?"Normal QRS amplitude":lower==="abnormal"?"Abnormal QRS amplitude":"QRS amplitude: "+v;
+  if(/voltage criteria/.test(wording))return lower==="normal"?"Normal QRS voltage":"QRS voltage criteria: "+v;
+  if(/morphology/.test(wording))return "QRS morphology: "+v;
+ }
+ if(q.type==="number")return title+": "+v+(q.unit?" "+q.unit:"");
+ if(yes||no)return (q.text||title).replace(/[?\s]+$/,"")+": "+(yes?"Yes":"No");
+ return (title&&title.toLowerCase()!=="qrs"?title:q.text||title)+": "+v;
+}
 function updateLiveComment(){
  const target=document.getElementById("ecgLiveComment");if(!target)return;
  const phrases={
@@ -557,7 +586,7 @@ function updateLiveComment(){
   const v=answers[q.id];
   const custom=Array.isArray(v)?v.map(x=>q.choiceComments?.[String(x)]||"").filter(Boolean).join(", "):q.choiceComments?.[String(v)];
   const numberCustom=q.type==="number"&&q.numberComment?q.numberComment.replaceAll("{value}",String(v)):"";
-  const line=custom||numberCustom||(phrases[q.id]?phrases[q.id](v):q.title+": "+(Array.isArray(v)?v.join(", "):ecgReadableYesNo(v))+(q.type==="number"&&q.unit?" "+q.unit:"")+".");
+  const line=custom||numberCustom||(phrases[q.id]?phrases[q.id](v):ecgQuestionComment(q,v));
   const group=String(q.number||"").match(/^\d+/)?.[0]||String(q.number||"");
   if(!groups.has(group))groups.set(group,[]);
   groups.get(group).push({line:line.replace(/[.\\s]+$/,""),wrong:stepTiming[q.id]?.correct===false});
@@ -762,7 +791,7 @@ function renderEcgStepReview(){
  const mistakes=rows.filter(q=>stepTiming[q.id]?.correct!==true);
  box.innerHTML='<div class="ecg-review-heading"><span class="ecg-review-icon">'+(allCorrect?"✓":"!")+'</span><div><small>STEP '+esc(group)+' COMPLETED</small><h2>'+esc(label)+'</h2><p>'+good+'/'+rows.length+' correct · Review your interpretation before continuing.</p></div></div>'+
  '<article class="ecg-review-row '+(allCorrect?"ecg-review-ok":"ecg-review-bad")+'"><div class="ecg-review-row-head"><strong>Step '+esc(group)+'</strong><b>'+(allCorrect?"✓ Correct":"✕ "+mistakes.length+" incorrect")+'</b></div><div class="ecg-review-question">'+esc(comment)+'</div></article>'+
- (mistakes.length?'<div class="ecg-review-corrections"><strong>Corrections</strong>'+mistakes.map(q=>'<div class="ecg-review-correction"><b>'+esc(q.text)+'</b><br>Your answer: '+esc(fmt(answers[q.id]))+' · Correct answer: '+esc(fmt(keys[slot]?.[q.id]))+'</div>').join("")+'</div>':"")+
+ (mistakes.length?'<div class="ecg-review-corrections"><strong>Corrections</strong>'+mistakes.map(q=>'<div class="ecg-review-correction"><b>'+esc(q.text)+'</b><br>Your answer: '+esc(fmt(answers[q.id]))+' · Correct answer: '+esc(fmt(ecgResolvedKey(q)))+'</div>').join("")+'</div>':"")+
  '<button type="button" class="ecg-review-continue" id="ecgReviewContinue">Continue to '+(ecgStepReview.next?"Step "+esc(ecgGroupOf(ecgStepReview.next)):"final ECG results")+' →</button>';
  document.getElementById("ecgReviewContinue").onclick=()=>{ecgStepReview=null;box.hidden=true;stepEnteredAt=Date.now();render();scrollEcgToActiveQuestion()};
  $("choices").innerHTML="";$("question").textContent="";$("stepLabel").textContent="STEP "+group+" · Review";$("feedback").className="hidden";$("next").classList.add("hidden");$("progress").querySelectorAll("i").forEach(x=>{});
@@ -776,7 +805,7 @@ function renderEcgStepReview(){
 })();
 function submitAnswer(){
  const q=path()[index];if(!q||(Array.isArray(selected)?selected.length===0:selected==="")||checked||submitting)return;
- const value=Array.isArray(selected)?[...selected]:selected,k=keys[slot][q.id];
+ const value=Array.isArray(selected)?[...selected]:selected,k=ecgResolvedKey(q);
  if(k===undefined||k===""||(q.multi&&(!Array.isArray(k)||!k.length))||(q.type==="number"&&(!k||k.min===""||k.max===""||k.min===undefined||k.max===undefined))){
   $("feedback").className="feedback bad";$("feedback").textContent="Answer key unavailable. Ask the administrator to configure this ECG.";return;
  }
