@@ -88,6 +88,11 @@ function flowCss(){
  .ecg-flow-key strong{display:block;margin-bottom:5px}
  .ecg-flow-step-title{gap:8px}
  .ecg-flow-step-toggle{border:0;background:transparent;color:inherit;font:inherit;font-weight:800;cursor:pointer;padding:3px 6px;border-radius:6px;text-align:left}
+ .ecg-flow-step-title{padding:0!important}
+ .ecg-flow-step-toggle{display:flex!important;align-items:center!important;gap:12px!important;width:100%!important;padding:14px 16px!important;min-height:52px!important;text-align:left!important}
+ .ecg-flow-step-toggle .ecg-flow-step-count{margin-left:auto!important;font-size:12px!important}
+ .ecg-flow-step-toggle .ecg-flow-chevron{font-size:21px!important;line-height:1!important}
+ .ecg-flow-step[aria-expanded="false"]{min-height:52px}
  .ecg-flow-step-toggle:hover{background:#d6ebf9}
  .ecg-flow-step-toggle:focus-visible{outline:3px solid #0879be}
  .ecg-flow-step-count{font-size:12px;font-weight:700;white-space:nowrap}
@@ -180,7 +185,7 @@ function flowDuplicate(id){
    flowKeys[n][replacement.get(q.id)]=flowClone(flowKeys[n][q.id]);
   }
  }
- flowEditing=copies[0].id;flowCollapsed.delete(String(source.number).match(/^\\d+/)?.[0]||"");
+ flowEditing=copies[0].id;flowCollapsed.delete(String(source.number).match(/^\d+/)?.[0]||"");
  flowSetDirty();build();
 }
 let flowDragging=null;
@@ -196,19 +201,19 @@ function flowMoveBranch(id,targetId,mode="before"){
  if(mode==="child"){
   moved.parent=target.id;
   moved.trigger="";
-  const step=String(target.number).match(/^\\d+/)?.[0]||String(target.number);
+  const step=String(target.number).match(/^\d+/)?.[0]||String(target.number);
   block.forEach(q=>q.number=step);
   const idx=remaining.findIndex(q=>q.id===target.id);
   remaining.splice(idx+1,0,...block);
  }else{
   moved.parent=target.parent||"";
   moved.trigger=target.parent?target.trigger||"":"";
-  const step=String(target.number).match(/^\\d+/)?.[0]||String(target.number);
+  const step=String(target.number).match(/^\d+/)?.[0]||String(target.number);
   block.forEach(q=>q.number=step);
   const idx=remaining.findIndex(q=>q.id===target.id);
   remaining.splice(idx+(mode==="after"?1:0),0,...block);
  }
- flowDraft=remaining;flowCollapsed.delete(String(target.number).match(/^\\d+/)?.[0]||"");
+ flowDraft=remaining;flowCollapsed.delete(String(target.number).match(/^\d+/)?.[0]||"");
  flowSetDirty();build();
 }
 function flowDropToStep(id,n){
@@ -216,7 +221,7 @@ function flowDropToStep(id,n){
  const block=[q,...flowDescendants(id)],ids=new Set(block.map(x=>x.id));
  const rest=flowDraft.filter(x=>!ids.has(x.id));q.parent="";q.trigger="";
  block.forEach(x=>x.number=String(n));
- const last=rest.map((x,i)=>String(x.number).match(/^\\d+/)?.[0]===String(n)?i:-1).filter(i=>i>=0).pop();
+ const last=rest.map((x,i)=>String(x.number).match(/^\d+/)?.[0]===String(n)?i:-1).filter(i=>i>=0).pop();
  rest.splice(last===undefined?rest.length:last+1,0,...block);
  flowDraft=rest;flowCollapsed.delete(String(n));flowSetDirty();build();
 }
@@ -255,24 +260,47 @@ function flowWireDragDrop(){
 
 
 function flowQuestionTree(){
- const seen=new Set(),byId=new Map(flowDraft.map(q=>[q.id,q]));
- const node=(q,depth=0)=>{if(seen.has(q.id))return "";seen.add(q.id);
- const condition=q.parent&&q.trigger?'<span class="ecg-flow-condition">↳ If '+esc(q.trigger.replaceAll("|"," / "))+'</span>':q.parent?'<span class="ecg-flow-condition">↳ Any parent answer</span>':"";
- // Render each question as a FLAT sibling row; deep nested wrappers previously
- // reduced text width until each letter appeared on a separate line.
- const indent=Math.min(depth,3);
- const row='<div class="ecg-flow-node-wrap '+(depth?"child":"")+'" style="--flow-depth:'+indent+'"><div class="ecg-flow-node '+(flowEditing===q.id?"active":"")+'" data-flow-select="'+esc(q.id)+'"><span class="ecg-flow-drag-handle" data-flow-drag="'+esc(q.id)+'" draggable="true" title="Drag to reorder (hold Shift to nest under another question)" aria-label="Drag question">⠿</span><span class="flow-num">'+esc(q.number)+'</span><span class="flow-label"><strong>'+esc(q.title||q.text||"New question")+'</strong><small>'+esc(q.text||"")+'</small>'+condition+'</span><span class="ecg-flow-controls"><button type="button" data-flow-copy="'+esc(q.id)+'" title="Duplicate this question and children">⧉</button><button type="button" data-flow-up="'+esc(q.id)+'" title="Move up">↑</button><button type="button" data-flow-down="'+esc(q.id)+'" title="Move down">↓</button><button type="button" data-flow-child="'+esc(q.id)+'" title="Add child">↳+</button></span></div></div>';
- return row+flowDraft.filter(x=>x.parent===q.id).map(child=>node(child,depth+1)).join("");
+ const stepOf=q=>{
+  const match=String(q?.number??"").trim().match(/^(\d+)/);
+  return match?String(Number(match[1])):"Unnumbered";
  };
- const groups=new Map();flowDraft.forEach(q=>{const n=String(q.number).match(/^\\d+/)?.[0]||"?";if(!groups.has(n))groups.set(n,[])});
- flowDraft.filter(q=>!q.parent||!byId.has(q.parent)||String(byId.get(q.parent).number).match(/^\\d+/)?.[0]!==String(q.number).match(/^\\d+/)?.[0]).forEach(q=>{const n=String(q.number).match(/^\\d+/)?.[0]||"?";groups.get(n)?.push(q)});
- const nums=[...groups.keys()].map(Number).filter(Number.isFinite),miss=[];
- if(nums.length)for(let n=Math.min(...nums);n<=Math.max(...nums);n++)if(!groups.has(String(n)))miss.push(n);
- const warn=miss.length?'<div class="ecg-flow-alert">⚠️ Unconfigured steps: '+miss.join(", ")+'. Add questions to fill any required gaps.</div>':"";
- return warn+[...groups].sort(([a],[b])=>Number(a)-Number(b)).map(([n,roots])=>{
-  const closed=flowCollapsed.has(String(n)),count=flowDraft.filter(q=>String(q.number).match(/^\\d+/)?.[0]===String(n)).length;
-  return '<section class="ecg-flow-step"><div class="ecg-flow-step-title" data-flow-step-drop="'+esc(n)+'"><button type="button" class="ecg-flow-step-toggle" data-flow-toggle="'+esc(n)+'" aria-expanded="'+(!closed)+'" aria-label="'+(closed?"Expand":"Collapse")+' step '+esc(n)+'"><span class="ecg-flow-chevron">'+(closed?"▸":"▾")+'</span> STEP '+esc(n)+'</button><span class="ecg-flow-step-count">'+count+' question'+(count===1?"":"s")+'</span></div>'+(closed?"":'<div class="ecg-flow-step-contents">'+roots.map(node).join("")+'</div>')+'</section>';
- }).join("")+flowDraft.filter(q=>!seen.has(q.id)&&!flowCollapsed.has(String(q.number).match(/^\\d+/)?.[0]||"")).map(node).join("");
+ const groups=new Map(),byId=new Map(flowDraft.map(q=>[q.id,q]));
+ for(const q of flowDraft){
+  const step=stepOf(q);
+  if(!groups.has(step))groups.set(step,[]);
+  groups.get(step).push(q);
+ }
+ const sorted=[...groups.entries()].sort(([a],[b])=>{
+  if(a==="Unnumbered")return 1;
+  if(b==="Unnumbered")return -1;
+  return Number(a)-Number(b);
+ });
+ const numbers=sorted.map(([n])=>Number(n)).filter(Number.isFinite);
+ const missing=[];
+ if(numbers.length&&Math.max(...numbers)-Math.min(...numbers)<100){
+  for(let n=Math.min(...numbers);n<=Math.max(...numbers);n++)if(!groups.has(String(n)))missing.push(n);
+ }
+ const warning=missing.length?'<div class="ecg-flow-alert">⚠️ Unconfigured steps: '+missing.join(", ")+'. Questions for these steps have not been added.</div>':"";
+ const sectionHtml=sorted.map(([step,rows])=>{
+  const closed=flowCollapsed.has(step),seen=new Set();
+  const renderNode=(q,depth=0)=>{
+   if(seen.has(q.id))return "";
+   seen.add(q.id);
+   const indent=Math.min(depth,3);
+   const condition=q.parent&&q.trigger?'<span class="ecg-flow-condition">↳ If '+esc(q.trigger.replaceAll("|"," / "))+'</span>':q.parent?'<span class="ecg-flow-condition">↳ Any parent answer</span>':"";
+   const parent=byId.get(q.parent);
+   const crossStep=parent&&stepOf(parent)!==step?'<span class="ecg-flow-condition">Linked to Step '+esc(stepOf(parent))+'</span>':"";
+   const row='<div class="ecg-flow-node-wrap '+(depth?"child":"")+'" style="--flow-depth:'+indent+'"><div class="ecg-flow-node '+(flowEditing===q.id?"active":"")+'" data-flow-select="'+esc(q.id)+'"><span class="ecg-flow-drag-handle" data-flow-drag="'+esc(q.id)+'" draggable="true" title="Drag to reorder" aria-label="Drag question">⠿</span><span class="flow-num">'+esc(q.number)+'</span><span class="flow-label"><strong>'+esc(q.title||q.text||"New question")+'</strong><small>'+esc(q.text||"")+'</small>'+condition+crossStep+'</span><span class="ecg-flow-controls"><button type="button" data-flow-copy="'+esc(q.id)+'" title="Duplicate question and children">⧉</button><button type="button" data-flow-up="'+esc(q.id)+'" title="Move up">↑</button><button type="button" data-flow-down="'+esc(q.id)+'" title="Move down">↓</button><button type="button" data-flow-child="'+esc(q.id)+'" title="Add child">↳+</button></span></div></div>';
+   return row+rows.filter(child=>child.parent===q.id).map(child=>renderNode(child,depth+1)).join("");
+  };
+  const roots=rows.filter(q=>{
+   const parent=byId.get(q.parent);
+   return !parent||stepOf(parent)!==step;
+  });
+  const content=closed?"":'<div class="ecg-flow-step-contents" id="ecg-flow-step-body-'+esc(step)+'">'+roots.map(q=>renderNode(q)).join("")+rows.filter(q=>!seen.has(q.id)).map(q=>renderNode(q)).join("")+'</div>';
+  return '<section class="ecg-flow-step"><div class="ecg-flow-step-title" data-flow-step-drop="'+esc(step)+'"><button type="button" class="ecg-flow-step-toggle" data-flow-toggle="'+esc(step)+'" aria-expanded="'+(!closed)+'" aria-controls="ecg-flow-step-body-'+esc(step)+'"><span class="ecg-flow-chevron" aria-hidden="true">'+(closed?"▸":"▾")+'</span><span>STEP '+esc(step)+'</span><span class="ecg-flow-step-count">'+rows.length+' question'+(rows.length===1?"":"s")+'</span></button></div>'+content+'</section>';
+ }).join("");
+ return warning+sectionHtml;
 }
 function flowDetail(){
  const q=flowDraft.find(x=>x.id===flowEditing);if(!q)return '<div class="ecg-flow-empty">✎ Select a question on the left to edit it.</div>';
@@ -349,7 +377,7 @@ function path(){
  // immediately after their parent (e.g. Step 7 under a Step 4 question).
  const groups=new Map(),byId=new Map(questions.map(q=>[q.id,q]));
  for(const q of questions){
-  const group=Number(String(q.number||"").match(/^\\d+/)?.[0]||0);
+  const group=Number(String(q.number||"").match(/^\d+/)?.[0]||0);
   if(!groups.has(group))groups.set(group,[]);
   groups.get(group).push(q);
  }
@@ -473,11 +501,11 @@ function updateLiveComment(){
   const custom=Array.isArray(v)?v.map(x=>q.choiceComments?.[String(x)]||"").filter(Boolean).join(", "):q.choiceComments?.[String(v)];
   const numberCustom=q.type==="number"&&q.numberComment?q.numberComment.replaceAll("{value}",String(v)):"";
   const line=custom||numberCustom||(phrases[q.id]?phrases[q.id](v):q.title+": "+(Array.isArray(v)?v.join(", "):ecgReadableYesNo(v))+(q.type==="number"&&q.unit?" "+q.unit:"")+".");
-  const group=String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"");
+  const group=String(q.number||"").match(/^\d+/)?.[0]||String(q.number||"");
   if(!groups.has(group))groups.set(group,[]);
   groups.get(group).push({line:line.replace(/[.\\s]+$/,""),wrong:stepTiming[q.id]?.correct===false});
  });
- const prRows=completed.filter(q=>String(q.number||"").match(/^\\d+/)?.[0]==="5");
+ const prRows=completed.filter(q=>String(q.number||"").match(/^\d+/)?.[0]==="5");
  if(groups.has("5")&&prRows.length){const summary=ecgPrSummary(prRows,answers);if(summary)groups.set("5",[{line:summary.replace(/\\.$/,""),wrong:groups.get("5").some(item=>item.wrong)}]);}
  const cleanComment=text=>String(text||"").replace(/\baxi\b/gi,"axis").replace(/\s+([,.;])/g,"$1").replace(/,\s*,+/g,",").replace(/\.{2,}/g,".").trim();
  const statements=[...groups].map(([group,items])=>'<div class="ecg-comment-line '+(items.some(item=>item.wrong)?"ecg-comment-incorrect":"ecg-comment-correct")+'"><span class="ecg-comment-index">Step '+esc(group)+'</span><span>'+esc(cleanComment(items.map(item=>item.line).join(", ")).replace(/[.\s]+$/,""))+'.</span></div>');
@@ -542,15 +570,15 @@ function render(){
  const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
  let previousGroup=document.getElementById("ecgPreviousGroup");
  if(!previousGroup){previousGroup=document.createElement("div");previousGroup.id="ecgPreviousGroup";$("question").parentElement.parentElement.insertBefore(previousGroup,$("question").parentElement);}
- const groupId=String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"");
- const earlier=qs.slice(0,index).filter(item=>(String(item.number||"").match(/^\\d+/)?.[0]||String(item.number||""))===groupId);
+ const groupId=String(q.number||"").match(/^\d+/)?.[0]||String(q.number||"");
+ const earlier=qs.slice(0,index).filter(item=>(String(item.number||"").match(/^\d+/)?.[0]||String(item.number||""))===groupId);
  previousGroup.innerHTML=earlier.map(item=>{
   const value=answers[item.id],display=Array.isArray(value)?value.join(", "):String(value??"");
   return '<div class="ecg-previous-branch"><div class="ecg-previous-title">Step '+esc(item.number)+' · '+esc(item.title)+' <span class="ecg-previous-locked">✓ Submitted · locked</span></div><div class="ecg-previous-question">'+esc(item.text)+'</div><div class="ecg-previous-answer">Your answer: '+esc(display)+'</div></div>';
  }).join("");
  previousGroup.hidden=!earlier.length;
  $("stepLabel").classList.add("ecg-step-with-title");$("stepLabel").innerHTML="<span>STEP "+esc(q.number)+"</span><span class=\"ecg-step-name\">"+esc(q.title)+"</span>";$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;let multiHint=document.getElementById("ecgMultiChoiceHint");if(!multiHint){multiHint=document.createElement("div");multiHint.id="ecgMultiChoiceHint";multiHint.style.cssText="font-size:13px;color:#637d91;margin:5px 0 14px;font-weight:500";$("question").insertAdjacentElement("afterend",multiHint)}multiHint.textContent=q.multi?"More than one choice is allowed.":"";multiHint.hidden=!q.multi;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
- const groupKey=x=>String(x.number||"").match(/^\\d+/)?.[0]||String(x.number||"");
+ const groupKey=x=>String(x.number||"").match(/^\d+/)?.[0]||String(x.number||"");
  const groupNames=[...new Set(qs.map(groupKey))];
  const currentGroup=groupKey(q);
  $("progress").innerHTML=groupNames.map(g=>{
@@ -586,7 +614,7 @@ $("reset").onclick=$("again").onclick=()=>{if(!admin()&&isEcgCompleted(slot+1)){
 
 function showAnswerFeedback(isCorrect){const panel=$("questionPanel");panel.classList.remove("ecg-result-correct","ecg-result-wrong");void panel.offsetWidth;panel.classList.add(isCorrect?"ecg-result-correct":"ecg-result-wrong");document.querySelectorAll("#choices [data-answer]").forEach(button=>{if(button.dataset.answer===selected){button.classList.add("selected",isCorrect?"ecg-choice-correct":"ecg-choice-wrong");button.setAttribute("aria-label",button.textContent+(isCorrect?" — correct":" — incorrect"));}});$("feedback").className="feedback ecg-answer-animated "+(isCorrect?"good":"bad");$("feedback").innerHTML=isCorrect?'<span class="ecg-feedback-icon">✓</span><strong>Correct!</strong>':'<span class="ecg-feedback-icon">✕</span><strong>Incorrect!</strong><small>Continue interpreting the remaining ECG steps. Your complete report will show all correct and incorrect answers.</small>';document.querySelectorAll("[data-answer]").forEach(button=>button.disabled=true);$("next").disabled=true;}
 let failedAttempt=false,elapsedAtFailure=null;
-function ecgGroupOf(q){return String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"")}
+function ecgGroupOf(q){return String(q.number||"").match(/^\d+/)?.[0]||String(q.number||"")}
 function scrollEcgToActiveQuestion(){
  requestAnimationFrame(()=>requestAnimationFrame(()=>{
   const question=document.getElementById("question");
