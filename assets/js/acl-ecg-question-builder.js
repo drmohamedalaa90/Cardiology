@@ -527,40 +527,39 @@ function renderPreviousEcgResults(){
  area.innerHTML='<h3 class="ecg-history-heading">🏆 Your previous ECG results</h3><p class="ecg-history-sub">Review your completed ECGs and interpretations.</p>'+completed.map(r=>{
  const n=Number(r.case_number),img=images[n-1];
 
- // Group the saved commentary by its actual Step number, never by its array index.
- // Old attempts sometimes wrote "Step 1Electrodes..." without any separating space.
- const historyGroups=new Map(),historyExtras=[];
- const stepNumberFromValue=v=>{const m=String(v??"").match(/^\s*(\d+)/);return m?Number(m[1]):null};
+ // The saved commentary consists of one completed sentence per interpretation step.
+ // Use its visual/clinical sequence for labels, not obsolete question IDs like 1a/2b.
+ // Historical records may contain malformed embedded "Step" tags: never trust those labels.
+ const normalizedComments=(r.commentary||[]).map(value=>String(value??"").trim()).filter(Boolean);
+ const stepGroups=new Map();
  for(const detail of (r.steps||[])){
-  const n=stepNumberFromValue(detail.number);
-  if(!Number.isInteger(n)||n<1||n>99)continue;
-  if(!historyGroups.has(n))historyGroups.set(n,{texts:[],steps:[]});
-  historyGroups.get(n).steps.push(detail);
+  const found=String(detail.number??"").match(/^\s*(\d+)/);
+  if(!found)continue;
+  const n=Number(found[1]);
+  if(!stepGroups.has(n))stepGroups.set(n,[]);
+  stepGroups.get(n).push(detail);
  }
- for(const original of (r.commentary||[])){
-  const raw=String(original??"").trim();
-  if(!raw)continue;
-  // Parse "Step 1", "Step 1a" and legacy "Step 1Electrodes" correctly.
-  const match=raw.match(/^(?:[✓✔✕✗]\s*)?Step\s*(\d{1,2})(?:[a-z])?(?=\s|[A-Z]|[.,:;!?-]|$)/);
-  if(!match){historyExtras.push(raw);continue}
-  const n=Number(match[1]);
-  if(!historyGroups.has(n))historyGroups.set(n,{texts:[],steps:[]});
-  let comment=raw.slice(match[0].length).trim().replace(/^[\s:.)–—-]+/,"");
-  // No clinical information is removed; only a missing label separator is fixed.
-  comment=comment.replace(/\s+([,.;!?])/g,"$1").replace(/,\s*,+/g,", ").replace(/\s{2,}/g," ");
-  if(comment)historyGroups.get(n).texts.push(comment);
- }
- const allNumbers=[...historyGroups.keys()].sort((a,b)=>a-b);
- const maxNumber=allNumbers.length?allNumbers[allNumbers.length-1]:0;
- const displayNumbers=(maxNumber>=1&&maxNumber<=20)?Array.from({length:maxNumber},(_,i)=>i+1):allNumbers;
- const lines=historyExtras.map(extra=>'<div class="ecg-history-comment-row ecg-history-special"><span>'+esc(extra)+'</span><b></b><time></time></div>').join("")+displayNumbers.map(n=>{
-  const group=historyGroups.get(n);
-  if(!group)return '<div class="ecg-history-comment-row ecg-history-missing"><span><strong class="ecg-history-step-label">Step '+n+':</strong><span class="ecg-history-comment-text">Not recorded in this attempt.</span></span><b>—</b><time>—</time></div>';
-  const bad=group.steps.some(x=>x.correct===false),hasGrading=group.steps.length>0;
-  const elapsed=group.steps.reduce((sum,x)=>sum+Math.max(0,Number(x.seconds)||0),0);
-  const comment=group.texts.join(" ").trim()||"No commentary recorded for this step.";
-  const result=!hasGrading?"—":bad?"✕ Incorrect":"✓ Correct";
-  return '<div class="ecg-history-comment-row"><span class="ecg-history-comment-main"><strong class="ecg-history-step-label">Step '+n+':</strong><span class="ecg-history-comment-text">'+esc(comment)+'</span></span><b class="'+(bad?'ecg-history-wrong':'')+'">'+result+'</b><time>'+ (hasGrading?'⏱ '+fmtDuration(elapsed):'—')+'</time></div>';
+ const oldPrefix=/^(?:[✓✔✕✗]\s*)?Step\s*\d{1,2}(?:[a-z](?=\s|[:.)–—-]|$))?\s*[:.)–—-]?\s*/i;
+ const stripOldPrefix=text=>String(text).replace(oldPrefix,"").trim()
+  .replace(/\s+([,.;!?])/g,"$1").replace(/,\s*,+/g,", ").replace(/\s{2,}/g," ");
+ // Special annotations have no numerical Step and should not displace the nine interpretation lines.
+ const special=normalizedComments.filter(raw=>!/^Step\s*\d/i.test(raw));
+ const comments=normalizedComments.filter(raw=>/^Step\s*\d/i.test(raw));
+ const expected=9;
+ const lines=special.map(note=>'<div class="ecg-history-comment-row ecg-history-special"><span>'+esc(note)+'</span><b></b><time></time></div>').join("")
+  +Array.from({length:Math.max(expected,comments.length)},(_,index)=>{
+  const n=index+1,raw=comments[index];
+  const details=stepGroups.get(n)||[];
+  const wrong=details.some(x=>x.correct===false);
+  const time=details.reduce((sum,x)=>sum+(Math.max(0,Number(x.seconds)||0)),0);
+  let comment=raw?stripOldPrefix(raw):"Not recorded in this attempt.";
+  // Repair legacy text damaged by an older prefix parser only at the start of a sentence.
+  comment=comment.replace(/^lectrodes\b/i,"Electrodes").replace(/^hythm\b/i,"Rhythm")
+   .replace(/^RS axis\b/i,"QRS axis").replace(/^RS morphology\b/i,"QRS morphology")
+   .replace(/^R interval\b/i,"PR interval").replace(/^R segment\b/i,"PR segment")
+   .replace(/^T interval\b/i,"QT interval");
+  const result=details.length?(wrong?"✕ Incorrect":"✓ Correct"):"—";
+  return '<div class="ecg-history-comment-row'+(raw?"":" ecg-history-missing")+'"><span class="ecg-history-comment-main"><strong class="ecg-history-step-label">Step '+n+':</strong><span class="ecg-history-comment-text">'+esc(comment)+'</span></span><b class="'+(wrong?"ecg-history-wrong":"")+'">'+result+'</b><time>'+(details.length?"⏱ "+fmtDuration(time):"—")+'</time></div>';
  }).join("");
 
  return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 You interpreted this ECG with 100% accuracy</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small></div></div><details><summary>View full ECG, commentary and detailed timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
