@@ -97,9 +97,9 @@ function syncEcgReference(){
  reference.hidden=!ecgAttemptOpened||!images[slot]||panel.classList.contains("hidden");
  reference.classList.toggle("ecg-ref-fixed",ecgReferenceMode==="fixed");
  reference.classList.toggle("ecg-ref-demand",ecgReferenceMode==="demand");
- reference.querySelector("#ecgReferenceModeLabel").textContent=ecgReferenceMode==="fixed"?"📌 Fixed for this attempt":"👁 On-demand for this attempt";
+ reference.querySelector("#ecgReferenceModeLabel").textContent="";
  reference.querySelector("#ecgReferenceView").hidden=ecgReferenceMode==="fixed";
- const peek=document.getElementById("peekEcg");if(peek)peek.hidden=ecgReferenceMode==="fixed";
+ const peek=document.getElementById("peekEcg");if(peek){peek.hidden=ecgReferenceMode==="fixed";peek.style.setProperty("display",ecgReferenceMode==="fixed"?"none":"","important");}
  if(images[slot]&&reference.querySelector("#ecgReferenceImage").getAttribute("src")!==images[slot])reference.querySelector("#ecgReferenceImage").src=images[slot];
 }
 function render(){
