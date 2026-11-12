@@ -239,7 +239,7 @@ function submitAnswer(){
  checked=true;answers[q.id]=value;
  const isCorrect=correct(q,value);recordStep(q,isCorrect);updateLiveComment();showAnswerFeedback(isCorrect);
  if(!isCorrect)wrongCount++;
- setTimeout(()=>{index++;selected="";checked=false;stepEnteredAt=Date.now();render()},750);
+ setTimeout(()=>{index++;selected="";checked=false;stepEnteredAt=Date.now();render();requestAnimationFrame(()=>{const active=document.getElementById("question");if(!active)return;const top=active.getBoundingClientRect().top+window.scrollY-155;window.scrollTo({top:Math.max(0,top),behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});});},750);
 }
 $("next").onclick=submitAnswer;
 function openEcgPeek(){
