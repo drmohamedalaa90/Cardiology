@@ -168,7 +168,7 @@
 .ecg-admin-results-standalone:hover{background:#d5edfb}
 .ecg-admin-results-standalone:focus-visible{outline:3px solid #0d8fcd;outline-offset:2px}
 @media(max-width:620px){.ecg-admin-results-standalone{padding:8px;font-size:17px}.ecg-admin-results-standalone span{display:none}}
-</style></head>
+.ecg-review-tag{font-size:12px;font-weight:800;color:#0d648b}.ecg-review-open{padding:5px 0;margin-top:4px;background:transparent;color:#097db8;border:0;cursor:pointer;font-weight:750;text-decoration:underline}.ecg-review-expanded>td{background:#eff8fd!important;padding:18px!important}.ecg-review-panel{display:grid;grid-template-columns:minmax(200px,1fr) minmax(240px,1fr);gap:16px;white-space:normal}.ecg-review-panel strong{color:#14547a}.ecg-review-panel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;margin:6px 0 15px}.ecg-review-editor{display:grid;gap:9px}.ecg-review-editor label{font-weight:750;color:#245774;display:grid;gap:6px}.ecg-review-editor select,.ecg-review-editor textarea{font:inherit;background:white;border:1px solid #b7d8e8;border-radius:9px;padding:9px;width:100%;box-sizing:border-box}.ecg-review-editor button{justify-self:start}@media(max-width:700px){.ecg-review-panel{grid-template-columns:minmax(0,1fr)}}</style></head>
 <body><div id="aclPullRefresh" role="status" aria-live="polite">↓ Pull to refresh</div><section id="ecgAccessGate" class="panel" role="status" aria-live="polite"><h2 id="ecgAccessTitle">Checking ECG Lab access…</h2><p id="ecgAccessMessage" class="access-message">Verifying your ACL membership and administrator access settings.</p><a id="ecgBackCourse" class="btn secondary" style="display:inline-block;text-decoration:none;margin-top:8px" href="basic-special-course.html">← Return to Quiz Room</a></section><main id="ecgLabMain" hidden><a id="ecgLegacyBack" class="btn secondary" href="basic-special-course.html" style="display:inline-block;text-decoration:none;margin-bottom:16px">← Back to Quiz Room</a>
 <div class="top"><div><h1 class="ecg-premium-title"><span class="ecg-title-pulse" aria-hidden="true">♥</span><a class="ecg-title-home" href="acl-ecg-interpretation.html" aria-label="Return to ECG Interpretation Lab homepage" title="Return to ECG Lab homepage">ECG <em>Interpretation</em> Lab</a></h1><div class="ecg-admin-mini-wrap" id="ecgAdminMiniWrap" hidden><button type="button" id="ecgAdminMini" class="ecg-admin-mini" aria-label="ECG Lab admin tools" aria-expanded="false" aria-controls="ecgAdminMiniMenu" title="ECG Lab admin tools">⚙️</button><div class="ecg-admin-mini-menu" id="ecgAdminMiniMenu" hidden><button type="button" id="ecgAdminMiniQuestions">✎ General Questions</button><button type="button" id="ecgAdminMiniImages">🫀 ECG Images &amp; Correct Answers</button></div></div><button type="button" id="ecgAdminResultsStandalone" class="ecg-admin-results-standalone" title="Member results and attempt settings" aria-label="Member results and attempt settings" hidden>👥 <span>Members</span></button></div><div class="tabs"><button class="btn active ecg-mode-practice" id="practice" type="button" disabled aria-disabled="true" title="Practice Mode is active">✦ Practice Mode</button><button class="btn secondary ecg-mode-soon" id="test" type="button" disabled aria-disabled="true" title="Test Mode will be available soon">♛ Test Mode <small>Coming soon</small></button></div></div>
 <section class="ecg-intro ecg-photo-hero" id="ecgIntro" hidden><div class="ecg-intro-copy"><h2>ECG Interpretation Lab</h2></div><button class="ecg-doctor-photo-button" id="ecgStart" type="button" aria-label="Open the next unlocked ECG"><img src="https://pub-d3558230972a47369859250efa93e757.r2.dev/Ecg/download.jpg" alt="Realistic cardiologist in a white coat holding an ECG recording" loading="eager"></button><p class="ecg-start-prompt">Start your first ECG commentary now!</p></section>
@@ -298,7 +298,7 @@ q.addEventListener('click',e=>{
  const caseFilter=document.getElementById("ecgResultsCaseFilter"),sort=document.getElementById("ecgResultsSort");
  const resetAll=document.getElementById("ecgResetAll");
  const toggle=document.getElementById("ecgRetryToggle"),retryStatus=document.getElementById("ecgRetryStatus");
- let attempts=[],busy=false;
+ let attempts=[],busy=false;const expanded=new Set();
  const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  async function call(method,body){
   const t=token();if(!t)throw Error("Please sign in as administrator again.");
@@ -332,7 +332,14 @@ q.addEventListener('click',e=>{
    const time=String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
    const when=r.completed_at?new Date(r.completed_at).toLocaleString():"—";
    const percent=total?Math.round(100*score/total):0;
-   return '<tr><td class="ecg-table-name">'+escape(r.member_name||"Member")+'</td><td>ECG '+String(r.case_number).padStart(2,"0")+'</td><td><span class="ecg-table-score '+(score<total?"bad":"")+'">'+score+'/'+total+'</span><small>'+percent+'%</small></td><td>⏱ '+time+'</td><td>'+escape(when)+'</td><td><button type="button" class="ecg-member-reset" data-member-reset="'+escape(r.profile_id)+'" data-member-name="'+escape(r.member_name||"Member")+'">Reset member</button></td></tr>';
+   const id=String(r.attempt_id),review=r.review||r.answers?._admin_review||null;
+   const diagnosis=String(r.final_diagnosis||r.answers?._final_diagnosis||"");
+   const notes=String(r.extra_notes||r.answers?._extra_notes||"");
+   const state=review?.status==="validated"?"✓ Validated":review?.status==="needs_revision"?"↻ Revise":"○ Pending";
+   const line='<tr><td class="ecg-table-name">'+escape(r.member_name||"Member")+'</td><td>ECG '+String(r.case_number).padStart(2,"0")+'</td><td><span class="ecg-table-score '+(score<total?"bad":"")+'">'+score+'/'+total+'</span><small>'+percent+'%</small></td><td>⏱ '+time+'</td><td>'+escape(when)+'</td><td><span class="ecg-review-tag">'+state+'</span><br><button class="ecg-review-open" type="button" data-open-review="'+escape(id)+'">'+(expanded.has(id)?"Hide review":"Review diagnosis")+'</button></td></tr>';
+   if(!expanded.has(id))return line;
+   const expandedRow='<tr class="ecg-review-expanded"><td colspan="6"><div class="ecg-review-panel"><div><strong>Step 10 · Final diagnosis</strong><p>'+escape(diagnosis||"Not submitted (older attempt)")+'</p>'+(notes?'<strong>Additional notes</strong><p>'+escape(notes)+'</p>':'')+'</div><div class="ecg-review-editor"><label>Review status<select data-review-status="'+escape(id)+'"><option value="pending" '+(!review||review.status==="pending"?"selected":"")+'>Pending</option><option value="validated" '+(review?.status==="validated"?"selected":"")+'>Validated</option><option value="needs_revision" '+(review?.status==="needs_revision"?"selected":"")+'>Needs revision</option></select></label><label>Feedback<textarea rows="2" maxlength="2000" data-review-feedback="'+escape(id)+'" placeholder="Feedback for this member">'+escape(review?.feedback||"")+'</textarea></label><button type="button" class="btn" data-save-review="'+escape(id)+'">Save review</button></div></div></td></tr>';
+   return line+expandedRow;
   }).join(""):'<tr><td colspan="6" class="ecg-results-empty">No matching attempts.</td></tr>';
  }
  async function refresh(){
@@ -380,6 +387,8 @@ q.addEventListener('click',e=>{
   finally{busy=false;resetAll.disabled=false}
  });
  tbody.addEventListener("click",async(ev)=>{
+  const opener=ev.target.closest("[data-open-review]");if(opener){const id=opener.dataset.openReview;expanded.has(id)?expanded.delete(id):expanded.add(id);render();return}
+  const saver=ev.target.closest("[data-save-review]");if(saver){if(busy||!allowed())return;const id=saver.dataset.saveReview;const reviewStatus=tbody.querySelector(`[data-review-status="${id}"]`)?.value;const feedback=tbody.querySelector(`[data-review-feedback="${id}"]`)?.value||"";busy=true;saver.disabled=true;saver.textContent="Saving…";try{await call("POST",{action:"admin_review_diagnosis",attempt_id:Number(id),status:reviewStatus,feedback});await refresh();expanded.add(id);render()}catch(err){alert("Review could not be saved: "+err.message)}finally{busy=false;saver.disabled=false}return}
   const button=ev.target.closest("[data-member-reset]");if(!button||!allowed()||busy)return;
   const id=button.dataset.memberReset;if(!id)return;
   if(!confirm("Reset ALL ECG attempts for "+(button.dataset.memberName||"this member")+"? This removes their saved ECG progress from Neon."))return;
