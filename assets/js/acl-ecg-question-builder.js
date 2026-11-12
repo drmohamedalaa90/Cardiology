@@ -68,13 +68,48 @@ function updateLiveComment(){
  for(const q of questions){if(["1a","1b","1c","2a","2b","3","4a","4b"].includes(q.id))continue;if(answers[q.id]!==undefined)statements.push(q.title+": "+answers[q.id]+".")}
  target.innerHTML=statements.length?statements.map((line,i)=>'<div class="ecg-comment-line"><span class="ecg-comment-index">'+String(i+1).padStart(2,"0")+'</span><span>'+esc(line)+'</span></div>').join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
 }
+// Candidate-controlled ECG reference: sticky above the question or available on demand.
+let ecgReferenceMode=localStorage.getItem("acl-ecg-reference-mode")==="demand"?"demand":"fixed";
+function syncEcgReference(){
+ const panel=document.getElementById("questionPanel");
+ if(!panel)return;
+ let reference=document.getElementById("ecgQuestionReference");
+ if(!reference){
+  reference=document.createElement("section");reference.id="ecgQuestionReference";
+  reference.setAttribute("aria-label","ECG recording reference");
+  reference.innerHTML='<div class="ecg-ref-toolbar"><strong>🫀 ECG reference</strong><div class="ecg-ref-actions"><label class="ecg-ref-toggle"><input id="ecgReferenceToggle" type="checkbox"> Keep ECG visible while scrolling</label><button type="button" id="ecgReferenceView">👁 View ECG</button></div></div><div id="ecgReferenceBody"><img id="ecgReferenceImage" alt="Current ECG recording"></div>';
+  panel.parentElement.insertBefore(reference,panel);
+  const style=document.createElement("style");style.textContent=`
+#ecgQuestionReference{margin:0 0 16px;border:1px solid #bdd8e9;border-radius:16px;background:#f8fcff;overflow:visible;box-shadow:0 6px 20px #123b5a0d}
+#ecgQuestionReference.ecg-ref-fixed{position:sticky;top:8px;z-index:15}
+.ecg-ref-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;flex-wrap:wrap;color:#103554}
+.ecg-ref-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ecg-ref-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px}
+.ecg-ref-toggle input{width:18px;height:18px;accent-color:#0872ba}
+#ecgReferenceView{background:#e2f2fd;border:1px solid #b2d7f0;border-radius:10px;padding:9px 13px;color:#064b79;font-weight:700;cursor:pointer}
+#ecgReferenceBody{display:flex;justify-content:center;padding:0 10px 10px}
+#ecgReferenceImage{display:block;max-width:100%;width:auto;max-height:min(32vh,270px);object-fit:contain;border-radius:8px;cursor:zoom-in}
+#ecgQuestionReference.ecg-ref-demand #ecgReferenceBody{display:none}
+@media(max-width:650px){#ecgQuestionReference.ecg-ref-fixed{top:0}#ecgReferenceImage{max-height:23vh}.ecg-ref-toolbar{font-size:13px}.ecg-ref-toggle{font-size:12px}}
+`;document.head.appendChild(style);
+  reference.querySelector("#ecgReferenceToggle").addEventListener("change",e=>{ecgReferenceMode=e.target.checked?"fixed":"demand";localStorage.setItem("acl-ecg-reference-mode",ecgReferenceMode);syncEcgReference()});
+  reference.querySelector("#ecgReferenceView").addEventListener("click",()=>openEcgPeek());
+  reference.querySelector("#ecgReferenceImage").addEventListener("click",()=>openEcgPeek());
+ }
+ reference.hidden=!ecgAttemptOpened||!images[slot]||panel.classList.contains("hidden");
+ reference.classList.toggle("ecg-ref-fixed",ecgReferenceMode==="fixed");
+ reference.classList.toggle("ecg-ref-demand",ecgReferenceMode==="demand");
+ reference.querySelector("#ecgReferenceToggle").checked=ecgReferenceMode==="fixed";
+ reference.querySelector("#ecgReferenceView").hidden=ecgReferenceMode==="fixed";
+ if(images[slot]&&reference.querySelector("#ecgReferenceImage").getAttribute("src")!==images[slot])reference.querySelector("#ecgReferenceImage").src=images[slot];
+}
 function render(){
  document.getElementById("ecgIntro").hidden=ecgAttemptOpened;
  document.getElementById("ecgSelector").hidden=ecgAttemptOpened;
  $("questionPanel").classList.toggle("hidden",!ecgAttemptOpened);
- if(!ecgAttemptOpened){$("complete").classList.add("hidden");return;}
+ if(!ecgAttemptOpened){$("complete").classList.add("hidden");syncEcgReference();return;}
  slots();$("imageArea").innerHTML=images[slot]?'<img alt="Uploaded ECG" src="'+images[slot]+'">':'<span class="muted">Upload an ECG image to begin.</span>';
- const ready=!!images[slot]&&questions.length>0;$("questionPanel").classList.toggle("hidden",!ready);$("complete").classList.add("hidden");if(!ready)return;
+ const ready=!!images[slot]&&questions.length>0;$("questionPanel").classList.toggle("hidden",!ready);$("complete").classList.add("hidden");if(!ready){syncEcgReference();return;}
+ syncEcgReference();
  const qs=path(),q=qs[index];if(!q){finish();return}
  const peekThumb=$("peekEcg");if(peekThumb){const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
  $("stepLabel").textContent="STEP "+q.number;$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
@@ -120,7 +155,7 @@ $("ecgPeekModal").addEventListener("click",e=>{if(e.target===$("ecgPeekModal")||
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ecgPeekModal").classList.contains("hidden"))closeEcgPeek()});
 async function finish(){
  document.getElementById("ecgIntro").hidden=true;document.getElementById("ecgSelector").hidden=true;
- clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");
+ clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");syncEcgReference();
  const duration=elapsedAtFailure??seconds();
  const completedSteps=Object.values(stepTiming);const scoreLocal=completedSteps.filter(x=>x.correct).length;const report={case_number:slot+1,mode,created_at:new Date().toISOString(),duration_seconds:duration,score:scoreLocal,total:completedSteps.length,steps:completedSteps};
  try{const history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]");history.unshift(report);localStorage.setItem("acl-ecg-step-reports-v1",JSON.stringify(history.slice(0,200)));}catch(e){console.warn("Could not persist local ECG report",e)}
