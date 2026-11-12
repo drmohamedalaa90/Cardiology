@@ -868,10 +868,10 @@ async function finish(){
 function showEcgCompletionHero(report,passed){
  const panel=$("complete");if(!panel)return;
  renderPreviousEcgResults();
- panel.classList.toggle("ecg-completion-passed",!!passed);
  let banner=document.getElementById("ecgCompletionBanner");if(!banner){banner=document.createElement("div");banner.id="ecgCompletionBanner";panel.prepend(banner)}
  const mistakes=(report.steps||[]).filter(x=>x.correct===false).length;
  const mastered=(report.total>0&&mistakes===0&&report.score===report.total);
+ panel.classList.toggle("ecg-completion-passed",mastered);
  const duration=fmtDuration(report.duration_seconds),minutes=Number(report.duration_seconds||0)/60;
  const timeText=minutes>=1?(Math.floor(minutes)+" min "+String(Math.round(Number(report.duration_seconds||0)%60)).padStart(2,"0")+" sec"):(Math.round(Number(report.duration_seconds||0))+" seconds");
  const feedback=mastered
