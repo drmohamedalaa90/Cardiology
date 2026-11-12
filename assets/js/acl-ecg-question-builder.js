@@ -77,7 +77,7 @@ function syncEcgReference(){
  if(!reference){
   reference=document.createElement("section");reference.id="ecgQuestionReference";
   reference.setAttribute("aria-label","ECG recording reference");
-  reference.innerHTML='<div class="ecg-ref-toolbar"><strong>🫀 ECG reference</strong><div class="ecg-ref-actions"><label class="ecg-ref-toggle"><input id="ecgReferenceToggle" type="checkbox"> Keep ECG visible while scrolling</label><button type="button" id="ecgReferenceView">👁 View ECG</button></div></div><div id="ecgReferenceBody"><img id="ecgReferenceImage" alt="Current ECG recording"></div>';
+  reference.innerHTML='<div class="ecg-ref-toolbar"><strong>🫀 ECG reference</strong><div class="ecg-ref-actions"><span class="ecg-ref-mode-label" id="ecgReferenceModeLabel"></span><button type="button" id="ecgReferenceView">👁 View ECG</button></div></div><div id="ecgReferenceBody"><img id="ecgReferenceImage" alt="Current ECG recording"></div>';
   panel.parentElement.insertBefore(reference,panel);
   const style=document.createElement("style");style.textContent=`
 #ecgQuestionReference{margin:0 0 16px;border:1px solid #bdd8e9;border-radius:16px;background:#f8fcff;overflow:visible;box-shadow:0 6px 20px #123b5a0d}
@@ -91,14 +91,13 @@ function syncEcgReference(){
 #ecgQuestionReference.ecg-ref-demand #ecgReferenceBody{display:none}\n#ecgQuestionReference.ecg-ref-demand{position:static}
 @media(max-width:650px){#ecgQuestionReference.ecg-ref-fixed{top:0}#ecgReferenceImage{max-height:23vh}.ecg-ref-toolbar{font-size:13px}.ecg-ref-toggle{font-size:12px}}
 `;document.head.appendChild(style);
-  reference.querySelector("#ecgReferenceToggle").addEventListener("change",e=>{ecgReferenceMode=e.target.checked?"fixed":"demand";localStorage.setItem("acl-ecg-reference-mode",ecgReferenceMode);syncEcgReference()});
   reference.querySelector("#ecgReferenceView").addEventListener("click",()=>openEcgPeek());
   reference.querySelector("#ecgReferenceImage").addEventListener("click",()=>openEcgPeek());
  }
  reference.hidden=!ecgAttemptOpened||!images[slot]||panel.classList.contains("hidden");
  reference.classList.toggle("ecg-ref-fixed",ecgReferenceMode==="fixed");
  reference.classList.toggle("ecg-ref-demand",ecgReferenceMode==="demand");
- reference.querySelector("#ecgReferenceToggle").checked=ecgReferenceMode==="fixed";
+ reference.querySelector("#ecgReferenceModeLabel").textContent=ecgReferenceMode==="fixed"?"📌 Fixed for this attempt":"👁 On-demand for this attempt";
  reference.querySelector("#ecgReferenceView").hidden=ecgReferenceMode==="fixed";
  const peek=document.getElementById("peekEcg");if(peek)peek.hidden=ecgReferenceMode==="fixed";
  if(images[slot]&&reference.querySelector("#ecgReferenceImage").getAttribute("src")!==images[slot])reference.querySelector("#ecgReferenceImage").src=images[slot];
@@ -203,9 +202,9 @@ function showEcgModeChoice(){
   ecgModeChoiceOverlay.setAttribute("role","dialog");
   ecgModeChoiceOverlay.setAttribute("aria-modal","true");
   ecgModeChoiceOverlay.setAttribute("aria-label","Choose ECG viewing mode");
-  ecgModeChoiceOverlay.innerHTML='<div class="ecg-mode-choice-card"><h2>🫀 How would you like to view your ECG?</h2><p>Choose your preferred layout before beginning. You can change it during the attempt.</p><button type="button" data-ecg-mode="fixed"><strong>📌 Fixed ECG</strong><span>Keep the ECG visible above the questions while scrolling.</span></button><button type="button" data-ecg-mode="demand"><strong>👁 View on demand</strong><span>Open the ECG only when you need it.</span></button></div>';
+  ecgModeChoiceOverlay.innerHTML='<div class="ecg-mode-choice-card"><div class="ecg-mode-ready-badge">🫀 Preparing your ECG Lab <span>✓ Recording ready</span></div><h2>How would you like to view your ECG?</h2><p>Choose your preferred layout before beginning. This choice is locked for the entire attempt.</p><button type="button" data-ecg-mode="fixed"><strong>📌 Fixed ECG</strong><span>Keep the ECG visible above the questions while scrolling.</span></button><button type="button" data-ecg-mode="demand"><strong>👁 View on demand</strong><span>Open the ECG only when you need it.</span></button></div>';
   const style=document.createElement("style");
-  style.textContent='#ecgModeChoiceOverlay[hidden]{display:none!important}#ecgModeChoiceOverlay{position:fixed;inset:0;z-index:99999;background:#09253dc9;display:grid;place-items:center;padding:18px}.ecg-mode-choice-card{width:min(100%,520px);background:#fff;border-radius:24px;padding:clamp(20px,5vw,34px);box-shadow:0 25px 75px #0005;color:#103554}.ecg-mode-choice-card h2{font-size:clamp(21px,4vw,28px);margin:0 0 12px}.ecg-mode-choice-card p{line-height:1.5;color:#527089}.ecg-mode-choice-card button{display:flex;flex-direction:column;text-align:left;gap:7px;width:100%;margin-top:13px;padding:18px;border:2px solid #c8dfef;border-radius:16px;background:#f5fbff;color:#103554;cursor:pointer;font-size:16px}.ecg-mode-choice-card button:hover,.ecg-mode-choice-card button:focus-visible{border-color:#0784ca;background:#e4f5ff}.ecg-mode-choice-card button span{font-size:14px;color:#526c80}';
+  style.textContent='.ecg-mode-ready-badge{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:14px;background:linear-gradient(110deg,#0b4d80,#0c8bb6);color:white;font-size:15px;font-weight:850;margin-bottom:17px}.ecg-mode-ready-badge span{font-size:12px;background:#d9fbea;color:#12613f;border-radius:99px;padding:6px 9px}#ecgReferenceModeLabel{font-size:13px;color:#45677e;font-weight:700}#ecgModeChoiceOverlay[hidden]{display:none!important}#ecgModeChoiceOverlay{position:fixed;inset:0;z-index:99999;background:#09253dc9;display:grid;place-items:center;padding:18px}.ecg-mode-choice-card{width:min(100%,520px);background:#fff;border-radius:24px;padding:clamp(20px,5vw,34px);box-shadow:0 25px 75px #0005;color:#103554}.ecg-mode-choice-card h2{font-size:clamp(21px,4vw,28px);margin:0 0 12px}.ecg-mode-choice-card p{line-height:1.5;color:#527089}.ecg-mode-choice-card button{display:flex;flex-direction:column;text-align:left;gap:7px;width:100%;margin-top:13px;padding:18px;border:2px solid #c8dfef;border-radius:16px;background:#f5fbff;color:#103554;cursor:pointer;font-size:16px}.ecg-mode-choice-card button:hover,.ecg-mode-choice-card button:focus-visible{border-color:#0784ca;background:#e4f5ff}.ecg-mode-choice-card button span{font-size:14px;color:#526c80}';
   document.head.appendChild(style);document.body.appendChild(ecgModeChoiceOverlay);
   ecgModeChoiceOverlay.querySelectorAll("[data-ecg-mode]").forEach(button=>button.addEventListener("click",()=>{
    ecgReferenceMode=button.dataset.ecgMode;
