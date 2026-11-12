@@ -648,6 +648,42 @@ function openEcgClinicalReview(report){
  }
 }
 
+
+function ecgFeedbackPanel(){
+ let el=document.getElementById("ecgExperienceCard");
+ if(!el){
+  el=document.createElement("section");el.id="ecgExperienceCard";
+  el.innerHTML='<svg class="ecg-feedback-art" viewBox="0 0 110 110" width="104" height="104" aria-hidden="true"><circle cx="55" cy="55" r="50" fill="#d8f0ff"/><path d="M55 91C42 79 20 64 20 44c0-17 22-24 35-8 13-16 35-9 35 8 0 20-22 35-35 47Z" fill="#ed4b88"/><path d="M23 56h19l9-15 11 28 9-13h16" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/></svg><div><h3>Liked the experience?</h3><p>Help us improve it.</p><button type="button" class="btn" id="ecgOpenFeedback">💬 Share your feedback</button></div>';
+  const style=document.createElement("style");style.textContent='#ecgExperienceCard{display:flex;align-items:center;justify-content:center;gap:20px;max-width:1100px;box-sizing:border-box;margin:22px auto;padding:24px;border-radius:20px;border:1px solid #c5deed;background:linear-gradient(115deg,#e8f6ff,#fff3fd);box-shadow:0 10px 25px #0c4c7414}#ecgExperienceCard h3{font-size:25px;margin:0 0 5px;color:#14456a}#ecgExperienceCard p{margin:0 0 12px;color:#526e86}#ecgExperienceCard .btn{background:#087cad;color:white;border-radius:11px;font-weight:800}#ecgFeedbackModal{position:fixed;inset:0;z-index:190040;display:grid;place-items:center;padding:15px;background:#071e33bd}#ecgFeedbackModal>section{width:min(100%,510px);max-height:90dvh;overflow:auto;padding:24px;box-sizing:border-box;border-radius:20px;background:#f8fcff;color:#174264}#ecgFeedbackModal textarea{width:100%;box-sizing:border-box;min-height:160px;padding:12px;resize:vertical;border:1px solid #b2d0df;border-radius:10px;font:inherit}#ecgFeedbackModal h2{margin:0 0 16px}#ecgFeedbackModal .ecg-feedback-actions{display:flex;gap:12px;justify-content:end;margin-top:14px}#ecgFeedbackModal p[role=alert]{color:#b32448}@media(max-width:600px){#ecgExperienceCard{gap:10px;padding:16px}#ecgExperienceCard .ecg-feedback-art{width:75px;height:75px}#ecgExperienceCard h3{font-size:19px}}';document.head.appendChild(style);
+  el.querySelector("#ecgOpenFeedback").onclick=()=>ecgOpenFeedback();
+ }
+ const complete=$("complete"),history=document.getElementById("ecgPreviousResults");
+ if(ecgFinishInProgress&&complete&&!complete.classList.contains("hidden"))complete.appendChild(el);
+ else if(history&&!history.hidden)history.insertAdjacentElement("afterend",el);
+ else el.hidden=true;
+ el.hidden=!(ecgFinishInProgress&&complete&&!complete.classList.contains("hidden"))&&!(history&&!history.hidden);
+}
+function ecgOpenFeedback(){
+ document.getElementById("ecgFeedbackModal")?.remove();
+ const modal=document.createElement("div");modal.id="ecgFeedbackModal";
+ modal.innerHTML='<section role="dialog" aria-modal="true" aria-labelledby="ecgFeedbackTitle"><h2 id="ecgFeedbackTitle">💬 Share your feedback</h2><form><label for="ecgFeedbackMessage">Your feedback</label><textarea id="ecgFeedbackMessage" maxlength="2000" required placeholder="What did you like? What could be better?"></textarea><p role="alert" aria-live="polite"></p><div class="ecg-feedback-actions"><button type="button" class="btn secondary" id="ecgFeedbackClose">Cancel</button><button type="submit" class="btn">Send feedback</button></div></form></section>';
+ document.body.appendChild(modal);
+ const focus=document.activeElement,textarea=modal.querySelector("textarea"),close=()=>{modal.remove();document.removeEventListener("keydown",keyHandler);focus?.focus?.()};
+ const keyHandler=e=>{if(e.key==="Escape")close()};
+ document.addEventListener("keydown",keyHandler);
+ modal.querySelector("#ecgFeedbackClose").onclick=close;
+ modal.addEventListener("click",e=>{if(e.target===modal)close()});
+ modal.querySelector("form").onsubmit=async e=>{
+  e.preventDefault();
+  const message=textarea.value.trim(),note=modal.querySelector('[role="alert"]'),button=modal.querySelector('[type="submit"]');
+  if(message.length<3){note.textContent="Please enter your feedback.";return}
+  button.disabled=true;button.textContent="Sending…";
+  try{await attemptRequest("POST",{action:"submit_feedback",comment:message});close();const main=document.getElementById("ecgOpenFeedback");if(main){main.textContent="✓ Feedback sent";main.disabled=true}}
+  catch(error){note.textContent=error.message;button.disabled=false;button.textContent="Send feedback"}
+ };
+ textarea.focus();
+}
+
 function renderPreviousEcgResults(){
  ensureEcgHistoryLayout();
  const intro=document.getElementById("ecgIntro");if(!intro)return;
@@ -671,9 +707,9 @@ function renderPreviousEcgResults(){
  const hasHistory=completed.length>0;
  // Returning candidates see their report instead of the introductory image.
  if(!ecgAttemptOpened)intro.hidden=!ecgProgressChecked||hasHistory;
- area.hidden=ecgAttemptOpened||!hasHistory;if(!hasHistory){area.innerHTML="";return}
+ area.hidden=ecgAttemptOpened||!hasHistory;if(!hasHistory){area.innerHTML="";document.getElementById("ecgExperienceCard")?.remove();return}
  const upcoming=nextAvailableEcg();
- area.innerHTML='<div class="ecg-results-return-header"><div><h3 class="ecg-history-heading">🫀 Your ECG results</h3><p class="ecg-history-sub">Your submitted interpretations</p></div>'+(upcoming?'<button class="btn ecg-return-start" type="button" id="ecgReturnStart">▶ '+(completed.some(x=>x.case_number===upcoming)?'Repeat':'Start')+' ECG '+String(upcoming).padStart(2,"0")+'</button>':'<span class="ecg-next-locked" aria-disabled="true">🔒 Next ECG · Not uploaded yet</span>')+'</div>'+completed.map(r=>{
+ area.innerHTML='<div class="ecg-results-return-header"><div><h3 class="ecg-history-heading">🫀 Your ECG results</h3><p class="ecg-history-sub">Your submitted interpretations</p></div>'+(upcoming?'<button class="btn ecg-return-start" type="button" id="ecgReturnStart">▶ '+(completed.some(x=>x.case_number===upcoming)?'Repeat':'Start')+' ECG '+String(upcoming).padStart(2,"0")+'</button>':'<span class="ecg-next-locked" aria-disabled="true">🔒 Next ECG</span>')+'</div>'+completed.map(r=>{
  const n=Number(r.case_number),img=images[n-1];
 
  // The saved commentary consists of one completed sentence per interpretation step.
@@ -714,6 +750,7 @@ function renderPreviousEcgResults(){
  // Continue with the next eligible ECG without revealing the introductory photograph.
  area.querySelector("#ecgReturnStart")?.addEventListener("click",()=>document.getElementById("ecgStart")?.click());
  area.querySelectorAll("[data-ecg-review]").forEach(btn=>btn.addEventListener("click",()=>{const report=byCase.get(Number(btn.dataset.ecgReview));if(report)openEcgClinicalReview(report)}));
+ if(!ecgAttemptOpened)ecgFeedbackPanel();
  // Export from a previous completed attempt without restarting it or changing saved progress.
  area.querySelectorAll("[data-ecg-history-export]").forEach(button=>button.addEventListener("click",async()=>{
   const caseNumber=Number(button.dataset.ecgHistoryExport);
@@ -1080,6 +1117,7 @@ async function finish(){
  try{const history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]");history.unshift(report);localStorage.setItem("acl-ecg-step-reports-v1",JSON.stringify(history.slice(0,200)));}catch(e){console.warn("Could not persist local ECG report",e)}
  $("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(duration/60)+"m "+duration%60+"s";
  $("result").textContent="Saving your complete ECG interpretation securely…";renderAttemptReport(report);showEcgCompletionHero(report,false);
+ ecgFeedbackPanel();
  requestAnimationFrame(()=>requestAnimationFrame(()=>$("ecgCompletionBanner")?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"})));
  try{
   const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:slot+1,mode,answers,duration_seconds:duration,mistakes:wrongCount,step_details:report.steps,commentary:report.commentary});
@@ -1117,7 +1155,7 @@ function showEcgCompletionHero(report,passed){
 
  let next=document.getElementById("ecgCompletionNext");if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.className="btn";next.type="button";banner.after(next)}
  const nextUnlocked=passed?nextAvailableEcg():null;
- next.hidden=!passed;next.disabled=!nextUnlocked;next.textContent=nextUnlocked?"Continue to ECG "+String(nextUnlocked).padStart(2,"0")+" →":"🔒 Next ECG · Not uploaded yet";if(!nextUnlocked)next.classList.add("ecg-next-unavailable");else next.classList.remove("ecg-next-unavailable");
+ next.hidden=!passed;next.disabled=!nextUnlocked;next.textContent=nextUnlocked?"Continue to ECG "+String(nextUnlocked).padStart(2,"0")+" →":"🔒 Next ECG";if(!nextUnlocked)next.classList.add("ecg-next-unavailable");else next.classList.remove("ecg-next-unavailable");
  next.onclick=()=>{const n=nextAvailableEcg();if(!n)return;ecgAttemptOpened=false;restart();slot=n-1;render();document.getElementById("ecgCaseStage")?.scrollIntoView({behavior:"smooth",block:"start"})};
  const again=$("again");panel.classList.toggle("ecg-retry-disabled",!admin()&&!ecgRetryAllowed);if(again){again.hidden=!admin()&&(!!passed||!ecgRetryAllowed);again.textContent=passed&&admin()?"↻ Try this ECG again (admin)":"↻ Restart interpretation"}
  if(!document.getElementById("ecgCompletionCSS")){const css=document.createElement("style");css.id="ecgCompletionCSS";css.textContent=`
