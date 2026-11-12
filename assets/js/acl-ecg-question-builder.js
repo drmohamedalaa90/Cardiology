@@ -104,7 +104,7 @@ function updateLiveComment(){
  yes("4a","P waves are present.","P waves are absent.");
  yes("4b","P-wave morphology is normal.","Abnormal P-wave morphology.");
  for(const q of questions){if(["1a","1b","1c","2a","2b","3","4a","4b"].includes(q.id))continue;if(answers[q.id]!==undefined)statements.push(q.title+": "+answers[q.id]+(q.type==="number"&&q.unit?" "+q.unit:"")+".")}
- target.innerHTML=statements.length?statements.map((line,i)=>'<div class="ecg-comment-line"><span class="ecg-comment-index">'+String(i+1).padStart(2,"0")+'</span><span>'+esc(line)+'</span></div>').join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
+ target.innerHTML=statements.length?statements.map((line,i)=>'<div class="ecg-comment-line"><span class="ecg-comment-index">Step '+esc(questions.filter(q=>answers[q.id]!==undefined)[i]?.number??String(i+1))+'</span><span>'+esc(line)+'</span></div>').join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
 }
 // Candidate-controlled ECG reference: sticky above the question or available on demand.
 let ecgReferenceMode=localStorage.getItem("acl-ecg-reference-mode")==="demand"?"demand":"fixed";
