@@ -117,17 +117,21 @@ function updateLiveComment(){
  "4b":v=>v==="Yes"?"P-wave morphology is normal.":"Abnormal P-wave morphology."
  };
  const completed=questions.filter(q=>Object.prototype.hasOwnProperty.call(answers,q.id)).sort((a,b)=>{const na=String(a.number||""),nb=String(b.number||"");return na.localeCompare(nb,undefined,{numeric:true,sensitivity:"base"})});
- const statements=completed.map(q=>{
+ const groups=new Map();
+ completed.forEach(q=>{
   const v=answers[q.id],line=phrases[q.id]?phrases[q.id](v):q.title+": "+(Array.isArray(v)?v.join(", "):v)+(q.type==="number"&&q.unit?" "+q.unit:"")+".";
-  const status=stepTiming[q.id]?.correct;
-  return '<div class="ecg-comment-line '+(status===false?"ecg-comment-incorrect":status===true?"ecg-comment-correct":"")+'"><span class="ecg-comment-index">Step '+esc(q.number)+'</span><span>'+esc(line)+'</span></div>';
+  const group=String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"");
+  if(!groups.has(group))groups.set(group,[]);
+  groups.get(group).push({line:line.replace(/[.\\s]+$/,""),wrong:stepTiming[q.id]?.correct===false});
  });
+ const statements=[...groups].map(([group,items])=>'<div class="ecg-comment-line '+(items.some(item=>item.wrong)?"ecg-comment-incorrect":"ecg-comment-correct")+'"><span class="ecg-comment-index">Step '+esc(group)+'</span><span>'+items.map(item=>esc(item.line)).join(", ")+'.</span></div>');
  target.innerHTML=statements.length?statements.join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
 }
 function ensureEcgCommentStyles(){
  if(document.getElementById("ecgCommentStatusStyles"))return;
  const style=document.createElement("style");style.id="ecgCommentStatusStyles";
  style.textContent="#progress i.ecg-progress-wrong{background:#d21f49!important;border-color:#d21f49!important}#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect{background:#fff0f1!important;border-left:4px solid #cf2449!important;color:#9d1734!important;padding-left:10px;border-radius:7px}#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect .ecg-comment-index{color:#bb1c40!important}#ecgLiveComment .ecg-comment-line.ecg-comment-correct{border-left:4px solid #138650!important;padding-left:10px;border-radius:7px}#stepTitle{display:none!important}#stepLabel.ecg-step-with-title{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;max-width:100%;white-space:normal}#stepLabel .ecg-step-name{font-size:1em;font-weight:750;opacity:1}";
+ style.textContent+="#ecgPreviousGroup{margin:0 0 18px;display:grid;gap:12px}#ecgPreviousGroup[hidden]{display:none!important}.ecg-previous-branch{border:1px solid #bcd5e7;background:#f1f8fd;border-radius:14px;padding:14px 18px}.ecg-previous-title{font-weight:800;color:#123d5b}.ecg-previous-locked{float:right;font-size:12px;color:#168350}.ecg-previous-question{margin:9px 0;font-size:18px;font-weight:650}.ecg-previous-answer{font-size:14px;color:#4d687d}";
  document.head.appendChild(style);
 }
 // Candidate-controlled ECG reference: sticky above the question or available on demand.
@@ -176,6 +180,15 @@ function render(){
  syncEcgReference();
  const qs=path(),q=qs[index];if(!q){finish();return}
  const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
+ let previousGroup=document.getElementById("ecgPreviousGroup");
+ if(!previousGroup){previousGroup=document.createElement("div");previousGroup.id="ecgPreviousGroup";$("question").parentElement.insertBefore(previousGroup,$("question"));}
+ const groupId=String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"");
+ const earlier=qs.slice(0,index).filter(item=>(String(item.number||"").match(/^\\d+/)?.[0]||String(item.number||""))===groupId);
+ previousGroup.innerHTML=earlier.map(item=>{
+  const value=answers[item.id],display=Array.isArray(value)?value.join(", "):String(value??"");
+  return '<div class="ecg-previous-branch"><div class="ecg-previous-title">Step '+esc(item.number)+' · '+esc(item.title)+' <span class="ecg-previous-locked">✓ Submitted · locked</span></div><div class="ecg-previous-question">'+esc(item.text)+'</div><div class="ecg-previous-answer">Your answer: '+esc(display)+'</div></div>';
+ }).join("");
+ previousGroup.hidden=!earlier.length;
  $("stepLabel").classList.add("ecg-step-with-title");$("stepLabel").innerHTML="<span>STEP "+esc(q.number)+"</span><span class=\"ecg-step-name\">"+esc(q.title)+"</span>";$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;let multiHint=document.getElementById("ecgMultiChoiceHint");if(!multiHint){multiHint=document.createElement("div");multiHint.id="ecgMultiChoiceHint";multiHint.style.cssText="font-size:13px;color:#637d91;margin:5px 0 14px;font-weight:500";$("question").insertAdjacentElement("afterend",multiHint)}multiHint.textContent=q.multi?"More than one choice is allowed.":"";multiHint.hidden=!q.multi;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
  const groupKey=x=>String(x.number||"").match(/^\\d+/)?.[0]||String(x.number||"");
  const groupNames=[...new Set(qs.map(groupKey))];
