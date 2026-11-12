@@ -148,7 +148,8 @@ function updateLiveComment(){
  });
  const prRows=completed.filter(q=>String(q.number||"").match(/^\\d+/)?.[0]==="5");
  if(groups.has("5")&&prRows.length){const summary=ecgPrSummary(prRows,answers);if(summary)groups.set("5",[{line:summary.replace(/\\.$/,""),wrong:groups.get("5").some(item=>item.wrong)}]);}
- const statements=[...groups].map(([group,items])=>'<div class="ecg-comment-line '+(items.some(item=>item.wrong)?"ecg-comment-incorrect":"ecg-comment-correct")+'"><span class="ecg-comment-index">Step '+esc(group)+'</span><span>'+items.map(item=>esc(item.line)).join(", ")+'.</span></div>');
+ const cleanComment=text=>String(text||"").replace(/\baxi\b/gi,"axis").replace(/\s+([,.;])/g,"$1").replace(/,\s*,+/g,",").replace(/\.{2,}/g,".").trim();
+ const statements=[...groups].map(([group,items])=>'<div class="ecg-comment-line '+(items.some(item=>item.wrong)?"ecg-comment-incorrect":"ecg-comment-correct")+'"><span class="ecg-comment-index">Step '+esc(group)+'</span><span>'+esc(cleanComment(items.map(item=>item.line).join(", ")).replace(/[.\s]+$/,""))+'.</span></div>');
  target.innerHTML=statements.length?statements.join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
 }
 function ensureEcgCommentStyles(){
@@ -336,7 +337,11 @@ function renderEcgStepReview(){
   if(details.length)return "P-wave assessment: "+details.join("; ")+".";
   return rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
  };
- const comment=String(group)==="5"?(ecgPrSummary(rows,answers)||rows.map(q=>statement(q)).join(", ")+"."):String(group)==="4"?(pWaveSummary()||rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+"."):rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
+ // Review uses the SAME rendered commentary as the live interpretation.
+ updateLiveComment();
+ const liveRow=Array.from(document.querySelectorAll("#ecgLiveComment .ecg-comment-line")).find(row=>row.querySelector(".ecg-comment-index")?.textContent.trim()==="Step "+group);
+ const liveText=liveRow?.querySelector("span:last-child")?.textContent.trim();
+ const comment=liveText||rows.map(q=>statement(q).replace(/[.,;\s]+$/,"")).join(", ")+".";
  const mistakes=rows.filter(q=>stepTiming[q.id]?.correct!==true);
  box.innerHTML='<div class="ecg-review-heading"><span class="ecg-review-icon">'+(allCorrect?"✓":"!")+'</span><div><small>STEP '+esc(group)+' COMPLETED</small><h2>'+esc(label)+'</h2><p>'+good+'/'+rows.length+' correct · Review your interpretation before continuing.</p></div></div>'+
  '<article class="ecg-review-row '+(allCorrect?"ecg-review-ok":"ecg-review-bad")+'"><div class="ecg-review-row-head"><strong>Step '+esc(group)+'</strong><b>'+(allCorrect?"✓ Correct":"✕ "+mistakes.length+" incorrect")+'</b></div><div class="ecg-review-question">'+esc(comment)+'</div></article>'+
