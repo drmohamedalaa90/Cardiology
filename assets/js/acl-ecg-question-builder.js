@@ -45,11 +45,13 @@ const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-
 let ecgImagesLoading=null;
 async function restoreEcgImages(){try{const data=await attemptRequest("GET");for(const c of data.cases||[]){const n=Number(c.case_number)-1;if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&!images[n])images[n]=c.image_data;}if(images[slot])render();else slots();}catch(e){console.warn("ECG images could not be restored",e)}}window.addEventListener("acl-ecg-access-ready",()=>{ecgImagesLoading=restoreEcgImages()});ecgImagesLoading=restoreEcgImages();
 async function encodeEcgImage(file){const source=await createImageBitmap(file);try{const maxWidth=2200,maxHeight=1500,ratio=Math.min(1,maxWidth/source.width,maxHeight/source.height),canvas=document.createElement("canvas");canvas.width=Math.round(source.width*ratio);canvas.height=Math.round(source.height*ratio);const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0,canvas.width,canvas.height);let data=canvas.toDataURL("image/jpeg",.9);if(data.length>2400000)data=canvas.toDataURL("image/jpeg",.77);if(data.length>2400000)throw Error("ECG image is too large to save. Please reduce its resolution.");return data;}finally{source.close?.()}}
+function isEcgCompleted(n){return attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0)}
+function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!isEcgCompleted(n))||null}
 function slots(){
- $("slots").innerHTML=images.map((x,i)=>{const locked=!unlockedEcg.includes(i+1),done=attemptHistory.some(a=>Number(a.case_number)===i+1&&a.score===a.total&&a.total>0);
+ $("slots").innerHTML=images.map((x,i)=>{const locked=!unlockedEcg.includes(i+1),done=isEcgCompleted(i+1);
  const preview=x?'<img class="ecg-tile-preview" src="'+x+'" alt="ECG '+(i+1)+' recording" loading="lazy">':'<span class="ecg-tile-empty" aria-hidden="true">ECG not uploaded</span>';
  return '<button type="button" class="slot '+(slot===i?"current ":"")+(locked?"ecg-locked ":"")+(x?"ecg-has-image":"")+'" data-slot="'+i+'" aria-label="ECG '+(i+1)+(locked?", locked":"")+'"><span class="ecg-tile-art">'+preview+(locked?'<span class="ecg-tile-lock">🔒</span>':x?'<span class="ecg-tile-saved">✓ Saved</span>':'')+'</span><span class="ecg-tile-title">ECG '+String(i+1).padStart(2,"0")+(done?" ✓":"")+'</span></button>'}).join("");
- document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{const chosen=+b.dataset.slot;if(!unlockedEcg.includes(chosen+1)){alert("Complete ECG "+String(chosen).padStart(2,"0")+" with all answers correct to unlock this ECG.");return;}slot=chosen;document.getElementById("ecgCaseStage").hidden=false;if(!(ecgAttemptOpened&&started))restart();render();build();document.getElementById("ecgCaseStage").scrollIntoView({behavior:"smooth",block:"start"})})
+ document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{const chosen=+b.dataset.slot;if(isEcgCompleted(chosen+1)){alert("You have already completed ECG "+String(chosen+1).padStart(2,"0")+" with 100% accuracy. Please proceed to the next ECG.");return;}if(!unlockedEcg.includes(chosen+1)){alert("Complete ECG "+String(chosen).padStart(2,"0")+" with all answers correct to unlock this ECG.");return;}slot=chosen;document.getElementById("ecgCaseStage").hidden=false;if(!(ecgAttemptOpened&&started))restart();render();build();document.getElementById("ecgCaseStage").scrollIntoView({behavior:"smooth",block:"start"})})
 }
 function updateLiveComment(){
  const target=document.getElementById("ecgLiveComment");if(!target)return;
@@ -131,7 +133,7 @@ async function finish(){
   attemptHistory.unshift({case_number:slot+1,score:saved.score,total:saved.total});
   slots();
   $("summary").textContent+=" · Score "+saved.score+"/"+saved.total;
-  $("result").textContent=passed?"✓ Attempt saved to Neon. Next ECG unlocked.":failedAttempt?"✕ Incorrect answer. Attempt closed and saved to Neon. Start a new attempt to retry.":"Attempt saved to Neon. Complete all questions correctly to unlock the next ECG.";
+  $("result").textContent=passed?"✓ 100% correct! This ECG is now completed and cannot be repeated. Proceed to the next ECG.":failedAttempt?"✕ Incorrect answer. Attempt closed and saved to Neon. Start a new attempt to retry.":"Attempt saved to Neon. Complete all questions correctly to unlock the next ECG.";
  }catch(error){$("result").innerHTML="⚠ Attempt not saved to Neon: "+esc(error.message)+". Your step-by-step report remains available locally. <button type=\"button\" class=\"btn\" id=\"retryEcgSave\">↻ Retry saving</button>";$("retryEcgSave").onclick=()=>retrySaveAttempt(report);}
 }
 function fmtDuration(sec){sec=Number(sec)||0;return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0")}
@@ -142,7 +144,7 @@ function renderAttemptReport(report){
  const compare=history.map((a,i)=>'<tr><td>'+(i+1)+'</td><td>ECG '+esc(a.case_number)+'</td><td>'+esc(a.mode)+'</td><td>'+esc(new Date(a.created_at).toLocaleString())+'</td><td>'+fmtDuration(a.duration_seconds)+'</td><td>'+esc(a.score)+'/'+esc(a.total)+'</td></tr>').join("");
  panel.innerHTML='<h3>Step-by-step performance report</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><table class="ecg-report-table"><thead><tr><th>Step</th><th>Assessment</th><th>Time</th><th>Outcome</th></tr></thead><tbody>'+rows+'</tbody></table><h3 style="margin-top:22px">Compare your ECG attempts</h3><p class="muted small">All locally recorded attempts, including ECG 1, 2, 3 and later cases. Detailed timings are saved in this browser.</p><table class="ecg-report-table"><thead><tr><th>Attempt</th><th>ECG</th><th>Mode</th><th>Date</th><th>Total time</th><th>Correct steps</th></tr></thead><tbody>'+compare+'</tbody></table>';
 }
-async function retrySaveAttempt(report){const button=$("retryEcgSave");if(button){button.disabled=true;button.textContent="Saving…"}try{const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:report.case_number,mode:report.mode,answers,duration_seconds:report.duration_seconds,mistakes:wrongCount});$("result").textContent="✓ Attempt saved to Neon · "+saved.score+"/"+saved.total;await refreshAttemptProgress()}catch(error){$("result").textContent="⚠ Still not saved: "+error.message+" · Your local report is preserved."}}
+async function retrySaveAttempt(report){const button=$("retryEcgSave");if(button){button.disabled=true;button.textContent="Saving…"}try{const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:report.case_number,mode:report.mode,answers,duration_seconds:report.duration_seconds,mistakes:wrongCount});$("result").textContent="✓ Attempt saved to Neon · "+saved.score+"/"+saved.total+(saved.passed?" · ECG completed. Proceed to the next ECG.":"");await refreshAttemptProgress()}catch(error){$("result").textContent="⚠ Still not saved: "+error.message+" · Your local report is preserved."}}
 window.addEventListener("acl-ecg-access-ready",build);render();build();
 
 // The ECG held by the doctor is the sole visible case-launch control.
@@ -157,12 +159,15 @@ if(ecgReadyClose)ecgReadyClose.addEventListener("click",closeReadyPreview);
 if(ecgReadyOverlay)ecgReadyOverlay.addEventListener("click",e=>{if(e.target===ecgReadyOverlay)closeReadyPreview()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ecgReadyOverlay&&!ecgReadyOverlay.hidden){e.stopPropagation();closeReadyPreview()}});
 let ecgLaunchPending=false;
-function nextEcgNumber(){return Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0))||Math.max(1,...unlockedEcg)}
+function nextEcgNumber(){return nextAvailableEcg()}
 async function openPreparedEcg(){
  if(ecgLaunchPending)return;ecgLaunchPending=true;
  const preparing=document.getElementById("ecgPreparingOverlay");
  if(preparing)preparing.hidden=false;
  try{
+  await refreshAttemptProgress();
+  const upcoming=nextEcgNumber();
+  if(upcoming===null)throw Error("Congratulations! You have completed all available ECGs with 100% accuracy. No repeat attempts are allowed.");
   if(ecgImagesLoading)await ecgImagesLoading;
   if(!images[nextEcgNumber()-1]){ecgImagesLoading=restoreEcgImages();await ecgImagesLoading}
   const next=nextEcgNumber(),preview=images[next-1];
