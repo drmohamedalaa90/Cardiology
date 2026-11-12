@@ -108,6 +108,16 @@ function slots(){
  return '<button type="button" class="slot '+(slot===i?"current ":"")+(locked?"ecg-locked ":"")+(x?"ecg-has-image":"")+'" data-slot="'+i+'" aria-label="ECG '+(i+1)+(locked?", locked":"")+'"><span class="ecg-tile-art">'+preview+(locked?'<span class="ecg-tile-lock">🔒</span>':x?'<span class="ecg-tile-saved">✓ Saved</span>':'')+'</span><span class="ecg-tile-title">ECG '+String(i+1).padStart(2,"0")+(done?" ✓":"")+'</span></button>'}).join("");
  document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{const chosen=+b.dataset.slot;if(!admin()&&isEcgCompleted(chosen+1)){alert("You have already completed ECG "+String(chosen+1).padStart(2,"0")+" with 100% accuracy. Please proceed to the next ECG.");return;}if(!admin()&&!unlockedEcg.includes(chosen+1)){alert("Complete ECG "+String(chosen).padStart(2,"0")+" with all answers correct to unlock this ECG.");return;}slot=chosen;document.getElementById("ecgCaseStage").hidden=false;if(!(ecgAttemptOpened&&started))restart();render();build();(admin()&&document.getElementById("ecgAdminOverlay")&&!document.getElementById("ecgAdminOverlay").hidden?document.getElementById("ecgCaseKeyTools"):document.getElementById("ecgCaseStage")).scrollIntoView({behavior:"smooth",block:"start"})})
 }
+function ecgReadableYesNo(v){const s=String(v??"");return /^ye$/i.test(s)?"Yes":s}
+function ecgPrSummary(rows,answers){
+ const fixed=rows.find(q=>/pr interval is|fixed|variable/i.test(String(q.text||""))&&q.type!=="number");
+ const duration=rows.find(q=>q.type==="number"&&/pr interval|duration/i.test(String(q.text||"")+" "+String(q.title||"")));
+ if(!fixed&&!duration)return null;
+ const status=fixed?ecgReadableYesNo(answers[fixed.id]):null;
+ const value=duration?Number(answers[duration.id]):NaN;
+ const interval=Number.isFinite(value)?value+" small squares ("+(Math.round(value*40*100)/100)+" ms)":null;
+ return "PR interval"+(status?" is "+String(status).toLowerCase():"")+(interval?(status?" and measures ":" measures ")+interval:"")+".";
+}
 function updateLiveComment(){
  const target=document.getElementById("ecgLiveComment");if(!target)return;
  const phrases={
@@ -123,11 +133,13 @@ function updateLiveComment(){
  const completed=questions.filter(q=>Object.prototype.hasOwnProperty.call(answers,q.id)).sort((a,b)=>{const na=String(a.number||""),nb=String(b.number||"");return na.localeCompare(nb,undefined,{numeric:true,sensitivity:"base"})});
  const groups=new Map();
  completed.forEach(q=>{
-  const v=answers[q.id],line=phrases[q.id]?phrases[q.id](v):q.title+": "+(Array.isArray(v)?v.join(", "):v)+(q.type==="number"&&q.unit?" "+q.unit:"")+".";
+  const v=answers[q.id],line=phrases[q.id]?phrases[q.id](v):q.title+": "+(Array.isArray(v)?v.join(", "):ecgReadableYesNo(v))+(q.type==="number"&&q.unit?" "+q.unit:"")+".";
   const group=String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"");
   if(!groups.has(group))groups.set(group,[]);
   groups.get(group).push({line:line.replace(/[.\\s]+$/,""),wrong:stepTiming[q.id]?.correct===false});
  });
+ const prRows=completed.filter(q=>String(q.number||"").match(/^\\d+/)?.[0]==="5");
+ if(groups.has("5")&&prRows.length){const summary=ecgPrSummary(prRows,answers);if(summary)groups.set("5",[{line:summary.replace(/\\.$/,""),wrong:groups.get("5").some(item=>item.wrong)}]);}
  const statements=[...groups].map(([group,items])=>'<div class="ecg-comment-line '+(items.some(item=>item.wrong)?"ecg-comment-incorrect":"ecg-comment-correct")+'"><span class="ecg-comment-index">Step '+esc(group)+'</span><span>'+items.map(item=>esc(item.line)).join(", ")+'.</span></div>');
  target.innerHTML=statements.length?statements.join(""):'<p class="muted">Your ECG interpretation will appear here as you answer each step.</p>';
 }
@@ -237,34 +249,28 @@ let failedAttempt=false,elapsedAtFailure=null;
 function ecgGroupOf(q){return String(q.number||"").match(/^\\d+/)?.[0]||String(q.number||"")}
 function scrollEcgToActiveQuestion(){
  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-  const panel=document.getElementById("questionPanel");
   const question=document.getElementById("question");
   const choices=document.getElementById("choices");
-  if(!panel||panel.classList.contains("hidden")||!question||!choices)return;
+  const panel=document.getElementById("questionPanel");
+  if(!question||!choices||!panel||panel.classList.contains("hidden"))return;
+  const header=document.querySelector("header");
+  const headerBottom=header&&getComputedStyle(header).position==="fixed"?header.getBoundingClientRect().bottom:0;
   const reference=document.getElementById("ecgQuestionReference");
-  let topLimit=16;
-  if(reference&&getComputedStyle(reference).position==="sticky"){
-   const rect=reference.getBoundingClientRect();
-   if(rect.top>=0&&rect.top<window.innerHeight)topLimit=Math.max(topLimit,rect.bottom+12);
-  }
-  const qRect=question.getBoundingClientRect(),choiceRect=choices.getBoundingClientRect();
-  const bottomLimit=window.innerHeight-24;
-  // Never scroll just to expose the commentary. Only move when the question
-  // or its answer controls are clipped by the usable viewport.
-  if(qRect.top>=topLimit&&choiceRect.bottom<=bottomLimit)return;
-  const available=bottomLimit-topLimit;
-  const contentHeight=choiceRect.bottom-qRect.top;
-  let delta;
-  if(contentHeight<=available){
-   delta=qRect.top-topLimit;
-  }else if(qRect.top<topLimit||qRect.top>bottomLimit-90){
-   delta=qRect.top-topLimit;
-  }else if(choiceRect.top>bottomLimit-70){
-   delta=choiceRect.top-(bottomLimit-70);
-  }else{
-   return; // Tall choice grids remain user-scrollable without jumping to commentary.
-  }
-  if(Math.abs(delta)>8)window.scrollTo({top:Math.max(0,window.scrollY+delta),behavior:"smooth"});
+  const refRect=reference?.getBoundingClientRect();
+  const sticky=reference&&getComputedStyle(reference).position==="sticky"&&refRect.top>=0;
+  const top=Math.max(12,headerBottom+12,sticky?refRect.bottom+12:0);
+  const bottom=window.innerHeight-24;
+  const qr=question.getBoundingClientRect(),cr=choices.getBoundingClientRect();
+  // Prioritize the question and the answer controls; never the commentary.
+  if(qr.top>=top&&cr.bottom<=bottom)return;
+  const usable=bottom-top;
+  const content=cr.bottom-qr.top;
+  let delta=0;
+  if(content<=usable)delta=qr.top-top;
+  else if(qr.top<top||qr.top>bottom-100)delta=qr.top-top;
+  else if(cr.top>bottom-70)delta=cr.top-(bottom-70);
+  else return;
+  if(Math.abs(delta)>8)window.scrollBy({top:delta,behavior:"smooth"});
  }));
 }
 function renderEcgStepReview(){
@@ -283,7 +289,7 @@ function renderEcgStepReview(){
    const yes=String(answer).toLowerCase()==="yes";
    const title=String(q.title||"").toLowerCase(),prompt=String(q.text||"").toLowerCase();
    if(q.type==="number")return (q.title||q.text)+": "+fmt(answer)+(q.unit?" "+q.unit:"");
-   if(q.type==="leads"||q.multi)return (q.title||q.text)+": "+fmt(answer);
+   if(q.type==="leads"||q.multi)return (q.title||q.text)+": "+ecgReadableYesNo(fmt(answer));
    // Classify each question by its own wording, not the shared step title.
    // A parent title can mention calibration for every Step 1 subquestion.
    const wording=prompt||title;
@@ -312,7 +318,7 @@ function renderEcgStepReview(){
   const features=["location","axis","morphology","amplitude","duration"].filter(v=>normal.has(v));
   return "P waves are present"+(features.length?" with normal "+features.join(", "):"")+".";
  };
- const comment=String(group)==="4"?(pWaveSummary()||rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+"."):rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
+ const comment=String(group)==="5"?(ecgPrSummary(rows,answers)||rows.map(q=>statement(q).join(", ")+"."):String(group)==="4"?(pWaveSummary()||rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+"."):rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
  const mistakes=rows.filter(q=>stepTiming[q.id]?.correct!==true);
  box.innerHTML='<div class="ecg-review-heading"><span class="ecg-review-icon">'+(allCorrect?"✓":"!")+'</span><div><small>STEP '+esc(group)+' COMPLETED</small><h2>'+esc(label)+'</h2><p>'+good+'/'+rows.length+' correct · Review your interpretation before continuing.</p></div></div>'+
  '<article class="ecg-review-row '+(allCorrect?"ecg-review-ok":"ecg-review-bad")+'"><div class="ecg-review-row-head"><strong>Step '+esc(group)+'</strong><b>'+(allCorrect?"✓ Correct":"✕ "+mistakes.length+" incorrect")+'</b></div><div class="ecg-review-question">'+esc(comment)+'</div></article>'+
