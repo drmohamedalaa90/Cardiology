@@ -493,7 +493,7 @@ let ecgImagesLoading=null;
 async function restoreEcgImages(){try{const data=await attemptRequest("GET");for(const c of data.cases||[]){const n=Number(c.case_number)-1;if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&!images[n])images[n]=c.image_data;}if(images[slot])render();else slots();}catch(e){console.warn("ECG images could not be restored",e)}}window.addEventListener("acl-ecg-access-ready",()=>{ecgImagesLoading=restoreEcgImages()});ecgImagesLoading=restoreEcgImages();
 async function encodeEcgImage(file){const source=await createImageBitmap(file);try{const maxWidth=2200,maxHeight=1500,ratio=Math.min(1,maxWidth/source.width,maxHeight/source.height),canvas=document.createElement("canvas");canvas.width=Math.round(source.width*ratio);canvas.height=Math.round(source.height*ratio);const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0,canvas.width,canvas.height);let data=canvas.toDataURL("image/jpeg",.9);if(data.length>2400000)data=canvas.toDataURL("image/jpeg",.77);if(data.length>2400000)throw Error("ECG image is too large to save. Please reduce its resolution.");return data;}finally{source.close?.()}}
 function isEcgCompleted(n){return !admin()&&attemptHistory.some(a=>Number(a.case_number)===n&&Number(a.score)===Number(a.total)&&Number(a.total)>0)}
-function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!isEcgCompleted(n))||null}
+function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!isEcgCompleted(n)&&(ecgRetryAllowed||!attemptHistory.some(a=>Number(a.case_number)===n)))||null}
 
 function previousEcgReports(){try{return JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]").filter(x=>x&&Array.isArray(x.steps))}catch{return []}}
 function parseEcgStoredComment(value){
@@ -1327,7 +1327,7 @@ async function openPreparedEcg(){
  try{
   await refreshAttemptProgress();
   const upcoming=nextEcgNumber();
-  if(upcoming===null)throw Error("Congratulations! You have completed all available ECGs with 100% accuracy.");
+  if(upcoming===null)throw Error(ecgRetryAllowed?"Congratulations! You have completed all available ECGs with 100% accuracy.":"No additional ECG attempt is available under the current one-attempt policy. Contact your administrator.");
   if(ecgImagesLoading)await ecgImagesLoading;
   if(!images[upcoming-1]){ecgImagesLoading=restoreEcgImages();await ecgImagesLoading}
   const next=nextEcgNumber(),preview=images[next-1];
