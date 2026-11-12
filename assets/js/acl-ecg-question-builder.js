@@ -870,10 +870,20 @@ function showEcgCompletionHero(report,passed){
  renderPreviousEcgResults();
  panel.classList.toggle("ecg-completion-passed",!!passed);
  let banner=document.getElementById("ecgCompletionBanner");if(!banner){banner=document.createElement("div");banner.id="ecgCompletionBanner";panel.prepend(banner)}
- const wrong=report.steps.find(x=>!x.correct);
- const mastered=!!passed;
- const message=mastered?"You interpreted this ECG with 100% accuracy!":wrong?"Keep practising — review "+wrong.title+" and try again.":"Your ECG interpretation is complete.";
- banner.innerHTML='<div class="ecg-hero-glow"></div><div class="ecg-hero-graphic" aria-hidden="true">'+(mastered?'🏆':'💪')+'</div><div class="ecg-completion-kicker">✦ '+(mastered?'ECG MASTERED':'KEEP LEARNING')+'</div><h2>'+message+'</h2><p>'+(mastered?'Perfect interpretation — every assessment was correct.':'Every attempt is progress. Review the highlighted step before your next attempt.')+'</p><div class="ecg-completion-meter" role="img" aria-label="'+report.score+' of '+report.total+' assessments correct"><div style="width:'+Math.max(0,Math.min(100,100*report.score/Math.max(1,report.total)))+'%"></div></div><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+fmtDuration(report.duration_seconds)+'</span></div>';
+ const mistakes=(report.steps||[]).filter(x=>x.correct===false).length;
+ const mastered=(report.total>0&&mistakes===0&&report.score===report.total);
+ const duration=fmtDuration(report.duration_seconds),minutes=Number(report.duration_seconds||0)/60;
+ const timeText=minutes>=1?(Math.floor(minutes)+" min "+String(Math.round(Number(report.duration_seconds||0)%60)).padStart(2,"0")+" sec"):(Math.round(Number(report.duration_seconds||0))+" seconds");
+ const feedback=mastered
+  ?{icon:"🏆",kicker:"CONGRATULATIONS!",headline:"YOU MASTERED ECG "+String(report.case_number).padStart(2,"0")+" in "+timeText+"!",detail:"Without a single mistake. Get ready for more practice!"}
+  :mistakes<=2
+   ?{icon:"🎯",kicker:"ALMOST THERE",headline:"You were close. Try again!",detail:"Only "+mistakes+" mistake"+(mistakes===1?"":"s")+". Review your answers and give it another try."}
+   :mistakes<=5
+    ?{icon:"📚",kicker:"KEEP IMPROVING",headline:"Revise more, practice more!",detail:"You made "+mistakes+" mistakes. Review the highlighted steps, then try again."}
+    :mistakes<=8
+     ?{icon:"💪",kicker:"KEEP PRACTISING",headline:"Keep going — practice makes progress!",detail:"You made "+mistakes+" mistakes. Revise the key ECG concepts and try again."}
+     :{icon:"🌱",kicker:"NEVER GIVE UP",headline:"Never lose hope — it's all about practice!",detail:"Every attempt builds your ECG interpretation skills. Review the steps and keep practising."};
+ banner.innerHTML='<div class="ecg-hero-glow"></div><div class="ecg-hero-graphic" aria-hidden="true">'+feedback.icon+'</div><div class="ecg-completion-kicker">✦ '+feedback.kicker+'</div><h2>'+esc(feedback.headline)+'</h2><p>'+esc(feedback.detail)+'</p><div class="ecg-completion-meter" role="img" aria-label="'+report.score+' of '+report.total+' assessments correct"><div style="width:'+Math.max(0,Math.min(100,100*report.score/Math.max(1,report.total)))+'%"></div></div><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+duration+'</span></div>';
 
  let next=document.getElementById("ecgCompletionNext");if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.className="btn";next.type="button";banner.after(next)}
  next.hidden=!passed;next.textContent="Continue to next ECG →";
