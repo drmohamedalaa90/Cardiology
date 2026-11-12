@@ -274,7 +274,27 @@ function renderEcgStepReview(){
    if(/calibrat|voltage and time|paper speed/.test(wording))return yes?"The ECG is well calibrated (25 mm/sec and 10 mm/mV)":"ECG calibration is abnormal or incorrect";
    return (q.title||q.text)+": "+fmt(answer);
  };
- const comment=rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
+ const pWaveSummary=()=>{
+  let present=null;
+  const normal=new Set();
+  for(const q of rows){
+   const wording=String(q.text||"").toLowerCase();
+   const answer=answers[q.id];
+   if(/p.wave.*present|present.*p.wave/.test(wording)){present=String(answer).toLowerCase()==="yes";continue;}
+   const selected=Array.isArray(answer)?answer:[answer];
+   for(const item of selected){
+    const value=String(item??"").toLowerCase().trim();
+    for(const feature of ["location","axis","morphology","amplitude","duration"]){
+     if(value==="normal "+feature)normal.add(feature);
+    }
+   }
+  }
+  if(present===false)return "P waves are absent.";
+  if(present!==true)return null;
+  const features=["location","axis","morphology","amplitude","duration"].filter(v=>normal.has(v));
+  return "P waves are present"+(features.length?" with normal "+features.join(", "):"")+".";
+ };
+ const comment=String(group)==="4"?(pWaveSummary()||rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+"."):rows.map(q=>statement(q).replace(/[.,;\\s]+$/,"")).join(", ")+".";
  const mistakes=rows.filter(q=>stepTiming[q.id]?.correct!==true);
  box.innerHTML='<div class="ecg-review-heading"><span class="ecg-review-icon">'+(allCorrect?"✓":"!")+'</span><div><small>STEP '+esc(group)+' COMPLETED</small><h2>'+esc(label)+'</h2><p>'+good+'/'+rows.length+' correct · Review your interpretation before continuing.</p></div></div>'+
  '<article class="ecg-review-row '+(allCorrect?"ecg-review-ok":"ecg-review-bad")+'"><div class="ecg-review-row-head"><strong>Step '+esc(group)+'</strong><b>'+(allCorrect?"✓ Correct":"✕ "+mistakes.length+" incorrect")+'</b></div><div class="ecg-review-question">'+esc(comment)+'</div></article>'+
