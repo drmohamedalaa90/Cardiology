@@ -114,6 +114,13 @@ function flowCss(){
  .ecg-flow-node .flow-label small{line-height:1.45}
  .ecg-flow-controls{flex:0 0 auto;display:flex;gap:3px;margin-left:auto;align-self:flex-end}
  .ecg-flow-controls button{font-size:13px;min-width:27px;padding:5px!important}
+ .ecg-flow-controls [data-flow-edit]{color:#0a6dad;background:#eaf5ff}
+ .ecg-flow-controls [data-flow-delete-card]{color:#af2540;background:#fff0f2;border-color:#efccd4}
+ .ecg-flow-controls [data-flow-delete-card]:hover{background:#ffe0e7}
+ #ecgFlowDetail{scroll-margin-top:110px}
+ .ecg-flow-controls{flex-wrap:wrap;justify-content:flex-end}
+ .ecg-flow-controls button{min-height:32px}
+
  .ecg-flow-drag-handle{padding:4px 2px!important}
  @media(max-width:650px){
   .ecg-flow-node-wrap.child{margin-left:calc(7px + min(var(--flow-depth),3)*9px)!important}
@@ -128,7 +135,16 @@ function flowCss(){
  @media(max-width:850px){.ecg-flow-shell{grid-template-columns:1fr}.ecg-flow-grid{grid-template-columns:1fr}#ecgGeneralEditorMount{padding:10px 12px 105px}.ecg-flow-savebar{position:sticky;bottom:0;flex-wrap:wrap}.ecg-flow-savebar .btn{width:100%}}
  `;document.head.appendChild(style)
 }
-function flowSelect(id){flowEditing=id;build()}
+function flowSelect(id){
+ flowEditing=id;build();
+ // The edit pane is below the question tree on mobile. Reveal its beginning
+ // rather than leaving the administrator at the previously scrolled location.
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const pane=document.getElementById("ecgFlowDetail");
+  if(!pane)return;
+  pane.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start",inline:"nearest"});
+ }));
+}
 function flowMove(id,delta){
  flowInit();const i=flowDraft.findIndex(q=>q.id===id),q=flowDraft[i];if(!q)return;
  const peers=flowDraft.filter(x=>x.parent===q.parent),index=peers.findIndex(x=>x.id===id),other=peers[index+delta];if(!other)return;
@@ -290,7 +306,7 @@ function flowQuestionTree(){
    const condition=q.parent&&q.trigger?'<span class="ecg-flow-condition">↳ If '+esc(q.trigger.replaceAll("|"," / "))+'</span>':q.parent?'<span class="ecg-flow-condition">↳ Any parent answer</span>':"";
    const parent=byId.get(q.parent);
    const crossStep=parent&&stepOf(parent)!==step?'<span class="ecg-flow-condition">Linked to Step '+esc(stepOf(parent))+'</span>':"";
-   const row='<div class="ecg-flow-node-wrap '+(depth?"child":"")+'" style="--flow-depth:'+indent+'"><div class="ecg-flow-node '+(flowEditing===q.id?"active":"")+'" data-flow-select="'+esc(q.id)+'"><span class="ecg-flow-drag-handle" data-flow-drag="'+esc(q.id)+'" draggable="true" title="Drag to reorder" aria-label="Drag question">⠿</span><span class="flow-num">'+esc(q.number)+'</span><span class="flow-label"><strong>'+esc(q.title||q.text||"New question")+'</strong><small>'+esc(q.text||"")+'</small>'+condition+crossStep+'</span><span class="ecg-flow-controls"><button type="button" data-flow-copy="'+esc(q.id)+'" title="Duplicate question and children">⧉</button><button type="button" data-flow-up="'+esc(q.id)+'" title="Move up">↑</button><button type="button" data-flow-down="'+esc(q.id)+'" title="Move down">↓</button><button type="button" data-flow-child="'+esc(q.id)+'" title="Add child">↳+</button></span></div></div>';
+   const row='<div class="ecg-flow-node-wrap '+(depth?"child":"")+'" style="--flow-depth:'+indent+'"><div class="ecg-flow-node '+(flowEditing===q.id?"active":"")+'" data-flow-select="'+esc(q.id)+'"><span class="ecg-flow-drag-handle" data-flow-drag="'+esc(q.id)+'" draggable="true" title="Drag to reorder" aria-label="Drag question">⠿</span><span class="flow-num">'+esc(q.number)+'</span><span class="flow-label"><strong>'+esc(q.title||q.text||"New question")+'</strong><small>'+esc(q.text||"")+'</small>'+condition+crossStep+'</span><span class="ecg-flow-controls"><button type="button" data-flow-edit="'+esc(q.id)+'" title="Edit this question" aria-label="Edit question '+esc(q.number)+'">✎</button><button type="button" data-flow-delete-card="'+esc(q.id)+'" title="Delete this question" aria-label="Delete question '+esc(q.number)+'">🗑</button><button type="button" data-flow-copy="'+esc(q.id)+'" title="Duplicate question and children">⧉</button><button type="button" data-flow-up="'+esc(q.id)+'" title="Move up">↑</button><button type="button" data-flow-down="'+esc(q.id)+'" title="Move down">↓</button><button type="button" data-flow-child="'+esc(q.id)+'" title="Add child">↳+</button></span></div></div>';
    return row+rows.filter(child=>child.parent===q.id).map(child=>renderNode(child,depth+1)).join("");
   };
   const roots=rows.filter(q=>{
@@ -332,6 +348,8 @@ function build(){
  document.querySelectorAll("[data-flow-down]").forEach(el=>el.onclick=()=>flowMove(el.dataset.flowDown,1));
  document.querySelectorAll("[data-flow-child]").forEach(el=>el.onclick=()=>flowAdd(el.dataset.flowChild));
  document.querySelectorAll("[data-flow-copy]").forEach(el=>el.onclick=()=>flowDuplicate(el.dataset.flowCopy));
+ document.querySelectorAll("[data-flow-edit]").forEach(el=>el.onclick=()=>flowSelect(el.dataset.flowEdit));
+ document.querySelectorAll("[data-flow-delete-card]").forEach(el=>el.onclick=()=>flowDelete(el.dataset.flowDeleteCard));
  document.querySelectorAll("[data-flow-toggle]").forEach(el=>el.onclick=()=>flowToggleStep(el.dataset.flowToggle));
  flowWireDragDrop();
  const detail=document.getElementById("ecgFlowDetail"),q=flowDraft.find(x=>x.id===flowEditing);
