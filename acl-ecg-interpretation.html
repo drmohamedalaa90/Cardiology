@@ -303,6 +303,30 @@
  #complete #ecgCompletionBanner .ecg-victory-actions .ecg-victory-btn{flex:1 1 130px;min-width:0;min-height:48px;padding:10px!important;font-size:12px!important}
 }
 @media(prefers-reduced-motion:reduce){#complete #ecgCompletionBanner .ecg-victory-track span{transition:none!important}}
+
+/* Missed-question review for ACL ECG members */
+.ecg-missed-count{display:block;margin-top:5px;padding:5px 9px;border:1px solid #f1b9bd;border-radius:999px;background:#fff0f1;color:#ad2c43;font-size:12px;font-weight:850;white-space:nowrap;cursor:pointer;text-align:center}
+.ecg-missed-count:hover{background:#ffdde3;box-shadow:0 3px 8px #b6334820}
+.ecg-missed-count:focus-visible{outline:3px solid #0b82bd;outline-offset:2px}
+.ecg-missed-perfect{display:block;color:#087a4b;font-size:11px;font-weight:800;margin-top:4px}
+#ecgMissedReviewOverlay{position:fixed;inset:0;z-index:240000;background:#071d33c4;backdrop-filter:blur(5px);padding:16px;display:grid;place-items:center}
+#ecgMissedReviewOverlay .ecg-missed-modal{width:min(100%,680px);max-height:90dvh;overflow-y:auto;box-sizing:border-box;padding:24px;border-radius:20px;border:1px solid #c5ddec;background:#f8fcff;color:#163e60;box-shadow:0 20px 65px #061c3875}
+.ecg-missed-modal-head{display:flex;justify-content:space-between;gap:12px;align-items:start;margin-bottom:15px}
+.ecg-missed-modal-head h2{margin:5px 0;color:#133f63;font-size:clamp(20px,3vw,29px)}
+.ecg-missed-eyebrow{font-weight:850;color:#1681ab;font-size:12px;letter-spacing:1px}
+.ecg-missed-close{background:#e5eff7;border:0;border-radius:10px;color:#194b6b;font-weight:850;cursor:pointer;padding:10px}
+.ecg-missed-question{padding:16px;border:1px solid #d5e3ee;border-left:5px solid #e33f61;border-radius:13px;background:#fff;margin-bottom:12px}
+.ecg-missed-question-top{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;color:#176086}
+.ecg-missed-question-top span{color:#b52b45;font-weight:850}
+.ecg-missed-question h3{font-size:16px;line-height:1.45;margin:12px 0;color:#183e59}
+.ecg-missed-comparison{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ecg-missed-comparison>div{padding:12px;border-radius:10px;font-size:12px;line-height:1.4}
+.ecg-missed-comparison strong{display:block;font-size:15px;margin-top:5px;overflow-wrap:anywhere}
+.ecg-missed-answer{background:#ffedf0;color:#a42d48}
+.ecg-missed-key{background:#e3f8ec;color:#087248}
+.ecg-missed-no-details,.ecg-missed-note{background:#fff4db;border-radius:10px;padding:12px;color:#825b15;line-height:1.5}
+.ecg-missed-done{margin-top:9px}
+@media(max-width:520px){#ecgMissedReviewOverlay .ecg-missed-modal{padding:16px}.ecg-missed-comparison{grid-template-columns:1fr}}
 </style></head>
 <body><div id="aclPullRefresh" role="status" aria-live="polite">↓ Pull to refresh</div><section id="ecgAccessGate" class="panel" role="status" aria-live="polite"><h2 id="ecgAccessTitle">Checking ECG Lab access…</h2><p id="ecgAccessMessage" class="access-message">Verifying your ACL membership and administrator access settings.</p><a id="ecgBackCourse" class="btn secondary" style="display:inline-block;text-decoration:none;margin-top:8px" href="basic-special-course.html">← Return to Quiz Room</a></section><main id="ecgLabMain" hidden><a id="ecgLegacyBack" class="btn secondary" href="basic-special-course.html" style="display:inline-block;text-decoration:none;margin-bottom:16px">← Back to Quiz Room</a>
 <div class="top"><div><h1 class="ecg-premium-title"><span class="ecg-title-pulse" aria-hidden="true">♥</span><a class="ecg-title-home" href="acl-ecg-interpretation.html" aria-label="Return to ECG Interpretation Lab homepage" title="Return to ECG Lab homepage">ECG <em>Interpretation</em> Lab</a></h1><div class="ecg-admin-mini-wrap" id="ecgAdminMiniWrap" hidden><button type="button" id="ecgAdminMini" class="ecg-admin-mini" aria-label="ECG Lab admin tools" aria-expanded="false" aria-controls="ecgAdminMiniMenu" title="ECG Lab admin tools">⚙️</button><div class="ecg-admin-mini-menu" id="ecgAdminMiniMenu" hidden><button type="button" id="ecgAdminMiniQuestions">✎ General Questions</button><button type="button" id="ecgAdminMiniImages">🫀 ECG Images &amp; Correct Answers</button></div></div><button type="button" id="ecgAdminResultsStandalone" class="ecg-admin-results-standalone" title="Member results and attempt settings" aria-label="Member results and attempt settings" hidden>👥 <span>Members</span></button></div><div class="tabs"><button class="btn active ecg-mode-practice" id="practice" type="button" disabled aria-disabled="true" title="Practice Mode is active">✦ Practice Mode</button><button class="btn secondary ecg-mode-soon" id="test" type="button" disabled aria-disabled="true" title="Test Mode will be available soon">♛ Test Mode <small>Coming soon</small></button></div></div>
@@ -433,7 +457,7 @@ q.addEventListener('click',e=>{
  const caseFilter=document.getElementById("ecgResultsCaseFilter"),sort=document.getElementById("ecgResultsSort");
  const resetAll=document.getElementById("ecgResetAll");
  const toggle=document.getElementById("ecgRetryToggle"),retryStatus=document.getElementById("ecgRetryStatus");
- let attempts=[],busy=false;
+ let attempts=[],busy=false,caseDetails=new Map();
  const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  async function call(method,body){
   const t=token();if(!t)throw Error("Please sign in as administrator again.");
@@ -467,12 +491,14 @@ q.addEventListener('click',e=>{
    const time=String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
    const when=r.completed_at?new Date(r.completed_at).toLocaleString():"—";
    const percent=total?Math.round(100*score/total):0;
+   const missed=Math.max(0,total-score);
+   const missedDisplay=missed?'<button type="button" class="ecg-missed-count" data-show-missed="'+escape(r.attempt_id)+'" aria-label="Review '+missed+' missed questions">'+missed+' missed ↗</button>':'<span class="ecg-missed-perfect">✓ None missed</span>';
    const id=String(r.attempt_id),review=r.review||r.answers?._admin_review||null;
    const diagnosis=String(r.final_diagnosis||r.answers?._final_diagnosis||"");
    const state=review?.status==="validated"?"✓ Validated":review?.status==="needs_revision"?"✕ Revision":"⏳ Pending";
    const label=diagnosis||"No final diagnosis";
    const stateClass=review?.status==="validated"?"validated":review?.status==="needs_revision"?"needs-revision":"pending";
-   return '<tr><td class="ecg-table-name">'+escape(r.member_name||"Member")+'</td><td>ECG '+String(r.case_number).padStart(2,"0")+'</td><td><span class="ecg-table-score '+(score<total?"bad":"")+'">'+score+'/'+total+'</span><small>'+percent+'%</small></td><td>⏱ '+time+'</td><td>'+escape(when)+'</td><td><button type="button" class="ecg-diagnosis-preview" data-show-diagnosis="'+escape(id)+'" title="View diagnosis and notes">'+escape(label)+'</button><span class="ecg-review-tag ecg-tag-'+stateClass+'">'+state+'</span></td><td><div class="ecg-review-quick-actions" role="group" aria-label="Review final diagnosis"><button type="button" data-quick-review="'+escape(id)+'" data-review-choice="validated" class="ecg-quick-accept" title="Validate diagnosis" aria-label="Validate diagnosis">✓</button><button type="button" data-quick-review="'+escape(id)+'" data-review-choice="needs_revision" class="ecg-quick-reject" title="Needs revision" aria-label="Mark diagnosis as needing revision">✕</button><button type="button" data-quick-review="'+escape(id)+'" data-review-choice="pending" class="ecg-quick-pending" title="Pending review" aria-label="Mark diagnosis as pending">!</button></div><button type="button" class="ecg-member-reset" data-member-reset="'+escape(r.profile_id)+'" data-member-name="'+escape(r.member_name||"Member")+'">Reset member</button></td></tr>';
+   return '<tr><td class="ecg-table-name">'+escape(r.member_name||"Member")+'</td><td>ECG '+String(r.case_number).padStart(2,"0")+'</td><td><span class="ecg-table-score '+(score<total?"bad":"")+'">'+score+'/'+total+'</span><small>'+percent+'%</small>'+missedDisplay+'</td><td>⏱ '+time+'</td><td>'+escape(when)+'</td><td><button type="button" class="ecg-diagnosis-preview" data-show-diagnosis="'+escape(id)+'" title="View diagnosis and notes">'+escape(label)+'</button><span class="ecg-review-tag ecg-tag-'+stateClass+'">'+state+'</span></td><td><div class="ecg-review-quick-actions" role="group" aria-label="Review final diagnosis"><button type="button" data-quick-review="'+escape(id)+'" data-review-choice="validated" class="ecg-quick-accept" title="Validate diagnosis" aria-label="Validate diagnosis">✓</button><button type="button" data-quick-review="'+escape(id)+'" data-review-choice="needs_revision" class="ecg-quick-reject" title="Needs revision" aria-label="Mark diagnosis as needing revision">✕</button><button type="button" data-quick-review="'+escape(id)+'" data-review-choice="pending" class="ecg-quick-pending" title="Pending review" aria-label="Mark diagnosis as pending">!</button></div><button type="button" class="ecg-member-reset" data-member-reset="'+escape(r.profile_id)+'" data-member-name="'+escape(r.member_name||"Member")+'">Reset member</button></td></tr>';
   }).join(""):'<tr><td colspan="7" class="ecg-results-empty">No matching attempts.</td></tr>';
  }
  async function refresh(){
@@ -482,6 +508,7 @@ q.addEventListener('click',e=>{
    const [data,settings]=await Promise.all([call("POST",{action:"admin_list_attempts"}),call("GET")]);
    if(settings.admin!==true)throw Error("Administrator access required");
    attempts=Array.isArray(data.attempts)?data.attempts:[];
+   caseDetails=new Map((Array.isArray(settings.cases)?settings.cases:[]).map(c=>[Number(c.case_number),c]));
 
 
    const currentCase=caseFilter.value;
@@ -529,6 +556,51 @@ q.addEventListener('click',e=>{
   }catch(err){status.textContent="⚠ Reset unsuccessful: "+err.message}
   finally{busy=false;resetAll.disabled=false}
  });
+ function openMissedPopup(attempt){
+  if(!allowed())return;
+  document.getElementById("ecgMissedReviewOverlay")?.remove();
+  const missed=Math.max(0,Number(attempt.total||0)-Number(attempt.score||0));
+  const details=Array.isArray(attempt.step_details)?attempt.step_details:[];
+  const recording=caseDetails.get(Number(attempt.case_number))||{};
+  const questions=new Map((Array.isArray(recording.questions)?recording.questions:[]).map(q=>[String(q.id),q]));
+  const keys=recording.answer_key||{};
+  const answerObject=attempt.answers||{};
+  const answerString=v=>{
+   if(v===undefined||v===null||v==="")return "No answer";
+   if(Array.isArray(v))return v.map(String).join(", ");
+   if(typeof v==="object")return v.min!==undefined&&v.max!==undefined?String(v.min)+"–"+String(v.max):JSON.stringify(v);
+   return String(v);
+  };
+  const isCorrect=(question,key,value)=>{
+   if(value===undefined||value===null||value==="")return false;
+   if(question?.type==="number"&&key&&typeof key==="object"&&!Array.isArray(key))return Number(value)>=Number(key.min)&&Number(value)<=Number(key.max);
+   if(Array.isArray(key))return Array.isArray(value)&&key.length===value.length&&key.every(v=>value.some(w=>String(v)===String(w)));
+   return key!==undefined&&String(key)===String(value);
+  };
+  const missedDetails=details.filter(d=>{
+   const q=questions.get(String(d.id)),key=keys[String(d.id)];
+   if(q&&key!==undefined&&key!==null&&key!=="")return !isCorrect(q,key,answerObject[d.id]??d.answer);
+   return d.correct===false;
+  });
+  const popup=document.createElement("div");popup.id="ecgMissedReviewOverlay";
+  popup.innerHTML='<section class="ecg-missed-modal" role="dialog" aria-modal="true" aria-labelledby="ecgMissedTitle"><div class="ecg-missed-modal-head"><div><div class="ecg-missed-eyebrow">ECG '+String(attempt.case_number).padStart(2,"0")+' · '+escape(attempt.member_name||"Member")+'</div><h2 id="ecgMissedTitle">'+missed+' missed question'+(missed===1?"":"s")+'</h2></div><button type="button" class="ecg-missed-close" aria-label="Close missed questions">✕</button></div>'+
+  (missedDetails.length?missedDetails.map((d,i)=>{
+   const q=questions.get(String(d.id))||{},key=keys[String(d.id)];
+   const question=q.text||d.question||d.title||"Question "+(i+1);
+   return '<article class="ecg-missed-question"><div class="ecg-missed-question-top"><strong>Step '+escape(d.number||q.number||"—")+'</strong><span>✕ Incorrect</span></div><h3>'+escape(question)+'</h3><div class="ecg-missed-comparison"><div class="ecg-missed-answer">Member answered<strong>'+escape(answerString(answerObject[d.id]??d.answer))+'</strong></div><div class="ecg-missed-key">Correct answer<strong>'+escape(answerString(key))+'</strong></div></div></article>';
+  }).join(""):'<p class="ecg-missed-no-details">The stored question-level answers are unavailable for this attempt.</p>')+
+  (missedDetails.length!==missed?'<p class="ecg-missed-note">The saved total shows '+missed+' missed; '+missedDetails.length+' incorrect answer'+(missedDetails.length===1?"":"s")+' could be identified in its question records.</p>':'')+
+  '<button class="btn secondary ecg-missed-done" type="button">Close review</button></section>';
+  document.body.appendChild(popup);
+  const oldFocus=document.activeElement;
+  const close=()=>{popup.remove();document.removeEventListener("keydown",keyDown);oldFocus?.focus?.()};
+  const keyDown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
+  document.addEventListener("keydown",keyDown);
+  popup.querySelector(".ecg-missed-close").addEventListener("click",close);
+  popup.querySelector(".ecg-missed-done").addEventListener("click",close);
+  popup.addEventListener("click",e=>{if(e.target===popup)close()});
+  popup.querySelector(".ecg-missed-close").focus();
+ }
  function openReviewPopup(attempt,choice){
   if(!allowed())return;
   const review=attempt.review||attempt.answers?._admin_review||{};
@@ -559,6 +631,8 @@ q.addEventListener('click',e=>{
   popup.querySelector("textarea").focus();
  }
  tbody.addEventListener("click",async(ev)=>{
+  const missedButton=ev.target.closest("[data-show-missed]");
+  if(missedButton){const row=attempts.find(r=>String(r.attempt_id)===missedButton.dataset.showMissed);if(row)openMissedPopup(row);return}
   const reviewButton=ev.target.closest("[data-quick-review]");
   const preview=ev.target.closest("[data-show-diagnosis]");
   if(reviewButton||preview){
