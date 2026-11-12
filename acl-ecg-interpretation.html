@@ -346,12 +346,10 @@ q.addEventListener('click',e=>{
   if(!allowed())return;
   try{
    status.textContent="Loading member results…";
-   const [data,settings,feedbackData]=await Promise.all([call("POST",{action:"admin_list_attempts"}),call("GET"),call("POST",{action:"admin_list_feedback"})]);
+   const [data,settings]=await Promise.all([call("POST",{action:"admin_list_attempts"}),call("GET")]);
    if(settings.admin!==true)throw Error("Administrator access required");
    attempts=Array.isArray(data.attempts)?data.attempts:[];
-   const feedbackItems=Array.isArray(feedbackData.feedback)?feedbackData.feedback:[];
-   document.getElementById("ecgFeedbackAdminStatus").textContent=feedbackItems.length+" feedback message"+(feedbackItems.length===1?"":"s");
-   document.getElementById("ecgFeedbackAdminList").innerHTML=feedbackItems.length?feedbackItems.map(item=>'<article class="ecg-admin-feedback"><div><strong>'+escape(item.member_name||"Member")+'</strong><time>'+escape(new Date(item.created_at).toLocaleString())+'</time></div><p>'+escape(item.comment)+'</p></article>').join(""):'<p class="muted">No feedback submitted yet.</p>';
+
 
    const currentCase=caseFilter.value;
    caseFilter.innerHTML='<option value="">All ECGs</option>'+[...new Set(attempts.map(r=>Number(r.case_number)).filter(Number.isInteger))].sort((a,b)=>a-b).map(n=>'<option value="'+n+'">ECG '+String(n).padStart(2,"0")+'</option>').join("");
@@ -359,7 +357,15 @@ q.addEventListener('click',e=>{
    toggle.checked=settings.retry_allowed!==false;
    retryStatus.textContent=toggle.checked?"✓ Repeat attempts enabled.":"🔒 One submitted attempt per ECG.";
    render();
-  }catch(err){status.textContent="⚠ "+err.message;retryStatus.textContent="Unable to verify policy";document.getElementById("ecgFeedbackAdminStatus").textContent="Unable to load feedback.";toggle.disabled=true}
+  }catch(err){status.textContent="⚠ "+err.message;retryStatus.textContent="Unable to verify policy";toggle.disabled=true}
+  // Feedback is loaded independently; a feedback problem must never hide exam results.
+  try{
+   const feedbackData=await call("POST",{action:"admin_list_feedback"});
+   const items=Array.isArray(feedbackData.feedback)?feedbackData.feedback:[];
+   document.getElementById("ecgFeedbackAdminStatus").textContent=items.length+" feedback message"+(items.length===1?"":"s");
+   document.getElementById("ecgFeedbackAdminList").innerHTML=items.length?items.map(item=>'<article class="ecg-admin-feedback"><div><strong>'+escape(item.member_name||"Member")+'</strong><time>'+escape(new Date(item.created_at).toLocaleString())+'</time></div><p>'+escape(item.comment)+'</p></article>').join(""):'<p class="muted">No feedback submitted yet.</p>';
+  }catch(err){document.getElementById("ecgFeedbackAdminStatus").textContent="⚠ Feedback unavailable: "+err.message}
+
  }
  const close=()=>{overlay.hidden=true;document.body.style.overflow="";menu.focus()};
  menu.addEventListener("click",()=>{if(!allowed())return;overlay.hidden=false;document.body.style.overflow="hidden";toggle.disabled=false;void refresh()});
