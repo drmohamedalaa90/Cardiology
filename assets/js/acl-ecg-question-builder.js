@@ -193,7 +193,40 @@ $("restoreQuestions").onclick=()=>{if(!confirm("Replace every question and all E
 $("exportQuestions").onclick=()=>{flowInit();const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({questions:flowDraft,keys:flowKeys},null,2)],{type:"application/json"}));a.download="acl-ecg-flow-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 $("importQuestions").onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const d=JSON.parse(await file.text());if(!Array.isArray(d.questions)||!Array.isArray(d.keys)||d.keys.length!==10)throw Error("Invalid backup");flowDraft=d.questions;flowKeys=d.keys;flowEditing=flowDraft[0]?.id;flowSetDirty();build()}catch(err){alert(err.message)}e.target.value=""};
 
-function path(){const result=[],done=new Set(),byId=new Map(questions.map(q=>[q.id,q]));function walk(q){if(done.has(q.id))return;done.add(q.id);result.push(q);if(answers[q.id]!==undefined&&stepTiming[q.id]?.correct===true)questions.filter(c=>c.parent===q.id&&(!c.trigger||(Array.isArray(answers[q.id])?answers[q.id].some(v=>c.trigger.split("|").includes(v)):c.trigger.split("|").includes(String(answers[q.id]))))).forEach(walk)}questions.filter(q=>!q.parent||!byId.has(q.parent)).forEach(walk);return result}
+function path(){
+ // Preserve strict numerical STEP order. Cross-step children must not run
+ // immediately after their parent (e.g. Step 7 under a Step 4 question).
+ const groups=new Map(),byId=new Map(questions.map(q=>[q.id,q]));
+ for(const q of questions){
+  const group=Number(String(q.number||"").match(/^\\d+/)?.[0]||0);
+  if(!groups.has(group))groups.set(group,[]);
+  groups.get(group).push(q);
+ }
+ const result=[],included=new Set();
+ const eligible=q=>{
+  if(!q.parent||!byId.has(q.parent))return true;
+  const parent=byId.get(q.parent);
+  if(!included.has(parent.id)||!Object.prototype.hasOwnProperty.call(answers,parent.id)||stepTiming[parent.id]?.correct!==true)return false;
+  if(!q.trigger)return true;
+  const accepted=q.trigger.split("|").map(x=>x.trim());
+  const value=answers[parent.id];
+  return (Array.isArray(value)?value:[value]).some(x=>accepted.includes(String(x)));
+ };
+ for(const group of [...groups.keys()].sort((a,b)=>a-b)){
+  const pending=[...groups.get(group)];
+  // Include children only when their parent is eligible and already answered.
+  // Repeat to support multi-level subquestions without changing their saved order.
+  let changed=true;
+  while(changed){
+   changed=false;
+   for(let i=0;i<pending.length;i++){
+    const q=pending[i];
+    if(eligible(q)){result.push(q);included.add(q.id);pending.splice(i--,1);changed=true;}
+   }
+  }
+ }
+ return result;
+}
 function seconds(){return started?Math.floor((Date.now()-started)/1000):0}
 function tick(){const t=seconds();const time=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");$("clock").textContent=time;const previewClock=$("ecgReadyClock");if(previewClock)previewClock.textContent="⏱ "+time;}
 function start(){if(!started){started=Date.now();stepEnteredAt=started;timer=setInterval(tick,1000);tick()}}
