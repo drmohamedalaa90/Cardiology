@@ -83,7 +83,7 @@ function renderPreviousEcgResults(){
   const raw=String(comment||"");
   const match=raw.match(/^\s*(?:Step\s+)?(\d+[a-z]?)\s*(?:\s+|[.)-]\s*)/i);
   const number=match&&/^(?:1[a-c]|2[a-b]|3|4[a-b]|5(?:[a-z])?|\d+[a-z]?)$/i.test(match[1])?match[1]:null;
-  const fallback=['1a','1b','1c','2a','2b','3','4a','4b'][i]||String(i+1);
+  const fallback=['1a','1b','1c','2a','2b','3','4a','4b','5','5'][i]||String(i+1);
   const stepNumber=number||fallback;
   const step=(r.steps||[]).find(s=>String(s.number)===stepNumber)||(r.steps||[])[i];
   const cleaned=raw.replace(/^\s*(?:Step\s+\d+[a-z]?\s*)?(?:\d{2}(?=[A-Za-z])|\d{2}\s+(?=[A-Za-z]))/i,'').replace(/^\s*Step\s+\d+[a-z]?\s*/i,'').trim();
