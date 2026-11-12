@@ -937,26 +937,103 @@ function renderAttemptReport(report){
  panel.innerHTML='<h3>Step-by-step ECG interpretation</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><table class="ecg-comment-table"><thead><tr><th>Step</th><th>Your ECG comment</th><th>Result / Time</th></tr></thead><tbody>'+lines+'</tbody></table>';
 
  const shareActions=document.createElement("div");shareActions.className="ecg-report-actions";
- shareActions.innerHTML='<button type="button" class="btn" id="ecgExportResult">📷 Export as image</button>';
+ shareActions.innerHTML='<div class="ecg-signing-panel"><label for="ecgCandidateSignature">✒️ Sign your ECG interpretation (English name)</label><input id="ecgCandidateSignature" type="text" maxlength="70" autocomplete="name" placeholder="Your name in English" aria-describedby="ecgSignatureHelp"><small id="ecgSignatureHelp">Your name will appear as a handwritten-style signature on the exported image.</small></div><button type="button" class="btn" id="ecgExportResult">📷 Export signed ECG report</button>';
+ if(!document.getElementById("ecgSigningPanelStyles")){
+  const style=document.createElement("style");style.id="ecgSigningPanelStyles";
+  style.textContent='.ecg-report-actions{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin:12px 0 22px}.ecg-signing-panel{display:grid;gap:6px;flex:1 1 270px;background:#edf7fc;padding:14px;border:1px solid #c6deed;border-radius:13px}.ecg-signing-panel label{font-weight:800;color:#174767}.ecg-signing-panel input{background:white;min-height:44px;font-size:16px;padding:10px;border-radius:9px;border:1px solid #aac8df}.ecg-signing-panel small{font-size:12px;color:#57728a}.ecg-report-actions .btn{min-height:46px}';
+  document.head.appendChild(style);
+ }
  panel.prepend(shareActions);
+ const signInput=shareActions.querySelector("#ecgCandidateSignature");
  const createResultImage=async()=>{
-  const W=1100,pad=60,comments=report.commentary||[],lineH=43,ecg=images[report.case_number-1];
+  const W=1120,pad=76;
+  const sig=signInput.value.trim().replace(/\s+/g," ");
+  if(sig&&!/^[A-Za-z][A-Za-z .'-]{0,69}$/.test(sig)){
+   signInput.setCustomValidity("Please use English letters for your signature.");
+   signInput.reportValidity();signInput.focus();throw Error("Signature must contain English letters only.");
+  }
+  signInput.setCustomValidity("");
+  const ecg=images[report.case_number-1];
   const image=await new Promise(resolve=>{if(!ecg)return resolve(null);const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>resolve(null);im.src=ecg});
-  const imgH=image?Math.min(470,Math.round(image.height/image.width*(W-2*pad))):0;
-  const height=340+imgH+comments.length*lineH+100;
-  const canvas=document.createElement("canvas");canvas.width=W*2;canvas.height=height*2;const ctx=canvas.getContext("2d");ctx.scale(2,2);
-  const rect=(x,y,w,h,color)=>{ctx.fillStyle=color;ctx.fillRect(x,y,w,h)};
-  const txt=(v,x,y,size,color="#15344d",weight=500)=>{ctx.fillStyle=color;ctx.font=weight+" "+size+"px Arial,sans-serif";ctx.fillText(String(v),x,y)};
-  rect(0,0,W,height,"#f0f6fb");rect(28,28,W-56,height-56,"#ffffff");rect(28,28,W-56,174,"#073c61");
-  txt("CARDIOLOGY LEAGUE  |  ECG DEMYSTIFIED",pad,86,22,"#c7e8fa",700);
-  txt("ECG "+report.case_number+" — INTERPRETATION RESULT",pad,139,32,"#ffffff",800);
-  txt(Math.round(100*report.score/Math.max(1,report.total))+"% accuracy",pad,255,30,"#08754a",800);
-  txt("Time: "+fmtDuration(report.duration_seconds),W-325,255,23,"#164461",700);
-  let y=300;
-  if(image){ctx.drawImage(image,pad,y,W-2*pad,imgH);y+=imgH+38}
-  txt("YOUR ECG COMMENTARY",pad,y,23,"#073c61",800);y+=38;
-  for(let i=0;i<comments.length;i++){const step=report.steps?.[i];txt(step?.correct===false?"✕":"✓",pad,y,20,step?.correct===false?"#c32648":"#08794c",800);txt(cleanEcgComment(comments[i]),pad+36,y,17,"#173a55",500);y+=lineH}
-  txt("Mohamed Alaa  •  ACL ECG Interpretation Lab",pad,height-57,16,"#59758c",600);
+  const imgW=W-2*pad,imgH=image?Math.min(230,Math.round(image.height/image.width*imgW)):0;
+  const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+  const font=(size,weight=500,family="Arial, sans-serif")=>weight+" "+size+"px "+family;
+  const wrapText=(value,maxWidth,size=18,weight=500)=>{
+   ctx.font=font(size,weight);
+   const words=String(value).split(/\s+/).filter(Boolean),lines=[];
+   let line="";
+   for(const word of words){
+    const next=line?line+" "+word:word;
+    if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=word}
+    else line=next;
+   }
+   if(line)lines.push(line);
+   return lines.length?lines:[""];
+  };
+  const text=(v,x,y,size,color="#183e5b",weight=500,family="Arial, sans-serif")=>{
+   ctx.fillStyle=color;ctx.font=font(size,weight,family);ctx.fillText(String(v),x,y);
+  };
+  const rounded=(x,y,w,h,r,color)=>{
+   ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();
+  };
+  const rawComments=Array.isArray(report.commentary)?report.commentary:[];
+  const special=rawComments.filter(raw=>!/^\s*(?:✓|✕|✔|✗)?\s*Step\s*\d+/i.test(String(raw)));
+  const numbered=rawComments.map((raw,i)=>{
+   const match=String(raw).match(/\bStep\s*(\d+[a-z]?)/i);
+   return {raw:String(raw),step:match?.[1]||"",index:i};
+  }).filter(row=>row.step).sort((a,b)=>Number.parseInt(a.step,10)-Number.parseInt(b.step,10)||a.index-b.index);
+  const rows=numbered.map(({raw,step})=>{
+   let normalized=cleanEcgComment(raw).replace(/^\s*(?:✓|✕|✔|✗)\s*/,"").replace(/^\s*Step\s*\d+[a-z]?\s*:?\s*/i,"").trim();
+   normalized=normalized.replace(/,\s*,/g,", ").replace(/\s+([,.;])/g,"$1").replace(/\s{2,}/g," ").replace(/\.{2,}/g,".").replace(/,\s*\./g,".");
+   const lines=wrapText(normalized,W-2*pad-175,18);
+   const h=Math.max(62,lines.length*27+27);
+   const wrong=report.steps?.some(item=>String(item.number||"").match(/^\d+/)?.[0]===step&&item.correct===false)||false;
+   return {step,lines,h,wrong};
+  });
+  const headerH=138,statsH=81,ecgBlockH=imgH?imgH+47:0;
+  const notesH=special.length?special.length*40+18:0;
+  const rowH=rows.reduce((sum,r)=>sum+r.h+8,0);
+  const commentaryY=54+headerH+statsH+ecgBlockH+notesH;
+  const footerH=165;
+  const height=commentaryY+66+rowH+footerH;
+  canvas.width=W*2;canvas.height=height*2;ctx.scale(2,2);
+  ctx.fillStyle="#f0f6fb";ctx.fillRect(0,0,W,height);
+  rounded(26,26,W-52,height-52,19,"#ffffff");
+  rounded(26,26,W-52,headerH,16,"#0a4267");
+  text("CARDIOLOGY LEAGUE  /  ECG INTERPRETATION LAB",pad,81,19,"#c4e6fa",750);
+  text("ECG "+String(report.case_number).padStart(2,"0")+"  ·  INTERPRETATION",pad,129,32,"#ffffff",800);
+  const accuracy=Math.round(report.score/Math.max(1,report.total)*100);
+  text(accuracy+"% correct",pad,211,24,"#118251",800);
+  const time="Time taken: "+fmtDuration(report.duration_seconds);
+  text(time,W-pad-ctx.measureText(time).width,211,19,"#234f70",700);
+  let y=245;
+  if(image){
+   const displayW=Math.min(imgW,imgH*(image.width/image.height));
+   ctx.drawImage(image,(W-displayW)/2,y,displayW,imgH);
+   y+=imgH+36;
+  }
+  for(const raw of special){
+   text(String(raw).replace(/\s+/g," ").slice(0,110),pad,y,17,"#a63c48",700);
+   y+=40;
+  }
+  text("YOUR ECG COMMENTARY",pad,y+4,24,"#0c4569",800);
+  y+=40;
+  ctx.strokeStyle="#cfe3ef";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke();
+  y+=20;
+  for(const row of rows){
+   rounded(pad-7,y-19,W-2*pad+14,row.h,11,row.wrong?"#fff1f4":"#f3f9fd");
+   rounded(pad-7,y-19,5,row.h,2,row.wrong?"#ca2b4a":"#1a925f");
+   text("STEP "+row.step,pad+15,y+7,16,"#0e5781",800);
+   row.lines.forEach((line,index)=>text(line,pad+136,y+7+index*27,18,"#193c55",500));
+   y+=row.h+8;
+  }
+  ctx.strokeStyle="#b8d5e6";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,height-footerH+5);ctx.lineTo(W-pad,height-footerH+5);ctx.stroke();
+  text("Interpretation signed by",pad,height-footerH+43,17,"#607e92",600);
+  if(sig){
+   text(sig,pad,height-footerH+92,36,"#183a5c",400,'"Brush Script MT","Segoe Script","Comic Sans MS",cursive');
+   text(sig,pad,height-footerH+121,14,"#678196",500);
+  }else text("Unsigned",pad,height-footerH+88,20,"#8a9dad",500);
+  text("ACL ECG Interpretation Lab",W-pad-245,height-66,15,"#67869a",700);
   return new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
  };
  const exportFile=async()=>{const blob=await createResultImage();if(!blob)throw Error("Image export failed");return new File([blob],"ACL-ECG-"+report.case_number+"-result.png",{type:"image/png"})};
