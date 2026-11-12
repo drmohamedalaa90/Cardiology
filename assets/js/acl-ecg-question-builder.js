@@ -46,6 +46,153 @@ $("addQuestion").onclick=()=>{questions.push(binary("q"+Date.now(),"New question
 $("restoreQuestions").onclick=()=>{if(!confirm("Reset all questions and keys for 10 ECGs?"))return;questions=structuredClone(defaults);keys=Array.from({length:10},()=>({}));save();restart();render();build()};
 $("exportQuestions").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({questions,keys},null,2)],{type:"application/json"}));a.download="acl-ecg-draft.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 $("importQuestions").onchange=async e=>{const f=e.target.files?.[0];if(!f||f.size>1e6)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.questions)||d.questions.length>100||!Array.isArray(d.keys)||d.keys.length!==10||!d.questions.every(q=>q&&typeof q.id==="string"&&typeof q.text==="string"&&["choice","number","leads"].includes(q.type)&&Array.isArray(q.options)))throw Error("Invalid question file");questions=d.questions;keys=d.keys;save();restart();render();build()}catch(err){alert(err.message)}e.target.value=""};
+
+/* ACL visual question-flow builder. Changes are staged until one global Save button is pressed. */
+let flowDraft=null,flowKeys=null,flowEditing=null,flowDirty=false;
+const flowClone=v=>structuredClone(v);
+function flowInit(){if(!flowDraft){flowDraft=flowClone(questions);flowKeys=flowClone(keys)}}
+function flowSetDirty(){flowDirty=true;const status=document.getElementById("flowSaveStatus");if(status)status.textContent="● Unsaved edits — click Save all changes";}
+function flowCss(){
+ if(document.getElementById("ecgFlowBuilderCss"))return;
+ const style=document.createElement("style");style.id="ecgFlowBuilderCss";style.textContent=`
+ #ecgGeneralEditorMount{padding:18px 22px 100px;overflow-y:auto;max-height:calc(100vh - 90px)}
+ #ecgGeneralQuestionTools{max-width:1160px;margin:auto}
+ #ecgGeneralQuestionTools>.tabs{background:#f3f8fc;border-radius:17px;padding:12px;margin:12px 0 18px!important}
+ #ecgGeneralQuestionTools>.tabs #addQuestion{background:#077ebc}
+ #ecgGeneralQuestionTools>.tabs #restoreQuestions{background:#fff0ee;color:#a12b30}
+ .ecg-flow-shell{display:grid;grid-template-columns:minmax(300px,.95fr) minmax(360px,1.35fr);gap:18px;align-items:start}
+ .ecg-flow-tree,.ecg-flow-detail{background:#f8fbfe;border:1px solid #d5e4ee;border-radius:18px;padding:17px;min-width:0}
+ .ecg-flow-tree h3,.ecg-flow-detail h3{margin:0 0 6px;color:#143d60}
+ .ecg-flow-description{font-size:13px;color:#5e7890;margin:0 0 15px}
+ .ecg-flow-step{margin:15px 0;border:1px solid #d1e2ee;background:#fff;border-radius:15px;overflow:hidden}
+ .ecg-flow-step-title{background:#e9f4fc;color:#126399;font-weight:800;padding:11px 14px;display:flex;justify-content:space-between}
+ .ecg-flow-node-wrap{margin:8px 10px;position:relative}
+ .ecg-flow-node-wrap.child{margin-left:29px;padding-left:18px;border-left:3px solid #8abbd9}
+ .ecg-flow-node-wrap.child:before{content:"";width:16px;height:2px;background:#8abbd9;position:absolute;top:21px;left:0}
+ .ecg-flow-node{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:1px solid #d7e3eb;background:white;border-radius:11px;padding:11px 10px;cursor:pointer;color:#21425a}
+ .ecg-flow-node.active{background:#e4f4ff;border:2px solid #0879be}
+ .ecg-flow-node .flow-num{flex:none;background:#116eaa;color:white;border-radius:9px;padding:6px 8px;font-size:12px;font-weight:800}
+ .ecg-flow-node .flow-label{flex:1;min-width:0}
+ .ecg-flow-node .flow-label strong{display:block;white-space:normal}
+ .ecg-flow-node .flow-label small{display:block;font-size:12px;color:#6a8091;margin-top:3px;overflow-wrap:anywhere}
+ .ecg-flow-condition{display:inline-block;background:#fff1dd;color:#945b0a;border-radius:7px;padding:3px 6px;font-size:11px;font-weight:700;margin-top:4px}
+ .ecg-flow-controls{display:flex;gap:3px;flex:none}
+ .ecg-flow-controls button{border:1px solid #cadbe7;background:#f5faff;color:#12547f;border-radius:7px;cursor:pointer;padding:7px;font-weight:800}
+ .ecg-flow-field{display:block;font-size:13px;color:#2d516d;font-weight:750;margin:12px 0 4px}
+ .ecg-flow-detail input:not([type=checkbox]),.ecg-flow-detail select,.ecg-flow-detail textarea{width:100%;min-width:0;padding:10px;border:1px solid #b9cfe0;border-radius:10px;background:white;color:#173c58;margin-top:5px;font-size:14px}
+ .ecg-flow-detail textarea{min-height:70px;resize:vertical}
+ .ecg-flow-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+ .ecg-flow-choice{background:white;border:1px solid #d7e6f0;border-radius:12px;margin:8px 0;padding:10px}
+ .ecg-flow-choice strong{font-size:13px;color:#1b5377}
+ .ecg-flow-key{background:#e9f8ef;padding:13px;border-radius:12px;margin:14px 0}
+ .ecg-flow-key strong{display:block;margin-bottom:5px}
+ .ecg-flow-empty{text-align:center;padding:42px 16px;color:#627d93}
+ .ecg-flow-savebar{position:sticky;bottom:0;z-index:12;background:#fff;border-top:1px solid #c7dce9;box-shadow:0 -8px 22px #123b5b16;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center;border-radius:12px;margin:12px 0}
+ .ecg-flow-savebar .btn{min-width:180px;background:#0a8656}
+ #flowSaveStatus{font-size:13px;color:#986024;font-weight:650}
+ .ecg-flow-alert{background:#fff5de;border:1px solid #f0d28f;padding:10px 13px;border-radius:11px;font-size:13px;color:#8d5d12;margin:10px 0}
+ @media(max-width:850px){.ecg-flow-shell{grid-template-columns:1fr}.ecg-flow-grid{grid-template-columns:1fr}#ecgGeneralEditorMount{padding:10px 12px 105px}.ecg-flow-savebar{position:sticky;bottom:0;flex-wrap:wrap}.ecg-flow-savebar .btn{width:100%}}
+ `;document.head.appendChild(style)
+}
+function flowSelect(id){flowEditing=id;build()}
+function flowMove(id,delta){
+ flowInit();const i=flowDraft.findIndex(q=>q.id===id),q=flowDraft[i];if(!q)return;
+ const peers=flowDraft.filter(x=>x.parent===q.parent),index=peers.findIndex(x=>x.id===id),other=peers[index+delta];if(!other)return;
+ const j=flowDraft.findIndex(x=>x.id===other.id);
+ [flowDraft[i],flowDraft[j]]=[flowDraft[j],flowDraft[i]];flowSetDirty();build();
+}
+function flowAdd(parent=""){
+ flowInit();if(flowDraft.length>=100){alert("Maximum 100 questions");return}
+ const parentQ=flowDraft.find(q=>q.id===parent),group=parentQ?String(parentQ.number).match(/^\d+/)?.[0]:String(Math.max(0,...flowDraft.map(q=>Number(String(q.number).match(/^\d+/)?.[0])||0))+1);
+ const siblings=flowDraft.filter(q=>String(q.number).match(/^\d+/)?.[0]===group);
+ const num=parentQ?group+String.fromCharCode(97+Math.min(siblings.length,25)):group;
+ const id="q"+Date.now()+"_"+Math.random().toString(36).slice(2,6),q=binary(id,parentQ?"New child question":"New question","Enter question",parent,parentQ?(parentQ.options[0]||""):"");
+ q.number=num;q.choiceComments={};const i=parentQ?flowDraft.findIndex(x=>x.id===parent)+1:flowDraft.length;
+ flowDraft.splice(i,0,q);flowEditing=q.id;flowSetDirty();build()
+}
+function flowDelete(id){
+ const q=flowDraft.find(x=>x.id===id);if(!q||!confirm("Delete this question? Its children will become top-level questions."))return;
+ flowDraft=flowDraft.filter(x=>x.id!==id);flowDraft.forEach(x=>{if(x.parent===id){x.parent="";x.trigger=""}});
+ flowKeys.forEach(k=>delete k[id]);flowEditing=flowDraft[0]?.id||null;flowSetDirty();build();
+}
+function flowQuestionTree(){
+ const seen=new Set(),byId=new Map(flowDraft.map(q=>[q.id,q]));
+ const node=(q,depth=0)=>{if(seen.has(q.id))return "";seen.add(q.id);
+ const condition=q.parent&&q.trigger?'<span class="ecg-flow-condition">↳ If '+esc(q.trigger.replaceAll("|"," / "))+'</span>':q.parent?'<span class="ecg-flow-condition">↳ Any parent answer</span>':"";
+ return '<div class="ecg-flow-node-wrap '+(q.parent?"child":"")+'"><div class="ecg-flow-node '+(flowEditing===q.id?"active":"")+'" data-flow-select="'+esc(q.id)+'"><span class="flow-num">'+esc(q.number)+'</span><span class="flow-label"><strong>'+esc(q.title||q.text||"New question")+'</strong><small>'+esc(q.text||"")+'</small>'+condition+'</span><span class="ecg-flow-controls"><button type="button" data-flow-up="'+esc(q.id)+'" title="Move up">↑</button><button type="button" data-flow-down="'+esc(q.id)+'" title="Move down">↓</button><button type="button" data-flow-child="'+esc(q.id)+'" title="Add child">↳+</button></span></div>'+flowDraft.filter(x=>x.parent===q.id).map(x=>node(x,depth+1)).join("")+'</div>'
+ };
+ const groups=new Map();flowDraft.filter(q=>!q.parent||!byId.has(q.parent)).forEach(q=>{const n=String(q.number).match(/^\d+/)?.[0]||"?";if(!groups.has(n))groups.set(n,[]);groups.get(n).push(q)});
+ const nums=[...groups.keys()].map(Number).filter(Number.isFinite),miss=[];
+ for(let n=Math.min(...nums);n<=Math.max(...nums);n++)if(!groups.has(String(n)))miss.push(n);
+ const warn=miss.length?'<div class="ecg-flow-alert">⚠️ Missing question steps: '+miss.join(", ")+'. The candidate jumps directly to the next configured step. Add questions for these steps if required.</div>':"";
+ return warn+[...groups].map(([n,roots])=>'<div class="ecg-flow-step"><div class="ecg-flow-step-title">STEP '+esc(n)+' <span>'+roots.length+' main question(s)</span></div>'+roots.map(q=>node(q)).join("")+'</div>').join("")+flowDraft.filter(q=>!seen.has(q.id)).map(q=>node(q)).join("")
+}
+function flowDetail(){
+ const q=flowDraft.find(x=>x.id===flowEditing);if(!q)return '<div class="ecg-flow-empty">✎ Select a question on the left to edit it.</div>';
+ const option=(value,label,selected)=>'<option value="'+esc(value)+'" '+(selected?"selected":"")+'>'+esc(label)+'</option>';
+ const parent=flowDraft.find(x=>x.id===q.parent);
+ const safeParents=flowDraft.filter(x=>x.id!==q.id&&!flowIsDescendant(x.id,q.id));
+ const key=flowKeys[slot]?.[q.id];
+ const choices=(q.options||[]).map((answer,i)=>'<div class="ecg-flow-choice"><strong>Choice '+(i+1)+': '+esc(answer)+'</strong><label class="ecg-flow-field">Commentary when selected<input data-flow-choice="'+esc(answer)+'" value="'+esc(q.choiceComments?.[answer]||"")+'" placeholder="Exact phrase for ECG comment"></label></div>').join("");
+ const keyControl=q.type==="number"?'<div class="ecg-flow-grid"><label class="ecg-flow-field">Correct minimum<input type="number" data-flow-keymin value="'+esc(key?.min??"")+'"></label><label class="ecg-flow-field">Correct maximum<input type="number" data-flow-keymax value="'+esc(key?.max??"")+'"></label></div>':q.multi?'<div>'+q.options.map(o=>'<label style="display:inline-flex;align-items:center;margin:7px"><input type="checkbox" data-flow-keymulti="'+esc(o)+'" '+(Array.isArray(key)&&key.includes(o)?"checked":"")+'>'+esc(o)+'</label>').join("")+'</div>':'<select data-flow-key>'+option("","Select correct answer",!key)+q.options.map(o=>option(o,o,key===o)).join("")+'</select>';
+ return '<h3>✏️ Edit question <span style="color:#147ab5">'+esc(q.number)+'</span></h3><p class="ecg-flow-description">All changes stay in the editor until you press the single green Save button.</p>'+
+ '<div class="ecg-flow-grid"><label class="ecg-flow-field">Step / question number<input data-flow-field="number" value="'+esc(q.number)+'"></label><label class="ecg-flow-field">Short title<input data-flow-field="title" value="'+esc(q.title)+'"></label></div>'+
+ '<label class="ecg-flow-field">Question shown to candidate<textarea data-flow-field="text">'+esc(q.text)+'</textarea></label>'+
+ '<div class="ecg-flow-grid"><label class="ecg-flow-field">Answer type<select data-flow-field="type">'+option("choice","Choices / Yes-No",q.type==="choice")+option("leads","12 ECG leads",q.type==="leads")+option("number","Numeric answer",q.type==="number")+'</select></label><label class="ecg-flow-field">Parent question<select data-flow-field="parent">'+option("","None · main question",!q.parent)+safeParents.map(x=>option(x.id,x.number+" — "+x.title,x.id===q.parent)).join("")+'</select></label></div>'+
+ (q.parent?'<label class="ecg-flow-field">Show this child if parent answer is (separate multiple with |)<input data-flow-field="trigger" value="'+esc(q.trigger||"")+'" placeholder="Leave empty for any parent answer"></label><p class="small muted">Parent choices: '+esc(parent?.options?.join(" · ")||"Any")+'</p>':"")+
+ (q.type!=="number"?'<label class="ecg-flow-field">Choices — one per line<textarea data-flow-field="options">'+esc(q.options.join("\n"))+'</textarea></label><label style="display:flex;gap:9px;align-items:center;margin:12px 0;font-size:13px"><input type="checkbox" data-flow-field="multi" '+(q.multi?"checked":"")+'> Allow multiple answers</label><h4>📝 Commentary per choice</h4>'+choices:'<div class="ecg-flow-grid"><label class="ecg-flow-field">Unit<input data-flow-field="unit" value="'+esc(q.unit||"")+'" placeholder="bpm, ms, mm"></label><label class="ecg-flow-field">Input label<input data-flow-field="inputLabel" value="'+esc(q.inputLabel||"")+'"></label></div><label class="ecg-flow-field">Numeric commentary<input data-flow-field="numberComment" value="'+esc(q.numberComment||"")+'" placeholder="Heart rate: {value} bpm"></label>')+
+ '<label class="ecg-flow-field">Admin-only note (optional)<input data-flow-field="adminSubtitle" value="'+esc(q.adminSubtitle||"")+'"></label>'+
+ '<section class="ecg-flow-key"><strong>✓ Correct answer — ECG '+String(slot+1).padStart(2,"0")+'</strong><p class="small muted">This answer key is specific to the selected ECG.</p>'+keyControl+'</section>'+
+ '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn secondary" data-flow-add-child>↳ Add child</button><button type="button" class="btn secondary" style="color:#b42a3e" data-flow-delete>Delete question</button></div>';
+}
+function flowIsDescendant(id,ancestor){let p=flowDraft.find(q=>q.id===id)?.parent,seen=new Set();while(p&&!seen.has(p)){if(p===ancestor)return true;seen.add(p);p=flowDraft.find(q=>q.id===p)?.parent}return false}
+function build(){
+ $("builder").hidden=!admin();if(!admin())return;
+ flowInit();flowCss();const heading=$("ecgKeyHeading");if(heading)heading.textContent="Correct answers · ECG "+String(slot+1).padStart(2,"0");
+ if(!flowEditing||!flowDraft.some(q=>q.id===flowEditing))flowEditing=flowDraft[0]?.id||null;
+ $("questionRows").innerHTML='<div class="ecg-flow-shell"><div class="ecg-flow-tree"><h3>🧭 Question flow</h3><p class="ecg-flow-description">Questions appear in order. Child questions branch beneath their parent.</p>'+flowQuestionTree()+'</div><div class="ecg-flow-detail" id="ecgFlowDetail">'+flowDetail()+'</div></div><div class="ecg-flow-savebar"><span id="flowSaveStatus">'+(flowDirty?"● Unsaved edits — click Save all changes":"✓ All changes saved")+'</span><button class="btn" id="flowSaveAll" type="button">💾 Save all changes</button></div>';
+ $("keyRows").innerHTML='<p class="muted">Correct answers are now edited beside each question in the graphical editor above. Choose ECG 01–10 in the main ECG selector.</p>';
+ document.querySelectorAll("[data-flow-select]").forEach(el=>el.onclick=e=>{if(e.target.closest("button"))return;flowSelect(el.dataset.flowSelect)});
+ document.querySelectorAll("[data-flow-up]").forEach(el=>el.onclick=()=>flowMove(el.dataset.flowUp,-1));
+ document.querySelectorAll("[data-flow-down]").forEach(el=>el.onclick=()=>flowMove(el.dataset.flowDown,1));
+ document.querySelectorAll("[data-flow-child]").forEach(el=>el.onclick=()=>flowAdd(el.dataset.flowChild));
+ const detail=document.getElementById("ecgFlowDetail"),q=flowDraft.find(x=>x.id===flowEditing);
+ if(q){
+  detail.querySelectorAll("[data-flow-field]").forEach(el=>{
+   const field=el.dataset.flowField;
+   const onChange=()=>{
+    q[field]=field==="multi"?el.checked:field==="options"?el.value.split("\n").map(x=>x.trim()).filter(Boolean):el.value;
+    if(field==="type"&&el.value==="leads")q.options=[...ECG_LEADS];
+    if(field==="type"&&el.value==="number"){q.options=[];q.multi=false}
+    if(field==="parent"){q.trigger=q.parent?q.trigger:"";const parent=flowDraft.find(x=>x.id===q.parent);if(parent&&parent.options.length&&!q.trigger)q.trigger=parent.options[0]}
+    flowSetDirty();
+    if(["parent","type","options","number","title","text"].includes(field))build();
+   };
+   el.addEventListener(["parent","type","options","number","title"].includes(field)?"change":"input",onChange);
+  });
+  detail.querySelectorAll("[data-flow-choice]").forEach(el=>el.oninput=()=>{q.choiceComments??={};q.choiceComments[el.dataset.flowChoice]=el.value;flowSetDirty()});
+  detail.querySelector("[data-flow-key]")?.addEventListener("change",e=>{flowKeys[slot][q.id]=e.target.value;flowSetDirty()});
+  detail.querySelectorAll("[data-flow-keymulti]").forEach(el=>el.onchange=()=>{flowKeys[slot][q.id]=Array.from(detail.querySelectorAll("[data-flow-keymulti]:checked")).map(x=>x.dataset.flowKeymulti);flowSetDirty()});
+  detail.querySelectorAll("[data-flow-keymin],[data-flow-keymax]").forEach(el=>el.oninput=()=>{flowKeys[slot][q.id]={min:detail.querySelector("[data-flow-keymin]").value,max:detail.querySelector("[data-flow-keymax]").value};flowSetDirty()});
+  detail.querySelector("[data-flow-add-child]").onclick=()=>flowAdd(q.id);
+  detail.querySelector("[data-flow-delete]").onclick=()=>flowDelete(q.id);
+ }
+ $("flowSaveAll").onclick=()=>{
+  for(const q of flowDraft){
+   if(!q.number?.trim()||!q.text?.trim()){alert("All questions need a step number and question text.");flowEditing=q.id;build();return}
+   if(q.type!=="number"&&((q.options||[]).length<2||new Set(q.options).size!==q.options.length)){alert("Choices must be unique, and there must be at least two.");flowEditing=q.id;build();return}
+   if(q.parent&&!flowDraft.some(p=>p.id===q.parent)){alert("Invalid parent for "+q.title);return}
+   if(flowIsDescendant(q.id,q.id)){alert("Circular question branch detected.");return}
+  }
+  questions=flowClone(flowDraft);keys=flowClone(flowKeys);flowDirty=false;save();restart();render();build();
+  $("flowSaveStatus").textContent="✓ Saved locally · Neon synchronization scheduled";
+ };
+}
+$("addQuestion").onclick=()=>flowAdd("");
+$("restoreQuestions").onclick=()=>{if(!confirm("Replace every question and all ECG answer keys with defaults? Save all changes afterward."))return;flowDraft=flowClone(defaults);flowKeys=Array.from({length:10},()=>({}));flowEditing=flowDraft[0].id;flowSetDirty();build()};
+$("exportQuestions").onclick=()=>{flowInit();const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({questions:flowDraft,keys:flowKeys},null,2)],{type:"application/json"}));a.download="acl-ecg-flow-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$("importQuestions").onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const d=JSON.parse(await file.text());if(!Array.isArray(d.questions)||!Array.isArray(d.keys)||d.keys.length!==10)throw Error("Invalid backup");flowDraft=d.questions;flowKeys=d.keys;flowEditing=flowDraft[0]?.id;flowSetDirty();build()}catch(err){alert(err.message)}e.target.value=""};
+
 function path(){const result=[],done=new Set(),byId=new Map(questions.map(q=>[q.id,q]));function walk(q){if(done.has(q.id))return;done.add(q.id);result.push(q);if(answers[q.id]!==undefined&&stepTiming[q.id]?.correct===true)questions.filter(c=>c.parent===q.id&&(!c.trigger||(Array.isArray(answers[q.id])?answers[q.id].some(v=>c.trigger.split("|").includes(v)):c.trigger.split("|").includes(String(answers[q.id]))))).forEach(walk)}questions.filter(q=>!q.parent||!byId.has(q.parent)).forEach(walk);return result}
 function seconds(){return started?Math.floor((Date.now()-started)/1000):0}
 function tick(){const t=seconds();const time=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");$("clock").textContent=time;const previewClock=$("ecgReadyClock");if(previewClock)previewClock.textContent="⏱ "+time;}
