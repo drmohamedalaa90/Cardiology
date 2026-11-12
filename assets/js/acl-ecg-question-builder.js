@@ -116,7 +116,7 @@ function updateLiveComment(){
  "4a":v=>v==="Yes"?"P waves are present.":"P waves are absent.",
  "4b":v=>v==="Yes"?"P-wave morphology is normal.":"Abnormal P-wave morphology."
  };
- const completed=Object.keys(answers).map(id=>questions.find(q=>q.id===id)).filter(Boolean);
+ const completed=questions.filter(q=>Object.prototype.hasOwnProperty.call(answers,q.id)).sort((a,b)=>{const na=String(a.number||""),nb=String(b.number||"");return na.localeCompare(nb,undefined,{numeric:true,sensitivity:"base"})});
  const statements=completed.map(q=>{
   const v=answers[q.id],line=phrases[q.id]?phrases[q.id](v):q.title+": "+(Array.isArray(v)?v.join(", "):v)+(q.type==="number"&&q.unit?" "+q.unit:"")+".";
   const status=stepTiming[q.id]?.correct;
@@ -177,7 +177,16 @@ function render(){
  const qs=path(),q=qs[index];if(!q){finish();return}
  const peekThumb=$("peekEcg");if(peekThumb){peekThumb.hidden=ecgReferenceMode==="fixed";const realImage=images[slot];peekThumb.querySelector(".ecg-mini-real")?.remove();peekThumb.querySelectorAll("svg:not(.eye-icon)").forEach(el=>el.style.display=realImage?"none":"");if(realImage){const thumb=document.createElement("img");thumb.className="ecg-mini-real";thumb.alt="ECG thumbnail";thumb.src=realImage;peekThumb.prepend(thumb)}}
  $("stepLabel").classList.add("ecg-step-with-title");$("stepLabel").innerHTML="<span>STEP "+esc(q.number)+"</span><span class=\"ecg-step-name\">"+esc(q.title)+"</span>";$("stepLabel").dataset.stepGroup=Number.parseInt(q.number,10)<=3?"red":Number.parseInt(q.number,10)<=5?"green":Number.parseInt(q.number,10)<=7?"blue":"orange";$("stepTitle").textContent=q.title;$("question").textContent=q.text;$("hint").textContent=mode==="practice"?"Interpret the ECG and select your answer.":"Answer without immediate feedback.";$("count").textContent=Object.keys(answers).length+" answered";
- $("progress").innerHTML=qs.map((x,i)=>'<i class="'+(i<index?(stepTiming[x.id]?.correct===false?"ecg-progress-wrong":"done"):i===index?"now":"")+'"></i>').join("");
+ const groupKey=x=>String(x.number||"").match(/^\\d+/)?.[0]||String(x.number||"");
+ const groupNames=[...new Set(qs.map(groupKey))];
+ const currentGroup=groupKey(q);
+ $("progress").innerHTML=groupNames.map(g=>{
+  const members=qs.filter(x=>groupKey(x)===g),answered=members.filter(x=>stepTiming[x.id]);
+  const anyWrong=answered.some(x=>stepTiming[x.id].correct===false);
+  const complete=answered.length===members.length;
+  const state=complete?(anyWrong?"ecg-progress-wrong":"done"):g===currentGroup?"now":answered.length?(anyWrong?"ecg-progress-wrong":"now"):"";
+  return '<i class="'+state+'" title="Step '+esc(g)+' ('+answered.length+'/'+members.length+' answered)"></i>';
+ }).join("");
  if(q.multi&&q.type!=="number"){
   if(!document.getElementById("ecgLeadTileStyles")){
    const s=document.createElement("style");s.id="ecgLeadTileStyles";s.textContent=`
