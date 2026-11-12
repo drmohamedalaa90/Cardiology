@@ -38,7 +38,7 @@ function path(){const result=[],done=new Set(),byId=new Map(questions.map(q=>[q.
 function seconds(){return started?Math.floor((Date.now()-started)/1000):0}
 function tick(){const t=seconds();$("clock").textContent=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0")}
 function start(){if(!started){started=Date.now();timer=setInterval(tick,1000)}}
-function restart(){wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};tick()}
+function restart(){failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};tick()}
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}return !!k&&value===k}
 const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let unlockedEcg=[1],attemptHistory=[],wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||"HTTP "+response.status);return data;}async function refreshAttemptProgress(){try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];attemptHistory=data.attempts||[];slots();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];slots();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());void refreshAttemptProgress();
 async function restoreEcgImages(){try{const data=await attemptRequest("GET");for(const c of data.cases||[]){const n=Number(c.case_number)-1;if(n>=0&&n<10&&typeof c.image_data==="string"&&c.image_data.startsWith("data:image/")&&!images[n])images[n]=c.image_data;}if(images[slot])render();else slots();}catch(e){console.warn("ECG images could not be restored",e)}}window.addEventListener("acl-ecg-access-ready",()=>void restoreEcgImages());void restoreEcgImages();
@@ -63,19 +63,22 @@ $("upload").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;if(!f.ty
 for(const m of ["practice","test"])$(m).onclick=()=>{mode=m;$("practice").className=m==="practice"?"btn active":"btn secondary";$("test").className=m==="test"?"btn active":"btn secondary";restart();render()};
 $("reset").onclick=$("again").onclick=()=>{restart();render()};
 $("back").onclick=()=>{if(index>0){index--;selected=answers[path()[index]?.id]||"";checked=false;render()}};
+function showAnswerFeedback(isCorrect){const panel=$("questionPanel");panel.classList.remove("ecg-result-correct","ecg-result-wrong");void panel.offsetWidth;panel.classList.add(isCorrect?"ecg-result-correct":"ecg-result-wrong");$("feedback").className="feedback ecg-answer-animated "+(isCorrect?"good":"bad");$("feedback").innerHTML=isCorrect?'<span class="ecg-feedback-icon">✓</span><strong>Correct!</strong>':'<span class="ecg-feedback-icon">✕</span><strong>Incorrect!</strong><small>Attempt ended. Start a new attempt to try again.</small>';document.querySelectorAll("[data-answer]").forEach(button=>button.disabled=true);$("next").disabled=true;}
+let failedAttempt=false,elapsedAtFailure=null;
 function submitAnswer(){
- const q=path()[index];if(!q||selected==="")return;
- const value=selected;
- if(mode==="practice"){
-   const k=keys[slot][q.id];
-   if(k===undefined||k===""||(q.type==="number"&&(!k||k.min===""||k.max===""||k.min===undefined||k.max===undefined))){
-     $("feedback").className="feedback bad";$("feedback").textContent="Admin must configure the answer key or rate range for this ECG.";return;
-   }
-   if(!correct(q,value)){wrongCount++;
-     $("feedback").className="feedback bad ecg-answer-animated";$("feedback").textContent="✕ Incorrect — try again";selected="";if(q.type==="number"){$("numericAnswer").value="";$("next").disabled=true}return;
-   }
+ const q=path()[index];if(!q||selected===""||checked||submitting||failedAttempt)return;
+ const value=selected,k=keys[slot][q.id];
+ if(k===undefined||k===""||(q.type==="number"&&(!k||k.min===""||k.max===""||k.min===undefined||k.max===undefined))){
+  $("feedback").className="feedback bad";$("feedback").textContent="Answer key unavailable. Ask the administrator to configure this ECG.";return;
  }
- answers[q.id]=value;if(mode==="practice"){$("feedback").className="feedback ecg-answer-animated";$("feedback").textContent="✓ Correct!";document.querySelectorAll("[data-answer]").forEach(b=>b.disabled=true);setTimeout(()=>{index++;selected="";checked=false;render()},650)}else{index++;selected="";checked=false;render()}
+ checked=true;answers[q.id]=value;
+ const isCorrect=correct(q,value);showAnswerFeedback(isCorrect);
+ if(!isCorrect){
+  wrongCount++;failedAttempt=true;elapsedAtFailure=seconds();clearInterval(timer);timer=null;
+  setTimeout(()=>{finish()},1150);
+  return;
+ }
+ setTimeout(()=>{index++;selected="";checked=false;render()},750);
 }
 $("next").onclick=submitAnswer;
 function openEcgPeek(){
@@ -92,17 +95,17 @@ $("ecgPeekModal").addEventListener("click",e=>{if(e.target===$("ecgPeekModal")||
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("ecgPeekModal").classList.contains("hidden"))closeEcgPeek()});
 async function finish(){
  clearInterval(timer);$("questionPanel").classList.add("hidden");$("complete").classList.remove("hidden");
- const duration=seconds();
+ const duration=elapsedAtFailure??seconds();
  $("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(duration/60)+"m "+duration%60+"s";
- $("result").textContent="Saving your attempt securely…";
+ $("result").textContent=failedAttempt?"Incorrect answer — saving failed attempt…":"Saving your attempt securely…";
  try{
   const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:slot+1,mode,answers,duration_seconds:duration,mistakes:wrongCount});
-  const passed=saved.passed;
+  const passed=!failedAttempt&&saved.passed;
   if(passed&&saved.unlocked_next&&!unlockedEcg.includes(saved.unlocked_next))unlockedEcg.push(saved.unlocked_next);
   attemptHistory.unshift({case_number:slot+1,score:saved.score,total:saved.total});
   slots();
   $("summary").textContent+=" · Score "+saved.score+"/"+saved.total;
-  $("result").textContent=passed?"✓ Attempt saved to Neon. Next ECG unlocked.":"Attempt saved to Neon. All questions must be correct on the attempt to unlock the next ECG.";
+  $("result").textContent=passed?"✓ Attempt saved to Neon. Next ECG unlocked.":failedAttempt?"✕ Incorrect answer. Attempt closed and saved to Neon. Start a new attempt to retry.":"Attempt saved to Neon. Complete all questions correctly to unlock the next ECG.";
  }catch(error){$("result").textContent="⚠ Attempt not saved: "+error.message+". Progress remains locked. Retry when connected.";}
 }
 window.addEventListener("acl-ecg-access-ready",build);render();build();
