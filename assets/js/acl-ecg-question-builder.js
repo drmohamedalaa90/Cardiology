@@ -86,6 +86,17 @@ function flowCss(){
  .ecg-flow-choice strong{font-size:13px;color:#1b5377}
  .ecg-flow-key{background:#e9f8ef;padding:13px;border-radius:12px;margin:14px 0}
  .ecg-flow-key strong{display:block;margin-bottom:5px}
+ .ecg-flow-step-title{gap:8px}
+ .ecg-flow-step-toggle{border:0;background:transparent;color:inherit;font:inherit;font-weight:800;cursor:pointer;padding:3px 6px;border-radius:6px;text-align:left}
+ .ecg-flow-step-toggle:hover{background:#d6ebf9}
+ .ecg-flow-step-toggle:focus-visible{outline:3px solid #0879be}
+ .ecg-flow-step-count{font-size:12px;font-weight:700;white-space:nowrap}
+ .ecg-flow-step-contents{padding-bottom:4px}
+ .ecg-flow-drag-handle{cursor:grab;touch-action:pan-y;flex:none;color:#426b8b;font-size:23px;line-height:1;border-radius:6px;padding:7px 4px;user-select:none}
+ .ecg-flow-drag-handle:active{cursor:grabbing}
+ .ecg-flow-dragging{opacity:.45}
+ .ecg-flow-drop-hint{outline:3px dashed #0b85bd!important;background:#d9f5ff!important}
+ .ecg-flow-controls button{min-width:28px}
  .ecg-flow-empty{text-align:center;padding:42px 16px;color:#627d93}
  .ecg-flow-savebar{position:sticky;bottom:0;z-index:12;background:#fff;border-top:1px solid #c7dce9;box-shadow:0 -8px 22px #123b5b16;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center;border-radius:12px;margin:12px 0}
  .ecg-flow-savebar .btn{min-width:180px;background:#0a8656}
@@ -115,17 +126,131 @@ function flowDelete(id){
  flowDraft=flowDraft.filter(x=>x.id!==id);flowDraft.forEach(x=>{if(x.parent===id){x.parent="";x.trigger=""}});
  flowKeys.forEach(k=>delete k[id]);flowEditing=flowDraft[0]?.id||null;flowSetDirty();build();
 }
+
+const flowCollapsedKey="acl-ecg-flow-collapsed-v1";
+let flowCollapsed=new Set();
+try{flowCollapsed=new Set(JSON.parse(localStorage.getItem(flowCollapsedKey)||"[]").map(String))}catch(_){}
+function flowToggleStep(n){
+ n=String(n);
+ if(flowCollapsed.has(n))flowCollapsed.delete(n);else flowCollapsed.add(n);
+ try{localStorage.setItem(flowCollapsedKey,JSON.stringify([...flowCollapsed]))}catch(_){}
+ build();
+}
+function flowDescendants(id){
+ const found=new Set([id]),out=[];
+ function visit(parent){
+  flowDraft.filter(q=>q.parent===parent&&!found.has(q.id)).forEach(q=>{found.add(q.id);out.push(q);visit(q.id)});
+ }
+ visit(id);return out;
+}
+function flowDuplicate(id){
+ flowInit();
+ const source=flowDraft.find(q=>q.id===id);if(!source)return;
+ const subtree=[source,...flowDescendants(id)];
+ if(flowDraft.length+subtree.length>100){alert("Too many questions to duplicate (limit: 100).");return}
+ const replacement=new Map(subtree.map(q=>[q.id,"q"+Date.now()+"_"+Math.random().toString(36).slice(2,9)]));
+ const copies=subtree.map(q=>{
+  const c=flowClone(q);c.id=replacement.get(q.id);
+  c.parent=replacement.get(q.parent)||q.parent||"";
+  c.title=q.title+" (copy)";
+  return c;
+ });
+ const last=Math.max(...subtree.map(q=>flowDraft.indexOf(q)));
+ flowDraft.splice(last+1,0,...copies);
+ for(let n=0;n<flowKeys.length;n++){
+  for(const q of subtree)if(Object.prototype.hasOwnProperty.call(flowKeys[n],q.id)){
+   flowKeys[n][replacement.get(q.id)]=flowClone(flowKeys[n][q.id]);
+  }
+ }
+ flowEditing=copies[0].id;flowCollapsed.delete(String(source.number).match(/^\\d+/)?.[0]||"");
+ flowSetDirty();build();
+}
+let flowDragging=null;
+function flowMoveBranch(id,targetId,mode="before"){
+ flowInit();
+ if(!id||!targetId||id===targetId)return;
+ const moved=flowDraft.find(q=>q.id===id),target=flowDraft.find(q=>q.id===targetId);
+ if(!moved||!target)return;
+ const descendants=flowDescendants(id);
+ if(descendants.some(q=>q.id===targetId))return;
+ const branchIds=new Set([id,...descendants.map(q=>q.id)]);
+ const block=flowDraft.filter(q=>branchIds.has(q.id)),remaining=flowDraft.filter(q=>!branchIds.has(q.id));
+ if(mode==="child"){
+  moved.parent=target.id;
+  moved.trigger="";
+  const step=String(target.number).match(/^\\d+/)?.[0]||String(target.number);
+  block.forEach(q=>q.number=step);
+  const idx=remaining.findIndex(q=>q.id===target.id);
+  remaining.splice(idx+1,0,...block);
+ }else{
+  moved.parent=target.parent||"";
+  moved.trigger=target.parent?target.trigger||"":"";
+  const step=String(target.number).match(/^\\d+/)?.[0]||String(target.number);
+  block.forEach(q=>q.number=step);
+  const idx=remaining.findIndex(q=>q.id===target.id);
+  remaining.splice(idx+(mode==="after"?1:0),0,...block);
+ }
+ flowDraft=remaining;flowCollapsed.delete(String(target.number).match(/^\\d+/)?.[0]||"");
+ flowSetDirty();build();
+}
+function flowDropToStep(id,n){
+ flowInit();const q=flowDraft.find(x=>x.id===id);if(!q)return;
+ const block=[q,...flowDescendants(id)],ids=new Set(block.map(x=>x.id));
+ const rest=flowDraft.filter(x=>!ids.has(x.id));q.parent="";q.trigger="";
+ block.forEach(x=>x.number=String(n));
+ const last=rest.map((x,i)=>String(x.number).match(/^\\d+/)?.[0]===String(n)?i:-1).filter(i=>i>=0).pop();
+ rest.splice(last===undefined?rest.length:last+1,0,...block);
+ flowDraft=rest;flowCollapsed.delete(String(n));flowSetDirty();build();
+}
+function flowWireDragDrop(){
+ const root=document.getElementById("questionRows");if(!root)return;
+ root.querySelectorAll("[data-flow-drag]").forEach(handle=>{
+  handle.addEventListener("dragstart",e=>{
+   flowDragging=handle.dataset.flowDrag;
+   e.dataTransfer.effectAllowed="move";
+   e.dataTransfer.setData("text/plain",flowDragging);
+   handle.closest(".ecg-flow-node")?.classList.add("ecg-flow-dragging");
+  });
+  handle.addEventListener("dragend",()=>{
+   flowDragging=null;
+   root.querySelectorAll(".ecg-flow-drop-hint,.ecg-flow-dragging").forEach(x=>x.classList.remove("ecg-flow-drop-hint","ecg-flow-dragging"));
+  });
+ });
+ root.querySelectorAll("[data-flow-select]").forEach(node=>{
+  node.addEventListener("dragover",e=>{
+   if(!flowDragging||flowDragging===node.dataset.flowSelect)return;
+   e.preventDefault();e.dataTransfer.dropEffect="move";node.classList.add("ecg-flow-drop-hint");
+  });
+  node.addEventListener("dragleave",()=>node.classList.remove("ecg-flow-drop-hint"));
+  node.addEventListener("drop",e=>{
+   e.preventDefault();e.stopPropagation();node.classList.remove("ecg-flow-drop-hint");
+   const id=flowDragging||e.dataTransfer.getData("text/plain");flowDragging=null;
+   if(id&&id!==node.dataset.flowSelect)flowMoveBranch(id,node.dataset.flowSelect,e.shiftKey?"child":e.offsetY>node.offsetHeight/2?"after":"before");
+  });
+ });
+ root.querySelectorAll("[data-flow-step-drop]").forEach(header=>{
+  header.addEventListener("dragover",e=>{if(!flowDragging)return;e.preventDefault();e.dataTransfer.dropEffect="move";header.classList.add("ecg-flow-drop-hint")});
+  header.addEventListener("dragleave",()=>header.classList.remove("ecg-flow-drop-hint"));
+  header.addEventListener("drop",e=>{e.preventDefault();header.classList.remove("ecg-flow-drop-hint");const id=flowDragging||e.dataTransfer.getData("text/plain");flowDragging=null;if(id)flowDropToStep(id,header.dataset.flowStepDrop)});
+ });
+}
+
+
 function flowQuestionTree(){
  const seen=new Set(),byId=new Map(flowDraft.map(q=>[q.id,q]));
- const node=(q,depth=0)=>{if(seen.has(q.id))return "";seen.add(q.id);
+ const node=(q)=>{if(seen.has(q.id))return "";seen.add(q.id);
  const condition=q.parent&&q.trigger?'<span class="ecg-flow-condition">↳ If '+esc(q.trigger.replaceAll("|"," / "))+'</span>':q.parent?'<span class="ecg-flow-condition">↳ Any parent answer</span>':"";
- return '<div class="ecg-flow-node-wrap '+(q.parent?"child":"")+'"><div class="ecg-flow-node '+(flowEditing===q.id?"active":"")+'" data-flow-select="'+esc(q.id)+'"><span class="flow-num">'+esc(q.number)+'</span><span class="flow-label"><strong>'+esc(q.title||q.text||"New question")+'</strong><small>'+esc(q.text||"")+'</small>'+condition+'</span><span class="ecg-flow-controls"><button type="button" data-flow-up="'+esc(q.id)+'" title="Move up">↑</button><button type="button" data-flow-down="'+esc(q.id)+'" title="Move down">↓</button><button type="button" data-flow-child="'+esc(q.id)+'" title="Add child">↳+</button></span></div>'+flowDraft.filter(x=>x.parent===q.id).map(x=>node(x,depth+1)).join("")+'</div>'
+ return '<div class="ecg-flow-node-wrap '+(q.parent?"child":"")+'"><div class="ecg-flow-node '+(flowEditing===q.id?"active":"")+'" data-flow-select="'+esc(q.id)+'"><span class="ecg-flow-drag-handle" data-flow-drag="'+esc(q.id)+'" draggable="true" title="Drag to reorder (hold Shift to nest under another question)" aria-label="Drag question">⠿</span><span class="flow-num">'+esc(q.number)+'</span><span class="flow-label"><strong>'+esc(q.title||q.text||"New question")+'</strong><small>'+esc(q.text||"")+'</small>'+condition+'</span><span class="ecg-flow-controls"><button type="button" data-flow-copy="'+esc(q.id)+'" title="Duplicate this question and children">⧉</button><button type="button" data-flow-up="'+esc(q.id)+'" title="Move up">↑</button><button type="button" data-flow-down="'+esc(q.id)+'" title="Move down">↓</button><button type="button" data-flow-child="'+esc(q.id)+'" title="Add child">↳+</button></span></div>'+flowDraft.filter(x=>x.parent===q.id).map(node).join("")+'</div>';
  };
- const groups=new Map();flowDraft.filter(q=>!q.parent||!byId.has(q.parent)).forEach(q=>{const n=String(q.number).match(/^\d+/)?.[0]||"?";if(!groups.has(n))groups.set(n,[]);groups.get(n).push(q)});
+ const groups=new Map();flowDraft.forEach(q=>{const n=String(q.number).match(/^\\d+/)?.[0]||"?";if(!groups.has(n))groups.set(n,[])});
+ flowDraft.filter(q=>!q.parent||!byId.has(q.parent)||String(byId.get(q.parent).number).match(/^\\d+/)?.[0]!==String(q.number).match(/^\\d+/)?.[0]).forEach(q=>{const n=String(q.number).match(/^\\d+/)?.[0]||"?";groups.get(n)?.push(q)});
  const nums=[...groups.keys()].map(Number).filter(Number.isFinite),miss=[];
- for(let n=Math.min(...nums);n<=Math.max(...nums);n++)if(!groups.has(String(n)))miss.push(n);
- const warn=miss.length?'<div class="ecg-flow-alert">⚠️ Missing question steps: '+miss.join(", ")+'. The candidate jumps directly to the next configured step. Add questions for these steps if required.</div>':"";
- return warn+[...groups].map(([n,roots])=>'<div class="ecg-flow-step"><div class="ecg-flow-step-title">STEP '+esc(n)+' <span>'+roots.length+' main question(s)</span></div>'+roots.map(q=>node(q)).join("")+'</div>').join("")+flowDraft.filter(q=>!seen.has(q.id)).map(q=>node(q)).join("")
+ if(nums.length)for(let n=Math.min(...nums);n<=Math.max(...nums);n++)if(!groups.has(String(n)))miss.push(n);
+ const warn=miss.length?'<div class="ecg-flow-alert">⚠️ Unconfigured steps: '+miss.join(", ")+'. Add questions to fill any required gaps.</div>':"";
+ return warn+[...groups].sort(([a],[b])=>Number(a)-Number(b)).map(([n,roots])=>{
+  const closed=flowCollapsed.has(String(n)),count=flowDraft.filter(q=>String(q.number).match(/^\\d+/)?.[0]===String(n)).length;
+  return '<section class="ecg-flow-step"><div class="ecg-flow-step-title" data-flow-step-drop="'+esc(n)+'"><button type="button" class="ecg-flow-step-toggle" data-flow-toggle="'+esc(n)+'" aria-expanded="'+(!closed)+'" aria-label="'+(closed?"Expand":"Collapse")+' step '+esc(n)+'"><span class="ecg-flow-chevron">'+(closed?"▸":"▾")+'</span> STEP '+esc(n)+'</button><span class="ecg-flow-step-count">'+count+' question'+(count===1?"":"s")+'</span></div>'+(closed?"":'<div class="ecg-flow-step-contents">'+roots.map(node).join("")+'</div>')+'</section>';
+ }).join("")+flowDraft.filter(q=>!seen.has(q.id)&&!flowCollapsed.has(String(q.number).match(/^\\d+/)?.[0]||"")).map(node).join("");
 }
 function flowDetail(){
  const q=flowDraft.find(x=>x.id===flowEditing);if(!q)return '<div class="ecg-flow-empty">✎ Select a question on the left to edit it.</div>';
@@ -156,6 +281,9 @@ function build(){
  document.querySelectorAll("[data-flow-up]").forEach(el=>el.onclick=()=>flowMove(el.dataset.flowUp,-1));
  document.querySelectorAll("[data-flow-down]").forEach(el=>el.onclick=()=>flowMove(el.dataset.flowDown,1));
  document.querySelectorAll("[data-flow-child]").forEach(el=>el.onclick=()=>flowAdd(el.dataset.flowChild));
+ document.querySelectorAll("[data-flow-copy]").forEach(el=>el.onclick=()=>flowDuplicate(el.dataset.flowCopy));
+ document.querySelectorAll("[data-flow-toggle]").forEach(el=>el.onclick=()=>flowToggleStep(el.dataset.flowToggle));
+ flowWireDragDrop();
  const detail=document.getElementById("ecgFlowDetail"),q=flowDraft.find(x=>x.id===flowEditing);
  if(q){
   detail.querySelectorAll("[data-flow-field]").forEach(el=>{
