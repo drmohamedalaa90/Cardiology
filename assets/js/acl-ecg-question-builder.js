@@ -9,6 +9,7 @@ function save(){localStorage.setItem(store,JSON.stringify({questions,keys}));$("
 function admin(){return window.aclEcgIsAdmin===true}
 function build(){
  $("builder").hidden=!admin();if(!admin())return;
+ const heading=document.getElementById("ecgKeyHeading");if(heading)heading.textContent="Correct answers · ECG "+String(slot+1).padStart(2,"0");
  $("questionRows").innerHTML=questions.map((q,i)=>'<div class="ecg-build-row"><b>'+esc(q.number)+'</b><span>'+esc(q.title)+(q.parent?" ↳":"")+'</span><button class="btn secondary" data-edit="'+i+'">Edit</button><button class="btn secondary" data-up="'+i+'">↑</button><button class="btn secondary" data-down="'+i+'">↓</button></div><div id="edit-'+i+'"></div>').join("");
  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>edit(+b.dataset.edit));
  document.querySelectorAll("[data-up],[data-down]").forEach(b=>b.onclick=()=>{const i=+(b.dataset.up??b.dataset.down),j=i+(b.hasAttribute("data-up")?-1:1);if(j<0||j>=questions.length)return;[questions[i],questions[j]]=[questions[j],questions[i]];save();restart();render();build()});
@@ -103,7 +104,7 @@ function slots(){
  $("slots").innerHTML=images.map((x,i)=>{const locked=!admin()&&!unlockedEcg.includes(i+1),done=attemptHistory.some(a=>Number(a.case_number)===i+1&&Number(a.score)===Number(a.total)&&Number(a.total)>0);
  const preview=x?'<img class="ecg-tile-preview" src="'+x+'" alt="ECG '+(i+1)+' recording" loading="lazy">':'<span class="ecg-tile-empty" aria-hidden="true">ECG not uploaded</span>';
  return '<button type="button" class="slot '+(slot===i?"current ":"")+(locked?"ecg-locked ":"")+(x?"ecg-has-image":"")+'" data-slot="'+i+'" aria-label="ECG '+(i+1)+(locked?", locked":"")+'"><span class="ecg-tile-art">'+preview+(locked?'<span class="ecg-tile-lock">🔒</span>':x?'<span class="ecg-tile-saved">✓ Saved</span>':'')+'</span><span class="ecg-tile-title">ECG '+String(i+1).padStart(2,"0")+(done?" ✓":"")+'</span></button>'}).join("");
- document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{const chosen=+b.dataset.slot;if(!admin()&&isEcgCompleted(chosen+1)){alert("You have already completed ECG "+String(chosen+1).padStart(2,"0")+" with 100% accuracy. Please proceed to the next ECG.");return;}if(!admin()&&!unlockedEcg.includes(chosen+1)){alert("Complete ECG "+String(chosen).padStart(2,"0")+" with all answers correct to unlock this ECG.");return;}slot=chosen;document.getElementById("ecgCaseStage").hidden=false;if(!(ecgAttemptOpened&&started))restart();render();build();document.getElementById("ecgCaseStage").scrollIntoView({behavior:"smooth",block:"start"})})
+ document.querySelectorAll("[data-slot]").forEach(b=>b.onclick=()=>{const chosen=+b.dataset.slot;if(!admin()&&isEcgCompleted(chosen+1)){alert("You have already completed ECG "+String(chosen+1).padStart(2,"0")+" with 100% accuracy. Please proceed to the next ECG.");return;}if(!admin()&&!unlockedEcg.includes(chosen+1)){alert("Complete ECG "+String(chosen).padStart(2,"0")+" with all answers correct to unlock this ECG.");return;}slot=chosen;document.getElementById("ecgCaseStage").hidden=false;if(!(ecgAttemptOpened&&started))restart();render();build();(admin()&&document.getElementById("ecgAdminOverlay")&&!document.getElementById("ecgAdminOverlay").hidden?document.getElementById("ecgCaseKeyTools"):document.getElementById("ecgCaseStage")).scrollIntoView({behavior:"smooth",block:"start"})})
 }
 function updateLiveComment(){
  const target=document.getElementById("ecgLiveComment");if(!target)return;
@@ -521,4 +522,15 @@ if(ecgReadyBegin)ecgReadyBegin.addEventListener("click",()=>{
  document.addEventListener("touchmove",e=>{if(!tracking)return;pull=Math.max(0,(e.touches[0]?.clientY||0)-startY);if(pull>25){indicator.classList.add("visible");indicator.textContent=pull>=95?"↻ Release to refresh":"↓ Pull to refresh";}else indicator.classList.remove("visible");},{passive:true});
  document.addEventListener("touchend",()=>{if(tracking&&pull>=95&&scrollTop()<3){indicator.textContent="↻ Refreshing…";window.location.reload();}else indicator.classList.remove("visible");tracking=false;pull=0;},{passive:true});
  document.addEventListener("touchcancel",()=>{tracking=false;pull=0;indicator.classList.remove("visible");},{passive:true});
+})();
+
+/* Separate shared question authoring from ECG-specific answer keys. */
+(function initGeneralEcgEditor(){
+ const general=document.getElementById("ecgGeneralTab"),answersTab=document.getElementById("ecgAnswersTab"),casePane=document.getElementById("ecgCaseAnswersPane"),questionTools=document.getElementById("ecgGeneralQuestionTools"),keyTools=document.getElementById("ecgCaseKeyTools"),builder=document.getElementById("builder");
+ if(!general||!answersTab||!casePane||!questionTools||!keyTools)return;
+ function switchEditor(which){const isGeneral=which==="general";general.classList.toggle("active",isGeneral);general.classList.toggle("secondary",!isGeneral);answersTab.classList.toggle("active",!isGeneral);answersTab.classList.toggle("secondary",isGeneral);general.setAttribute("aria-selected",String(isGeneral));answersTab.setAttribute("aria-selected",String(!isGeneral));casePane.hidden=isGeneral;questionTools.hidden=!isGeneral;keyTools.hidden=isGeneral;document.getElementById("ecgGeneralDescription").hidden=!isGeneral;document.getElementById("ecgBuilderHeading").textContent=isGeneral?"General ECG Question Editor":"Answer Keys for ECG "+String(slot+1).padStart(2,"0");builder.hidden=!admin();}
+ general.addEventListener("click",()=>switchEditor("general"));answersTab.addEventListener("click",()=>switchEditor("answers"));
+ document.getElementById("slots")?.addEventListener("click",e=>{if(e.target.closest("[data-slot]")){switchEditor("answers");const title=document.getElementById("ecgKeyHeading");if(title)title.textContent="Correct answers · ECG "+String(slot+1).padStart(2,"0");}},false);
+ document.getElementById("ecgAdminOpen")?.addEventListener("click",()=>switchEditor("general"));
+ switchEditor("general");
 })();
