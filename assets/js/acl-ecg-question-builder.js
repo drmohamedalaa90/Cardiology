@@ -184,7 +184,7 @@ function render(){
   const members=qs.filter(x=>groupKey(x)===g),answered=members.filter(x=>stepTiming[x.id]);
   const anyWrong=answered.some(x=>stepTiming[x.id].correct===false);
   const complete=answered.length===members.length;
-  const state=complete?(anyWrong?"ecg-progress-wrong":"done"):g===currentGroup?"now":answered.length?(anyWrong?"ecg-progress-wrong":"now"):"";
+  const state=anyWrong?"ecg-progress-wrong":complete?"done":g===currentGroup?"now":answered.length?"now":"";
   return '<i class="'+state+'" title="Step '+esc(g)+' ('+answered.length+'/'+members.length+' answered)"></i>';
  }).join("");
  if(q.multi&&q.type!=="number"){
