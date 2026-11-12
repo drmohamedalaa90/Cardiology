@@ -327,8 +327,19 @@
 .ecg-missed-no-details,.ecg-missed-note{background:#fff4db;border-radius:10px;padding:12px;color:#825b15;line-height:1.5}
 .ecg-missed-done{margin-top:9px}
 @media(max-width:520px){#ecgMissedReviewOverlay .ecg-missed-modal{padding:16px}.ecg-missed-comparison{grid-template-columns:1fr}}
+
+#ecgPasscodeForm[hidden]{display:none!important}
+#ecgAccessGate:has(#ecgPasscodeForm:not([hidden])){background:linear-gradient(145deg,#f3fbff,#fff);border:1px solid #b7d9ec;border-radius:24px;box-shadow:0 15px 45px #0c497021}
+#ecgPasscodeForm{width:min(100%,410px);margin:20px auto 0;text-align:left}
+#ecgPasscodeForm label{display:block;margin-bottom:10px;color:#164667;font-weight:850}
+.ecg-passcode-controls{display:flex;gap:10px;align-items:stretch}
+#ecgPasscodeInput{flex:1;min-width:0;text-align:center;letter-spacing:.5em;font-size:24px;line-height:1.2;font-weight:850;padding:13px;border:2px solid #a8cadf;border-radius:13px;background:white;color:#173f61}
+#ecgPasscodeInput:focus{border-color:#087cb7;outline:3px solid #d6eefd}
+.ecg-passcode-controls .btn{flex:none;border-radius:13px;font-size:14px}
+.ecg-passcode-error{font-size:13px;color:#b42a43;min-height:18px;margin:9px 0 0}
+@media(max-width:420px){.ecg-passcode-controls{flex-direction:column}.ecg-passcode-controls .btn{width:100%}}
 </style></head>
-<body><div id="aclPullRefresh" role="status" aria-live="polite">↓ Pull to refresh</div><section id="ecgAccessGate" class="panel" role="status" aria-live="polite"><h2 id="ecgAccessTitle">Checking ECG Lab access…</h2><p id="ecgAccessMessage" class="access-message">Verifying your ACL membership and administrator access settings.</p><a id="ecgBackCourse" class="btn secondary" style="display:inline-block;text-decoration:none;margin-top:8px" href="basic-special-course.html">← Return to Quiz Room</a></section><main id="ecgLabMain" hidden><a id="ecgLegacyBack" class="btn secondary" href="basic-special-course.html" style="display:inline-block;text-decoration:none;margin-bottom:16px">← Back to Quiz Room</a>
+<body><div id="aclPullRefresh" role="status" aria-live="polite">↓ Pull to refresh</div><section id="ecgAccessGate" class="panel" role="status" aria-live="polite"><h2 id="ecgAccessTitle">Checking ECG Lab access…</h2><p id="ecgAccessMessage" class="access-message">Verifying your ACL membership and administrator access settings.</p><form id="ecgPasscodeForm" class="ecg-passcode-form" hidden><label for="ecgPasscodeInput">Enter the ECG Lab passcode</label><div class="ecg-passcode-controls"><input id="ecgPasscodeInput" type="password" inputmode="numeric" autocomplete="off" maxlength="4" pattern="[0-9]{4}" placeholder="••••" required aria-describedby="ecgPasscodeError"><button class="btn" type="submit">Unlock Lab <span aria-hidden="true">→</span></button></div><p id="ecgPasscodeError" class="ecg-passcode-error" role="alert" aria-live="polite"></p></form><a id="ecgBackCourse" class="btn secondary" style="display:inline-block;text-decoration:none;margin-top:8px" href="basic-special-course.html">← Return to Quiz Room</a></section><main id="ecgLabMain" hidden><a id="ecgLegacyBack" class="btn secondary" href="basic-special-course.html" style="display:inline-block;text-decoration:none;margin-bottom:16px">← Back to Quiz Room</a>
 <div class="top"><div><h1 class="ecg-premium-title"><span class="ecg-title-pulse" aria-hidden="true">♥</span><a class="ecg-title-home" href="acl-ecg-interpretation.html" aria-label="Return to ECG Interpretation Lab homepage" title="Return to ECG Lab homepage">ECG <em>Interpretation</em> Lab</a></h1><div class="ecg-admin-mini-wrap" id="ecgAdminMiniWrap" hidden><button type="button" id="ecgAdminMini" class="ecg-admin-mini" aria-label="ECG Lab admin tools" aria-expanded="false" aria-controls="ecgAdminMiniMenu" title="ECG Lab admin tools">⚙️</button><div class="ecg-admin-mini-menu" id="ecgAdminMiniMenu" hidden><button type="button" id="ecgAdminMiniQuestions">✎ General Questions</button><button type="button" id="ecgAdminMiniImages">🫀 ECG Images &amp; Correct Answers</button></div></div><button type="button" id="ecgAdminResultsStandalone" class="ecg-admin-results-standalone" title="Member results and attempt settings" aria-label="Member results and attempt settings" hidden>👥 <span>Members</span></button></div><div class="tabs"><button class="btn active ecg-mode-practice" id="practice" type="button" disabled aria-disabled="true" title="Practice Mode is active">✦ Practice Mode</button><button class="btn secondary ecg-mode-soon" id="test" type="button" disabled aria-disabled="true" title="Test Mode will be available soon">♛ Test Mode <small>Coming soon</small></button></div></div>
 <section class="ecg-intro ecg-photo-hero" id="ecgIntro" hidden><div class="ecg-intro-copy"><h2>ECG Interpretation Lab</h2></div><button class="ecg-doctor-photo-button" id="ecgStart" type="button" aria-label="Open the next unlocked ECG"><img src="https://pub-d3558230972a47369859250efa93e757.r2.dev/Ecg/download.jpg" alt="Realistic cardiologist in a white coat holding an ECG recording" loading="eager"></button><p class="ecg-start-prompt">Start your first ECG commentary now!</p></section>
 <div class="ecg-admin-launch" id="ecgAdminLaunch" hidden aria-hidden="true"><button type="button" class="btn secondary" id="ecgQuestionsOpen" tabindex="-1">✎ General Questions</button><button type="button" class="btn secondary" id="ecgAdminOpen" tabindex="-1">🫀 ECG Images &amp; Correct Answers</button></div><div id="ecgAdminOverlay" class="ecg-admin-overlay" hidden><div class="ecg-admin-dialog" role="dialog" aria-modal="true" aria-labelledby="ecgAdminHeading"><header class="ecg-admin-head"><h2 id="ecgAdminHeading">ECG Editor &amp; Image Management</h2><button type="button" class="btn secondary" id="ecgAdminClose">✕ Close</button></header><button type="button" class="btn secondary" id="ecgTrialResetAll" style="border:1px solid #d99754;color:#8b3b16;margin-bottom:12px">↻ Reset trial reports on this device</button><p id="ecgTrialResetStatus" class="small muted" aria-live="polite"></p><div id="ecgCaseAnswersPane"><section class="panel" id="ecgSelector"><div class="top"><strong id="ecgSelectorTitle">ECG recordings · Select ECG 01–10</strong></div><div id="slots" class="tabs ecg-cases" style="margin-top:12px"></div><div id="ecgCaseStage" class="ecg-case-stage" hidden><p class="small muted">Upload a de-identified ECG image (no patient names, dates of birth, or IDs).</p><input type="file" accept="image/*" id="upload"><p id="ecgImageSaveStatus" class="small muted" role="status" aria-live="polite">ECG images save automatically to Neon after upload.</p><button class="btn secondary" id="reset" style="margin-left:8px">Restart this ECG</button><div class="ecg" id="imageArea"><span class="muted">Upload an ECG image to begin.</span></div></div></section>
@@ -358,11 +369,25 @@
    A future server-side assessment must enforce the same lock on API requests. */
 const queryCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";
 const gate=document.getElementById("ecgAccessGate"),main=document.getElementById("ecgLabMain");
+const passForm=document.getElementById("ecgPasscodeForm"),passInput=document.getElementById("ecgPasscodeInput"),passError=document.getElementById("ecgPasscodeError");
+const passKey="acl-ecg-passcode-ok-v1:"+queryCourse;
+function showLabAfterPasscode(){
+ sessionStorage.setItem(passKey,"yes");
+ passForm.hidden=true;passError.textContent="";passInput.value="";
+ gate.hidden=true;main.hidden=false;window.dispatchEvent(new Event("acl-ecg-access-ready"));
+}
+passForm.addEventListener("submit",event=>{
+ event.preventDefault();
+ if(passInput.value==="1234"){showLabAfterPasscode();return}
+ passError.textContent="Incorrect passcode. Please try again.";
+ passInput.value="";passInput.focus();
+});
 document.getElementById("ecgBackCourse").href="basic-special-course.html?course="+encodeURIComponent(queryCourse);
 document.getElementById("ecgLegacyBack").href=document.getElementById("ecgBackCourse").href;
 async function verifyLabAccess(){
   main.hidden=true;
   gate.hidden=false;
+  passForm.hidden=true;
   const title=document.getElementById("ecgAccessTitle"),msg=document.getElementById("ecgAccessMessage");
   title.textContent="Checking ECG Lab access…";
   msg.textContent="Verifying your ACL membership and administrator access settings.";
@@ -391,7 +416,12 @@ async function verifyLabAccess(){
       msg.textContent="The Academic Director has temporarily closed this activity. Quiz Arena remains independently controlled.";
       return;
     }
-    window.aclEcgIsAdmin=result.admin===true;gate.hidden=true;main.hidden=false;window.dispatchEvent(new Event("acl-ecg-access-ready"));
+    window.aclEcgIsAdmin=result.admin===true;
+    if(sessionStorage.getItem(passKey)==="yes"){gate.hidden=true;main.hidden=false;passForm.hidden=true;window.dispatchEvent(new Event("acl-ecg-access-ready"));return}
+    title.textContent="🔐 ECG Interpretation Lab";
+    msg.textContent="Enter the 4-digit passcode to continue.";
+    passForm.hidden=false;passError.textContent="";
+    passInput.focus({preventScroll:true});
   }catch(e){
     title.textContent="ECG Lab is unavailable";
     msg.textContent=e.message+" The lab is closed until access can be verified.";
