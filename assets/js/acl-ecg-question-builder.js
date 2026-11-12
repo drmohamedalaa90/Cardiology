@@ -127,7 +127,7 @@ function updateLiveComment(){
 function ensureEcgCommentStyles(){
  if(document.getElementById("ecgCommentStatusStyles"))return;
  const style=document.createElement("style");style.id="ecgCommentStatusStyles";
- style.textContent="#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect{background:#fff0f1!important;border-left:4px solid #cf2449!important;color:#9d1734!important;padding-left:10px;border-radius:7px}#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect .ecg-comment-index{color:#bb1c40!important}#ecgLiveComment .ecg-comment-line.ecg-comment-correct{border-left:4px solid #138650!important;padding-left:10px;border-radius:7px}#stepTitle{display:none!important}#stepLabel.ecg-step-with-title{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;max-width:100%;white-space:normal}#stepLabel .ecg-step-name{font-size:.72em;font-weight:650;opacity:.98}";
+ style.textContent="#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect{background:#fff0f1!important;border-left:4px solid #cf2449!important;color:#9d1734!important;padding-left:10px;border-radius:7px}#ecgLiveComment .ecg-comment-line.ecg-comment-incorrect .ecg-comment-index{color:#bb1c40!important}#ecgLiveComment .ecg-comment-line.ecg-comment-correct{border-left:4px solid #138650!important;padding-left:10px;border-radius:7px}#stepTitle{display:none!important}#stepLabel.ecg-step-with-title{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap;max-width:100%;white-space:normal}#stepLabel .ecg-step-name{font-size:1em;font-weight:750;opacity:1}";
  document.head.appendChild(style);
 }
 // Candidate-controlled ECG reference: sticky above the question or available on demand.
