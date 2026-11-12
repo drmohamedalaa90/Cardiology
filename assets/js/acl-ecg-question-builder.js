@@ -978,10 +978,12 @@ async function finish(){
  try{const history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]");history.unshift(report);localStorage.setItem("acl-ecg-step-reports-v1",JSON.stringify(history.slice(0,200)));}catch(e){console.warn("Could not persist local ECG report",e)}
  $("summary").textContent="ECG "+(slot+1)+" · "+mode.toUpperCase()+" · "+Math.floor(duration/60)+"m "+duration%60+"s";
  $("result").textContent="Saving your complete ECG interpretation securely…";renderAttemptReport(report);showEcgCompletionHero(report,false);
+ requestAnimationFrame(()=>requestAnimationFrame(()=>$("ecgCompletionBanner")?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"})));
  try{
   const saved=await attemptRequest("POST",{action:"submit_attempt",case_number:slot+1,mode,answers,duration_seconds:duration,mistakes:wrongCount,step_details:report.steps,commentary:report.commentary});
   const passed=wrongCount===0&&saved.passed;
   showEcgCompletionHero(report,passed);
+  requestAnimationFrame(()=>$("ecgCompletionBanner")?.scrollIntoView({behavior:"smooth",block:"start"}));
   if(passed&&saved.unlocked_next&&!unlockedEcg.includes(saved.unlocked_next))unlockedEcg.push(saved.unlocked_next);
   attemptHistory.unshift({case_number:slot+1,score:saved.score,total:saved.total});
   slots();
@@ -1016,6 +1018,7 @@ function showEcgCompletionHero(report,passed){
  const again=$("again");if(again){again.hidden=!!passed&&!admin();again.textContent=passed&&admin()?"↻ Try this ECG again (admin)":"↻ Restart interpretation"}
  if(!document.getElementById("ecgCompletionCSS")){const css=document.createElement("style");css.id="ecgCompletionCSS";css.textContent=`
  #ecgCompletionBanner{position:relative;overflow:hidden;background:linear-gradient(125deg,#063957,#076ca8);border-radius:19px;color:white;padding:24px;margin-bottom:14px;box-shadow:0 12px 25px #0a4a7524}
+ #ecgCompletionBanner{scroll-margin-top:90px}
  #ecgCompletionBanner{position:relative;overflow:hidden;background:linear-gradient(125deg,#083956,#087a9d 55%,#095078)}\n #complete.ecg-completion-passed #ecgCompletionBanner{background:linear-gradient(125deg,#064a48,#078363 60%,#0b5876)}\n .ecg-completion-art{font-size:clamp(32px,6vw,54px);letter-spacing:8px;animation:ecg-celebrate 1.6s ease-in-out infinite alternate}\n @keyframes ecg-celebrate{from{transform:translateY(0) scale(1)}to{transform:translateY(-5px) scale(1.04)}}\n .ecg-completion-meter{height:12px;border-radius:99px;background:#ffffff40;overflow:hidden;margin-top:18px}.ecg-completion-meter span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7cebc5,#fff2a3);transition:width .5s ease}\n @media(prefers-reduced-motion:reduce){.ecg-completion-art{animation:none}}\n #ecgCompletionBanner .ecg-hero-glow{position:absolute;right:-60px;top:-90px;width:250px;height:250px;border-radius:50%;background:#ffffff13;pointer-events:none}
  #ecgCompletionBanner .ecg-hero-graphic{font-size:56px;animation:ecgHeroPop .65s ease-out;filter:drop-shadow(0 6px 10px #001e3255)}
  #ecgCompletionBanner .ecg-completion-meter{height:12px;border-radius:30px;background:#ffffff35;overflow:hidden;margin-top:20px}
@@ -1154,12 +1157,48 @@ function renderAttemptReport(report){
  "4b":a=>a==="Yes"?"P-wave morphology is normal.":"P-wave morphology is abnormal."
  };
  const interpretation=(s)=>{const a=String(s.answer??"");if(s.id&&commentaryById[s.id])return commentaryById[s.id](a);const key=String(s.number??"");if(commentaryById[key])return commentaryById[key](a);return s.title+": "+a+(a&&!/[.!?]$/.test(a)?".":"")};
- const lines=report.steps.map((s,i)=>'<tr class="'+(s.correct?'':'ecg-step-wrong')+'"><td><strong>Step '+esc(s.number)+'</strong><small>'+esc(s.title)+'</small></td><td>'+esc(interpretation(s))+'</td><td><span class="'+(s.correct?'ecg-step-ok':'ecg-step-no')+'">'+(s.correct?'✓ Correct':'✕ Incorrect')+'</span><small>⏱ '+fmtDuration(s.seconds)+'</small></td></tr>').join("");
- if(!document.getElementById("ecgStepCommentStyle")){
-  const style=document.createElement("style");style.id="ecgStepCommentStyle";style.textContent='.ecg-comment-table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}.ecg-comment-table th{text-align:left;color:#45657e;font-size:13px;padding:8px}.ecg-comment-table td{padding:13px 10px;background:#f2f8fc;border-top:1px solid #dbe8f1;border-bottom:1px solid #dbe8f1;vertical-align:top;overflow-wrap:anywhere}.ecg-comment-table td:first-child{width:25%;border-left:4px solid #0879b9;border-radius:12px 0 0 12px}.ecg-comment-table td:nth-child(2){width:53%;line-height:1.5}.ecg-comment-table td:last-child{width:22%;border-right:1px solid #dbe8f1;border-radius:0 12px 12px 0}.ecg-comment-table small{display:block;color:#5c7587;font-size:12px;margin-top:5px}.ecg-step-ok{color:#087448;font-weight:750}.ecg-step-no{color:#bd2045;font-weight:750}.ecg-comment-table .ecg-step-wrong td{background:#fff0f2;border-color:#f1c9d1}.ecg-comment-table .ecg-step-wrong td:first-child{border-left-color:#c01c42}@media(max-width:540px){.ecg-comment-table th,.ecg-comment-table td{padding:9px 6px;font-size:12px}.ecg-comment-table td:nth-child(2){font-size:13px}.ecg-comment-table small{font-size:11px}}';
+
+ const byStep=new Map();
+ for(const q of (report.steps||[])){
+  const n=Number(String(q.number??"").match(/^\d+/)?.[0]);
+  if(!Number.isInteger(n)||n<1||n>99)continue;
+  if(!byStep.has(n))byStep.set(n,[]);
+  byStep.get(n).push(q);
+ }
+ const comments=new Map();
+ for(const raw of (report.commentary||[])){
+  const parsed=parseEcgStoredComment(raw);
+  if(Number.isInteger(parsed.step)&&parsed.text)comments.set(parsed.step,parsed.text);
+ }
+ const stepNames={1:"Calibration & recording",2:"Rhythm & heart rate",3:"Electrical axis",4:"P waves",5:"PR interval",6:"QRS complex",7:"T waves",8:"PR / ST segments",9:"QT interval"};
+ const stepCards=[...byStep.entries()].sort(([a],[b])=>a-b).map(([n,items])=>{
+  const correctCount=items.filter(x=>x.correct===true).length,bad=items.length-correctCount;
+  const summary=comments.get(n)||"Completed step "+n;
+  const secs=items.reduce((sum,x)=>sum+Math.max(0,Number(x.seconds)||0),0);
+  const breakdown=items.map(x=>'<div class="ecg-breakdown-question"><span>'+esc(x.title||x.number||"Assessment")+'</span><span class="'+(x.correct?"ok":"no")+'">'+(x.correct?"✓ Correct":"✕ Incorrect")+'</span></div>').join("");
+  return '<article class="ecg-result-step '+(bad?"ecg-result-wrong":"ecg-result-right")+'"><div class="ecg-result-step-number">'+String(n).padStart(2,"0")+'</div><div class="ecg-result-step-body"><div class="ecg-result-step-heading"><strong>'+esc(stepNames[n]||"ECG assessment")+'</strong><span class="ecg-result-pill '+(bad?"no":"ok")+'">'+(bad?"✕ "+bad+" incorrect":"✓ Perfect")+'</span></div><p>'+esc(summary)+'</p><details class="ecg-result-breakdown" '+(bad?"open":"")+'><summary>'+items.length+' question'+(items.length===1?"":"s")+' · '+correctCount+' correct · ⏱ '+fmtDuration(secs)+'</summary>'+breakdown+'</details></div></article>';
+ }).join("");
+ if(!document.getElementById("ecgResultCardsCSS")){
+  const style=document.createElement("style");style.id="ecgResultCardsCSS";style.textContent=
+   '#ecgAttemptReport{overflow:visible!important;scroll-margin-top:90px}'+
+   '#ecgAttemptReport>h3{font-size:clamp(22px,3vw,30px);color:#133d62;margin:14px 0 6px}'+
+   '.ecg-result-grid{display:grid;gap:9px;margin:16px 0 20px}'+
+   '.ecg-result-step{display:flex;gap:12px;align-items:start;border:1px solid #d5e5ef;border-left:5px solid #12a476;border-radius:15px;background:linear-gradient(100deg,#f0fcf8,#fff);padding:12px 14px;box-shadow:0 3px 14px #153e5c0c}'+
+   '.ecg-result-step.ecg-result-wrong{border-left-color:#ee5370;background:linear-gradient(100deg,#fff3f6,#fff)}'+
+   '.ecg-result-step-number{background:linear-gradient(145deg,#1269b0,#159ed1);color:white;border-radius:11px;flex:0 0 43px;width:43px;height:42px;display:grid;place-items:center;font-size:18px;font-weight:900}'+
+   '.ecg-result-step-body{flex:1;min-width:0}'+
+   '.ecg-result-step-heading{display:flex;align-items:center;justify-content:space-between;gap:7px;flex-wrap:wrap;color:#124566;font-size:16px}'+
+   '.ecg-result-pill{border-radius:100px;padding:5px 9px;font-size:11px;font-weight:800;white-space:nowrap}'+
+   '.ecg-result-pill.ok{background:#d9f8e8;color:#067d4a}.ecg-result-pill.no{background:#ffe1e8;color:#b12646}'+
+   '.ecg-result-step p{margin:7px 0 5px;color:#23475d;font-size:14px;line-height:1.55;overflow-wrap:break-word}'+
+   '.ecg-result-breakdown{font-size:12px;color:#648097}'+
+   '.ecg-result-breakdown summary{cursor:pointer;font-weight:650;width:fit-content;padding:4px 0}'+
+   '.ecg-breakdown-question{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #dbe7ef;padding:6px 0;color:#294d65}'+
+   '.ecg-breakdown-question span:last-child{flex:none;font-weight:800}.ecg-breakdown-question .ok{color:#0b8755}.ecg-breakdown-question .no{color:#b42543}'+
+   '@media(max-width:540px){.ecg-result-step{padding:10px;gap:9px}.ecg-result-step-number{flex-basis:36px;width:36px;height:36px;font-size:15px}.ecg-result-step-heading{font-size:14px}.ecg-result-step p{font-size:13px}}';
   document.head.appendChild(style);
  }
- panel.innerHTML='<h3>Step-by-step ECG interpretation</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><table class="ecg-comment-table"><thead><tr><th>Step</th><th>Your ECG comment</th><th>Result / Time</th></tr></thead><tbody>'+lines+'</tbody></table>';
+ panel.innerHTML='<h3>⚡ Your ECG interpretation breakdown</h3><p class="ecg-result-subtitle">ECG '+String(report.case_number).padStart(2,"0")+' · ⏱ '+fmtDuration(report.duration_seconds)+' · '+report.score+'/'+report.total+' correct</p><div class="ecg-result-grid">'+stepCards+'</div>';
 
  const shareActions=document.createElement("div");shareActions.className="ecg-report-actions";
  shareActions.innerHTML='<div class="ecg-signing-panel"><label for="ecgCandidateSignature">✒️ Sign your ECG interpretation (English name)</label><input id="ecgCandidateSignature" type="text" maxlength="70" autocomplete="name" placeholder="Your name in English" aria-describedby="ecgSignatureHelp"><small id="ecgSignatureHelp">Your name will appear as a handwritten-style signature on the exported image.</small></div><button type="button" class="btn" id="ecgExportResult">📷 Export signed ECG report</button>';
