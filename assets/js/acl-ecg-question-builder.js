@@ -526,19 +526,46 @@ function renderPreviousEcgResults(){
  area.hidden=!completed.length;if(!completed.length){area.innerHTML="";return}
  area.innerHTML='<h3 class="ecg-history-heading">🏆 Your previous ECG results</h3><p class="ecg-history-sub">Review your completed ECGs and interpretations.</p>'+completed.map(r=>{
  const n=Number(r.case_number),img=images[n-1];
- const lines=(r.commentary||[]).map((comment,i)=>{
-  const raw=String(comment||"");
-  const match=raw.match(/^\s*(?:Step\s+)?(\d+[a-z]?)\s*(?:\s+|[.)-]\s*)/i);
-  const number=match&&/^(?:1[a-c]|2[a-b]|3|4[a-b]|5(?:[a-z])?|\d+[a-z]?)$/i.test(match[1])?match[1]:null;
-  const fallback=['1a','1b','1c','2a','2b','3','4a','4b','5','5'][i]||String(i+1);
-  const stepNumber=number||fallback;
-  const step=(r.steps||[]).find(s=>String(s.number)===stepNumber)||(r.steps||[])[i];
-  const cleaned=raw.replace(/^\s*(?:Step\s+\d+[a-z]?\s*)?(?:\d{2}(?=[A-Za-z])|\d{2}\s+(?=[A-Za-z]))/i,'').replace(/^\s*Step\s+\d+[a-z]?\s*/i,'').trim();
-  return '<div class="ecg-history-comment-row"><span><strong class="ecg-history-step-label">Step '+esc(stepNumber)+'</strong> '+esc(cleaned)+'</span><b class="'+(step?.correct===false?'ecg-history-wrong':'')+'">'+(step?.correct===false?'✕ Incorrect':'✓ Correct')+'</b><time>⏱ '+fmtDuration(step?.seconds||0)+'</time></div>'
+
+ // Group the saved commentary by its actual Step number, never by its array index.
+ // Old attempts sometimes wrote "Step 1Electrodes..." without any separating space.
+ const historyGroups=new Map(),historyExtras=[];
+ const stepNumberFromValue=v=>{const m=String(v??"").match(/^\s*(\d+)/);return m?Number(m[1]):null};
+ for(const detail of (r.steps||[])){
+  const n=stepNumberFromValue(detail.number);
+  if(!Number.isInteger(n)||n<1||n>99)continue;
+  if(!historyGroups.has(n))historyGroups.set(n,{texts:[],steps:[]});
+  historyGroups.get(n).steps.push(detail);
+ }
+ for(const original of (r.commentary||[])){
+  const raw=String(original??"").trim();
+  if(!raw)continue;
+  // Parse "Step 1", "Step 1a" and legacy "Step 1Electrodes" correctly.
+  const match=raw.match(/^(?:[✓✔✕✗]\s*)?Step\s*(\d{1,2})(?:[a-z])?(?=\s|[A-Z]|[.,:;!?-]|$)/);
+  if(!match){historyExtras.push(raw);continue}
+  const n=Number(match[1]);
+  if(!historyGroups.has(n))historyGroups.set(n,{texts:[],steps:[]});
+  let comment=raw.slice(match[0].length).trim().replace(/^[\s:.)–—-]+/,"");
+  // No clinical information is removed; only a missing label separator is fixed.
+  comment=comment.replace(/\s+([,.;!?])/g,"$1").replace(/,\s*,+/g,", ").replace(/\s{2,}/g," ");
+  if(comment)historyGroups.get(n).texts.push(comment);
+ }
+ const allNumbers=[...historyGroups.keys()].sort((a,b)=>a-b);
+ const maxNumber=allNumbers.length?allNumbers[allNumbers.length-1]:0;
+ const displayNumbers=(maxNumber>=1&&maxNumber<=20)?Array.from({length:maxNumber},(_,i)=>i+1):allNumbers;
+ const lines=historyExtras.map(extra=>'<div class="ecg-history-comment-row ecg-history-special"><span>'+esc(extra)+'</span><b></b><time></time></div>').join("")+displayNumbers.map(n=>{
+  const group=historyGroups.get(n);
+  if(!group)return '<div class="ecg-history-comment-row ecg-history-missing"><span><strong class="ecg-history-step-label">Step '+n+':</strong><span class="ecg-history-comment-text">Not recorded in this attempt.</span></span><b>—</b><time>—</time></div>';
+  const bad=group.steps.some(x=>x.correct===false),hasGrading=group.steps.length>0;
+  const elapsed=group.steps.reduce((sum,x)=>sum+Math.max(0,Number(x.seconds)||0),0);
+  const comment=group.texts.join(" ").trim()||"No commentary recorded for this step.";
+  const result=!hasGrading?"—":bad?"✕ Incorrect":"✓ Correct";
+  return '<div class="ecg-history-comment-row"><span class="ecg-history-comment-main"><strong class="ecg-history-step-label">Step '+n+':</strong><span class="ecg-history-comment-text">'+esc(comment)+'</span></span><b class="'+(bad?'ecg-history-wrong':'')+'">'+result+'</b><time>'+ (hasGrading?'⏱ '+fmtDuration(elapsed):'—')+'</time></div>';
  }).join("");
+
  return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 You interpreted this ECG with 100% accuracy</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small></div></div><details><summary>View full ECG, commentary and detailed timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
  }).join("");
- if(!document.getElementById("ecgHistoryCommentCSS")){const css=document.createElement("style");css.id="ecgHistoryCommentCSS";css.textContent='.ecg-history-comment-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 80px;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid #e1eaf2;color:#183e5a}.ecg-history-comment-row b{color:#087b49;font-size:13px}.ecg-history-comment-row b.ecg-history-wrong{color:#c52649}.ecg-history-comment-row time{font-size:13px;color:#45647d}@media(max-width:540px){.ecg-history-comment-row{grid-template-columns:1fr auto}.ecg-history-comment-row time{grid-column:2}}';document.head.append(css)}
+ if(!document.getElementById("ecgHistoryCommentCSS")){const css=document.createElement("style");css.id="ecgHistoryCommentCSS";css.textContent='.ecg-history-comment-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 80px;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid #e1eaf2;color:#183e5a;line-height:1.55}.ecg-history-comment-main{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;min-width:0}.ecg-history-step-label{display:inline-block;white-space:nowrap;color:#0d5985;font-weight:800;flex:none}.ecg-history-comment-text{min-width:0;overflow-wrap:break-word;word-break:normal}.ecg-history-comment-row b{color:#087b49;font-size:13px}.ecg-history-comment-row b.ecg-history-wrong{color:#c52649}.ecg-history-comment-row time{font-size:13px;color:#45647d}.ecg-history-missing{background:#fff9eb;color:#896c40}.ecg-history-special{color:#ad3e52;font-weight:700}@media(max-width:540px){.ecg-history-comment-row{grid-template-columns:minmax(0,1fr) auto;padding:12px 9px;gap:7px}.ecg-history-comment-row time{grid-column:2;justify-self:end}}';document.head.append(css)}
 }
 
 function slots(){
