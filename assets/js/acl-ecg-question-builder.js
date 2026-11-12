@@ -195,54 +195,89 @@ if(ecgReadyOverlay)ecgReadyOverlay.addEventListener("click",e=>{if(e.target===ec
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ecgReadyOverlay&&!ecgReadyOverlay.hidden){e.stopPropagation();closeReadyPreview()}});
 // Ask for the preferred viewing layout before exposing the ECG or starting the clock.
 let ecgModeChoiceOverlay=null;
-function showEcgModeChoice(){
- if(!ecgModeChoiceOverlay){
-  ecgModeChoiceOverlay=document.createElement("div");
-  ecgModeChoiceOverlay.id="ecgModeChoiceOverlay";
-  ecgModeChoiceOverlay.setAttribute("role","dialog");
-  ecgModeChoiceOverlay.setAttribute("aria-modal","true");
-  ecgModeChoiceOverlay.setAttribute("aria-label","Choose ECG viewing mode");
-  ecgModeChoiceOverlay.innerHTML='<div class="ecg-mode-choice-card"><div class="ecg-mode-ready-badge">🫀 Preparing your ECG Lab <span>✓ Recording ready</span></div><h2>How would you like to view your ECG?</h2><p>Choose your preferred layout before beginning. This choice is locked for the entire attempt.</p><button type="button" data-ecg-mode="fixed"><strong>📌 Fixed ECG</strong><span>Keep the ECG visible above the questions while scrolling.</span></button><button type="button" data-ecg-mode="demand"><strong>👁 View on demand</strong><span>Open the ECG only when you need it.</span></button></div>';
-  const style=document.createElement("style");
-  style.textContent='.ecg-mode-ready-badge{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:14px;background:linear-gradient(110deg,#0b4d80,#0c8bb6);color:white;font-size:15px;font-weight:850;margin-bottom:17px}.ecg-mode-ready-badge span{font-size:12px;background:#d9fbea;color:#12613f;border-radius:99px;padding:6px 9px}#ecgReferenceModeLabel{font-size:13px;color:#45677e;font-weight:700}#ecgModeChoiceOverlay[hidden]{display:none!important}#ecgModeChoiceOverlay{position:fixed;inset:0;z-index:99999;background:#09253dc9;display:grid;place-items:center;padding:18px}.ecg-mode-choice-card{width:min(100%,520px);background:#fff;border-radius:24px;padding:clamp(20px,5vw,34px);box-shadow:0 25px 75px #0005;color:#103554}.ecg-mode-choice-card h2{font-size:clamp(21px,4vw,28px);margin:0 0 12px}.ecg-mode-choice-card p{line-height:1.5;color:#527089}.ecg-mode-choice-card button{display:flex;flex-direction:column;text-align:left;gap:7px;width:100%;margin-top:13px;padding:18px;border:2px solid #c8dfef;border-radius:16px;background:#f5fbff;color:#103554;cursor:pointer;font-size:16px}.ecg-mode-choice-card button:hover,.ecg-mode-choice-card button:focus-visible{border-color:#0784ca;background:#e4f5ff}.ecg-mode-choice-card button span{font-size:14px;color:#526c80}';
-  document.head.appendChild(style);document.body.appendChild(ecgModeChoiceOverlay);
-  ecgModeChoiceOverlay.querySelectorAll("[data-ecg-mode]").forEach(button=>button.addEventListener("click",()=>{
-   ecgReferenceMode=button.dataset.ecgMode;
-   try{localStorage.setItem("acl-ecg-reference-mode",ecgReferenceMode)}catch(e){}
-   ecgModeChoiceOverlay.hidden=true;
-   ecgReadyOverlay.hidden=false;
-   document.body.style.overflow="hidden";
-   start();ecgReadyBegin.focus();
+// Choose the layout immediately, while the ECG is loading. Do not expose the recording
+// or start the timer until both the choice and the image are ready.
+let ecgLaunchPending=false;
+let ecgLayoutChoice=null;
+let ecgRecordingReady=false;
+let ecgLaunchError=null;
+let ecgLaunchSequence=0;
+function nextEcgNumber(){return nextAvailableEcg()}
+function ecgPreparingUI(){
+ const preparing=document.getElementById("ecgPreparingOverlay");
+ if(!preparing)return null;
+ const card=preparing.firstElementChild;
+ if(!card)return preparing;
+ if(!document.getElementById("ecgPreparingLayoutChoices")){
+  const box=document.createElement("div");
+  box.id="ecgPreparingLayoutChoices";
+  box.innerHTML='<h3 style="font-size:clamp(17px,4vw,22px);margin:16px 0 6px;color:#103554">How would you like to view your ECG?</h3><p style="font-size:13px;color:#53718b;margin:0 0 10px">Choose now. Your layout cannot be changed during this attempt.</p><div style="display:grid;gap:10px"><button type="button" data-preparing-mode="fixed" style="border:2px solid #c3dced;border-radius:14px;background:#f4faff;color:#123955;padding:12px;text-align:left"><strong>📌 Fixed ECG</strong><br><small>Keep the ECG visible above the questions.</small></button><button type="button" data-preparing-mode="demand" style="border:2px solid #c3dced;border-radius:14px;background:#f4faff;color:#123955;padding:12px;text-align:left"><strong>👁 View on demand</strong><br><small>Open the ECG whenever needed.</small></button></div><p id="ecgPreparingChoiceStatus" role="status" style="margin:12px 0 0;font-size:13px;color:#426987">Select your preferred viewing mode while we prepare your ECG.</p>';
+  card.appendChild(box);
+  box.querySelectorAll("[data-preparing-mode]").forEach(button=>button.addEventListener("click",()=>{
+   if(!ecgLaunchPending)return;
+   ecgLayoutChoice=button.dataset.preparingMode;
+   box.querySelectorAll("[data-preparing-mode]").forEach(el=>{
+    const selected=el===button;
+    el.style.borderColor=selected?"#078bc3":"#c3dced";
+    el.style.background=selected?"#ddf5ff":"#f4faff";
+    el.setAttribute("aria-pressed",String(selected));
+   });
+   const status=document.getElementById("ecgPreparingChoiceStatus");
+   if(status)status.textContent=ecgRecordingReady?"✓ ECG ready. Opening your recording…":"✓ Preference saved. Please wait while your ECG recording loads…";
+   maybeOpenPreparedRecording();
   }));
  }
- ecgModeChoiceOverlay.hidden=false;
- document.body.style.overflow="hidden";
- ecgModeChoiceOverlay.querySelector('[data-ecg-mode="'+ecgReferenceMode+'"]')?.focus();
+ card.style.maxHeight="90dvh";card.style.overflowY="auto";
+ return preparing;
 }
-let ecgLaunchPending=false;
-function nextEcgNumber(){return nextAvailableEcg()}
-async function openPreparedEcg(){
- if(ecgLaunchPending)return;ecgLaunchPending=true;
+function maybeOpenPreparedRecording(){
+ if(!ecgLaunchPending||!ecgLayoutChoice||!ecgRecordingReady||ecgLaunchError)return;
  const preparing=document.getElementById("ecgPreparingOverlay");
+ ecgReferenceMode=ecgLayoutChoice;
+ try{localStorage.setItem("acl-ecg-reference-mode",ecgReferenceMode)}catch(e){}
+ ecgLaunchPending=false;
+ if(preparing)preparing.hidden=true;
+ ecgReadyOverlay.hidden=false;
+ document.body.style.overflow="hidden";
+ start();
+ ecgReadyBegin?.focus();
+}
+async function openPreparedEcg(){
+ if(ecgLaunchPending)return;
+ const seq=++ecgLaunchSequence;
+ ecgLaunchPending=true;ecgLayoutChoice=null;ecgRecordingReady=false;ecgLaunchError=null;
+ const preparing=ecgPreparingUI();
+ const status=document.getElementById("ecgPreparingChoiceStatus");
+ const message=document.getElementById("ecgPreparingMessage");
+ if(status)status.textContent="Select your preferred viewing mode while we prepare your ECG.";
+ if(message)message.textContent="Preparing your ECG recording and timer…";
+ preparing?.querySelectorAll("[data-preparing-mode]").forEach(el=>{el.style.borderColor="#c3dced";el.style.background="#f4faff";el.setAttribute("aria-pressed","false")});
  if(preparing)preparing.hidden=false;
+ document.body.style.overflow="hidden";
  try{
   await refreshAttemptProgress();
   const upcoming=nextEcgNumber();
-  if(upcoming===null)throw Error("Congratulations! You have completed all available ECGs with 100% accuracy. No repeat attempts are allowed.");
+  if(upcoming===null)throw Error("Congratulations! You have completed all available ECGs with 100% accuracy.");
   if(ecgImagesLoading)await ecgImagesLoading;
-  if(!images[nextEcgNumber()-1]){ecgImagesLoading=restoreEcgImages();await ecgImagesLoading}
+  if(!images[upcoming-1]){ecgImagesLoading=restoreEcgImages();await ecgImagesLoading}
   const next=nextEcgNumber(),preview=images[next-1];
   if(!preview)throw Error("ECG "+String(next).padStart(2,"0")+" is not uploaded yet. Please ask the administrator to upload it.");
   await new Promise((resolve,reject)=>{const img=new Image();img.onload=resolve;img.onerror=()=>reject(Error("ECG image could not be loaded. Please check the connection and try again."));img.src=preview});
+  if(seq!==ecgLaunchSequence)return;
   readyReturnFocus=ecgStartButton;restart();slot=next-1;
   ecgReadyImage.src=preview;ecgReadyImage.alt="ECG "+String(next).padStart(2,"0")+" recording";
-  showEcgModeChoice();
+  ecgRecordingReady=true;
+  if(message)message.textContent="Your ECG recording is ready.";
+  if(status)status.textContent=ecgLayoutChoice?"✓ Recording ready. Opening your ECG…":"✓ Recording ready. Choose a viewing mode to continue.";
+  maybeOpenPreparedRecording();
  }catch(error){
-  const message=document.getElementById("ecgPreparingMessage");
+  if(seq!==ecgLaunchSequence)return;
+  ecgLaunchError=error;
   if(message)message.textContent=error.message;
-  await new Promise(resolve=>setTimeout(resolve,1700));
-  if(message)message.textContent="Preparing your ECG recording and timer…";
- }finally{if(preparing)preparing.hidden=true;ecgLaunchPending=false}
+  if(status)status.textContent="Unable to prepare this ECG. Please try again.";
+  await new Promise(resolve=>setTimeout(resolve,2200));
+  if(seq===ecgLaunchSequence){ecgLaunchPending=false;if(preparing)preparing.hidden=true;document.body.style.overflow="";}
+ }
 }
 if(ecgStartButton)ecgStartButton.onclick=()=>void openPreparedEcg();
 if(ecgReadyBegin)ecgReadyBegin.addEventListener("click",()=>{
