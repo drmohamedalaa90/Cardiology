@@ -616,7 +616,7 @@ function renderPreviousEcgResults(){
    const n=Number(a.case_number);
    if(!Number.isInteger(n)||n<1||n>10||byCase.has(n)||!Number(a.total))continue;
    byCase.set(n,{
-    case_number:n,score:Number(a.score)||0,total:Number(a.total)||0,
+    attempt_id:Number(a.attempt_id)||0,case_number:n,score:Number(a.score)||0,total:Number(a.total)||0,
     duration_seconds:Number(a.duration_seconds)||0,
     steps:Array.isArray(a.step_details)?a.step_details:[],
     commentary:Array.isArray(a.commentary)?a.commentary:[],
@@ -666,10 +666,11 @@ function renderPreviousEcgResults(){
   return '<div class="ecg-history-comment-row'+(raw?"":" ecg-history-missing")+'"><span class="ecg-history-comment-main"><strong class="ecg-history-step-label">Step '+n+':</strong><span class="ecg-history-comment-text">'+esc(comment)+'</span></span><b class="'+(wrong?"ecg-history-wrong":"")+'">'+result+'</b><time>'+(details.length?"⏱ "+fmtDuration(time):"—")+'</time></div>';
  }).join("");
 
- return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Submitted</strong><p class="ecg-history-score '+(r.score===r.total?"perfect":"")+'">'+(r.score===r.total?'🏆 Perfect interpretation':'✓ Score: '+r.score+'/'+r.total+' · '+Math.max(0,r.total-r.score)+' incorrect')+'</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small><button type="button" class="btn secondary ecg-history-export" data-ecg-history-export="'+n+'">✒️ Sign and export report</button></div></div><details><summary>View commentary, ECG and timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Step 10 · Final diagnosis</h4><p class="ecg-diagnosis-readout">'+esc(r.final_diagnosis||"Not recorded")+'</p>'+(r.extra_notes?'<h4>Additional notes</h4><p class="ecg-diagnosis-readout">'+esc(r.extra_notes)+'</p>':'')+'<p class="ecg-review-status">'+esc(r.review?.status==="validated"?"✓ Validated by Dr. Mohamed Alaa":r.review?.status==="needs_revision"?"Revision requested":"Awaiting review")+'</p>'+(r.review?.feedback?'<p class="ecg-review-feedback">'+esc(r.review.feedback)+'</p>':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
+ return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Submitted</strong><p class="ecg-history-score '+(r.score===r.total?"perfect":"")+'">'+(r.score===r.total?'🏆 Perfect interpretation':'✓ Score: '+r.score+'/'+r.total+' · '+Math.max(0,r.total-r.score)+' incorrect')+'</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small><button type="button" class="btn secondary ecg-history-export" data-ecg-history-export="'+n+'">✒️ Sign and export report</button></div></div><details><summary>View commentary, ECG and timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Step 10 · Final diagnosis</h4><p class="ecg-diagnosis-readout">'+esc(r.final_diagnosis||"Not recorded")+'</p>'+(r.extra_notes?'<h4>Additional notes</h4><p class="ecg-diagnosis-readout">'+esc(r.extra_notes)+'</p>':'')+'<button type="button" class="ecg-validation-link" data-ecg-review="'+n+'">'+(r.review?.status==="validated"?"✅ Final diagnosis validated by Dr. Mohamed Alaa":r.review?.status==="needs_revision"?"🔄 Diagnosis review · Revision requested":"🕒 Final diagnosis awaiting Dr. Mohamed Alaa’s review")+' ↗</button>'+(r.review?.feedback?'<p class="ecg-review-feedback">'+esc(r.review.feedback)+'</p>':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
  }).join("");
  // Continue with the next eligible ECG without revealing the introductory photograph.
  area.querySelector("#ecgReturnStart")?.addEventListener("click",()=>document.getElementById("ecgStart")?.click());
+ area.querySelectorAll("[data-ecg-review]").forEach(btn=>btn.addEventListener("click",()=>{const report=byCase.get(Number(btn.dataset.ecgReview));if(report)openEcgClinicalReview(report)}));
  // Export from a previous completed attempt without restarting it or changing saved progress.
  area.querySelectorAll("[data-ecg-history-export]").forEach(button=>button.addEventListener("click",async()=>{
   const caseNumber=Number(button.dataset.ecgHistoryExport);
@@ -1069,7 +1070,7 @@ function showEcgCompletionHero(report,passed){
     :mistakes<=8
      ?{icon:"💪",kicker:"KEEP PRACTISING",headline:"Keep going — practice makes progress!",detail:"You made "+mistakes+" mistakes. Revise the key ECG concepts and try again."}
      :{icon:"🌱",kicker:"NEVER GIVE UP",headline:"Never lose hope — it's all about practice!",detail:"Every attempt builds your ECG interpretation skills. Review the steps and keep practising."};
- banner.innerHTML='<div class="ecg-hero-glow"></div><div class="ecg-hero-graphic" aria-hidden="true">'+feedback.icon+'</div><div class="ecg-completion-kicker">✦ '+feedback.kicker+'</div><h2>'+esc(feedback.headline)+'</h2><p>'+esc(feedback.detail)+'</p><div class="ecg-completion-meter" role="img" aria-label="'+report.score+' of '+report.total+' assessments correct"><div style="width:'+Math.max(0,Math.min(100,100*report.score/Math.max(1,report.total)))+'%"></div></div><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+duration+'</span></div>';
+ banner.innerHTML='<div class="ecg-hero-glow"></div><div class="ecg-hero-graphic" aria-hidden="true">'+feedback.icon+'</div><div class="ecg-completion-kicker">✦ '+feedback.kicker+'</div><h2>'+esc(feedback.headline)+'</h2><p>'+esc(feedback.detail)+'</p><p class="ecg-review-disclaimer">🩺 Your final diagnosis and additional comments will still be reviewed and validated by Dr. Mohamed Alaa.</p><div class="ecg-completion-meter" role="img" aria-label="'+report.score+' of '+report.total+' assessments correct"><div style="width:'+Math.max(0,Math.min(100,100*report.score/Math.max(1,report.total)))+'%"></div></div><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+duration+'</span></div>';
 
  let next=document.getElementById("ecgCompletionNext");if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.className="btn";next.type="button";banner.after(next)}
  const nextUnlocked=passed?nextAvailableEcg():null;
@@ -1089,6 +1090,7 @@ function showEcgCompletionHero(report,passed){
  #ecgCompletionBanner h2{color:white;font-size:clamp(23px,3vw,34px);margin:9px 0}
  #ecgCompletionBanner p{color:#e2f5ff;margin:6px 0}
  .ecg-completion-kicker{font-size:12px;letter-spacing:2px;font-weight:850;color:#a9e9ff}
+ #ecgCompletionBanner .ecg-review-disclaimer{background:#ffffff20;border:1px solid #ffffff50;border-radius:11px;padding:12px 14px;margin-top:13px;font-weight:750;line-height:1.5;color:#fff}
  .ecg-completion-metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
  .ecg-completion-metrics span{background:#ffffff24;border:1px solid #ffffff55;border-radius:11px;padding:10px 14px;font-weight:750}
  #complete.ecg-completion-passed #again,#complete.ecg-retry-disabled #again{display:none!important}
