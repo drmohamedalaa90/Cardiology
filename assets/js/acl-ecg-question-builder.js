@@ -517,6 +517,24 @@ async function refreshAttemptProgress(){
   const data=await attemptRequest("GET");
   unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];
   const cases=Array.isArray(data.cases)?data.cases:[];
+  // The candidate must use the full, authoritative question bank from Neon.
+  // Browser defaults/localStorage can contain only Steps 1–4; never use those
+  // to decide that Step 10 is next. Keep the administrator's unsaved edit draft.
+  if(!ecgAttemptOpened&&!(admin()&&flowDirty)){
+   const source=cases.find(c=>Number(c.case_number)===slot+1&&Array.isArray(c.questions)&&c.questions.length)||
+                cases.find(c=>Number(c.case_number)===1&&Array.isArray(c.questions)&&c.questions.length)||
+                cases.find(c=>Array.isArray(c.questions)&&c.questions.length);
+   if(source){
+    questions=structuredClone(source.questions);
+    for(const c of cases){
+     const n=Number(c.case_number)-1;
+     if(n>=0&&n<10&&c.answer_key&&typeof c.answer_key==="object")keys[n]=structuredClone(c.answer_key);
+    }
+    // Refresh the admin editor without writing to localStorage: doing so would
+    // trigger its autosave and overwrite the server with stale browser data.
+    if(admin()&&!flowDirty){flowDraft=structuredClone(questions);flowKeys=structuredClone(keys);flowEditing=questions[0]?.id||null;build();}
+   }
+  }
   // Restore the ECG images and availability from the SAME verified request.
   // Previously, two simultaneous requests could race or fail independently.
   availableEcgCases=new Set(cases.filter(c=>
@@ -964,7 +982,12 @@ function render(){
  slots();$("imageArea").innerHTML=images[slot]?'<img alt="Uploaded ECG" src="'+images[slot]+'">':'<span class="muted">Upload an ECG image to begin.</span>';
  const ready=!!images[slot]&&questions.length>0;$("questionPanel").classList.toggle("hidden",!ready);$("complete").classList.add("hidden");if(!ready){syncEcgReference();return;}
  syncEcgReference();
- const qs=path(),q=qs[index];
+ const qs=path();
+ // The path grows when an answered parent unlocks child questions.
+ // Numeric indices into that changing array can skip entire later steps.
+ index=qs.findIndex(item=>!Object.prototype.hasOwnProperty.call(answers,item.id));
+ if(index<0)index=qs.length;
+ const q=qs[index];
  if($("ecgEmergencyLaunch"))$("ecgEmergencyLaunch").hidden=!(q&&index===0&&!Object.keys(answers).length&&!emergencyDiagnosis&&!ecgStepReview);
  const reviewBox=document.getElementById("ecgStepReviewBox");if(reviewBox)reviewBox.hidden=!ecgStepReview;
  if(ecgStepReview){renderEcgStepReview();return;}
@@ -1147,7 +1170,7 @@ function renderFinalDiagnosisStep(){
  requestAnimationFrame(()=>form.scrollIntoView({behavior:"smooth",block:"nearest"}));
 }
 function submitAnswer(){
- const q=path()[index];if(!q||(Array.isArray(selected)?selected.length===0:selected==="")||checked||submitting)return;
+ const q=path().find(item=>!Object.prototype.hasOwnProperty.call(answers,item.id));if(!q||(Array.isArray(selected)?selected.length===0:selected==="")||checked||submitting)return;
  const value=Array.isArray(selected)?[...selected]:selected,k=ecgResolvedKey(q);
  if(k===undefined||k===""||(q.multi&&(!Array.isArray(k)||!k.length))||(q.type==="number"&&(!k||k.min===""||k.max===""||k.min===undefined||k.max===undefined))){
   $("feedback").className="feedback bad";$("feedback").textContent="Answer key unavailable. Ask the administrator to configure this ECG.";return;
@@ -1156,7 +1179,15 @@ function submitAnswer(){
  const isCorrect=correct(q,value);recordStep(q,isCorrect);updateLiveComment();showAnswerFeedback(isCorrect);
  if(!isCorrect)wrongCount++;
  // The clock remains running through Step 10 and freezes at the final submit.
- setTimeout(()=>{const finishedGroup=ecgGroupOf(q);index++;const nextQuestion=path()[index];selected="";checked=false;stepEnteredAt=Date.now();if(!nextQuestion||ecgGroupOf(nextQuestion)!==finishedGroup){ecgStepReview={group:finishedGroup,next:nextQuestion||null};}render();if(!ecgStepReview)scrollEcgToActiveQuestion();},750);
+ setTimeout(()=>{
+  const finishedGroup=ecgGroupOf(q);
+  const updatedPath=path();
+  const nextQuestion=updatedPath.find(item=>!Object.prototype.hasOwnProperty.call(answers,item.id))||null;
+  index=nextQuestion?updatedPath.findIndex(item=>item.id===nextQuestion.id):updatedPath.length;
+  selected="";checked=false;stepEnteredAt=Date.now();
+  if(!nextQuestion||ecgGroupOf(nextQuestion)!==finishedGroup)ecgStepReview={group:finishedGroup,next:nextQuestion};
+  render();if(!ecgStepReview)scrollEcgToActiveQuestion();
+ },750);
 }
 $("next").onclick=submitAnswer;
 function openEcgPeek(){
