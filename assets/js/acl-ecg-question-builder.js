@@ -529,6 +529,72 @@ function ensureEcgHistoryLayout(){
  @media(max-width:540px){#ecgPreviousResults .ecg-history-summary>img{flex-basis:95px!important;width:95px!important;max-width:95px!important;height:80px!important}#ecgPreviousResults .ecg-history-summary strong{font-size:15px}}
  `;document.head.appendChild(style);
 }
+function openEcgSignaturePopup(caseNumber){
+ // Custom branded modal instead of browser-native prompt.
+ return new Promise(resolve=>{
+  document.getElementById("aclEcgSignatureOverlay")?.remove();
+  if(!document.getElementById("aclEcgSignaturePopupCSS")){
+   const css=document.createElement("style");css.id="aclEcgSignaturePopupCSS";css.textContent=
+   '#aclEcgSignatureOverlay{position:fixed;inset:0;z-index:200100;display:grid;place-items:center;padding:18px;background:rgba(7,27,47,.68);backdrop-filter:blur(5px)}'+
+   '#aclEcgSignatureDialog{position:relative;box-sizing:border-box;width:min(100%,480px);padding:28px;border:1px solid #bddcf0;border-radius:22px;background:linear-gradient(160deg,#f5fbff,#fff);box-shadow:0 22px 80px #001b3860;color:#123e60}'+
+   '#aclEcgSignatureDialog h2{margin:4px 0 9px;font-size:clamp(21px,4vw,27px);color:#0a4d7a}'+
+   '#aclEcgSignatureDialog p{color:#57728a;line-height:1.5;margin:5px 0 19px}'+
+   '#aclEcgSignatureDialog label{display:block;font-size:14px;font-weight:800;color:#204d6c;margin-bottom:8px}'+
+   '#aclEcgSignatureDialog input{width:100%;box-sizing:border-box;padding:13px 15px;border-radius:12px;border:2px solid #b7d4e6;background:white;color:#143e5d;font-size:17px;outline-offset:3px}'+
+   '#aclEcgSignatureDialog input:focus{border-color:#087ab8;box-shadow:0 0 0 3px #0e88c51c}'+
+   '#aclEcgSignatureDialog .ecg-sig-preview{min-height:38px;margin:12px 0;padding:10px 12px;border-radius:10px;background:#edf6fd;font:italic 26px "Segoe Script","Brush Script MT",cursive;color:#15446d;overflow-wrap:anywhere}'+
+   '#aclEcgSignatureDialog .ecg-sig-errors{min-height:20px;font-size:13px;color:#b42844;margin:7px 0}'+
+   '#aclEcgSignatureDialog .ecg-sig-buttons{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap}'+
+   '#aclEcgSignatureDialog .ecg-sig-buttons button{border:0;border-radius:12px;min-height:44px;padding:12px 18px;font-size:14px;font-weight:800;cursor:pointer}'+
+   '#aclEcgSignatureDialog .ecg-sig-cancel{background:#e6f0f6;color:#295675}'+
+   '#aclEcgSignatureDialog .ecg-sig-submit{background:linear-gradient(100deg,#0870ad,#078dbe);color:white}'+
+   '#aclEcgSignatureDialog .ecg-sig-close{position:absolute;right:16px;top:13px;width:37px;height:37px;border:0;border-radius:10px;background:#e7f1f7;color:#1d5274;font-size:20px;cursor:pointer}'+
+   '@media(max-width:530px){#aclEcgSignatureDialog{padding:22px 17px}#aclEcgSignatureDialog .ecg-sig-buttons button{flex:1}}';
+   document.head.appendChild(css);
+  }
+  const modal=document.createElement("div");
+  modal.id="aclEcgSignatureOverlay";
+  modal.innerHTML='<section id="aclEcgSignatureDialog" role="dialog" aria-modal="true" aria-labelledby="aclEcgSignatureTitle" aria-describedby="aclEcgSignatureDescription">'+
+   '<button type="button" class="ecg-sig-close" aria-label="Close signature popup">×</button>'+
+   '<div aria-hidden="true" style="font-size:31px">✒️</div>'+
+   '<h2 id="aclEcgSignatureTitle">Sign &amp; Export ECG '+String(caseNumber).padStart(2,"0")+'</h2>'+
+   '<p id="aclEcgSignatureDescription">Enter your name in English to add your signature to your completed ECG interpretation.</p>'+
+   '<form id="aclEcgSignatureForm" novalidate><label for="aclEcgSignatureName">Your full name (English)</label>'+
+   '<input id="aclEcgSignatureName" type="text" maxlength="70" autocomplete="name" placeholder="e.g. Mohamed Alaa" required>'+
+   '<div class="ecg-sig-preview" aria-label="Signature preview">Your signature</div>'+
+   '<div class="ecg-sig-errors" role="alert" aria-live="polite"></div>'+
+   '<div class="ecg-sig-buttons"><button type="button" class="ecg-sig-cancel">Cancel</button>'+
+   '<button class="ecg-sig-submit" type="submit">✒️ Sign &amp; Download</button></div></form></section>';
+  document.body.appendChild(modal);
+  const previouslyFocused=document.activeElement;
+  const input=modal.querySelector("input"),preview=modal.querySelector(".ecg-sig-preview"),error=modal.querySelector(".ecg-sig-errors");
+  let completed=false;
+  const finish=value=>{if(completed)return;completed=true;document.removeEventListener("keydown",onKey);modal.remove();previouslyFocused?.focus?.();resolve(value)};
+  const cancel=()=>finish(null);
+  const onKey=e=>{
+   if(e.key==="Escape"){e.preventDefault();cancel();return}
+   if(e.key==="Tab"){
+    const focusable=[...modal.querySelectorAll("button,input")];
+    const idx=focusable.indexOf(document.activeElement);
+    if(e.shiftKey&&idx===0){e.preventDefault();focusable[focusable.length-1].focus()}
+    else if(!e.shiftKey&&idx===focusable.length-1){e.preventDefault();focusable[0].focus()}
+   }
+  };
+  document.addEventListener("keydown",onKey);
+  modal.querySelector(".ecg-sig-cancel").addEventListener("click",cancel);
+  modal.querySelector(".ecg-sig-close").addEventListener("click",cancel);
+  modal.addEventListener("click",e=>{if(e.target===modal)cancel()});
+  input.addEventListener("input",()=>{preview.textContent=input.value.trim()||"Your signature";error.textContent=""});
+  modal.querySelector("form").addEventListener("submit",e=>{
+   e.preventDefault();
+   const name=input.value.trim().replace(/\s+/g," ");
+   if(!/^[A-Za-z][A-Za-z .'-]{0,69}$/.test(name)){error.textContent="Please enter your name using English letters (up to 70 characters).";input.focus();return}
+   finish(name);
+  });
+  input.focus();
+ });
+}
+
 function renderPreviousEcgResults(){
  ensureEcgHistoryLayout();
  const intro=document.getElementById("ecgIntro");if(!intro)return;
@@ -579,15 +645,9 @@ function renderPreviousEcgResults(){
   const caseNumber=Number(button.dataset.ecgHistoryExport);
   const report=byCase.get(caseNumber);
   if(!report)return;
-  // Ask for a signature immediately when re-exporting a completed ECG.
-  // Cancelling never restarts the attempt or changes the saved result.
-  const candidateName=window.prompt("✒️ Sign and export ECG "+String(caseNumber).padStart(2,"0")+"\n\nEnter your full name in English to sign the report:","");
-  if(candidateName===null)return;
-  const signature=candidateName.trim().replace(/\s+/g," ");
-  if(!/^[A-Za-z][A-Za-z .'-]{0,69}$/.test(signature)){
-   alert("Please enter your name using English letters (up to 70 characters).");
-   return;
-  }
+  // The branded popup validates an English signature before exporting.
+  const signature=await openEcgSignaturePopup(caseNumber);
+  if(signature===null)return;
   const original=button.textContent;button.disabled=true;button.textContent="Preparing image…";
   try{
    const blob=await createEcgResultImage(report,signature);
