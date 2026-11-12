@@ -572,15 +572,22 @@ function renderPreviousEcgResults(){
   return '<div class="ecg-history-comment-row'+(raw?"":" ecg-history-missing")+'"><span class="ecg-history-comment-main"><strong class="ecg-history-step-label">Step '+n+':</strong><span class="ecg-history-comment-text">'+esc(comment)+'</span></span><b class="'+(wrong?"ecg-history-wrong":"")+'">'+result+'</b><time>'+(details.length?"⏱ "+fmtDuration(time):"—")+'</time></div>';
  }).join("");
 
- return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 You interpreted this ECG with 100% accuracy</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small><button type="button" class="btn secondary ecg-history-export" data-ecg-history-export="'+n+'">📷 Export report again</button></div></div><details><summary>View full ECG, commentary and detailed timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div><div class="ecg-history-sign"><label>✒️ Signature (English name, optional)<input type="text" maxlength="70" autocomplete="name" placeholder="Your English name" data-ecg-history-sign="'+n+'"></label><button type="button" class="btn ecg-history-export" data-ecg-history-export="'+n+'">📷 Export signed report</button></div></div></details></article>'
+ return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 You interpreted this ECG with 100% accuracy</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small><button type="button" class="btn secondary ecg-history-export" data-ecg-history-export="'+n+'">✒️ Sign and export report</button></div></div><details><summary>View full ECG, commentary and detailed timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
  }).join("");
  // Export from a previous completed attempt without restarting it or changing saved progress.
  area.querySelectorAll("[data-ecg-history-export]").forEach(button=>button.addEventListener("click",async()=>{
   const caseNumber=Number(button.dataset.ecgHistoryExport);
   const report=byCase.get(caseNumber);
   if(!report)return;
-  const card=button.closest(".ecg-history-card");
-  const signature=card?.querySelector("[data-ecg-history-sign]")?.value||"";
+  // Ask for a signature immediately when re-exporting a completed ECG.
+  // Cancelling never restarts the attempt or changes the saved result.
+  const candidateName=window.prompt("✒️ Sign and export ECG "+String(caseNumber).padStart(2,"0")+"\n\nEnter your full name in English to sign the report:","");
+  if(candidateName===null)return;
+  const signature=candidateName.trim().replace(/\s+/g," ");
+  if(!/^[A-Za-z][A-Za-z .'-]{0,69}$/.test(signature)){
+   alert("Please enter your name using English letters (up to 70 characters).");
+   return;
+  }
   const original=button.textContent;button.disabled=true;button.textContent="Preparing image…";
   try{
    const blob=await createEcgResultImage(report,signature);
@@ -590,8 +597,6 @@ function renderPreviousEcgResults(){
    document.body.appendChild(link);link.click();link.remove();
    setTimeout(()=>URL.revokeObjectURL(url),10000);
   }catch(error){
-   const details=card?.querySelector("details");if(details)details.open=true;
-   card?.querySelector("[data-ecg-history-sign]")?.focus();
    alert(error.message||"Could not export this report.");
   }finally{button.textContent=original;button.disabled=false}
  }));
