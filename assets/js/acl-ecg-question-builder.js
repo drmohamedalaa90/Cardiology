@@ -38,7 +38,7 @@ function path(){const result=[],done=new Set(),byId=new Map(questions.map(q=>[q.
 function seconds(){return started?Math.floor((Date.now()-started)/1000):0}
 function tick(){const t=seconds();const time=String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");$("clock").textContent=time;const previewClock=$("ecgReadyClock");if(previewClock)previewClock.textContent="⏱ "+time;}
 function start(){if(!started){started=Date.now();stepEnteredAt=started;timer=setInterval(tick,1000);tick()}}
-function recordStep(q,isCorrect){if(!q||stepRecorded.has(q.id))return;const now=Date.now();stepTiming[q.id]={number:q.number,title:q.title,seconds:Math.max(0,Math.round((now-(stepEnteredAt||started||now))/1000)),correct:isCorrect,answer:answers[q.id]??""};stepRecorded.add(q.id);stepEnteredAt=now;}
+function recordStep(q,isCorrect){if(!q||stepRecorded.has(q.id))return;const now=Date.now();stepTiming[q.id]={id:q.id,number:q.number,title:q.title,seconds:Math.max(0,Math.round((now-(stepEnteredAt||started||now))/1000)),correct:isCorrect,answer:answers[q.id]??""};stepRecorded.add(q.id);stepEnteredAt=now;}
 function restart(){failedAttempt=false;elapsedAtFailure=null;submitting=false;wrongCount=0;if($("ecgPeekModal")){$("ecgPeekModal").classList.add("hidden");document.body.classList.remove("ecg-peek-open")}clearInterval(timer);timer=null;started=0;index=0;selected="";checked=false;answers={};stepTiming={};stepRecorded=new Set();stepEnteredAt=0;tick()}
 function correct(q,value){const k=keys[slot][q.id];if(q.type==="number"){const n=Number(value),min=Number(k?.min),max=Number(k?.max);return value!==""&&k?.min!==undefined&&k?.max!==undefined&&k.min!==""&&k.max!==""&&Number.isFinite(n)&&Number.isFinite(min)&&Number.isFinite(max)&&min<=max&&n>=min&&n<=max}return !!k&&value===k}
 const attemptApi="https://acl-neon-api.drmohamedalaa90.workers.dev/learning/ecg-lab";const attemptCourse=new URLSearchParams(location.search).get("course")||"basic-special-3d7c42c2-fb4e-44ab-bc7d-09c59992660c";let ecgAttemptOpened=false;let unlockedEcg=[1],attemptHistory=[],wrongCount=0,submitting=false;const attemptToken=()=>sessionStorage.getItem("aclLegacyToken")||localStorage.getItem("aclLegacyToken");async function attemptRequest(method,body){const t=attemptToken();if(!t)throw Error("Sign in required");const response=await fetch(attemptApi+"?course="+encodeURIComponent(attemptCourse),{method,headers:{Authorization:"Bearer "+t,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok){const detail=[data.error,data.message,data.detail].filter(Boolean).join(" · ");throw Error((detail||"HTTP "+response.status)+" (HTTP "+response.status+")")}return data;}async function refreshAttemptProgress(){try{const data=await attemptRequest("GET");unlockedEcg=Array.isArray(data.unlocked)?data.unlocked:[1];attemptHistory=data.attempts||[];slots();}catch(error){console.warn("ECG progress unavailable",error);unlockedEcg=[1];slots();}}window.addEventListener("acl-ecg-access-ready",()=>void refreshAttemptProgress());void refreshAttemptProgress();
@@ -196,15 +196,25 @@ function showEcgCompletionHero(report,passed){
  const mastered=!!passed;
  const heading=mastered?"🏆 You mastered ECG "+report.case_number+" in "+fmtDuration(report.duration_seconds)+"!":incorrect?"💪 Don't give up!":"Your ECG interpretation is complete";
  const subtitle=mastered?"Perfect interpretation — every assessment correct. Outstanding work!":incorrect?"You stopped at Step "+incorrect.number+" — "+incorrect.title+". Try again!":"Your interpretation report is ready below.";
- banner.innerHTML='<div class="ecg-completion-art" aria-hidden="true">'+(mastered?'🏆 ✨ 🎉':incorrect?'💪 🫀':'🫀 ✨')+'</div><div class="ecg-completion-kicker">✦ '+(mastered?'ECG MASTERED':incorrect?'KEEP PRACTISING':'INTERPRETATION FINISHED')+'</div><h2>'+esc(heading)+'</h2><p>'+esc(subtitle)+'</p><div class="ecg-completion-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+(report.total?Math.round(report.score/report.total*100):0)+'"><span style="width:'+(report.total?Math.round(report.score/report.total*100):0)+'%"></span></div><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+fmtDuration(report.duration_seconds)+'</span></div>';
+ const wrong=report.steps.find(s=>!s.correct);
+ const mastered=!!passed;
+ const message=mastered?'You mastered this ECG in '+fmtDuration(report.duration_seconds)+' minutes!':wrong?'Don’t give up! You stopped at Step '+esc(wrong.number)+' — '+esc(wrong.title)+'. Try again!':'Your interpretation has finished. Review your answers and try again!';
+ banner.innerHTML='<div class="ecg-hero-glow"></div><div class="ecg-hero-graphic" aria-hidden="true">'+(mastered?'🏆':'💪')+'</div><div class="ecg-completion-kicker">✦ '+(mastered?'ECG MASTERED':'KEEP LEARNING')+'</div><h2>'+message+'</h2><p>'+(mastered?'Perfect interpretation — every assessment was correct.':'Every attempt is progress. Review the highlighted step before your next attempt.')+'</p><div class="ecg-completion-meter" role="img" aria-label="'+report.score+' of '+report.total+' assessments correct"><div style="width:'+Math.max(0,Math.min(100,100*report.score/Math.max(1,report.total)))+'%"></div></div><div class="ecg-completion-metrics"><span>🫀 ECG '+report.case_number+'</span><span>✓ '+report.score+'/'+report.total+' correct</span><span>⏱ '+fmtDuration(report.duration_seconds)+'</span></div>';
 
  let next=document.getElementById("ecgCompletionNext");if(!next){next=document.createElement("button");next.id="ecgCompletionNext";next.className="btn";next.type="button";banner.after(next)}
  next.hidden=!passed;next.textContent="Continue to next ECG →";
  next.onclick=()=>{ecgAttemptOpened=false;restart();const n=nextAvailableEcg();if(n)slot=n-1;render();document.getElementById("ecgCaseStage")?.scrollIntoView({behavior:"smooth",block:"start"})};
  const again=$("again");if(again){again.hidden=!!passed&&!admin();again.textContent=passed&&admin()?"↻ Try this ECG again (admin)":"↻ Restart interpretation"}
  if(!document.getElementById("ecgCompletionCSS")){const css=document.createElement("style");css.id="ecgCompletionCSS";css.textContent=`
- #ecgCompletionBanner{background:linear-gradient(125deg,#063957,#076ca8);border-radius:19px;color:white;padding:24px;margin-bottom:14px;box-shadow:0 12px 25px #0a4a7524}
- #ecgCompletionBanner{position:relative;overflow:hidden;background:linear-gradient(125deg,#083956,#087a9d 55%,#095078)}\n #complete.ecg-completion-passed #ecgCompletionBanner{background:linear-gradient(125deg,#064a48,#078363 60%,#0b5876)}\n .ecg-completion-art{font-size:clamp(32px,6vw,54px);letter-spacing:8px;animation:ecg-celebrate 1.6s ease-in-out infinite alternate}\n @keyframes ecg-celebrate{from{transform:translateY(0) scale(1)}to{transform:translateY(-5px) scale(1.04)}}\n .ecg-completion-meter{height:12px;border-radius:99px;background:#ffffff40;overflow:hidden;margin-top:18px}.ecg-completion-meter span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7cebc5,#fff2a3);transition:width .5s ease}\n @media(prefers-reduced-motion:reduce){.ecg-completion-art{animation:none}}\n #ecgCompletionBanner h2{color:white;font-size:clamp(23px,3vw,34px);margin:9px 0}
+ #ecgCompletionBanner{position:relative;overflow:hidden;background:linear-gradient(125deg,#063957,#076ca8);border-radius:19px;color:white;padding:24px;margin-bottom:14px;box-shadow:0 12px 25px #0a4a7524}
+ #ecgCompletionBanner{position:relative;overflow:hidden;background:linear-gradient(125deg,#083956,#087a9d 55%,#095078)}\n #complete.ecg-completion-passed #ecgCompletionBanner{background:linear-gradient(125deg,#064a48,#078363 60%,#0b5876)}\n .ecg-completion-art{font-size:clamp(32px,6vw,54px);letter-spacing:8px;animation:ecg-celebrate 1.6s ease-in-out infinite alternate}\n @keyframes ecg-celebrate{from{transform:translateY(0) scale(1)}to{transform:translateY(-5px) scale(1.04)}}\n .ecg-completion-meter{height:12px;border-radius:99px;background:#ffffff40;overflow:hidden;margin-top:18px}.ecg-completion-meter span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7cebc5,#fff2a3);transition:width .5s ease}\n @media(prefers-reduced-motion:reduce){.ecg-completion-art{animation:none}}\n #ecgCompletionBanner .ecg-hero-glow{position:absolute;right:-60px;top:-90px;width:250px;height:250px;border-radius:50%;background:#ffffff13;pointer-events:none}
+ #ecgCompletionBanner .ecg-hero-graphic{font-size:56px;animation:ecgHeroPop .65s ease-out;filter:drop-shadow(0 6px 10px #001e3255)}
+ #ecgCompletionBanner .ecg-completion-meter{height:12px;border-radius:30px;background:#ffffff35;overflow:hidden;margin-top:20px}
+ #ecgCompletionBanner .ecg-completion-meter div{height:100%;border-radius:30px;background:linear-gradient(90deg,#6be5c4,#f7dd6c);transition:width .8s ease}
+ #complete:not(.ecg-completion-passed) #ecgCompletionBanner{background:linear-gradient(125deg,#4b294f,#a13a5a)}
+ @keyframes ecgHeroPop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+ @media(prefers-reduced-motion:reduce){#ecgCompletionBanner .ecg-hero-graphic{animation:none}}
+ #ecgCompletionBanner h2{color:white;font-size:clamp(23px,3vw,34px);margin:9px 0}
  #ecgCompletionBanner p{color:#e2f5ff;margin:6px 0}
  .ecg-completion-kicker{font-size:12px;letter-spacing:2px;font-weight:850;color:#a9e9ff}
  .ecg-completion-metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
@@ -234,49 +244,23 @@ function fmtDuration(sec){sec=Number(sec)||0;return String(Math.floor(sec/60)).p
 function renderAttemptReport(report){
  let history=[];try{history=JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]")}catch{}
  const panel=$("ecgAttemptReport")||document.createElement("section");panel.id="ecgAttemptReport";panel.style.cssText="margin-top:20px;overflow-x:auto";if(!panel.isConnected)$("complete").append(panel);
- const grouped=new Map();
- for(const step of report.steps){const group=String(parseInt(step.number,10)||step.number);if(!grouped.has(group))grouped.set(group,[]);grouped.get(group).push(step)}
- const rows=Array.from(grouped,([group,items])=>{
-  const n=Number(group),tone=n<=3?"red":n<=5?"green":n<=7?"blue":"orange";
-  const complete=items.every(x=>x.correct),total=items.reduce((sum,x)=>sum+(Number(x.seconds)||0),0);
-  return '<div class="ecg-tree-group ecg-tree-'+tone+'"><div class="ecg-tree-root"><span class="ecg-tree-bubble">'+esc(group)+'</span><strong>'+items.length+' assessment'+(items.length===1?'':'s')+'</strong><time>⏱ '+fmtDuration(total)+'</time><b>'+(complete?'✓ Completed':'✕ Incomplete')+'</b></div><div class="ecg-tree-branches">'+items.map(x=>'<div class="ecg-tree-branch"><span class="ecg-tree-dot"></span><span>'+esc(x.title)+'</span><time>'+fmtDuration(x.seconds)+'</time><b>'+(x.correct?'✓ Correct':'✕ Incorrect')+'</b></div>').join('')+'</div></div>'
- }).join("");
- if(!document.getElementById("ecgTreeStyle")){
-  const style=document.createElement("style");style.id="ecgTreeStyle";style.textContent=`
- .ecg-report-cards{display:grid;gap:10px;margin:14px 0 18px}
- .ecg-tree-group{--tone:#a51235;--shade:#fff2f5;border:1px solid #d9e3eb;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 3px 10px #0d29450a}
- .ecg-tree-green{--tone:#086b3a;--shade:#effaf3}.ecg-tree-blue{--tone:#075a9d;--shade:#eef7ff}.ecg-tree-orange{--tone:#b34e0b;--shade:#fff5e9}
- .ecg-tree-root{display:grid;grid-template-columns:38px minmax(0,1fr) 85px 110px;align-items:center;gap:7px;padding:5px 11px;background:var(--shade);color:#173951;font-size:13px}
- .ecg-tree-bubble{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--tone);color:white;font-weight:850;font-size:15px;box-shadow:0 3px 9px #0c243527}
- .ecg-tree-root time,.ecg-tree-branch time{font-variant-numeric:tabular-nums}
- .ecg-tree-root>b{color:var(--tone);text-align:right}
- .ecg-tree-branches{margin-left:30px;padding:2px 10px 5px 18px;border-left:2px solid var(--tone)}
- .ecg-tree-branch{display:grid;grid-template-columns:10px minmax(0,1fr) 85px 110px;align-items:center;gap:9px;min-height:27px;padding:2px 6px;border-bottom:1px solid #e7edf2;color:#26445a;font-size:13px}
- .ecg-tree-branch:last-child{border-bottom:0}.ecg-tree-dot{width:8px;height:8px;border-radius:50%;background:var(--tone);margin-left:-24px}.ecg-tree-branch b{text-align:right;color:#147947}
- .ecg-numeric-label{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap}.ecg-numeric-unit{font-size:13px;color:#42647d}
- .ecg-report-actions{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}.ecg-report-actions button{border-radius:11px}
- @media(max-width:540px){.ecg-tree-root{grid-template-columns:40px 1fr 65px;gap:4px;padding:7px}.ecg-tree-root>b{grid-column:2/4;text-align:left}.ecg-tree-branch{grid-template-columns:9px 1fr 55px;gap:4px}.ecg-tree-branch b{grid-column:2/4;text-align:left}.ecg-tree-branches{margin-left:24px;padding-left:12px}}
- `;document.head.appendChild(style)
- }
-
- const commentForStep=x=>{
-  const value=String(x.answer??"");
-  const yes=value==="Yes";
-  const descriptions={
-   "1a":yes?"The ECG is well calibrated at 25 mm/sec and 10 mm/mV.":"The ECG calibration is abnormal.",
-   "1b":yes?"The electrodes are correctly placed.":"Possible electrode misplacement is identified.",
-   "1c":yes?"The recording quality is good, without significant interference.":"The recording has poor quality or significant interference.",
-   "2a":yes?"The rhythm is regular.":"The rhythm is irregular.",
-   "2b":"The heart rate is "+value+" bpm.",
-   "3":"The QRS axis is "+value+".",
-   "4a":yes?"P waves are present.":"P waves are absent.",
-   "4b":yes?"P-wave morphology is normal.":"P-wave morphology is abnormal."
-  };
-  return descriptions[x.id]||x.title+": "+value+(x.type==="number"&&x.unit?" "+x.unit:"")+".";
+ const commentaryById={
+ "1a":a=>"The ECG is well calibrated (25 mm/sec and 10 mm/mV).",
+ "1b":a=>a==="Yes"?"Electrodes are correctly placed.":"Possible incorrect electrode placement.",
+ "1c":a=>a==="Yes"?"Recording quality is good, without significant interference.":"Recording quality is suboptimal.",
+ "2a":a=>a==="Yes"?"The rhythm is regular.":"The rhythm is irregular.",
+ "2b":a=>"Heart rate: "+a+" bpm.",
+ "3":a=>"QRS axis: "+a+".",
+ "4a":a=>a==="Yes"?"P waves are present.":"P waves are absent.",
+ "4b":a=>a==="Yes"?"P-wave morphology is normal.":"P-wave morphology is abnormal."
  };
- const stepRows=report.steps.map((x,i)=>'<tr><td><strong>Step '+esc(x.number||i+1)+'</strong><small>'+esc(x.title)+'</small></td><td>'+esc(commentForStep(x))+'</td><td class="'+(x.correct?'ecg-step-ok':'ecg-step-wrong')+'">'+(x.correct?'✓':'✕')+'</td></tr>').join("");
- panel.innerHTML='<h3>Step-by-step performance report</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><div class="ecg-report-cards">'+rows+'</div><h3 style="margin-top:22px">Your ECG interpretation — step by step</h3><p class="muted small">Your answers are converted into an ECG comment, arranged in interpretation order.</p><div class="ecg-comment-table-wrap"><table class="ecg-comment-table"><thead><tr><th>Step</th><th>Your interpretation comment</th><th>✓</th></tr></thead><tbody>'+stepRows+'</tbody></table></div>';
- if(!document.getElementById("ecgCommentTableStyle")){const style=document.createElement("style");style.id="ecgCommentTableStyle";style.textContent='.ecg-comment-table-wrap{overflow-x:auto;border:1px solid #d1e3ed;border-radius:16px}.ecg-comment-table{border-collapse:collapse;width:100%;min-width:0}.ecg-comment-table th{background:#e8f4fc;color:#123e5c;text-align:left;padding:12px}.ecg-comment-table td{padding:12px;border-top:1px solid #e3edf3;vertical-align:top;line-height:1.5}.ecg-comment-table td:first-child{width:24%;color:#174b70}.ecg-comment-table td:first-child small{display:block;color:#698092;font-size:12px}.ecg-comment-table td:last-child{width:36px;text-align:center;font-weight:900}.ecg-step-ok{color:#087a49}.ecg-step-wrong{color:#c12646}@media(max-width:540px){.ecg-comment-table th,.ecg-comment-table td{padding:9px 7px;font-size:13px}.ecg-comment-table td:first-child{width:27%}}';document.head.appendChild(style)}
+ const interpretation=(s)=>{const a=String(s.answer??"");if(s.id&&commentaryById[s.id])return commentaryById[s.id](a);const key=String(s.number??"");if(commentaryById[key])return commentaryById[key](a);return s.title+": "+a+(a&&!/[.!?]$/.test(a)?".":"")};
+ const lines=report.steps.map((s,i)=>'<tr class="'+(s.correct?'':'ecg-step-wrong')+'"><td><strong>Step '+esc(s.number)+'</strong><small>'+esc(s.title)+'</small></td><td>'+esc(interpretation(s))+'</td><td><span class="'+(s.correct?'ecg-step-ok':'ecg-step-no')+'">'+(s.correct?'✓ Correct':'✕ Incorrect')+'</span><small>⏱ '+fmtDuration(s.seconds)+'</small></td></tr>').join("");
+ if(!document.getElementById("ecgStepCommentStyle")){
+  const style=document.createElement("style");style.id="ecgStepCommentStyle";style.textContent='.ecg-comment-table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}.ecg-comment-table th{text-align:left;color:#45657e;font-size:13px;padding:8px}.ecg-comment-table td{padding:13px 10px;background:#f2f8fc;border-top:1px solid #dbe8f1;border-bottom:1px solid #dbe8f1;vertical-align:top;overflow-wrap:anywhere}.ecg-comment-table td:first-child{width:25%;border-left:4px solid #0879b9;border-radius:12px 0 0 12px}.ecg-comment-table td:nth-child(2){width:53%;line-height:1.5}.ecg-comment-table td:last-child{width:22%;border-right:1px solid #dbe8f1;border-radius:0 12px 12px 0}.ecg-comment-table small{display:block;color:#5c7587;font-size:12px;margin-top:5px}.ecg-step-ok{color:#087448;font-weight:750}.ecg-step-no{color:#bd2045;font-weight:750}.ecg-comment-table .ecg-step-wrong td{background:#fff0f2;border-color:#f1c9d1}.ecg-comment-table .ecg-step-wrong td:first-child{border-left-color:#c01c42}@media(max-width:540px){.ecg-comment-table th,.ecg-comment-table td{padding:9px 6px;font-size:12px}.ecg-comment-table td:nth-child(2){font-size:13px}.ecg-comment-table small{font-size:11px}}';
+  document.head.appendChild(style);
+ }
+ panel.innerHTML='<h3>Step-by-step ECG interpretation</h3><p>ECG '+report.case_number+' · '+fmtDuration(report.duration_seconds)+' total · '+report.score+'/'+report.total+' correct</p><table class="ecg-comment-table"><thead><tr><th>Step</th><th>Your ECG comment</th><th>Result / Time</th></tr></thead><tbody>'+lines+'</tbody></table>';
 
  const shareActions=document.createElement("div");shareActions.className="ecg-report-actions";
  shareActions.innerHTML='<button type="button" class="btn" id="ecgExportResult">📷 Export beautiful result image</button><button type="button" class="btn secondary" id="ecgShareResult">↗ Share result</button><button type="button" class="btn secondary" id="ecgWhatsAppResult">WhatsApp</button>';
