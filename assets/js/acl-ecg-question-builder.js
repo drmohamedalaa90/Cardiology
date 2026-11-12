@@ -49,7 +49,7 @@ function isEcgCompleted(n){return !admin()&&attemptHistory.some(a=>Number(a.case
 function nextAvailableEcg(){return Array.from({length:10},(_,i)=>i+1).find(n=>unlockedEcg.includes(n)&&!isEcgCompleted(n))||null}
 
 function previousEcgReports(){try{return JSON.parse(localStorage.getItem("acl-ecg-step-reports-v1")||"[]").filter(x=>x&&Array.isArray(x.steps))}catch{return []}}
-function cleanEcgComment(value){return String(value||"").replace(/^\\s*\\d{1,2}\\s*[.)-]?\\s*/,"").trim()}
+function cleanEcgComment(value){return String(value||"").replace(/^\\s*(?:Step\\s+\\d+[a-z]?|\\d{1,2})\\s*[.)-]?\\s*/i,"").trim()}
 function ensureEcgHistoryLayout(){
  if(document.getElementById("ecgHistoryLayoutFix"))return;
  const style=document.createElement("style");style.id="ecgHistoryLayoutFix";
@@ -79,7 +79,7 @@ function renderPreviousEcgResults(){
  area.hidden=!completed.length;if(!completed.length){area.innerHTML="";return}
  area.innerHTML='<h3 class="ecg-history-heading">🏆 Your previous ECG results</h3><p class="ecg-history-sub">Review your completed ECGs and interpretations.</p>'+completed.map(r=>{
  const n=Number(r.case_number),img=images[n-1];
- const lines=(r.commentary||[]).map((c,i)=>{const step=r.steps?.[i];return '<div class="ecg-history-comment-row"><span>'+esc(cleanEcgComment(c))+'</span><b class="'+(step?.correct===false?'ecg-history-wrong':'')+'">'+(step?.correct===false?'✕ Incorrect':'✓ Correct')+'</b><time>⏱ '+fmtDuration(step?.seconds||0)+'</time></div>'}).join("");
+ const lines=(r.commentary||[]).map((c,i)=>{const step=r.steps?.[i];const stepNumber=step?.number||['1a','1b','1c','2a','2b','3','4a','4b'][i]||String(i+1);return '<div class="ecg-history-comment-row"><span><strong class="ecg-history-step-label">Step '+esc(stepNumber)+'</strong> '+esc(cleanEcgComment(c))+'</span><b class="'+(step?.correct===false?'ecg-history-wrong':'')+'">'+(step?.correct===false?'✕ Incorrect':'✓ Correct')+'</b><time>⏱ '+fmtDuration(step?.seconds||0)+'</time></div>'}).join("");
  return '<article class="ecg-history-card"><div class="ecg-history-summary">'+(img?'<img src="'+img+'" alt="ECG '+n+'">':'<span>ECG '+n+'</span>')+'<div><strong>ECG '+String(n).padStart(2,"0")+' · Completed</strong><p>🏆 You interpreted this ECG with 100% accuracy</p><small>⏱ '+fmtDuration(r.duration_seconds)+'</small></div></div><details><summary>View full ECG, commentary and detailed timings</summary><div class="ecg-history-expanded">'+(img?'<img class="ecg-history-full" src="'+img+'" alt="Full ECG '+n+'">':'')+'<h4>Your ECG commentary</h4><div class="ecg-history-comments">'+lines+'</div></div></details></article>'
  }).join("");
  if(!document.getElementById("ecgHistoryCommentCSS")){const css=document.createElement("style");css.id="ecgHistoryCommentCSS";css.textContent='.ecg-history-comment-row{display:grid;grid-template-columns:minmax(0,1fr) 110px 80px;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid #e1eaf2;color:#183e5a}.ecg-history-comment-row b{color:#087b49;font-size:13px}.ecg-history-comment-row b.ecg-history-wrong{color:#c52649}.ecg-history-comment-row time{font-size:13px;color:#45647d}@media(max-width:540px){.ecg-history-comment-row{grid-template-columns:1fr auto}.ecg-history-comment-row time{grid-column:2}}';document.head.append(css)}
