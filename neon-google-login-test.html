@@ -121,7 +121,7 @@ document.querySelector("#passwordForm").addEventListener("submit",async event=>{
       if(result.error==="auth_not_configured")throw new Error("ACL authentication server is not configured.");
       if(result.error==="temporarily_locked")throw new Error("Too many attempts. Please wait 15 minutes.");
       if(result.error==="origin_forbidden")throw new Error("This ACL website origin is not permitted by the authentication server.");
-      throw new Error(result.error==="invalid_credentials"?"Invalid username or password.":"ACL login is temporarily unavailable. Please try again later.");
+      throw new Error(result.error==="invalid_credentials"?"Invalid username or password. If your original ACL password is rejected, use Forgot password to request account recovery. Your existing profile and progress will be preserved.":"ACL login is temporarily unavailable. Please try again later.");
     }
     sessionStorage.removeItem("aclLegacyToken");
     localStorage.removeItem("aclLegacyToken");
