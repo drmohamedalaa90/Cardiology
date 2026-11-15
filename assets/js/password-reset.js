@@ -34,20 +34,21 @@ el("resetForm")?.addEventListener("submit", async (event) => {
     const password = el("newPassword").value;
     const confirmation = el("newPasswordConfirm").value;
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
+    const token = new URLSearchParams(window.location.hash.slice(1)).get("token") || params.get("token");
     if (!token || params.get("error")) throw new Error("This recovery link is invalid or expired. Request a new one.");
-    if (password.length < 8) throw new Error("Password must contain at least 8 characters.");
+    if (password.length < 12 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) throw new Error("Use at least 12 characters, including letters and numbers.");
     if (password !== confirmation) throw new Error("Passwords do not match.");
-    const response = await fetch(ACL_CONFIG.neonAuthUrl.replace(/\/$/, "") + "/reset-password", {
+    const response = await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/auth/recovery/redeem", {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
+      cache: "no-store",
       body: JSON.stringify({ newPassword: password, token })
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result?.error) {
       throw new Error(result?.error?.message || result?.message || "This recovery link is invalid or expired.");
     }
+    window.history.replaceState(null, "", window.location.pathname);
     el("resetSuccess").textContent = "Password changed successfully. Redirecting to sign in…";
     setTimeout(() => { window.location.href = "./neon-google-login-test.html"; }, 1400);
   } catch (error) {
