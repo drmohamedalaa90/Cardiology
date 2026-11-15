@@ -92,12 +92,32 @@ async function toggleStatus(profile) {
   show(`Account ${nextStatus === "suspended" ? "suspended" : "restored"} successfully.`);
 }
 async function sendReset(profile) {
-  if (!profile.email) throw new Error("This account has no email address in its profile.");
-  if (!window.confirm(`Send a password-reset email to ${profile.email}?`)) return;
-  const redirectTo = `${window.location.origin}/Cardiology/reset-password.html`;
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(profile.email, { redirectTo });
-  if (error) throw error;
-  show(`Password-reset email sent to ${profile.email}.`);
+  if (!profile.email) throw new Error("This account has no registered email.");
+  if (!window.confirm("Generate a one-time password recovery link for " + (profile.full_name || profile.email) + "? Verify the member’s identity before sharing it. The link will expire in 30 minutes.")) return;
+  const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+  const token = session?.access_token || session?.accessToken || sessionStorage.getItem("aclLegacyToken") || localStorage.getItem("aclLegacyToken");
+  if (sessionError || !token) throw new Error("Please sign in again as ACL administrator.");
+  const response = await fetch("https://acl-neon-api.drmohamedalaa90.workers.dev/auth/recovery/admin", {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+    body: JSON.stringify({ identifier: profile.email }),
+    cache: "no-store"
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.ok) throw new Error(result.error || "Could not generate the recovery link.");
+  const dialog = document.createElement("dialog");
+  dialog.className = "student-dialog acl-recovery-dialog";
+  dialog.innerHTML = '<div style="max-width:520px;padding:26px;display:grid;gap:14px;color:#153e60"><h2 style="margin:0">🔐 Password recovery</h2><p style="margin:0">One-time link for <strong id="recoveryMemberName"></strong>.<br>Expires in <strong>30 minutes</strong>. Share only after verifying the member’s identity.</p><label for="recoveryLinkText" style="font-weight:800">Recovery link</label><textarea id="recoveryLinkText" readonly rows="4" style="width:100%;box-sizing:border-box;border:1px solid #bdd2df;border-radius:12px;padding:12px;font:inherit;overflow-wrap:anywhere"></textarea><button type="button" id="copyRecoveryLink" class="btn">📋 Copy recovery link</button><p id="recoveryCopyStatus" aria-live="polite"></p><form method="dialog"><button class="btn secondary" style="width:100%">Close</button></form></div>';
+  document.body.appendChild(dialog);
+  dialog.querySelector("#recoveryMemberName").textContent = result.member || profile.email;
+  dialog.querySelector("#recoveryLinkText").value = result.link;
+  dialog.querySelector("#copyRecoveryLink").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(result.link); dialog.querySelector("#recoveryCopyStatus").textContent = "✓ Copied. Send it privately to the verified member."; }
+    catch { dialog.querySelector("#recoveryLinkText").select(); dialog.querySelector("#recoveryCopyStatus").textContent = "Select and copy the link."; }
+  });
+  dialog.addEventListener("close", () => dialog.remove());
+  dialog.showModal();
+  show("Recovery link generated securely. Existing profile and progress are unchanged.");
 }
 function openDetails(profile) {
   byId("studentDialogContent").innerHTML = `<div class="dialog-profile">${accountAvatar(profile)}<div><h2>${esc(profile.full_name || "Unnamed user")}</h2><p class="muted">@${esc(profile.username || "not-set")}</p></div></div>
