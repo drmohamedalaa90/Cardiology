@@ -1,25 +1,27 @@
-import { supabaseClient } from "./supabase-client.js";
 import { ACL_CONFIG } from "./config.js";
 const el = (id) => document.getElementById(id);
 
-el("forgotForm")?.addEventListener("submit", async (event) => {
+el("forgotForm")?.addEventListener("submit", event => {
   event.preventDefault();
   el("forgotError").textContent = "";
   el("forgotSuccess").textContent = "";
-  const submit = event.submitter;
-  if (submit) submit.disabled = true;
-  try {
-    const email = el("recoveryEmail").value.trim().toLowerCase();
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + ACL_CONFIG.siteBase + "reset-password.html"
-    });
-    if (error) throw error;
-    el("forgotSuccess").textContent = "If this email is registered, a recovery link has been sent. Check your inbox and spam folder.";
-  } catch (error) {
-    el("forgotError").textContent = error?.message || "Could not send the recovery email. Please try again.";
-  } finally {
-    if (submit) submit.disabled = false;
+  const email = el("recoveryEmail").value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    el("forgotError").textContent = "Enter your registered ACL email.";
+    return;
   }
+  // Existing Supabase reset links do not update ACL's migrated legacy bcrypt
+  // credentials in Neon. Until a verified recovery service is available,
+  // direct members to the ACL administrator instead of promising a dead link.
+  const subject = "ACL account recovery request";
+  const message = "Hello,\n\nI cannot sign in to ACL.\nMy registered email is: " + email +
+    "\n\nPlease help me recover my account securely.\n\nI will not send my password by email.";
+  const link = "mailto:drmohamedalaa90@gmail.com?subject=" + encodeURIComponent(subject) +
+    "&body=" + encodeURIComponent(message);
+  el("forgotSuccess").textContent = "Your email app will open with an account-recovery request. Send it to the ACL administrator. Do not include your password.";
+  const a = document.createElement("a");
+  a.href = link;
+  a.click();
 });
 
 el("resetForm")?.addEventListener("submit", async (event) => {
